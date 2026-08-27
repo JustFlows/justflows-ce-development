@@ -12,7 +12,12 @@ concurrency:
 
 jobs:
   open-publish-pr:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    # This file is published onto justflows-ce with the rest of the tree.
+    # Only justflows-ce-development should open the publish PR; justflows-ce
+    # has no JUSTFLOWS_CE_SYNC_TOKEN and must not push into itself.
+    if: >
+      github.repository == 'JustFlows/justflows-ce-development' &&
+      (github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
       contents: read
