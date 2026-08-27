@@ -79,10 +79,12 @@ jobs:
     if: github.base_ref == 'main'
     runs-on: ubuntu-latest
     steps:
-      - name: Require develop as the source branch
+      # justflows-ce-development cuts main from `develop`; justflows-ce cuts
+      # main from `developers` (that repo has no `develop` branch).
+      - name: Require develop or developers as the source branch
         run: |
-          if [ "${GITHUB_HEAD_REF}" != "develop" ]; then
-            echo "::error::PRs into main must come from develop. Open feature, bug, and patch work against develop instead."
+          if [ "${GITHUB_HEAD_REF}" != "develop" ] && [ "${GITHUB_HEAD_REF}" != "developers" ]; then
+            echo "::error::PRs into main must come from develop (justflows-ce-development) or developers (justflows-ce)."
             exit 1
           fi
 
