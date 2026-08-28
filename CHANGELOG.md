@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Admin → Updates now discovers new releases. It asks the Justflows API
+  (`GET /v1/core/latest`, backed by the `JustFlows/justflows-ce` GitHub
+  releases) for the latest stable version and, when it is newer than the
+  running one, shows an **Update to vX.Y.Z** button that downloads the release
+  `justflows.zip`, verifies it against the published `justflows.zip.sha256`,
+  and installs it through the same pipeline as a manual upload. A major-version
+  jump is labelled and still installs, but only on explicit confirmation. The
+  gateway host (`https://api.justflows.com`) is fixed in the code and cannot be
+  overridden by an environment variable, so a compromised environment cannot
+  repoint core-update downloads.
+  ([#87](https://github.com/JustFlows/justflows-ce/issues/87))
+- Admin → Updates: **Automatic updates** toggle. When on, a daily job installs
+  newer releases that keep the same major version (`0.x` → `0.y`); it never
+  crosses a major boundary, since that can carry breaking changes. Every
+  attempt, skip, and result is written to the audit log. The server-wide
+  `JUSTFLOWS_DISABLE_AUTO_UPDATE` env var overrides the toggle.
+
 ## [0.1.5] — 2026-08-27
 
 ### Added

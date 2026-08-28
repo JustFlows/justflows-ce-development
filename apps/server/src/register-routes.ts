@@ -24,6 +24,8 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
     }
     const { startRevisionJobs } = await import("./lib/revision-jobs.js");
     startRevisionJobs();
+    const { startCoreAutoUpdateJob } = await import("./lib/core-auto-update.js");
+    startCoreAutoUpdateJob();
   }
 
   const { ensurePluginRuntime } = await import("./lib/plugin-runtime.js");

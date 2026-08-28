@@ -355,3 +355,82 @@ export async function applyCoreUpdate(
     await fsp.rm(stagingDir, { recursive: true, force: true }).catch(() => {});
   }
 }
+
+const DOWNLOAD_TIMEOUT_MS = 120_000;
+
+/** Read a response body, aborting once it exceeds `maxBytes`. */
+async function readBounded(response: Response, maxBytes: number): Promise<Buffer> {
+  const declared = Number(response.headers.get("content-length") ?? "");
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new Error(`Download exceeds ${Math.floor(maxBytes / 1024 / 1024)} MB limit`);
+  }
+  if (!response.body) return Buffer.alloc(0);
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for await (const chunk of response.body as unknown as AsyncIterable<Uint8Array>) {
+    total += chunk.byteLength;
+    if (total > maxBytes) {
+      throw new Error(`Download exceeds ${Math.floor(maxBytes / 1024 / 1024)} MB limit`);
+    }
+    chunks.push(Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+
+/** `<hex>  justflows.zip` — take the first 64-hex token. */
+function parseSha256Sidecar(text: string): string | null {
+  const match = /\b([a-fA-F0-9]{64})\b/.exec(text);
+  return match ? match[1]!.toLowerCase() : null;
+}
+
+/**
+ * Download a published core release through the Justflows API gateway, verify it
+ * against the release's `justflows.zip.sha256`, then run it through the same
+ * pipeline as an operator upload. Used by the "Update" button and the
+ * unattended auto-update job.
+ */
+export async function applyCoreUpdateFromRelease(
+  release: { availableVersion: string; downloadUrl: string; sha256Url: string | null },
+): Promise<Awaited<ReturnType<typeof applyCoreUpdate>>> {
+  const currentVersion = readVersion(getJfRoot());
+  const fail = (detail: string): Awaited<ReturnType<typeof applyCoreUpdate>> => ({
+    ok: false,
+    steps: [{ step: "download", ok: false, detail }],
+    currentVersion,
+    newVersion: currentVersion,
+    restartRequired: false,
+    restarting: false,
+  });
+
+  let buffer: Buffer;
+  try {
+    const res = await fetch(release.downloadUrl, {
+      headers: { accept: "application/zip" },
+      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+    });
+    if (!res.ok) return fail(`Download failed (${res.status})`);
+    buffer = await readBounded(res, MAX_ZIP_BYTES);
+  } catch (err) {
+    return fail(err instanceof Error ? err.message : String(err));
+  }
+
+  if (release.sha256Url) {
+    try {
+      const shaRes = await fetch(release.sha256Url, {
+        headers: { accept: "text/plain" },
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!shaRes.ok) return fail(`Could not fetch checksum (${shaRes.status})`);
+      const expected = parseSha256Sidecar(await shaRes.text());
+      if (!expected) return fail("Release checksum file is unreadable");
+      const actual = createHash("sha256").update(buffer).digest("hex");
+      if (actual !== expected) {
+        return fail(`Checksum mismatch — expected ${expected.slice(0, 12)}…, got ${actual.slice(0, 12)}…`);
+      }
+    } catch (err) {
+      return fail(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  return applyCoreUpdate(buffer, "justflows.zip");
+}

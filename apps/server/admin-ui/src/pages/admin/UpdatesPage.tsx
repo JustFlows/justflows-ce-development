@@ -14,6 +14,25 @@ interface UpdateItem {
   currentVersion: string;
   availableVersion: string;
   changelog?: string;
+  notesUrl?: string;
+  publishedAt?: string | null;
+  autoUpdatable?: boolean;
+}
+
+interface AutoUpdateInfo {
+  enabled: boolean;
+  available: boolean;
+  maxScope: string;
+}
+
+interface UpdateResult {
+  ok?: boolean;
+  error?: string;
+  steps?: UpdateStep[];
+  currentVersion?: string;
+  newVersion?: string;
+  restartRequired?: boolean;
+  restarting?: boolean;
 }
 
 function logVariant(line: string): string {
@@ -29,13 +48,19 @@ export default function UpdatesPage() {
     currentVersion?: string;
     version?: string;
     updates?: UpdateItem[];
+    autoUpdate?: AutoUpdateInfo;
   }>("/api/updates");
   const [currentVersion, setCurrentVersion] = useState(
     prefetched?.currentVersion ?? prefetched?.version ?? "…",
   );
   const [updates, setUpdates] = useState<UpdateItem[]>(prefetched?.updates ?? []);
+  const [autoUpdate, setAutoUpdate] = useState<AutoUpdateInfo>(
+    prefetched?.autoUpdate ?? { enabled: false, available: true, maxScope: "minor" },
+  );
+  const [savingAuto, setSavingAuto] = useState(false);
   const [checking, setChecking] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [installing, setInstalling] = useState(false);
   const [restarting, setRestarting] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const [restartFailed, setRestartFailed] = useState(false);
@@ -44,8 +69,10 @@ export default function UpdatesPage() {
   useEffect(() => {
     fetch("/api/updates")
       .then((r) => r.json())
-      .then((data: { currentVersion?: string }) => {
+      .then((data: { currentVersion?: string; updates?: UpdateItem[]; autoUpdate?: AutoUpdateInfo }) => {
         if (data.currentVersion) setCurrentVersion(data.currentVersion);
+        if (data.updates) setUpdates(data.updates);
+        if (data.autoUpdate) setAutoUpdate(data.autoUpdate);
       })
       .catch(() => {});
   }, []);
@@ -58,10 +85,15 @@ export default function UpdatesPage() {
     setChecking(true);
     setLog([]);
     try {
-      const res = await fetch("/api/updates");
-      const data = (await res.json()) as { updates: UpdateItem[]; currentVersion?: string };
+      const res = await fetch("/api/updates", { cache: "no-store" });
+      const data = (await res.json()) as {
+        updates: UpdateItem[];
+        currentVersion?: string;
+        autoUpdate?: AutoUpdateInfo;
+      };
       setUpdates(data.updates ?? []);
       if (data.currentVersion) setCurrentVersion(data.currentVersion);
+      if (data.autoUpdate) setAutoUpdate(data.autoUpdate);
       addLog(
         data.updates?.length
           ? `Found ${data.updates.length} update(s)`
@@ -101,29 +133,13 @@ export default function UpdatesPage() {
     setRestarting(false);
   }
 
-  async function uploadZip(file: File) {
-    setUploading(true);
+  async function runUpdateFlow(request: Promise<Response>) {
     setRestarting(false);
     setRestartFailed(false);
-    setLog([]);
-    addLog(`Uploading ${file.name}…`);
 
     try {
-      const form = new FormData();
-      form.append("file", file);
-
-      addLog("This may take several minutes (extract → npm install → build)…");
-
-      const res = await fetch("/api/updates/upload", { method: "POST", body: form });
-      const data = (await res.json()) as {
-        ok?: boolean;
-        error?: string;
-        steps?: UpdateStep[];
-        currentVersion?: string;
-        newVersion?: string;
-        restartRequired?: boolean;
-        restarting?: boolean;
-      };
+      const res = await request;
+      const data = (await res.json()) as UpdateResult;
 
       if (data.steps) {
         for (const step of data.steps) {
@@ -131,7 +147,7 @@ export default function UpdatesPage() {
         }
       }
 
-      if (!res.ok) {
+      if (!res.ok || data.ok === false) {
         throw new Error(data.error ?? data.steps?.find((s) => !s.ok)?.detail ?? "Update failed");
       }
 
@@ -145,13 +161,59 @@ export default function UpdatesPage() {
       }
     } catch (e) {
       addLog(`✗ ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
-  const busy = uploading || restarting;
+  async function uploadZip(file: File) {
+    setUploading(true);
+    setLog([]);
+    addLog(`Uploading ${file.name}…`);
+    addLog("This may take several minutes (extract → npm install → build)…");
+
+    const form = new FormData();
+    form.append("file", file);
+    await runUpdateFlow(fetch("/api/updates/upload", { method: "POST", body: form }));
+
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function installRemote(item: UpdateItem) {
+    setInstalling(true);
+    setLog([]);
+    addLog(`Downloading Justflows v${item.availableVersion}…`);
+    addLog("This may take several minutes (download → verify → extract → npm install → build)…");
+
+    await runUpdateFlow(
+      fetch("/api/updates/remote", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ version: item.availableVersion }),
+      }),
+    );
+
+    setInstalling(false);
+  }
+
+  async function toggleAutoUpdate(next: boolean) {
+    setSavingAuto(true);
+    try {
+      const res = await fetch("/api/updates/settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ autoUpdate: { enabled: next } }),
+      });
+      const data = (await res.json()) as { autoUpdate?: AutoUpdateInfo; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Could not save");
+      if (data.autoUpdate) setAutoUpdate(data.autoUpdate);
+    } catch (e) {
+      addLog(`✗ ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSavingAuto(false);
+    }
+  }
+
+  const busy = uploading || installing || restarting;
 
   return (
     <div className="jf-page">
@@ -209,7 +271,7 @@ export default function UpdatesPage() {
             </button>
             {busy && (
               <span className="jf-meta">
-                {uploading
+                {uploading || installing
                   ? "Running npm install and build — do not close this page"
                   : "Waiting for app to restart — page will reload automatically"}
               </span>
@@ -248,18 +310,84 @@ export default function UpdatesPage() {
             {updates.map((item) => (
               <div key={item.id} className="jf-list__row" style={{ alignItems: "center" }}>
                 <div className="jf-list__main">
-                  <div className="jf-list__title">{item.name}</div>
+                  <div className="jf-list__title">
+                    {item.name}
+                    {item.autoUpdatable === false && (
+                      <span className="jf-badge jf-badge--warn" style={{ marginLeft: 8 }}>
+                        major
+                      </span>
+                    )}
+                  </div>
                   <p className="jf-list__desc">
                     {item.currentVersion} →{" "}
                     <strong style={{ color: "var(--jf-success)" }}>{item.availableVersion}</strong>
+                    {item.notesUrl && (
+                      <>
+                        {" · "}
+                        <a href={item.notesUrl} target="_blank" rel="noreferrer">
+                          Release notes
+                        </a>
+                      </>
+                    )}
                   </p>
+                  {item.autoUpdatable === false && (
+                    <p className="jf-meta">
+                      This is a major version upgrade and may include breaking changes. Review the
+                      release notes before installing.
+                    </p>
+                  )}
                 </div>
-                <span className="jf-badge jf-badge--info">{item.type}</span>
+                {item.type === "core" ? (
+                  <button
+                    className="jf-btn jf-btn--primary"
+                    onClick={() => installRemote(item)}
+                    disabled={busy || checking}
+                  >
+                    {installing
+                      ? "Updating…"
+                      : restarting
+                        ? "Restarting…"
+                        : `Update to v${item.availableVersion}`}
+                  </button>
+                ) : (
+                  <span className="jf-badge jf-badge--info">{item.type}</span>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
+
+      <div className="jf-card">
+        <div className="jf-card__head">
+          <h2 className="jf-card__title">Automatic updates</h2>
+        </div>
+        <div className="jf-card__body jf-stack">
+          <label className="jf-row" style={{ alignItems: "center", gap: 10 }}>
+            <input
+              type="checkbox"
+              checked={autoUpdate.enabled}
+              disabled={!autoUpdate.available || savingAuto || busy}
+              onChange={(e) => toggleAutoUpdate(e.target.checked)}
+            />
+            <span>
+              Install new <code className="jf-code">0.x</code> releases automatically
+            </span>
+          </label>
+          <p className="jf-prose">
+            When on, Justflows checks daily and installs newer releases that keep the same major
+            version (for example <code className="jf-code">v{currentVersion}</code> →{" "}
+            <code className="jf-code">v0.x.y</code>). Major version upgrades are never installed
+            automatically — they can carry breaking changes and always need your confirmation above.
+          </p>
+          {!autoUpdate.available && (
+            <p className="jf-meta">
+              Automatic updates are disabled on this server (
+              <code className="jf-code">JUSTFLOWS_DISABLE_AUTO_UPDATE</code>).
+            </p>
+          )}
+        </div>
+      </div>
 
       {log.length > 0 && (
         <div className="jf-log">

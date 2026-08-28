@@ -42,6 +42,11 @@ export const AUDIT_ACTIONS = [
   "css_provider.installed",
   "css_provider.activated",
   "core.updated",
+  "core.auto_update_started",
+  "core.auto_update_completed",
+  "core.auto_update_failed",
+  "core.auto_update_skipped",
+  "core.auto_update_toggled",
   // Configuration that weakens or strengthens the site
   "security.headers_changed",
   "settings.changed",
