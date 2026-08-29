@@ -29,6 +29,13 @@ describe("marketplaceListingIsPaid", () => {
   it("uses registry.free when present", () => {
     expect(marketplaceListingIsPaid({ registry: { free: false, listed: true } })).toBe(true);
     expect(marketplaceListingIsPaid({ registry: { free: true } })).toBe(false);
+    expect(
+      marketplaceListingIsPaid({
+        channel: "commercial",
+        pricing: { type: "paid", amount: 99, currency: "EUR" },
+        registry: { free: true },
+      }),
+    ).toBe(false);
   });
 });
 

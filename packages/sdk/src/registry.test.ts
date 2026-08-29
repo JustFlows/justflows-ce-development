@@ -56,6 +56,11 @@ describe("registry listing visibility", () => {
     expect(isRegistryListingVisible({})).toBe(true);
   });
 
+  it("prefers explicit registry visibility over legacy catalogue fields", () => {
+    expect(isRegistryListingVisible({ listed: false, registry: { listed: true } })).toBe(true);
+    expect(isRegistryListingVisible({ listed: true, registry: { listed: false } })).toBe(false);
+  });
+
   it("treats free false, pricing.paid, and commercial channel as paid", () => {
     expect(isRegistryListingPaid({ registry: { free: false } })).toBe(true);
     expect(isRegistryListingPaid({ pricing: { type: "paid" } })).toBe(true);
@@ -63,10 +68,26 @@ describe("registry listing visibility", () => {
     expect(isRegistryListingPaid({ registry: { free: true } })).toBe(false);
   });
 
+  it("does not let legacy paid metadata override registry.free", () => {
+    expect(
+      isRegistryListingPaid({
+        channel: "commercial",
+        pricing: { type: "paid", amount: 99, currency: "EUR" },
+        registry: { free: true },
+      }),
+    ).toBe(false);
+  });
+
   it("treats comingSoon as announced but not installable", () => {
     expect(isRegistryListingComingSoon({ registry: { comingSoon: true, listed: true } })).toBe(true);
     expect(isRegistryListingComingSoon({ comingSoon: true })).toBe(true);
     expect(isRegistryListingComingSoon({ registry: { comingSoon: false } })).toBe(false);
     expect(isRegistryListingComingSoon({})).toBe(false);
+  });
+
+  it("prefers explicit registry availability over legacy catalogue fields", () => {
+    expect(isRegistryListingComingSoon({ comingSoon: true, registry: { comingSoon: false } })).toBe(
+      false,
+    );
   });
 });

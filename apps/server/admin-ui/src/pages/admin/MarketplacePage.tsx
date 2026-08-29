@@ -29,20 +29,22 @@ interface MarketplaceItem {
   };
 }
 
-function listingIsVisible(item: MarketplaceItem): boolean {
-  return item.registry?.listed !== false;
+export function listingIsVisible(item: MarketplaceItem): boolean {
+  if (typeof item.registry?.listed === "boolean") return item.registry.listed;
+  return true;
 }
 
-function listingIsPaid(item: MarketplaceItem): boolean {
-  if (item.registry?.free === false) return true;
+export function listingIsPaid(item: MarketplaceItem): boolean {
+  if (typeof item.registry?.free === "boolean") return !item.registry.free;
   return item.pricing?.type === "paid" || item.channel === "commercial";
 }
 
-function listingIsComingSoon(item: MarketplaceItem): boolean {
+export function listingIsComingSoon(item: MarketplaceItem): boolean {
   return item.registry?.comingSoon === true;
 }
 
-function listingPriceLabel(item: MarketplaceItem): string | null {
+export function listingPriceLabel(item: MarketplaceItem): string | null {
+  if (!listingIsPaid(item)) return null;
   const price = item.registry?.price;
   const amount = price?.amount ?? item.pricing?.amount;
   const currency = price?.currency ?? item.pricing?.currency;

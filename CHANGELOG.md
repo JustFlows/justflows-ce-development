@@ -14,7 +14,9 @@ and this project uses [Semantic Versioning](https://semver.org/).
   visibility after internal approval), `free`, `comingSoon` (visible but not
   installable), and when paid `price.amount` / `price.currency`. Admin →
   Marketplace hides unlisted rows, shows a Coming soon badge instead of
-  Install, and still sends paid listings to Justflows checkout.
+  Install, and still sends paid listings to Justflows checkout. Explicit
+  `registry` flags take precedence over legacy catalogue fields, so a free
+  listing never inherits a stale paid price or commercial action.
 
 - Plugin settings, secrets, and schema metadata are stored in `plugin_data`.
   `site_settings` is only for site options. Activation is `plugins.status`.

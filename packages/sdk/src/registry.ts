@@ -59,18 +59,17 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 export function isRegistryListingVisible(listing: unknown): boolean {
   const row = asRecord(listing);
   if (!row) return false;
-  if (row["listed"] === false) return false;
   const registry = asRecord(row["registry"]);
-  if (registry && registry["listed"] === false) return false;
-  return true;
+  if (registry && typeof registry["listed"] === "boolean") return registry["listed"];
+  return row["listed"] !== false;
 }
 
-/** Paid catalogue item — registry.free, legacy pricing.type, or commercial channel. */
+/** Paid catalogue item — registry.free is authoritative; legacy fields are fallbacks. */
 export function isRegistryListingPaid(listing: unknown): boolean {
   const row = asRecord(listing);
   if (!row) return false;
   const registry = asRecord(row["registry"]);
-  if (registry && registry["free"] === false) return true;
+  if (registry && typeof registry["free"] === "boolean") return !registry["free"];
   const pricing = asRecord(row["pricing"]);
   if (pricing && pricing["type"] === "paid") return true;
   return row["channel"] === "commercial";
@@ -80,7 +79,7 @@ export function isRegistryListingPaid(listing: unknown): boolean {
 export function isRegistryListingComingSoon(listing: unknown): boolean {
   const row = asRecord(listing);
   if (!row) return false;
-  if (row["comingSoon"] === true) return true;
   const registry = asRecord(row["registry"]);
-  return Boolean(registry && registry["comingSoon"] === true);
+  if (registry && typeof registry["comingSoon"] === "boolean") return registry["comingSoon"];
+  return row["comingSoon"] === true;
 }
