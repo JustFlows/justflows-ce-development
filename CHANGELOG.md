@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
-## [0.1.6-rc] [Unreleased]
+## [0.1.6]
 
 ### Added
 
@@ -30,7 +30,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
   locales while title, excerpt, and blocks stay per translation. The product
   page layout uses tags (`{{price}}`, `{{sku}}`, `{{title}}`, and others) that
   Shop fills from catalog and content fields on `content.blocks` and
-  `content.render`.   Shop registers storefront blocks (gallery layouts with an optional lightbox, buy box,
+  `content.render`. Shop registers storefront blocks (gallery layouts with an optional lightbox, buy box,
   breadcrumbs, accordion, policies, reviews, related products, product list
   (inline price, CTA, swatches, tall images, overlay, simple, favorites, border
   grid, supporting text, hover CTA, and detail cards), detail shots)
