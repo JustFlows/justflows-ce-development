@@ -135,6 +135,18 @@ describe("plugin schema compiler", () => {
     expect(tables).toEqual(["shop_carts"]);
   });
 
+  it("parameterizes the MariaDB SHOW TABLES fallback pattern", async () => {
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ table_name: "hello_world_entries" }]);
+
+    const tables = await listPluginOwnedTables({ query }, "justflows.hello-world", "mariadb");
+
+    expect(tables).toEqual(["hello_world_entries"]);
+    expect(query).toHaveBeenNthCalledWith(2, "SHOW TABLES LIKE ?", ["hello\\_world\\_%"]);
+  });
+
   it("rejects identifiers that could escape the plugin prefix", () => {
     expect(() =>
       compilePluginSchema(

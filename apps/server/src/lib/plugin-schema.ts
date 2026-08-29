@@ -106,7 +106,7 @@ export async function listPluginOwnedTables(
   }
 
   const prefix = pluginTablePrefix(pluginId).replace(/_/g, "\\_");
-  const rows = await db.query<Record<string, unknown>>(`SHOW TABLES LIKE '${prefix}\\_%'`);
+  const rows = await db.query<Record<string, unknown>>("SHOW TABLES LIKE ?", [`${prefix}\\_%`]);
   return rows.map(tableNameFromRow).filter((name) => isPluginOwnedTable(pluginId, name));
 }
 
