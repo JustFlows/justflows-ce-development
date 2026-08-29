@@ -9,7 +9,7 @@ import { getActiveLocaleCodes } from "./i18n/languages-db.js";
 import { getSiteId } from "./themes-db.js";
 import { sanitizeNavUrl } from "./nav-url.js";
 
-export type MenuItemType = "custom" | "page" | "post";
+export type MenuItemType = string;
 
 export interface MenuItem {
   id: string;
@@ -227,8 +227,7 @@ async function loadTranslationsByGroup(
 function collectContentIds(items: MenuItem[]): string[] {
   const ids: string[] = [];
   for (const item of items) {
-    const type = item.type ?? (item.contentId ? "page" : "custom");
-    if (item.contentId && (type === "page" || type === "post")) {
+    if (isContentLinkedMenuItem(item)) {
       ids.push(item.contentId);
     }
     if (item.children?.length) {
@@ -236,6 +235,13 @@ function collectContentIds(items: MenuItem[]): string[] {
     }
   }
   return ids;
+}
+
+/** CMS-backed menu items: any content type except a custom URL. */
+export function isContentLinkedMenuItem(
+  item: Pick<MenuItem, "type" | "contentId">,
+): item is Pick<MenuItem, "type"> & { contentId: string } {
+  return Boolean(item.contentId) && item.type !== "custom";
 }
 
 export async function resolveMenuItems(
@@ -270,9 +276,10 @@ export async function resolveMenuItems(
       let url = item.url ?? "#";
       let label = item.label;
       const type = item.type ?? (item.contentId ? "page" : "custom");
+      const linked = { type, contentId: item.contentId };
 
-      if (item.contentId && (type === "page" || type === "post")) {
-        const content = contentMap.get(item.contentId);
+      if (isContentLinkedMenuItem(linked)) {
+        const content = contentMap.get(linked.contentId);
         if (content) {
           url = resolveContentUrl(content);
           if (!label) {

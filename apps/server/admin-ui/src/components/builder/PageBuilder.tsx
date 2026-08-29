@@ -17,6 +17,7 @@ import {
   HEADER_SELECTED_ID,
   type PageHeaderConfig,
 } from "../../lib/page-header";
+import { ProductTagsContext } from "../../lib/product-tags";
 
 export type { BlockDocument, BlockNode } from "./types";
 
@@ -29,6 +30,9 @@ interface PageBuilderProps {
   onHeaderChange?: (header: PageHeaderConfig) => void;
   /** Full standalone page vs. a post/article body. Hides page-only library items (whole-page patterns, site chrome widgets). */
   isPage?: boolean;
+  /** Fill `{{price}}` and other product tags from catalog + content fields. */
+  mergeTags?: Record<string, string>;
+  enableProductTags?: boolean;
 }
 
 export default function PageBuilder({
@@ -39,6 +43,8 @@ export default function PageBuilder({
   header,
   onHeaderChange,
   isPage = false,
+  mergeTags,
+  enableProductTags = false,
 }: PageBuilderProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<BlockCatalogEntry[]>([]);
@@ -264,6 +270,7 @@ export default function PageBuilder({
       reusable={reusable}
       onReloadReusable={reloadReusable}
       onConvertToReusable={convertToReusable}
+      enableProductTags={enableProductTags}
     />
   ) : (
     <PageJsonPanel
@@ -275,6 +282,7 @@ export default function PageBuilder({
   );
 
   return (
+    <ProductTagsContext.Provider value={mergeTags}>
     <BuilderDragProvider
       blocks={blocks}
       headerBlocks={headerBlocks}
@@ -305,5 +313,6 @@ export default function PageBuilder({
         </div>
       )}
     </BuilderDragProvider>
+    </ProductTagsContext.Provider>
   );
 }

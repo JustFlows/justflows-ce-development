@@ -19,6 +19,23 @@ describe("sanitizeBlockDocument", () => {
     expect(html).not.toContain("script");
   });
 
+  it("keeps layout classes on html blocks", () => {
+    const result = sanitizeBlockDocument({
+      version: 1,
+      blocks: [
+        {
+          id: "1",
+          type: "core.html",
+          version: 1,
+          props: { html: '<p class="jf-product-price">{{price}}</p>' },
+        },
+      ],
+    });
+    const html = (result.blocks[0] as { props: { html: string } }).props.html;
+    expect(html).toContain('class="jf-product-price"');
+    expect(html).toContain("{{price}}");
+  });
+
   it("rejects javascript: urls", () => {
     const result = sanitizeBlockDocument({
       version: 1,
@@ -32,6 +49,68 @@ describe("sanitizeBlockDocument", () => {
       ],
     });
     expect((result.blocks[0] as { props: { url: string } }).props.url).toBe("#");
+  });
+
+  it("strips javascript image sources on shop gallery blocks", () => {
+    const result = sanitizeBlockDocument({
+      version: 1,
+      blocks: [
+        {
+          id: "1",
+          type: "justflows.shop.gallery",
+          version: 1,
+          props: {
+            layout: "thumbs",
+            images: [
+              { src: "javascript:alert(1)", alt: "bad" },
+              { src: "https://example.com/p.jpg", alt: "ok" },
+            ],
+            cartUrl: "javascript:alert(1)",
+          },
+        },
+      ],
+    });
+    const props = (result.blocks[0] as { props: { images: Array<{ src: string }>; cartUrl: string } }).props;
+    expect(props.images[0]?.src).toBe("");
+    expect(props.images[1]?.src).toBe("https://example.com/p.jpg");
+    expect(props.cartUrl).toBe("#");
+  });
+
+  it("strips javascript links and unsafe swatches on shop product-list blocks", () => {
+    const result = sanitizeBlockDocument({
+      version: 1,
+      blocks: [
+        {
+          id: "1",
+          type: "justflows.shop.product-list",
+          version: 1,
+          props: {
+            layout: "swatches",
+            ctaHref: "javascript:alert(1)",
+            items: [
+              {
+                name: "Tee",
+                href: "javascript:alert(1)",
+                imageSrc: "javascript:alert(1)",
+                colors: [{ name: "Red", colorBg: "expression(alert(1))" }],
+              },
+            ],
+          },
+        },
+      ],
+    });
+    const props = (
+      result.blocks[0] as {
+        props: {
+          ctaHref: string;
+          items: Array<{ href: string; imageSrc: string; colors: Array<{ colorBg: string }> }>;
+        };
+      }
+    ).props;
+    expect(props.ctaHref).toBe("#");
+    expect(props.items[0]?.href).toBe("#");
+    expect(props.items[0]?.imageSrc).toBe("");
+    expect(props.items[0]?.colors[0]?.colorBg).toBe("");
   });
 
   it("keeps only allowlisted animation fields", () => {

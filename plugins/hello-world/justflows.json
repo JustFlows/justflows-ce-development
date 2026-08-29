@@ -7,5 +7,11 @@
   "publisher": "Justflows",
   "license": "GPL-2.0-or-later",
   "description": "The official Justflows hello-world plugin — demonstrates the plugin lifecycle",
+  "registry": {
+    "commercialMarketplace": false,
+    "listed": true,
+    "free": true,
+    "comingSoon": false
+  },
   "permissions": []
 }

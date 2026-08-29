@@ -6,11 +6,19 @@ import { PluginLoader } from "@justflows/plugin-api";
 import type { PluginModule } from "@justflows/sdk";
 import { getDb } from "./db.js";
 import { getHooks } from "./hooks.js";
-import { pluginsDir } from "./plugins-db.js";
+import {
+  mergeLoadedPluginManifest,
+  pluginsDir,
+  setLivePluginSettingsSchemaLookup,
+} from "./plugins-db.js";
 import { getSiteId } from "./themes-db.js";
 import { isSafePluginEntry, resolvePathUnderBase } from "./safe-path.js";
 import { pluginBlockAdapter } from "./runtime-blocks.js";
 import { createPluginDataApi } from "./plugin-data.js";
+import { createPluginJobsApi, getPluginJobScheduler } from "./plugin-jobs.js";
+import { createPluginSecretsApi } from "./plugin-secrets.js";
+import { createPluginDatabasesApi } from "./plugin-databases.js";
+import { createPluginContentApi } from "./plugin-content.js";
 
 let app: App | null = null;
 let loader: PluginLoader | null = null;
@@ -149,18 +157,32 @@ export async function ensurePluginRuntime(): Promise<void> {
       loader = new PluginLoader(app, {
         cacheFactory: (pluginId) => createPluginCacheApi(pluginId, getJfCache()),
         dataFactory: (pluginId, siteId) => createPluginDataApi(pluginId, siteId),
+        jobsFactory: (pluginId) => createPluginJobsApi(pluginId),
+        jobsCleanup: (pluginId) => getPluginJobScheduler().unregisterPrefix(pluginId),
+        secretsFactory: (pluginId, siteId) => createPluginSecretsApi(pluginId, siteId),
+        databasesFactory: (pluginId, siteId, permissions) =>
+          createPluginDatabasesApi(pluginId, siteId, permissions),
+        contentFactory: (pluginId, siteId) => createPluginContentApi(pluginId, siteId),
         blockRegistry: pluginBlockAdapter(),
         settingsAdapter: {
-          get: async <T = unknown>(siteId: string, key: string): Promise<T | undefined> => {
-            const { getSiteSetting } = await import("./site-settings.js");
-            const value = await getSiteSetting<T>(siteId, `plugin.${key}`);
-            return value ?? undefined;
+          get: async <T = unknown>(siteId: string, pluginId: string, key: string): Promise<T | undefined> => {
+            const { getPluginSetting } = await import("./plugin-kv.js");
+            return getPluginSetting<T>(pluginId, siteId, key);
           },
-          set: async (siteId, key, value) => {
-            const { setSiteSetting } = await import("./site-settings.js");
-            await setSiteSetting(siteId, `plugin.${key}`, value);
+          set: async (siteId: string, pluginId: string, key: string, value: unknown) => {
+            const { setPluginSetting } = await import("./plugin-kv.js");
+            await setPluginSetting(pluginId, siteId, key, value);
+          },
+          delete: async (siteId: string, pluginId: string, key: string) => {
+            const { deletePluginSetting } = await import("./plugin-kv.js");
+            await deletePluginSetting(pluginId, siteId, key);
           },
         },
+      });
+      setLivePluginSettingsSchemaLookup((pluginId) => {
+        const schema = loader?.getPlugin(pluginId)?.manifest.settingsSchema;
+        if (!schema || Object.keys(schema).length === 0) return undefined;
+        return schema;
       });
     } catch (err) {
       // Installed sites without full env can still serve pages; hooks use the fallback registry.
@@ -176,36 +198,61 @@ export async function ensurePluginRuntime(): Promise<void> {
   return initPromise;
 }
 
+async function ensureRegistered(siteId: string, pluginId: string): Promise<void> {
+  await ensurePluginRuntime();
+  if (!loader) throw new Error("Plugin runtime is unavailable");
+  if (loader.getPlugin(pluginId)) return;
+
+  const db = await getDb();
+  const rows = await db.query<{ manifest: string | Record<string, unknown> }>(
+    "SELECT manifest FROM plugins WHERE site_id = ? AND plugin_id = ? LIMIT 1",
+    [siteId, pluginId],
+  );
+  const manifest =
+    rows[0]?.manifest && typeof rows[0].manifest === "string"
+      ? JSON.parse(rows[0].manifest)
+      : rows[0]?.manifest ?? {};
+  const pluginModule = await resolvePluginModule(manifest);
+  if (!pluginModule) throw new Error(`Plugin module for "${pluginId}" could not be loaded`);
+  loader.register(pluginModule);
+}
+
 export async function runtimeActivatePlugin(siteId: string, pluginId: string): Promise<void> {
   if (pluginId === "justflows.seo") return;
   if (pluginId === "justflows.analytics") return;
   if (pluginId === "justflows.forms") return;
   if (pluginId === "justflows.gallery") return;
-  await ensurePluginRuntime();
+  await ensureRegistered(siteId, pluginId);
   if (!loader) throw new Error("Plugin runtime is unavailable");
-
-  if (!loader.getPlugin(pluginId)) {
-    const db = await getDb();
-    const rows = await db.query<{ manifest: string | Record<string, unknown> }>(
-      "SELECT manifest FROM plugins WHERE site_id = ? AND plugin_id = ? LIMIT 1",
-      [siteId, pluginId],
-    );
-    const manifest =
-      rows[0]?.manifest && typeof rows[0].manifest === "string"
-        ? JSON.parse(rows[0].manifest)
-        : rows[0]?.manifest ?? {};
-    const pluginModule = await resolvePluginModule(manifest);
-    if (!pluginModule) throw new Error(`Plugin module for "${pluginId}" could not be loaded`);
-    loader.register(pluginModule);
-  }
-
   await loader.activate(pluginId, siteId);
+  const loaded = loader.getPlugin(pluginId);
+  if (loaded) {
+    await mergeLoadedPluginManifest(
+      siteId,
+      pluginId,
+      JSON.parse(JSON.stringify(loaded.manifest)) as Record<string, unknown>,
+    );
+  }
 }
 
 export async function runtimeDeactivatePlugin(siteId: string, pluginId: string): Promise<void> {
   await ensurePluginRuntime();
   if (!loader) return;
   await loader.deactivate(pluginId, siteId);
+}
+
+/** Load the plugin if needed and run its `deleteData` hook. */
+export async function runtimeDeletePluginData(siteId: string, pluginId: string): Promise<void> {
+  await ensurePluginRuntime();
+  if (!loader) return;
+  if (!loader.getPlugin(pluginId)) {
+    try {
+      await ensureRegistered(siteId, pluginId);
+    } catch {
+      return;
+    }
+  }
+  await loader.deleteData(pluginId, siteId);
 }
 
 /** Hooks registry used by HTTP handlers. Returns App hooks when the runtime is booted. */

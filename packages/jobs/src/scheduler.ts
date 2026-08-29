@@ -13,6 +13,7 @@ export interface JobContext {
   name: string;
   attempt: number;
   scheduledAt: Date;
+  payload?: unknown;
   logger: {
     info(msg: string, ctx?: Record<string, unknown>): void;
     warn(msg: string, ctx?: Record<string, unknown>): void;
@@ -47,13 +48,15 @@ export interface ScheduledJob {
   status: "pending" | "running" | "failed" | "done";
 }
 
-interface JobEntry extends JobDefinition {
+interface JobEntry extends Omit<JobDefinition, "maxAttempts"> {
   id: string;
   nextRunAt: Date;
   lastRunAt?: Date;
   lastResult?: JobResult;
   attempts: number;
+  maxAttempts: number;
   status: ScheduledJob["status"];
+  payload?: unknown;
   timer?: ReturnType<typeof setTimeout>;
 }
 
@@ -144,11 +147,23 @@ export class JobScheduler {
   }
 
   /** Manually enqueue a one-shot execution of a registered job. */
-  enqueue(name: string, delayMs = 0): void {
+  enqueue(name: string, delayMs = 0, payload?: unknown): void {
     const entry = this.jobs.get(name);
     if (!entry) throw new Error(`Job "${name}" not found`);
     entry.nextRunAt = new Date(Date.now() + delayMs);
     entry.status = "pending";
+    entry.payload = payload;
+    entry.attempts = 0;
+  }
+
+  unregister(name: string): void {
+    this.jobs.delete(name);
+  }
+
+  unregisterPrefix(prefix: string): void {
+    for (const name of [...this.jobs.keys()]) {
+      if (name === prefix || name.startsWith(`${prefix}:`)) this.jobs.delete(name);
+    }
   }
 
   /** Start the scheduler tick loop (every 30 seconds). */
@@ -172,13 +187,13 @@ export class JobScheduler {
     return Array.from(this.jobs.values()).map((e) => ({
       id: e.id,
       name: e.name,
-      schedule: e.schedule,
       nextRunAt: e.nextRunAt,
-      lastRunAt: e.lastRunAt,
-      lastResult: e.lastResult,
       attempts: e.attempts,
       maxAttempts: e.maxAttempts,
       status: e.status,
+      ...(e.schedule === undefined ? {} : { schedule: e.schedule }),
+      ...(e.lastRunAt === undefined ? {} : { lastRunAt: e.lastRunAt }),
+      ...(e.lastResult === undefined ? {} : { lastResult: e.lastResult }),
     }));
   }
 
@@ -202,6 +217,7 @@ export class JobScheduler {
       name: entry.name,
       attempt: entry.attempts,
       scheduledAt: entry.nextRunAt,
+      payload: entry.payload,
       logger: this.logger,
     };
 

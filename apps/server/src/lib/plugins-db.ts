@@ -35,6 +35,7 @@ export interface PluginDto {
     default?: unknown;
     localized?: boolean;
   }>;
+  setupPath?: string;
 }
 
 export function pluginsDir(): string {
@@ -126,6 +127,21 @@ const FIRST_PARTY_SETTINGS_SCHEMA: Record<string, NonNullable<PluginDto["setting
   },
 };
 
+function nonemptySettingsSchema(value: unknown): PluginDto["settingsSchema"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  if (Object.keys(value).length === 0) return undefined;
+  return value as NonNullable<PluginDto["settingsSchema"]>;
+}
+
+let liveSettingsSchemaLookup: ((pluginId: string) => PluginDto["settingsSchema"]) | undefined;
+
+/** Used by the plugin runtime so Admin can read `settingsSchema` from the loaded module. */
+export function setLivePluginSettingsSchemaLookup(
+  fn: ((pluginId: string) => PluginDto["settingsSchema"]) | undefined,
+): void {
+  liveSettingsSchemaLookup = fn;
+}
+
 function readSettingsSchemaFromDisk(manifest: Record<string, unknown>): PluginDto["settingsSchema"] {
   const basePath =
     (typeof manifest.installedPath === "string" && manifest.installedPath) ||
@@ -138,23 +154,59 @@ function readSettingsSchemaFromDisk(manifest: Record<string, unknown>): PluginDt
 
   try {
     const raw = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
-    if (raw.settingsSchema && typeof raw.settingsSchema === "object") {
-      return raw.settingsSchema as PluginDto["settingsSchema"];
-    }
+    return nonemptySettingsSchema(raw.settingsSchema);
   } catch {
     return undefined;
+  }
+}
+
+/** first-party fallback, then the live module, then justflows.json, then the stored row. */
+export function pickSettingsSchema(
+  pluginId: string,
+  manifest: Record<string, unknown>,
+  live?: PluginDto["settingsSchema"],
+): PluginDto["settingsSchema"] {
+  return (
+    nonemptySettingsSchema(FIRST_PARTY_SETTINGS_SCHEMA[pluginId]) ??
+    nonemptySettingsSchema(live) ??
+    nonemptySettingsSchema(readSettingsSchemaFromDisk(manifest)) ??
+    nonemptySettingsSchema(manifest.settingsSchema)
+  );
+}
+
+function setupPathFromManifest(manifest: Record<string, unknown>): string | undefined {
+  const candidates = [manifest.setupPath];
+  const basePath =
+    (typeof manifest.installedPath === "string" && manifest.installedPath) ||
+    (typeof manifest.bundledPath === "string" && manifest.bundledPath) ||
+    null;
+  if (basePath) {
+    try {
+      const raw = JSON.parse(fs.readFileSync(path.join(basePath, "justflows.json"), "utf8")) as Record<
+        string,
+        unknown
+      >;
+      candidates.push(raw.setupPath);
+    } catch {
+      // Disk manifest is optional; the stored row is enough for a fresh install.
+    }
+  }
+  for (const raw of candidates) {
+    if (typeof raw === "string" && /^\/admin\/[a-z0-9][a-z0-9\-/]*$/.test(raw)) return raw;
   }
   return undefined;
 }
 
 export function pluginToDto(row: PluginRow): PluginDto {
   const manifest = row.manifest ?? {};
-  const firstParty = FIRST_PARTY_SETTINGS_SCHEMA[row.plugin_id];
-  const settingsSchema =
-    firstParty ??
-    (manifest.settingsSchema && typeof manifest.settingsSchema === "object"
-      ? (manifest.settingsSchema as PluginDto["settingsSchema"])
-      : readSettingsSchemaFromDisk(manifest));
+  // Live package on disk (and the loaded module) win over a stale row so a
+  // plugin can add settings fields without a reinstall. First-party fallbacks
+  // still cover old bundled packages that never shipped a settingsSchema file.
+  const settingsSchema = pickSettingsSchema(
+    row.plugin_id,
+    manifest,
+    liveSettingsSchemaLookup?.(row.plugin_id),
+  );
   return {
     id: row.plugin_id,
     plugin_id: row.plugin_id,
@@ -164,6 +216,7 @@ export function pluginToDto(row: PluginRow): PluginDto {
     publisher: String(manifest.publisher ?? manifest.author ?? "Justflows"),
     status: row.status,
     settingsSchema,
+    setupPath: setupPathFromManifest(manifest),
   };
 }
 
@@ -217,11 +270,26 @@ export async function syncBundledPlugins(siteId: string): Promise<void> {
     if (!manifest) continue;
 
     const pluginId = String(manifest.id ?? entry.name);
-    const existing = await db.query<{ id: string }>(
-      "SELECT id FROM plugins WHERE site_id = ? AND plugin_id = ? LIMIT 1",
+    const existingRows = await db.query<PluginRow>(
+      "SELECT * FROM plugins WHERE site_id = ? AND plugin_id = ? LIMIT 1",
       [siteId, pluginId],
     );
-    if (existing[0]) continue;
+    const existing = existingRows[0] ? parsePluginRow(existingRows[0]) : null;
+    if (existing) {
+      // An uploaded .jfpkg owns installedPath; do not replace it with the
+      // developer checkout copy. Bundled rows refresh so settingsSchema and
+      // adminMenu added after the first sync are not stuck on the old JSON.
+      if (typeof existing.manifest.installedPath === "string" && existing.manifest.installedPath) {
+        continue;
+      }
+      // package.json stubs have no settingsSchema; only refresh from justflows.json.
+      if (!fs.existsSync(path.join(pluginPath, "justflows.json"))) continue;
+      await db.run(
+        `UPDATE plugins SET version = ?, manifest = ?, updated_at = ? WHERE site_id = ? AND plugin_id = ?`,
+        [String(manifest.version ?? existing.version), JSON.stringify(manifest), now(), siteId, pluginId],
+      );
+      continue;
+    }
 
     await db.run(
       `INSERT INTO plugins
@@ -313,6 +381,29 @@ export async function insertPlugin(
       activated_at: null,
       updated_at: stamp,
     }),
+  );
+}
+
+/** Overlay public manifest fields from the loaded module without dropping install paths. */
+export async function mergeLoadedPluginManifest(
+  siteId: string,
+  pluginId: string,
+  loaded: Record<string, unknown>,
+): Promise<void> {
+  const existing = await getPlugin(siteId, pluginId);
+  if (!existing) return;
+  const manifest: Record<string, unknown> = { ...existing.manifest, ...loaded };
+  if (typeof existing.manifest.installedPath === "string") {
+    manifest.installedPath = existing.manifest.installedPath;
+  }
+  if (typeof existing.manifest.bundledPath === "string") {
+    manifest.bundledPath = existing.manifest.bundledPath;
+  }
+  const version = typeof loaded.version === "string" ? loaded.version : existing.version;
+  const db = await getDb();
+  await db.run(
+    `UPDATE plugins SET version = ?, manifest = ?, updated_at = ? WHERE site_id = ? AND plugin_id = ?`,
+    [version, JSON.stringify(manifest), now(), siteId, pluginId],
   );
 }
 

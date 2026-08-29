@@ -545,12 +545,49 @@ export async function getEffectiveThemeCss(preview = false): Promise<string> {
   const vars = modsToCssVariables(themeVars, mods);
   const darkVars = modsToDarkCssVariables({}, mods);
   const additionalCss = sanitizeCustomCss(mods.advanced?.additionalCss ?? "");
+  const pluginCss = await collectPluginCss(siteId, preview);
 
   return assembleThemeCss(
     loadThemeStyles(themeId, installedPath),
     buildThemeStylesheet(vars, "", darkVars),
     additionalCss,
+    pluginCss,
   );
+}
+
+/** A plugin bundle can be large, but a single stylesheet running past this is a bug. */
+const MAX_PLUGIN_CSS_BYTES = 512 * 1024;
+
+/**
+ * Ask activated plugins to contribute CSS through the `theme.css` filter. Their
+ * output is baked into `/theme.css`, so a plugin stylesheet rides the same
+ * browser cache as the theme and needs no second request. The plugin runtime
+ * clears this on activate/deactivate via `revalidateOnUpdate("plugin")`.
+ *
+ * Plugin CSS is not run through the editor blocklist: a plugin already executes
+ * in-process on `activate()`, so a CSS filter is not the boundary that matters,
+ * and `html.head` (the comparable plugin hook) injects verbatim too. Failure is
+ * non-fatal — a broken filter must not blank the whole site.
+ */
+async function collectPluginCss(siteId: string, preview: boolean): Promise<string> {
+  try {
+    const { ensurePluginRuntime, getRuntimeHooks } = await import("./plugin-runtime.js");
+    await ensurePluginRuntime();
+    const hooks = getRuntimeHooks();
+    if (!hooks.has("theme.css")) return "";
+    const css = await hooks.applyFilter(
+      "theme.css",
+      "",
+      { siteId, preview },
+      { siteId, source: "http" },
+    );
+    if (typeof css !== "string") return "";
+    const trimmed = css.trim();
+    if (Buffer.byteLength(trimmed, "utf-8") > MAX_PLUGIN_CSS_BYTES) return "";
+    return trimmed;
+  } catch {
+    return "";
+  }
 }
 
 /**
@@ -560,13 +597,21 @@ export async function getEffectiveThemeCss(preview = false): Promise<string> {
  * 1. Theme styles — the design the theme author shipped.
  * 2. Site tokens — Customizer colours must override the theme's own `:root`.
  * 3. Block animations — platform defaults layered over the theme.
- * 4. Additional CSS — the editor typed it last, so it wins last.
+ * 4. Plugin styles — an activated plugin's stylesheet, over the theme so its
+ *    components render, under Additional CSS so the site owner keeps the last word.
+ * 5. Additional CSS — the editor typed it last, so it wins last.
  */
-export function assembleThemeCss(themeStyles: string, tokens: string, additionalCss: string): string {
+export function assembleThemeCss(
+  themeStyles: string,
+  tokens: string,
+  additionalCss: string,
+  pluginCss = "",
+): string {
   const parts = [
     themeStyles ? `/* Theme styles */\n${themeStyles}` : "",
     tokens,
     `/* Block animations */\n${blockAnimationCss()}`,
+    pluginCss.trim() ? `/* Plugin styles */\n${pluginCss.trim()}` : "",
     additionalCss.trim() ? `/* Custom CSS */\n${additionalCss.trim()}` : "",
   ];
   return `${parts.filter(Boolean).join("\n\n")}\n`;

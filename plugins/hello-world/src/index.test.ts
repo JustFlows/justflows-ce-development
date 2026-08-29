@@ -27,6 +27,12 @@ describe("hello-world plugin", () => {
     expect(plugin.manifest.version).toMatch(/^\d+\.\d+\.\d+/);
     expect(plugin.manifest.name).toBeTruthy();
     expect(Array.isArray(plugin.manifest.permissions)).toBe(true);
+    expect(plugin.manifest.registry).toEqual({
+      commercialMarketplace: false,
+      listed: true,
+      free: true,
+      comingSoon: false,
+    });
   });
 
   it("exports activate function", async () => {
@@ -36,8 +42,16 @@ describe("hello-world plugin", () => {
 
   it("registers hooks on activate", async () => {
     const plugin = (await import("./index.js")).default;
-    await plugin.activate(mockCtx as Parameters<typeof plugin.activate>[0]);
+    await plugin.activate(mockCtx as unknown as Parameters<typeof plugin.activate>[0]);
     expect(mockCtx.hooks.action).toHaveBeenCalledWith("content.published", expect.any(Function));
+    expect(mockCtx.hooks.filter).toHaveBeenCalledWith("theme.css", expect.any(Function));
     expect(mockCtx.logger.info).toHaveBeenCalledWith("Hello World plugin activated");
+  });
+
+  it("exports deleteData", async () => {
+    const plugin = (await import("./index.js")).default;
+    expect(typeof plugin.deleteData).toBe("function");
+    await plugin.deleteData(mockCtx as unknown as Parameters<typeof plugin.deleteData>[0]);
+    expect(mockCtx.logger.info).toHaveBeenCalledWith("Hello World plugin deleteData (no stored data)");
   });
 });

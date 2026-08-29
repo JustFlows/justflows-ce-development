@@ -20,6 +20,30 @@ function asRecord(value: unknown): Record<string, unknown> {
   return { ...(value as Record<string, unknown>) };
 }
 
+const SHOP_MEDIA_KEYS = new Set(["src", "imageSrc", "avatarSrc"]);
+const SHOP_HREF_KEYS = new Set(["href", "url"]);
+
+function sanitizeShopMediaItem(item: unknown): unknown {
+  if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+  const row = { ...(item as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(row)) {
+    if (typeof value !== "string") continue;
+    if (SHOP_MEDIA_KEYS.has(key)) row[key] = sanitizeMediaSrc(value);
+    else if (SHOP_HREF_KEYS.has(key)) row[key] = sanitizeHref(value);
+  }
+  if (Array.isArray(row["colors"])) {
+    row["colors"] = row["colors"].map((color) => {
+      if (!color || typeof color !== "object" || Array.isArray(color)) return color;
+      const swatch = { ...(color as Record<string, unknown>) };
+      if (typeof swatch["colorBg"] === "string" && !/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(swatch["colorBg"].trim())) {
+        swatch["colorBg"] = "";
+      }
+      return swatch;
+    });
+  }
+  return row;
+}
+
 function sanitizeProps(type: string, props: Record<string, unknown>): Record<string, unknown> {
   const next = { ...props };
 
@@ -47,6 +71,17 @@ function sanitizeProps(type: string, props: Record<string, unknown>): Record<str
         ? { ...item, url: sanitizeHref((item as { url: string }).url) }
         : item,
     );
+  }
+
+  if (type.startsWith("justflows.shop.")) {
+    for (const key of ["cartUrl", "wishlistUrl", "writeHref", "ctaHref"]) {
+      if (typeof next[key] === "string") next[key] = sanitizeHref(next[key] as string);
+    }
+    for (const key of ["images", "items"]) {
+      if (Array.isArray(next[key])) {
+        next[key] = (next[key] as unknown[]).map((item) => sanitizeShopMediaItem(item));
+      }
+    }
   }
 
   if ("animation" in next) {

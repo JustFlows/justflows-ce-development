@@ -12,11 +12,13 @@ const draft = { siteId: "site-1", title: "Hello world" };
 describe("content service hooks", () => {
   it("fires content.created with the new id and site", async () => {
     const { hooks, content } = setup();
-    const seen: Array<{ contentId: string; siteId: string }> = [];
-    hooks.action<{ contentId: string; siteId: string }>("content.created", (e) => { seen.push(e); });
+    const seen: Array<{ contentId: string; siteId: string; type?: string; translationGroupId?: string }> = [];
+    hooks.action("content.created", (e) => { seen.push(e); });
 
     const item = await content.create(draft);
-    expect(seen).toEqual([{ contentId: item.id, siteId: "site-1" }]);
+    expect(seen).toEqual([
+      { contentId: item.id, siteId: "site-1", type: "post", translationGroupId: item.id },
+    ]);
   });
 
   it("passes site context to handlers", async () => {

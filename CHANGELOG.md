@@ -5,9 +5,101 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.6-rc] [Unreleased]
 
 ### Added
+
+- Plugin registry listings declare `registry` on `justflows.json`:
+  `commercialMarketplace` (internal commercial catalogue), `listed` (publisher
+  visibility after internal approval), `free`, `comingSoon` (visible but not
+  installable), and when paid `price.amount` / `price.currency`. Admin →
+  Marketplace hides unlisted rows, shows a Coming soon badge instead of
+  Install, and still sends paid listings to Justflows checkout.
+
+- Plugin settings, secrets, and schema metadata are stored in `plugin_data`.
+  `site_settings` is only for site options. Activation is `plugins.status`.
+  Shop writes store identity to `shop_stores` and treats catalog products as
+  Content of type `product`, with `shop_products.content_id` for commerce
+  fields (SKU, price, stock). Creating or editing a product shows those
+  commerce fields and variations; `content.created` for type `product` inserts
+  `shop_products`, and saving writes `shop_products`,
+  `shop_product_variations`, and `shop_inventory`. Commerce rows are keyed by
+  the content translation group, so SKU, prices, and stock stay in sync across
+  locales while title, excerpt, and blocks stay per translation. The product
+  page layout uses tags (`{{price}}`, `{{sku}}`, `{{title}}`, and others) that
+  Shop fills from catalog and content fields on `content.blocks` and
+  `content.render`.   Shop registers storefront blocks (gallery layouts with an optional lightbox, buy box,
+  breadcrumbs, accordion, policies, reviews, related products, product list
+  (inline price, CTA, swatches, tall images, overlay, simple, favorites, border
+  grid, supporting text, hover CTA, and detail cards), detail shots)
+  used by the Default theme **Product detail** pattern and the extra **Product
+  mosaic**, **Product story**, **Product list**, and **Ecommerce storefront**
+  (image tiles and feature sections) layouts. New products
+  also get that Product detail page-builder layout (gallery, price, variations,
+  specs). `ctx.databases.upsert` /
+  `findOne` / `find` / `delete` write plugin tables; leftover `plugin.{id}:…`
+  rows in `site_settings` are still read as a fallback and removed on the next
+  save.
+
+- New `theme.css` filter hook: an activated plugin can append CSS to the site
+  stylesheet served at `/theme.css`, after the theme's own styles and the
+  Customizer tokens but before the site owner's Additional CSS. It runs once
+  per stylesheet build (not per page) so handlers may be async, and the plugin
+  runtime already busts the `theme` cache on activate/deactivate, so the CSS
+  appears and disappears with the plugin. The storefront component styles
+  (`.jf-product-*`) moved out of the Default theme's `global.css` into the
+  registry plugin's
+  [`src/styles/shop.css`](https://github.com/JustFlows/plugin-registry-service/blob/main/plugins/ecommerce/src/styles/shop.css),
+  which Shop registers on this hook and minifies once at build time to
+  `dist/styles/shop.css`; the theme is now
+  shop-agnostic. Shared rules stay in the theme — the gallery lightbox (also
+  used by the core gallery block), the screen-reader utility, and the Ecommerce
+  storefront pattern chrome.
+  ([#28](https://github.com/JustFlows/justflows-ce/issues/28))
+
+- Activating Shop creates the Product and Shop content types and the required
+  storefront pages (Shop, Product detail, Product category, Cart, Checkout, Order
+  confirmation, Customer account, Order tracking) when they are missing.
+  Activating Shop also corrects the misspelled Page slug `prodcut-detail-page`.
+  Plugins get `ctx.content.ensureType` and `ctx.content.ensurePage`
+  (`content:create`; publishing also needs `content:publish`). Uninstall can
+  call `ctx.content.deleteType` (`content:delete`) to remove those types and
+  every entry. `ensurePage` updates title and excerpt when the slug already
+  exists.
+
+- Plugins can declare `setupPath` and serve a first-run step guide from
+  `GET`/`POST /ext/{id}/setup`. Activating such a plugin opens that admin
+  page. Encrypted `ctx.secrets` and `ctx.databases` probes support a shared
+  or separate database without returning passwords. Plugins can create their
+  own prefixed tables with `ctx.databases.ensureSchema()`. Shop uses this to
+  collect commerce topology and store identity (all optional), then create
+  `shop_*` tables on the chosen database. Topology is not a later toggle.
+  After setup, `/admin/shop` is the Shop overview. Store identity and selling
+  options live only on Admin → Plugins → Shop → Settings
+  (`/admin/plugins/justflows.shop/settings`) and are stored on `shop_stores`.
+  Every plugin implements a `deleteData` hook that the host calls on uninstall.
+  Plugins may drop data silently or honour a `deleteDataOnUninstall` setting
+  (Shop defaults to deleting `shop_*` tables) and a
+  `deleteContentOnUninstall` setting (Shop defaults to deleting Shop and
+  Product pages and posts). Shop declares `contentTypes: ["product", "shop"]`
+  so the host removes those CMS types even if the plugin hook does not.
+  `ctx.content.deleteType` requires `content:delete`.
+
+- Plugins can add admin sidebar pages through the `admin.menu` filter
+  (`admin:extend` required). The handler is registered in `activate()` and
+  removed on deactivate. `GET /api/plugins/admin-menu` applies the filter and
+  re-validates every item. Admin paths on that menu that have no dedicated SPA
+  page open a generic plugin host screen instead of bouncing to the dashboard.
+  A `commerce` sidebar domain exists for shop-style plugins and stays hidden
+  until one of those plugins is active. After Shop finishes first-run setup it
+  contributes the commerce top tabs (catalog, orders, checkout, and the other
+  core merchant pages) on the generic plugin host — nested paths skip the
+  setup wizard. A menu item may set `contentType` so the host lists those CMS
+  entries; Shop → Products shows every Content row of type `product`.
+
+- Admin → Menus can add any CMS content type (pages, posts, products, shop
+  pages, and custom types), not only pages and posts. Saving still stores
+  the content type slug; public menus resolve those links like pages.
 
 - Admin → Updates now discovers new releases. It asks the Justflows API
   (`GET /v1/core/latest`, backed by the `JustFlows/justflows-ce` GitHub
@@ -25,6 +117,18 @@ and this project uses [Semantic Versioning](https://semver.org/).
   crosses a major boundary, since that can carry breaking changes. Every
   attempt, skip, and result is written to the audit log. The server-wide
   `JUSTFLOWS_DISABLE_AUTO_UPDATE` env var overrides the toggle.
+
+### Fixed
+
+- Public product pages replace `{{price}}`, `{{sku}}`, `{{title}}`, and the
+  other product tags with catalog and content values. The host starts the
+  plugin runtime before those filters, fills tags on the block tree before
+  HTML render, then fills any tags still in the HTML.
+
+- Admin → Plugins → Settings no longer goes blank after Save. Saving now
+  returns the same schema and values as loading, and those hooks run on the
+  plugin runtime instead of a separate empty registry. Reopening the page
+  after a save keeps the form.
 
 ## [0.1.5] — 2026-08-27
 

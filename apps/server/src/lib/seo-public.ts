@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { getPlugin } from "./plugins-db.js";
-import { getSiteSetting } from "./site-settings.js";
+import { getPluginSetting } from "./plugin-kv.js";
 import { getHomeContent } from "./home-page.js";
 import { listPublishedContent } from "./content-public.js";
 import { getDefaultLocale } from "./i18n/languages-db.js";
@@ -105,7 +105,7 @@ export function localizedString(
 }
 
 async function setting<T>(siteId: string, key: string, fallback: T): Promise<T> {
-  const value = await getSiteSetting<T>(siteId, `plugin.${SEO_PLUGIN_ID}:${key}`);
+  const value = await getPluginSetting<T>(SEO_PLUGIN_ID, siteId, key);
   return value ?? fallback;
 }
 

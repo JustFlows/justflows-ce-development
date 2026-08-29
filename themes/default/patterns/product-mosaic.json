@@ -1,0 +1,187 @@
+{
+  "id": "product-mosaic",
+  "title": "Product mosaic",
+  "description": "Wide mosaic gallery, buy box with highlights, and related products. Uses Shop blocks and product tags.",
+  "category": "pages",
+  "requiresBlockTypes": [
+    "justflows.shop.gallery",
+    "justflows.shop.buy-box",
+    "justflows.shop.highlights",
+    "justflows.shop.related"
+  ],
+  "blocks": [
+    {
+      "id": "mosaic-gallery-section",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "default", "padding": "lg", "align": "left" },
+      "children": [
+        {
+          "id": "mosaic-gallery-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "mosaic-gallery",
+              "type": "justflows.shop.gallery",
+              "version": 1,
+              "props": {
+                "layout": "mosaic",
+                "lightbox": true,
+                "images": [
+                  {
+                    "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-02-secondary-product-shot.jpg",
+                    "alt": "Secondary product photo"
+                  },
+                  {
+                    "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-02-tertiary-product-shot-01.jpg",
+                    "alt": "Tertiary product photo 1"
+                  },
+                  {
+                    "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-02-tertiary-product-shot-02.jpg",
+                    "alt": "Tertiary product photo 2"
+                  },
+                  {
+                    "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-02-featured-product-shot.jpg",
+                    "alt": "Featured product photo"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mosaic-buy-section",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "muted", "padding": "xl", "align": "left" },
+      "children": [
+        {
+          "id": "mosaic-buy-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "mosaic-buy-cols",
+              "type": "core.columns",
+              "version": 1,
+              "props": { "columns": 2, "gap": "lg" },
+              "children": [
+                {
+                  "id": "mosaic-buy-col",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "mosaic-buy",
+                      "type": "justflows.shop.buy-box",
+                      "version": 1,
+                      "props": {
+                        "title": "{{title}}",
+                        "price": "{{price}}",
+                        "comparePrice": "{{comparePrice}}",
+                        "description": "{{excerpt}}",
+                        "meta": "SKU {{sku}}",
+                        "attributes": "{{attributes}}",
+                        "cartLabel": "Add to cart",
+                        "cartUrl": "/cart",
+                        "showRating": false,
+                        "showWishlist": true,
+                        "wishlistUrl": "/wishlist"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "mosaic-highlights-col",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "mosaic-highlights",
+                      "type": "justflows.shop.highlights",
+                      "version": 1,
+                      "props": {
+                        "heading": "Highlights",
+                        "items": [
+                          "Replace these highlights with your product features.",
+                          "Call out materials, fit, or what's in the box.",
+                          "Keep this list short so it scans next to the buy box."
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mosaic-related-section",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "default", "padding": "xl", "align": "left" },
+      "children": [
+        {
+          "id": "mosaic-related-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "mosaic-related",
+              "type": "justflows.shop.related",
+              "version": 1,
+              "props": {
+                "heading": "Customers also purchased",
+                "layout": "cards",
+                "items": [
+                  {
+                    "name": "Related product",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-01.jpg",
+                    "imageAlt": "Related product 1",
+                    "price": "",
+                    "color": ""
+                  },
+                  {
+                    "name": "Related product",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-02.jpg",
+                    "imageAlt": "Related product 2",
+                    "price": "",
+                    "color": ""
+                  },
+                  {
+                    "name": "Related product",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-03.jpg",
+                    "imageAlt": "Related product 3",
+                    "price": "",
+                    "color": ""
+                  },
+                  {
+                    "name": "Related product",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-04.jpg",
+                    "imageAlt": "Related product 4",
+                    "price": "",
+                    "color": ""
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

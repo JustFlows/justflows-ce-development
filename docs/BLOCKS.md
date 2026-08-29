@@ -1,5 +1,4 @@
 # Blocks
-
 Plugins register blocks on `activate`:
 
 ```ts
@@ -151,8 +150,9 @@ array of blocks is accepted as well as a full document.
 
 The visual builder edits both pages and post-like content. A page gets the full
 library, including theme patterns, site-chrome widgets, and its per-page header.
-A post gets the same block canvas and inspector but omits those page-level tools,
-so its document stays focused on the article body.
+Shop `product` and `shop` entries use the same page library so merchants can
+import the Product detail pattern. A post gets the same block canvas and inspector
+but omits those page-level tools, so its document stays focused on the article body.
 
 URL fields on `core.button`, `core.hero`, `core.cta`, and `core.link-list` accept
 ordinary typed URLs and can also pick a published page or post by title. The
@@ -278,3 +278,27 @@ spinning.
 Saved blocks live in the `reusable_blocks` site setting and are stored already
 sanitized. `PUT /api/reusable-blocks` revalidates the content cache, since every
 page using the block now renders differently.
+
+## Product tags
+
+On Shop product pages, heading, paragraph, HTML, and Shop storefront blocks may
+include tags such as `{{title}}`, `{{excerpt}}`, `{{price}}`, `{{comparePrice}}`,
+`{{sku}}`, `{{stock}}`, `{{attributes}}`, and `{{dimensions}}`. The page builder
+stores the tags; Shop replaces them from the Product card (and the content
+title/excerpt) when the public page renders. Cost is never exposed.
+
+## Shop storefront blocks
+
+Shop registers `justflows.shop.*` blocks on activate (gallery, buy box,
+breadcrumbs, highlights, accordion, policies, reviews, related products,
+product list, and detail shots). The Default theme **Product detail** pattern
+uses them; **Product mosaic**, **Product story**, **Product list**, and
+**Ecommerce storefront** are extra layouts in the same library. Gallery `layout` is
+`thumbs` (radio thumbnails, no JavaScript), `featured`, `mosaic`, or `single`. Product list `layout` is
+`inline`, `cta`, `swatches`, `tall`, `overlay`, `simple`, `favorites`, `border`,
+`supporting`, `hover`, or `cards` (catalog grids — CSS only, no React or
+Heroicons). `lightbox` (on by default) opens a photo in the same CSS lightbox as
+the media Gallery block — no script. Sample product photos are placeholders —
+replace them from Media.
+Add to cart is a link to `/cart` until checkout exists. These blocks are not
+core; the Patterns panel asks you to install Shop when they are missing.

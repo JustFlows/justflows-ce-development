@@ -1,0 +1,269 @@
+{
+  "id": "ecommerce-storefront",
+  "title": "Ecommerce storefront",
+  "description": "Homepage with image tiles and feature sections: hero collage, shop-by-category mosaic, story banner, favorites, and a sale strip. Uses Shop blocks.",
+  "category": "pages",
+  "requiresBlockTypes": ["justflows.shop.related", "justflows.shop.product-list"],
+  "blocks": [
+    {
+      "id": "storefront-hero",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "default", "padding": "xl", "align": "left", "className": "jf-storefront-hero" },
+      "children": [
+        {
+          "id": "storefront-hero-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "storefront-hero-cols",
+              "type": "core.columns",
+              "version": 1,
+              "props": { "columns": 2, "gap": "lg" },
+              "children": [
+                {
+                  "id": "storefront-hero-copy",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "storefront-hero-h",
+                      "type": "core.heading",
+                      "version": 1,
+                      "props": { "text": "Summer styles are finally here", "level": 1 }
+                    },
+                    {
+                      "id": "storefront-hero-p",
+                      "type": "core.paragraph",
+                      "version": 1,
+                      "props": {
+                        "text": "This year, our new summer collection is in. Swap these photos and prices for your catalog, then publish."
+                      }
+                    },
+                    {
+                      "id": "storefront-hero-btn",
+                      "type": "core.button",
+                      "version": 1,
+                      "props": { "label": "Shop Collection", "url": "/shop", "variant": "primary" }
+                    }
+                  ]
+                },
+                {
+                  "id": "storefront-hero-tiles-col",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "storefront-hero-tiles",
+                      "type": "core.html",
+                      "version": 1,
+                      "props": {
+                        "html": "<div class=\"jf-storefront-tiles\"><div class=\"jf-storefront-tiles__col jf-storefront-tiles__col--edge\"><div class=\"jf-storefront-tile jf-storefront-tile--hide-sm\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-hero-image-tile-01.jpg\" alt=\"\" /></div><div class=\"jf-storefront-tile\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-hero-image-tile-02.jpg\" alt=\"\" /></div></div><div class=\"jf-storefront-tiles__col jf-storefront-tiles__col--mid\"><div class=\"jf-storefront-tile\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-hero-image-tile-03.jpg\" alt=\"\" /></div><div class=\"jf-storefront-tile\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-hero-image-tile-04.jpg\" alt=\"\" /></div><div class=\"jf-storefront-tile\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-hero-image-tile-05.jpg\" alt=\"\" /></div></div><div class=\"jf-storefront-tiles__col\"><div class=\"jf-storefront-tile\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-hero-image-tile-06.jpg\" alt=\"\" /></div><div class=\"jf-storefront-tile\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-hero-image-tile-07.jpg\" alt=\"\" /></div></div></div>"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "storefront-categories",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "muted", "padding": "xl", "align": "left" },
+      "children": [
+        {
+          "id": "storefront-categories-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "storefront-categories-block",
+              "type": "justflows.shop.related",
+              "version": 1,
+              "props": {
+                "heading": "Shop by Category",
+                "layout": "overlay",
+                "className": "jf-storefront-categories",
+                "items": [
+                  {
+                    "name": "New Arrivals",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-featured-category.jpg",
+                    "imageAlt": "Two models wearing black and off-white cotton crewneck tees.",
+                    "price": "",
+                    "color": "Shop now"
+                  },
+                  {
+                    "name": "Accessories",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-category-01.jpg",
+                    "imageAlt": "Wooden shelf with baseball caps next to sweaters on hangers.",
+                    "price": "",
+                    "color": "Shop now"
+                  },
+                  {
+                    "name": "Workspace",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-category-02.jpg",
+                    "imageAlt": "Walnut desk organizer with a porcelain mug.",
+                    "price": "",
+                    "color": "Shop now"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "storefront-feature",
+      "type": "core.hero",
+      "version": 1,
+      "props": {
+        "heading": "Long-term thinking",
+        "subheading": "We're committed to responsible, sustainable, and ethical manufacturing. Our small-scale approach lets us focus on quality. Replace this banner with your brand story.",
+        "buttonLabel": "Read our story",
+        "buttonUrl": "/about",
+        "backgroundImage": "https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-feature-section-full-width.jpg",
+        "align": "center"
+      }
+    },
+    {
+      "id": "storefront-favorites",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "default", "padding": "xl", "align": "left" },
+      "children": [
+        {
+          "id": "storefront-favorites-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "storefront-favorites-list",
+              "type": "justflows.shop.product-list",
+              "version": 1,
+              "props": {
+                "layout": "favorites",
+                "heading": "Our Favorites",
+                "headingHidden": false,
+                "ctaLabel": "Browse all favorites",
+                "ctaHref": "/shop",
+                "addLabel": "Add to bag",
+                "items": [
+                  {
+                    "name": "Black Basic Tee",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-favorite-01.jpg",
+                    "imageAlt": "Model wearing a black cotton crewneck tee.",
+                    "price": "$32",
+                    "color": "",
+                    "description": "",
+                    "rating": 0,
+                    "reviewCount": 0,
+                    "colors": []
+                  },
+                  {
+                    "name": "Off-White Basic Tee",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-favorite-02.jpg",
+                    "imageAlt": "Model wearing an off-white cotton crewneck tee.",
+                    "price": "$32",
+                    "color": "",
+                    "description": "",
+                    "rating": 0,
+                    "reviewCount": 0,
+                    "colors": []
+                  },
+                  {
+                    "name": "Mountains Artwork Tee",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-favorite-03.jpg",
+                    "imageAlt": "Model wearing a burgundy artwork crewneck tee.",
+                    "price": "$36",
+                    "color": "",
+                    "description": "",
+                    "rating": 0,
+                    "reviewCount": 0,
+                    "colors": []
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "storefront-sale",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "dark", "padding": "xl", "align": "left", "className": "jf-storefront-sale" },
+      "children": [
+        {
+          "id": "storefront-sale-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "storefront-sale-cols",
+              "type": "core.columns",
+              "version": 1,
+              "props": { "columns": 2, "gap": "lg" },
+              "children": [
+                {
+                  "id": "storefront-sale-copy",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "storefront-sale-h",
+                      "type": "core.heading",
+                      "version": 1,
+                      "props": { "text": "Final Stock. Up to 50% off.", "level": 2 }
+                    },
+                    {
+                      "id": "storefront-sale-btn",
+                      "type": "core.button",
+                      "version": 1,
+                      "props": { "label": "Shop the sale", "url": "/shop", "variant": "primary" }
+                    }
+                  ]
+                },
+                {
+                  "id": "storefront-sale-tiles-col",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "storefront-sale-tiles",
+                      "type": "core.html",
+                      "version": 1,
+                      "props": {
+                        "html": "<div class=\"jf-storefront-sale-tiles\"><div class=\"jf-storefront-tile\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-category-01.jpg\" alt=\"\" /></div><div class=\"jf-storefront-tile\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-favorite-01.jpg\" alt=\"\" /></div><div class=\"jf-storefront-tile\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-category-02.jpg\" alt=\"\" /></div><div class=\"jf-storefront-tile\"><img src=\"https://tailwindcss.com/plus-assets/img/ecommerce-images/home-page-03-favorite-02.jpg\" alt=\"\" /></div></div>"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -16,6 +16,10 @@ The full enum is `PluginPermissionSchema` in `packages/sdk/src/plugin.ts`:
 content/media/users/settings CRUD, `admin:extend`, `jobs:register`,
 `auth:hook`, `network:outbound`.
 
+`content:create` is required for `ctx.content.ensureType` and `ensurePage`.
+Publishing a page also requires `content:publish`. Deleting a type and its
+entries (`ctx.content.deleteType`) requires `content:delete`.
+
 UI gating is not a security boundary. Server routes still check the signed-in
 user.
 

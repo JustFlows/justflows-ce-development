@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ADMIN_NAV_DOMAINS, canAccessPath, filterDomainsByRole, navRuleFor } from "./admin-nav";
+import {
+  ADMIN_NAV_DOMAINS,
+  buildNavDomains,
+  canAccessPath,
+  filterDomainsByRole,
+  navRuleFor,
+} from "./admin-nav";
 
 describe("navRuleFor", () => {
   it("matches a nested route to its owning nav rule", () => {
@@ -67,8 +73,56 @@ describe("filterDomainsByRole", () => {
     expect(filtered.find((d) => d.slug === "extensions")).toBeUndefined();
   });
 
-  it("keeps every domain for an administrator", () => {
+  it("keeps every populated domain for an administrator", () => {
     const filtered = filterDomainsByRole(ADMIN_NAV_DOMAINS, "administrator");
-    expect(filtered.map((d) => d.slug)).toEqual(ADMIN_NAV_DOMAINS.map((d) => d.slug));
+    expect(filtered.map((d) => d.slug)).toEqual(
+      ADMIN_NAV_DOMAINS.filter((d) => d.items.length > 0).map((d) => d.slug),
+    );
+    expect(filtered.find((d) => d.slug === "commerce")).toBeUndefined();
+  });
+});
+
+describe("buildNavDomains", () => {
+  it("places a commerce plugin page in the commerce sidebar domain", () => {
+    const domains = buildNavDomains([
+      {
+        pluginId: "justflows.shop",
+        id: "shop",
+        label: "Shop",
+        path: "/admin/shop",
+        icon: "🛍",
+        domain: "commerce",
+        end: true,
+      },
+      {
+        pluginId: "justflows.shop",
+        id: "products",
+        label: "Products",
+        path: "/admin/shop/products",
+        icon: "📦",
+        domain: "commerce",
+      },
+    ]);
+    const commerce = domains.find((d) => d.slug === "commerce");
+    expect(commerce?.items.map((item) => item.to)).toEqual(["/admin/shop", "/admin/shop/products"]);
+    expect(commerce?.items[0]?.end).toBe(true);
+    expect(filterDomainsByRole(domains, "administrator").map((d) => d.slug)).toContain("commerce");
+  });
+
+  it("keeps an unknown plugin domain out of a new sidebar group", () => {
+    const domains = buildNavDomains([
+      {
+        pluginId: "acme.seo",
+        id: "reports",
+        label: "Reports",
+        path: "/admin/reports",
+        icon: "📊",
+        domain: "made-up",
+      },
+    ]);
+    expect(domains.find((d) => d.slug === "made-up")).toBeUndefined();
+    expect(
+      domains.find((d) => d.slug === "extensions")?.items.map((item) => item.to),
+    ).toContain("/admin/reports");
   });
 });

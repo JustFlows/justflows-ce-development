@@ -1,45 +1,55 @@
 <!DOCTYPE html>
 <html lang="<%= locale %>">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="Justflows <%= justflowsVersion %>">
-  <% if (typeof discourageSearchEngines !== 'undefined' && discourageSearchEngines) { %>
+  <% if (typeof discourageSearchEngines !=='undefined' && discourageSearchEngines) { %>
     <meta name="robots" content="noindex, nofollow">
-  <% } %>
-  <title><%= title %></title>
-  <%- typeof headExtra !== 'undefined' ? headExtra : '' %>
-  <%- typeof analyticsHead !== 'undefined' ? analyticsHead : '' %>
-  <% if (typeof alternates !== 'undefined' && alternates.length) { %>
-    <% alternates.forEach(function(alt) { %>
-      <link rel="alternate" hreflang="<%= alt.locale %>" href="<%= alt.href %>">
-    <% }); %>
-  <% } %>
-  <link rel="stylesheet" href="/theme.css<%= typeof preview !== 'undefined' && preview ? '?preview=1' : '' %>">
-  <% if (typeof cssProviderStylesheets !== 'undefined' && cssProviderStylesheets.length) { %>
-    <% cssProviderStylesheets.forEach(function(sheet) { %>
-      <link rel="stylesheet" href="<%= sheet.href %>">
-    <% }); %>
-  <% } %>
-  <script src="/js/site-chrome.js"></script>
-</head>
-<body>
-  <%- typeof analyticsBody !== 'undefined' ? analyticsBody : '' %>
-  <%- body %>
-  <footer class="site-footer">
-    <% if (typeof footerBlocksHtml !== 'undefined' && footerBlocksHtml) { %>
-      <div class="site-footer-blocks"><%- footerBlocksHtml %></div>
-    <% } else { %>
-      <% if (typeof footerNavItems !== 'undefined' && footerNavItems.length > 0) { %>
-        <nav class="site-footer-nav" aria-label="Footer">
-          <% footerNavItems.forEach(function(item) { %>
-            <a href="<%= item.url %>"<% if (item.target) { %> target="<%= item.target %>" rel="noopener noreferrer"<% } %>><%= item.label %></a>
-          <% }); %>
-        </nav>
-      <% } %>
-      <p><%= t('footer.powered_by') %> <a href="https://github.com/justflows/justflows" style="color: var(--color-muted); text-decoration: none; font-weight: 600;">Justflows</a></p>
     <% } %>
-  </footer>
-  <script src="/js/block-animations.js" defer></script>
+      <title>
+        <%= title %>
+      </title>
+      <%- typeof headExtra !=='undefined' ? headExtra : '' %>
+        <%- typeof analyticsHead !=='undefined' ? analyticsHead : '' %>
+          <% if (typeof alternates !=='undefined' && alternates.length) { %>
+            <% alternates.forEach(function(alt) { %>
+              <link rel="alternate" hreflang="<%= alt.locale %>" href="<%= alt.href %>">
+              <% }); %>
+                <% } %>
+                  <link rel="stylesheet"
+                    href="/theme.css<%= typeof preview !== 'undefined' && preview ? '?preview=1' : '' %>">
+                  <% if (typeof cssProviderStylesheets !=='undefined' && cssProviderStylesheets.length) { %>
+                    <% cssProviderStylesheets.forEach(function(sheet) { %>
+                      <link rel="stylesheet" href="<%= sheet.href %>">
+                      <% }); %>
+                        <% } %>
+                          <script src="/js/site-chrome.js"></script>
+</head>
+
+<body>
+  <%- typeof analyticsBody !=='undefined' ? analyticsBody : '' %>
+    <%- body %>
+      <footer class="site-footer">
+        <% if (typeof footerBlocksHtml !=='undefined' && footerBlocksHtml) { %>
+          <div class="site-footer-blocks"><%- footerBlocksHtml %></div>
+          <% } else { %>
+            <% if (typeof footerNavItems !=='undefined' && footerNavItems.length> 0) { %>
+              <nav class="site-footer-nav" aria-label="Footer">
+                <% footerNavItems.forEach(function(item) { %>
+                  <a href="<%= item.url %>" <% if (item.target) { %> target="<%= item.target %>" rel="noopener
+                      noreferrer"<% } %>><%= item.label %></a>
+                  <% }); %>
+              </nav>
+              <% } %>
+                <p>
+                  <%= t('footer.powered_by') %> <a href="https://justflows.com"
+                      style="color: var(--color-muted); text-decoration: none; font-weight: 600;">Justflows</a>
+                </p>
+                <% } %>
+      </footer>
+      <script src="/js/block-animations.js" defer></script>
 </body>
+
 </html>

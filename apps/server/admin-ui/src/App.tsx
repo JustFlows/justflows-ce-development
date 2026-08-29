@@ -36,6 +36,7 @@ import { I18nProvider } from "./i18n/I18nProvider";
 import { PluginMenuProvider } from "@components/PluginMenuProvider";
 import { SessionProvider, useSessionRole } from "@components/SessionProvider";
 import PluginRoute from "@components/PluginRoute";
+import PluginHostPage from "./pages/admin/PluginHostPage";
 import { SiteFavicon } from "@components/SiteIdentity";
 import { canAccessPath } from "./config/admin-nav";
 
@@ -96,6 +97,7 @@ export default function App() {
         <Route path="security/advanced" element={<SecurityAdvancedPage />} />
         <Route path="security/account" element={<AccountSecurityPage />} />
         <Route path="security/audit" element={<AuditLogPage />} />
+        <Route path="*" element={<PluginHostPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/admin" replace />} />
     </Routes>

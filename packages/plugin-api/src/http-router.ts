@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: MIT
 
-import type { PluginHttpHandler, PluginHttpRequest, PluginHttpResponse } from "@justflows/sdk";
+import type {
+  PluginHttpHandler,
+  PluginHttpMethod,
+  PluginHttpRequest,
+  PluginHttpResponse,
+} from "@justflows/sdk";
 
 export interface RegisteredPluginRoute {
   pluginId: string;
-  method: "GET" | "POST";
+  method: PluginHttpMethod;
   path: string;
   handler: PluginHttpHandler;
 }
@@ -16,10 +21,46 @@ function normalizePath(path: string): string {
   return withSlash.replace(/\/{2,}/g, "/");
 }
 
+function pathParts(path: string): string[] {
+  return normalizePath(path).split("/").filter(Boolean);
+}
+
+function staticScore(pattern: string): number {
+  return pathParts(pattern).reduce((score, part) => score + (part.startsWith(":") ? 0 : 1), 0);
+}
+
+export function matchPathParams(pattern: string, path: string): Record<string, string> | null {
+  const patternParts = pathParts(pattern);
+  const actualParts = pathParts(path);
+  if (patternParts.length !== actualParts.length) return null;
+  const params: Record<string, string> = {};
+  for (let i = 0; i < patternParts.length; i++) {
+    const expected = patternParts[i]!;
+    const actual = actualParts[i]!;
+    if (expected.startsWith(":")) {
+      const key = expected.slice(1);
+      if (!key) return null;
+      try {
+        params[key] = decodeURIComponent(actual);
+      } catch {
+        params[key] = actual;
+      }
+      continue;
+    }
+    if (expected !== actual) return null;
+  }
+  return params;
+}
+
 export class PluginHttpRouter {
   private readonly routes: RegisteredPluginRoute[] = [];
 
-  register(pluginId: string, method: "GET" | "POST", rawPath: string, handler: PluginHttpHandler): void {
+  register(
+    pluginId: string,
+    method: PluginHttpMethod,
+    rawPath: string,
+    handler: PluginHttpHandler,
+  ): void {
     const path = rawPath.startsWith("/")
       ? normalizePath(rawPath)
       : normalizePath(`/ext/${pluginId}/${rawPath}`);
@@ -40,9 +81,24 @@ export class PluginHttpRouter {
     }
   }
 
-  match(method: string, path: string): RegisteredPluginRoute | undefined {
+  match(
+    method: string,
+    path: string,
+  ): { route: RegisteredPluginRoute; params: Record<string, string> } | undefined {
     const normalized = normalizePath(path);
-    return this.routes.find((route) => route.method === method && route.path === normalized);
+    const candidates = this.routes.filter((route) => route.method === method);
+    const exact = candidates.find((route) => route.path === normalized);
+    if (exact) return { route: exact, params: {} };
+
+    const parametric = candidates
+      .filter((route) => route.path.includes(":"))
+      .map((route) => ({ route, params: matchPathParams(route.path, normalized) }))
+      .filter((entry): entry is { route: RegisteredPluginRoute; params: Record<string, string> } =>
+        entry.params !== null,
+      )
+      .sort((a, b) => staticScore(b.route.path) - staticScore(a.route.path));
+
+    return parametric[0];
   }
 
   list(): RegisteredPluginRoute[] {
@@ -50,4 +106,4 @@ export class PluginHttpRouter {
   }
 }
 
-export type { PluginHttpRequest, PluginHttpResponse };
+export type { PluginHttpRequest, PluginHttpResponse, PluginHttpMethod };

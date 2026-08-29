@@ -858,6 +858,78 @@ select.jf-input {
   max-width: 68ch;
 }
 
+.jf-product-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+}
+
+.jf-product-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.jf-product-section + .jf-product-section {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--jf-border);
+}
+
+.jf-product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.jf-product-attr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+  gap: 0.75rem 1rem;
+  align-items: start;
+}
+
+.jf-product-attr__remove {
+  margin-top: 1.55rem;
+}
+
+.jf-product-variations {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.jf-product-variation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--jf-border);
+  border-radius: var(--jf-radius-sm);
+  background: var(--jf-surface-2);
+}
+
+.jf-product-variation__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.jf-product-variation__title {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 720px) {
+  .jf-product-attr {
+    grid-template-columns: 1fr;
+  }
+
+  .jf-product-attr__remove {
+    margin-top: 0;
+  }
+}
+
 .jf-stack { display: flex; flex-direction: column; gap: 1rem; }
 .jf-stack--sm { gap: 0.5rem; }
 .jf-stack--lg { gap: 1.25rem; }
@@ -1829,6 +1901,29 @@ input[type="range"] { width: 100%; accent-color: var(--jf-accent); }
 }
 
 .jf-steps__dot[data-current="true"] { background: var(--jf-accent); width: 20px; border-radius: 999px; }
+
+.jf-setup-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jf-setup-steps__item {
+  font-size: 0.78rem;
+  color: var(--jf-text-2);
+}
+
+.jf-setup-steps__item[data-current="true"] {
+  color: var(--jf-text);
+  font-weight: 700;
+}
+
+.jf-setup-steps__item[data-done="true"] {
+  color: var(--jf-accent);
+}
 
 .jf-navrow {
   display: flex;

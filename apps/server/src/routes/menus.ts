@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { ContentTypeSlugSchema } from "@justflows/content";
 import {
   PRIMARY_MENU_SLUG,
   createMenu,
@@ -22,7 +23,7 @@ const MenuItemSchema: z.ZodType<MenuItem> = z.lazy(() =>
   z.object({
     id: z.string().min(1),
     label: z.string(),
-    type: z.enum(["custom", "page", "post"]),
+    type: ContentTypeSlugSchema,
     url: z.string().optional(),
     contentId: z.string().uuid().optional(),
     target: z.enum(["_blank"]).optional(),

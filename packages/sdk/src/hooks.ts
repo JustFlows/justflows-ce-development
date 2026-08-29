@@ -57,6 +57,19 @@ export interface AppEvent {
 export interface ContentRef {
   readonly contentId: string;
   readonly siteId: string;
+  /** Content type slug when the host knows it (`product`, `page`, …). */
+  readonly type?: string;
+  /** Shared id for every locale of this entry. Absent on older hosts. */
+  readonly translationGroupId?: string;
+}
+
+/** `content.deleted` payload. Extends `ContentRef` with group-empty signalling. */
+export interface ContentDeletedRef extends ContentRef {
+  /**
+   * True when no other locales remain in the translation group after this
+   * delete. Absent on older hosts.
+   */
+  readonly lastInTranslationGroup?: boolean;
 }
 
 /** Canonical live-or-working fields a revision gate/filter may inspect. */
@@ -83,6 +96,16 @@ export interface ContentConflict {
   readonly contentId: string;
   readonly expectedVersion: number;
   readonly actualVersion: number;
+}
+
+/** Context for `content.render` — public HTML after blocks have been rendered. */
+export interface ContentRenderContext {
+  readonly siteId: string;
+  readonly contentId: string;
+  readonly type?: string;
+  readonly title?: string;
+  readonly excerpt?: string | null;
+  readonly translationGroupId?: string;
 }
 
 export interface ContentDraft {
@@ -191,6 +214,33 @@ export interface NavigationItem {
   children?: NavigationItem[];
 }
 
+/**
+ * One admin sidebar entry a plugin contributes through the `admin.menu` filter
+ * (and/or `adminMenu` in its manifest). The host re-validates every field.
+ */
+export interface AdminNavItem {
+  pluginId: string;
+  id: string;
+  label: string;
+  labelKey?: string;
+  path: string;
+  icon?: string;
+  domain?: string;
+  end?: boolean;
+  /** Host-only: `GET /ext/{pluginId}/setup` is rendered on this path, not on nested pages. */
+  setupPath?: string;
+  /** Host lists CMS entries of this type on the plugin page. */
+  contentType?: string;
+}
+
+/** OpenAPI 3.1 document plugins may extend through the `openapi.document` filter. */
+export interface OpenApiDocument {
+  openapi: string;
+  info: Record<string, unknown>;
+  paths: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 // ─── Action map ────────────────────────────────────────────────────────────
 
 /**
@@ -213,7 +263,7 @@ export interface ActionEventMap {
 
   "content.created": ContentRef;
   "content.updated": ContentRef;
-  "content.deleted": ContentRef;
+  "content.deleted": ContentDeletedRef;
   "content.published": ContentRef;
   "content.unpublished": ContentRef;
   "content.revisionSaved": ContentRevisionRef;
@@ -233,6 +283,8 @@ export interface ActionEventMap {
   "plugin.installed": PluginEvent;
   "plugin.activated": PluginEvent;
   "plugin.deactivated": PluginEvent;
+  /** Fired after that plugin's `deleteData()` hook has finished. */
+  "plugin.deleteData": PluginEvent;
   "plugin.uninstalled": PluginEvent;
   "theme.installed": ThemeEvent;
   "theme.activated": ThemeEvent;
@@ -272,19 +324,37 @@ export interface GateEventMap {
 export interface FilterValueMap {
   "content.input": [Record<string, unknown>, { siteId: string }];
   "content.output": [Record<string, unknown>, { siteId: string }];
-  "content.render": [string, { siteId: string; contentId: string }];
+  /** Stored blocks before HTML render. Shop fills `{{price}}` tags here. */
+  "content.blocks": [unknown, ContentRenderContext];
+  "content.render": [string, ContentRenderContext];
   "content.revision": [ContentRevisionSnapshot, { siteId: string; contentId: string }];
   "media.metadata": [Record<string, unknown>, MediaRef];
   "navigation.items": [NavigationItem[], { siteId: string; location: string }];
+  "admin.menu": [AdminNavItem[], { siteId: string }];
+  /** Overlay plugin settings shown on Admin → Plugins → Settings. */
+  "plugin.settings": [Record<string, unknown>, { pluginId: string; siteId: string }];
+  /** Intercept a settings save so a plugin can persist domain rows and drop keys. */
+  "plugin.settings.write": [Record<string, unknown>, { pluginId: string; siteId: string }];
+  "openapi.document": [OpenApiDocument, { version: string }];
   "http.responseHeaders": [Record<string, string>, { method: string; path: string }];
   "html.head": [string, { siteId: string; path: string; title: string; contentId?: string }];
+  /**
+   * Extra CSS appended to the site stylesheet served at `/theme.css`, after the
+   * theme's own styles and the Customizer tokens but before the site owner's
+   * Additional CSS. The value is seeded with `""` and each handler appends its
+   * plugin's stylesheet. Runs once per `/theme.css` build (cached, not per
+   * page), so handlers may be async — read a file, minify once, memoise.
+   * Reverting is automatic: deactivating the plugin drops the handler and the
+   * next `/theme.css` build omits its CSS. `preview` is true when the
+   * Customizer is previewing an unpublished draft.
+   */
+  "theme.css": [string, { siteId: string; preview: boolean }];
   "seo.sitemapPaths": [string[], { siteId: string }];
   "site.underConstruction.render": [string, UnderConstructionContext];
 }
 
 /** Filters applied on synchronous render paths — handlers must not be async. */
 export const SYNC_FILTERS = [
-  "content.render",
   "http.responseHeaders",
   "html.head",
   "site.underConstruction.render",
@@ -333,6 +403,7 @@ export const HOOK_PERMISSION_PREFIXES: ReadonlyArray<{
 }> = [
   { prefix: "auth.", permission: "auth:hook" },
   { prefix: "user.", permission: "users:read" },
+  { prefix: "admin.", permission: "admin:extend" },
 ];
 
 /** The permission a hook name requires, or `null` when it is unrestricted. */

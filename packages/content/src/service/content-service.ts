@@ -100,7 +100,12 @@ export class ContentService {
     this.items.set(item.id, item);
     await this.hooks.dispatchAction(
       "content.created",
-      { contentId: item.id, siteId: item.siteId },
+      {
+        contentId: item.id,
+        siteId: item.siteId,
+        type: item.type,
+        translationGroupId: item.translationGroupId ?? item.id,
+      },
       { siteId: item.siteId },
     );
     return item;
@@ -231,8 +236,8 @@ export class ContentService {
     this.removeKind(id, "working");
     this.pruneHistorical(id);
 
-    await this.hooks.dispatchAction("content.updated", { contentId: id, siteId }, hookCtx);
-    await this.hooks.dispatchAction("content.published", { contentId: id, siteId }, hookCtx);
+    await this.hooks.dispatchAction("content.updated", { contentId: id, siteId, type: item.type }, hookCtx);
+    await this.hooks.dispatchAction("content.published", { contentId: id, siteId, type: item.type }, hookCtx);
     return updated;
   }
 
@@ -288,9 +293,17 @@ export class ContentService {
     const item = this.items.get(id);
     if (!item) throw new NotFoundError(`Content "${id}" not found`);
 
+    const groupId = item.translationGroupId ?? item.id;
+    const lastInTranslationGroup = ![...this.items.values()].some(
+      (other) =>
+        other.id !== id &&
+        other.siteId === item.siteId &&
+        (other.translationGroupId ?? other.id) === groupId,
+    );
+
     await this.hooks.dispatchGate(
       "content.beforeDelete",
-      { contentId: id, siteId: item.siteId },
+      { contentId: id, siteId: item.siteId, type: item.type, translationGroupId: groupId },
       { siteId: item.siteId },
     );
     this.items.delete(id);
@@ -298,7 +311,13 @@ export class ContentService {
     this.slugsFor(item.siteId, item.type).delete(item.slug);
     await this.hooks.dispatchAction(
       "content.deleted",
-      { contentId: id, siteId: item.siteId },
+      {
+        contentId: id,
+        siteId: item.siteId,
+        type: item.type,
+        translationGroupId: groupId,
+        lastInTranslationGroup,
+      },
       { siteId: item.siteId },
     );
   }

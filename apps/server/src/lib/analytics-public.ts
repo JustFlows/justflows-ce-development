@@ -2,7 +2,7 @@
 
 import type { Request } from "express";
 import { getPlugin } from "./plugins-db.js";
-import { getSiteSetting } from "./site-settings.js";
+import { getPluginSetting } from "./plugin-kv.js";
 import { createPluginDataApi } from "./plugin-data.js";
 import { getSiteId } from "./themes-db.js";
 import { parseGoogleTagId } from "./google-tag.js";
@@ -54,7 +54,7 @@ export interface AnalyticsSummary {
 export async function isAnalyticsPluginEnabled(siteId: string): Promise<boolean> {
   const plugin = await getPlugin(siteId, ANALYTICS_PLUGIN_ID);
   if (plugin?.status !== "active") return false;
-  const enabled = await getSiteSetting<boolean>(siteId, `plugin.${ANALYTICS_PLUGIN_ID}:enabled`);
+  const enabled = await getPluginSetting<boolean>(ANALYTICS_PLUGIN_ID, siteId, "enabled");
   return enabled !== false;
 }
 
@@ -168,7 +168,7 @@ function mergeCounts<K extends string>(
 export async function getAnalyticsSummary(siteId: string): Promise<AnalyticsSummary> {
   const plugin = await getPlugin(siteId, ANALYTICS_PLUGIN_ID);
   const collecting = plugin?.status === "active";
-  const enabled = collecting && (await getSiteSetting<boolean>(siteId, `plugin.${ANALYTICS_PLUGIN_ID}:enabled`)) !== false;
+  const enabled = collecting && (await getPluginSetting<boolean>(ANALYTICS_PLUGIN_ID, siteId, "enabled")) !== false;
   const empty: AnalyticsSummary = {
     collecting,
     enabled,
@@ -231,7 +231,7 @@ async function loadConfiguredGoogleTagId(): Promise<string | null> {
   if (!siteId) return null;
   const plugin = await getPlugin(siteId, ANALYTICS_PLUGIN_ID);
   if (plugin?.status !== "active") return null;
-  const raw = await getSiteSetting<string>(siteId, `plugin.${ANALYTICS_PLUGIN_ID}:googleTagId`);
+  const raw = await getPluginSetting<string>(ANALYTICS_PLUGIN_ID, siteId, "googleTagId");
   return parseGoogleTagId(String(raw ?? ""));
 }
 

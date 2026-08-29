@@ -26,6 +26,18 @@ A directory is a theme if it contains `justflows-theme.json` or
 | `demo/home.json`        | Default home blocks when no home page is selected |
 | `demo/blog.json`        | Default blocks used when creating a blog page     |
 
+The bundled Default theme includes a **Product detail** pattern (`patterns/product.json`)
+plus **Product mosaic**, **Product story**, **Product list**, and **Ecommerce storefront**. Creating a `product` content row
+(or opening one whose canvas is still empty) loads Product detail so the page
+builder starts with a Shop gallery, buy box, specs accordion, reviews, and
+related products instead of a blank canvas. Commerce values are tags (`{{title}}`,
+`{{price}}`, `{{sku}}`, `{{stock}}`, `{{attributes}}`, …) filled from the Product
+card and content fields when the page renders. Those patterns set
+`requiresBlockTypes` for the Shop blocks they use. **Product list** is a catalog
+grid (`justflows.shop.product-list`) for shop and category pages. **Ecommerce storefront**
+is a homepage (`patterns/ecommerce-storefront.json`) with a hero image-tile collage,
+category mosaic, story banner, favorites, and sale strip.
+
 A pattern is `{ id, title, description?, category?, requiresBlockTypes?, blocks }`.
 Set `requiresBlockTypes` to the plugin block types a pattern uses (e.g.
 `["justflows.forms.form"]`); the Patterns panel shows an install notice

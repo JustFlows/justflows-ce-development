@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useT } from "../../i18n/I18nProvider";
 import { useSessionRole } from "@components/SessionProvider";
 
-type MenuItemType = "custom" | "page" | "post";
+type MenuItemType = string;
 
 interface MenuItem {
   id: string;
@@ -30,7 +30,33 @@ interface ContentOption {
   locale: string;
 }
 
-type AddTab = "pages" | "posts" | "custom";
+interface ContentTypeOption {
+  slug: string;
+  label: string;
+}
+
+type AddTab = string;
+
+const FALLBACK_CONTENT_TYPES: ContentTypeOption[] = [
+  { slug: "page", label: "Page" },
+  { slug: "post", label: "Post" },
+];
+
+function sortContentTypes(types: ContentTypeOption[]): ContentTypeOption[] {
+  const rank = (slug: string) => (slug === "page" ? 0 : slug === "post" ? 1 : 2);
+  return [...types].sort((a, b) => {
+    const delta = rank(a.slug) - rank(b.slug);
+    if (delta !== 0) return delta;
+    return a.label.localeCompare(b.label);
+  });
+}
+
+function normalizeContentTypes(types: ContentTypeOption[] | undefined): ContentTypeOption[] {
+  const cleaned = sortContentTypes(
+    (types ?? []).filter((type) => type.slug && type.label && type.slug !== "custom"),
+  );
+  return cleaned.length > 0 ? cleaned : FALLBACK_CONTENT_TYPES;
+}
 
 function newItemId(): string {
   return crypto.randomUUID();
@@ -119,9 +145,9 @@ export default function MenusPage() {
   const [selectedSlug, setSelectedSlug] = useState("primary");
   const [items, setItems] = useState<MenuItem[]>([]);
   const [menuName, setMenuName] = useState("");
-  const [pages, setPages] = useState<ContentOption[]>([]);
-  const [posts, setPosts] = useState<ContentOption[]>([]);
-  const [addTab, setAddTab] = useState<AddTab>("pages");
+  const [contentTypes, setContentTypes] = useState<ContentTypeOption[]>(FALLBACK_CONTENT_TYPES);
+  const [contentByType, setContentByType] = useState<Record<string, ContentOption[]>>({});
+  const [addTab, setAddTab] = useState<AddTab>("page");
   const [selectedContentIds, setSelectedContentIds] = useState<Set<string>>(new Set());
   const [customLabel, setCustomLabel] = useState("");
   const [customUrl, setCustomUrl] = useState("");
@@ -148,14 +174,20 @@ export default function MenusPage() {
     const defaultLocale =
       languages.find((lang) => lang.isDefault)?.code ?? languages[0]?.code;
     const localeQuery = defaultLocale ? `&locale=${encodeURIComponent(defaultLocale)}` : "";
-    const [pagesRes, postsRes] = await Promise.all([
-      fetch(`/api/content?type=page&status=published&limit=100${localeQuery}`),
-      fetch(`/api/content?type=post&status=published&limit=100${localeQuery}`),
-    ]);
-    const pagesData = await pagesRes.json();
-    const postsData = await postsRes.json();
-    setPages(pagesData.items ?? []);
-    setPosts(postsData.items ?? []);
+    const typesRes = await fetch("/api/content-types");
+    const typesData = await typesRes.json();
+    const fetched = normalizeContentTypes(typesData.types as ContentTypeOption[] | undefined);
+    const entries = await Promise.all(
+      fetched.map(async (type) => {
+        const res = await fetch(
+          `/api/content?type=${encodeURIComponent(type.slug)}&status=published&limit=100${localeQuery}`,
+        );
+        const data = await res.json();
+        return [type.slug, (data.items ?? []) as ContentOption[]] as const;
+      }),
+    );
+    setContentTypes(fetched);
+    setContentByType(Object.fromEntries(entries));
   }
 
   async function loadMenu(slug: string) {
@@ -252,8 +284,8 @@ export default function MenusPage() {
     });
   }
 
-  function addSelectedContent(type: "page" | "post") {
-    const source = type === "page" ? pages : posts;
+  function addSelectedContent(type: string) {
+    const source = contentByType[type] ?? [];
     const toAdd = source.filter((c) => selectedContentIds.has(c.id));
     if (!toAdd.length) return;
 
@@ -268,6 +300,32 @@ export default function MenusPage() {
     setItems((prev) => [...prev, ...newItems]);
     setSelectedContentIds(new Set());
     setSaved(false);
+  }
+
+  function contentSlugFor(item: MenuItem): string | undefined {
+    if (!item.contentId) return undefined;
+    for (const list of Object.values(contentByType)) {
+      const found = list.find((row) => row.id === item.contentId);
+      if (found) return found.slug;
+    }
+    return undefined;
+  }
+
+  function typeLabel(slug: string): string {
+    if (slug === "custom") return t("menus.type.custom");
+    const key = `menus.type.${slug}`;
+    const translated = t(key);
+    if (translated !== key) return translated;
+    return contentTypes.find((type) => type.slug === slug)?.label ?? slug;
+  }
+
+  function tabLabel(slug: string): string {
+    if (slug === "page") return t("menus.tab.pages");
+    if (slug === "post") return t("menus.tab.posts");
+    const key = `menus.tab.${slug}`;
+    const translated = t(key);
+    if (translated !== key) return translated;
+    return contentTypes.find((type) => type.slug === slug)?.label ?? slug;
   }
 
   function addCustomLink() {
@@ -362,25 +420,38 @@ export default function MenusPage() {
             </div>
             <div className="jf-card__body jf-stack">
               <div className="jf-filterbar">
-                {(["pages", "posts", "custom"] as AddTab[]).map((tab) => (
+                {contentTypes.map((type) => (
                   <button
-                    key={tab}
+                    key={type.slug}
                     className="jf-chip"
-                    aria-pressed={addTab === tab}
-                    onClick={() => setAddTab(tab)}
+                    aria-pressed={addTab === type.slug}
+                    onClick={() => {
+                      setAddTab(type.slug);
+                      setSelectedContentIds(new Set());
+                    }}
                   >
-                    {t(`menus.tab.${tab}`)}
+                    {tabLabel(type.slug)}
                   </button>
                 ))}
+                <button
+                  className="jf-chip"
+                  aria-pressed={addTab === "custom"}
+                  onClick={() => {
+                    setAddTab("custom");
+                    setSelectedContentIds(new Set());
+                  }}
+                >
+                  {t("menus.tab.custom")}
+                </button>
               </div>
 
-              {addTab === "pages" && (
+              {addTab !== "custom" && (
                 <>
                   <div className="jf-scrolllist">
-                    {pages.length === 0 ? (
-                      <p className="jf-field__hint">{t("menus.noPages")}</p>
+                    {(contentByType[addTab] ?? []).length === 0 ? (
+                      <p className="jf-field__hint">{t("menus.noPublished")}</p>
                     ) : (
-                      pages.map((p) => (
+                      (contentByType[addTab] ?? []).map((p) => (
                         <label key={p.id} className="jf-checkrow">
                           <input
                             type="checkbox"
@@ -395,37 +466,8 @@ export default function MenusPage() {
                   </div>
                   <button
                     className="jf-btn jf-btn--primary jf-btn--block"
-                    onClick={() => addSelectedContent("page")}
-                    disabled={!pages.some((p) => selectedContentIds.has(p.id))}
-                  >
-                    {t("menus.addToMenu")}
-                  </button>
-                </>
-              )}
-
-              {addTab === "posts" && (
-                <>
-                  <div className="jf-scrolllist">
-                    {posts.length === 0 ? (
-                      <p className="jf-field__hint">{t("menus.noPosts")}</p>
-                    ) : (
-                      posts.map((p) => (
-                        <label key={p.id} className="jf-checkrow">
-                          <input
-                            type="checkbox"
-                            checked={selectedContentIds.has(p.id)}
-                            onChange={() => toggleContentSelection(p.id)}
-                          />
-                          <span className="jf-truncate">{p.title}</span>
-                          <span className="jf-checkrow__meta">/{p.slug}</span>
-                        </label>
-                      ))
-                    )}
-                  </div>
-                  <button
-                    className="jf-btn jf-btn--primary jf-btn--block"
-                    onClick={() => addSelectedContent("post")}
-                    disabled={!posts.some((p) => selectedContentIds.has(p.id))}
+                    onClick={() => addSelectedContent(addTab)}
+                    disabled={!(contentByType[addTab] ?? []).some((p) => selectedContentIds.has(p.id))}
                   >
                     {t("menus.addToMenu")}
                   </button>
@@ -531,7 +573,7 @@ export default function MenusPage() {
                         }}
                       />
                       <div className="jf-row" style={{ marginTop: "0.4rem" }}>
-                        <span className="jf-badge jf-badge--info">{t(`menus.type.${item.type}`)}</span>
+                        <span className="jf-badge jf-badge--info">{typeLabel(item.type)}</span>
                         {item.type === "custom" && (
                           <input
                             className="jf-input"
@@ -547,11 +589,9 @@ export default function MenusPage() {
                             }}
                           />
                         )}
-                        {(item.type === "page" || item.type === "post") && item.contentId && (
+                        {item.type !== "custom" && item.contentId && (
                           <span className="jf-meta">
-                            {pages.find((p) => p.id === item.contentId)?.slug
-                              ?? posts.find((p) => p.id === item.contentId)?.slug
-                              ?? item.contentId.slice(0, 8)}
+                            {contentSlugFor(item) ?? item.contentId.slice(0, 8)}
                           </span>
                         )}
                         {item.type === "custom" && (

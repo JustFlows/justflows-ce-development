@@ -20,7 +20,12 @@
   "patterns": {
     "home": "./patterns/home.json",
     "about": "./patterns/about.json",
-    "landing": "./patterns/landing.json"
+    "landing": "./patterns/landing.json",
+    "product": "./patterns/product.json",
+    "product-mosaic": "./patterns/product-mosaic.json",
+    "product-story": "./patterns/product-story.json",
+    "product-list": "./patterns/product-list.json",
+    "ecommerce-storefront": "./patterns/ecommerce-storefront.json"
   },
   "demo": {
     "home": "./demo/home.json"

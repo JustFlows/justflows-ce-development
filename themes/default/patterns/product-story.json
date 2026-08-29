@@ -1,0 +1,204 @@
+{
+  "id": "product-story",
+  "title": "Product story",
+  "description": "Single hero image, buy box, detail shots, policies, and review histogram. Uses Shop blocks and product tags.",
+  "category": "pages",
+  "requiresBlockTypes": [
+    "justflows.shop.gallery",
+    "justflows.shop.buy-box",
+    "justflows.shop.breadcrumbs",
+    "justflows.shop.detail-shots",
+    "justflows.shop.policies",
+    "justflows.shop.reviews"
+  ],
+  "blocks": [
+    {
+      "id": "story-hero",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "default", "padding": "lg", "align": "left" },
+      "children": [
+        {
+          "id": "story-hero-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "story-crumbs",
+              "type": "justflows.shop.breadcrumbs",
+              "version": 1,
+              "props": {
+                "current": "{{title}}",
+                "items": [
+                  { "name": "Shop", "href": "/shop" }
+                ]
+              }
+            },
+            {
+              "id": "story-hero-cols",
+              "type": "core.columns",
+              "version": 1,
+              "props": { "columns": 2, "gap": "lg" },
+              "children": [
+                {
+                  "id": "story-buy-col",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "story-buy",
+                      "type": "justflows.shop.buy-box",
+                      "version": 1,
+                      "props": {
+                        "title": "{{title}}",
+                        "price": "{{price}}",
+                        "comparePrice": "{{comparePrice}}",
+                        "description": "{{excerpt}}",
+                        "meta": "SKU {{sku}}",
+                        "attributes": "{{attributes}}",
+                        "cartLabel": "Add to bag",
+                        "cartUrl": "/cart",
+                        "stockNote": "In stock and ready to ship",
+                        "guarantee": "Lifetime Guarantee",
+                        "showRating": false,
+                        "showWishlist": false
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "story-gallery-col",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "story-gallery",
+                      "type": "justflows.shop.gallery",
+                      "version": 1,
+                      "props": {
+                        "layout": "single",
+                        "lightbox": true,
+                        "images": [
+                          {
+                            "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-04-featured-product-shot.jpg",
+                            "alt": "Product photo"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "story-details",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "muted", "padding": "xl", "align": "left" },
+      "children": [
+        {
+          "id": "story-details-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "story-detail-shots",
+              "type": "justflows.shop.detail-shots",
+              "version": 1,
+              "props": {
+                "heading": "The Fine Details",
+                "intro": "Replace this intro with the construction story. Two close-up photos sit below.",
+                "items": [
+                  {
+                    "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-04-detail-product-shot-01.jpg",
+                    "alt": "Drawstring top with elastic loop closure and textured interior padding.",
+                    "text": "Replace this caption with a close-up of a construction detail."
+                  },
+                  {
+                    "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-04-detail-product-shot-02.jpg",
+                    "alt": "Front zipper pouch with included key ring.",
+                    "text": "Replace this caption with a second construction or feature close-up."
+                  }
+                ]
+              }
+            },
+            {
+              "id": "story-policies",
+              "type": "justflows.shop.policies",
+              "version": 1,
+              "props": {
+                "items": [
+                  {
+                    "name": "Free delivery",
+                    "description": "Replace this with your shipping policy.",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce/icons/icon-delivery-light.svg"
+                  },
+                  {
+                    "name": "Customer support",
+                    "description": "Replace this with how customers can reach you.",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce/icons/icon-chat-light.svg"
+                  },
+                  {
+                    "name": "Fast checkout",
+                    "description": "Replace this with your checkout promise.",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce/icons/icon-fast-checkout-light.svg"
+                  },
+                  {
+                    "name": "Gift cards",
+                    "description": "Replace this with gift-card or returns copy.",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce/icons/icon-gift-card-light.svg"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "story-reviews",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "default", "padding": "xl", "align": "left" },
+      "children": [
+        {
+          "id": "story-reviews-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "story-reviews-block",
+              "type": "justflows.shop.reviews",
+              "version": 1,
+              "props": {
+                "heading": "Customer Reviews",
+                "average": 0,
+                "totalCount": 0,
+                "showHistogram": true,
+                "counts": [
+                  { "rating": 5, "count": 0 },
+                  { "rating": 4, "count": 0 },
+                  { "rating": 3, "count": 0 },
+                  { "rating": 2, "count": 0 },
+                  { "rating": 1, "count": 0 }
+                ],
+                "items": [],
+                "writeLabel": "Write a review",
+                "writeHref": "#"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { usePluginMenu } from "@components/PluginMenuProvider";
 
+interface RegistryPrice {
+  amount: number;
+  currency: string;
+  interval?: "once" | "month" | "year";
+}
+
 interface MarketplaceItem {
   id: string;
   name: string;
@@ -14,6 +20,41 @@ interface MarketplaceItem {
   tags: string[];
   channel?: "community" | "commercial";
   pricing?: { type: "free" | "paid"; amount?: number; currency?: string };
+  registry?: {
+    commercialMarketplace?: boolean;
+    listed?: boolean;
+    free?: boolean;
+    comingSoon?: boolean;
+    price?: RegistryPrice;
+  };
+}
+
+function listingIsVisible(item: MarketplaceItem): boolean {
+  return item.registry?.listed !== false;
+}
+
+function listingIsPaid(item: MarketplaceItem): boolean {
+  if (item.registry?.free === false) return true;
+  return item.pricing?.type === "paid" || item.channel === "commercial";
+}
+
+function listingIsComingSoon(item: MarketplaceItem): boolean {
+  return item.registry?.comingSoon === true;
+}
+
+function listingPriceLabel(item: MarketplaceItem): string | null {
+  const price = item.registry?.price;
+  const amount = price?.amount ?? item.pricing?.amount;
+  const currency = price?.currency ?? item.pricing?.currency;
+  if (amount == null || !currency) return listingIsPaid(item) ? "Paid" : null;
+  try {
+    const formatted = new Intl.NumberFormat(undefined, { style: "currency", currency }).format(amount);
+    if (price?.interval === "month") return `${formatted} / month`;
+    if (price?.interval === "year") return `${formatted} / year`;
+    return formatted;
+  } catch {
+    return `${amount} ${currency}`;
+  }
 }
 
 const CATEGORIES = ["All", "Plugins", "Themes", "SEO", "Forms", "Analytics", "Media", "E-commerce"];
@@ -42,7 +83,7 @@ export default function MarketplacePage() {
         const plugins = (await pluginsRes.json()) as { plugins?: { id?: string; plugin_id?: string }[] };
         const themes = (await themesRes.json()) as { themes?: { themeId?: string }[] };
         if (cancelled) return;
-        setItems(Array.isArray(market.items) ? market.items : []);
+        setItems(Array.isArray(market.items) ? market.items.filter(listingIsVisible) : []);
         const ids = [
           ...(plugins.plugins ?? []).map((p) => p.id ?? p.plugin_id),
           ...(themes.themes ?? []).map((t) => t.themeId),
@@ -89,6 +130,9 @@ export default function MarketplacePage() {
         signal: controller.signal,
       });
       const data = await res.json() as { error?: string; checkoutUrl?: string };
+      if (res.status === 403) {
+        throw new Error(data.error ?? "This listing is coming soon and cannot be installed yet.");
+      }
       if (res.status === 402) {
         window.open(data.checkoutUrl ?? "https://justflows.com/marketplace", "_blank");
         throw new Error(data.error ?? "Commercial listing");
@@ -158,7 +202,9 @@ export default function MarketplacePage() {
           {filtered.map((item) => {
             const isInstalling = installing === item.id;
             const isInstalled = installed.has(item.id);
-            const paid = item.pricing?.type === "paid" || item.channel === "commercial";
+            const paid = listingIsPaid(item);
+            const comingSoon = listingIsComingSoon(item);
+            const priceLabel = listingPriceLabel(item);
 
             return (
               <div key={item.id} className="jf-card">
@@ -167,7 +213,8 @@ export default function MarketplacePage() {
                     <span className={`jf-badge ${item.type === "theme" ? "jf-badge--warn" : "jf-badge--info"}`}>
                       {item.type}
                     </span>
-                    {paid && <span className="jf-badge">paid</span>}
+                    {comingSoon && <span className="jf-badge jf-badge--warn">Coming soon</span>}
+                    {paid && <span className="jf-badge">{priceLabel ?? "paid"}</span>}
                     <span className="jf-meta" style={{ marginInlineStart: "auto" }}>
                       ↓ {item.downloads.toLocaleString()}
                     </span>
@@ -178,11 +225,21 @@ export default function MarketplacePage() {
                   <p className="jf-meta">v{item.version} · by {item.publisher ?? item.author ?? "Justflows"}</p>
 
                   <button
-                    className={`jf-btn jf-btn--block ${isInstalled ? "jf-btn--success" : isInstalling ? "jf-btn--ghost" : "jf-btn--primary"}`}
-                    onClick={() => install(item)}
-                    disabled={isInstalling || isInstalled}
+                    className={`jf-btn jf-btn--block ${isInstalled ? "jf-btn--success" : isInstalling || comingSoon ? "jf-btn--ghost" : "jf-btn--primary"}`}
+                    onClick={() => {
+                      if (!comingSoon) void install(item);
+                    }}
+                    disabled={isInstalling || isInstalled || comingSoon}
                   >
-                    {isInstalled ? "✓ Installed" : isInstalling ? "Installing…" : paid ? "Get on Justflows" : "Install"}
+                    {isInstalled
+                      ? "✓ Installed"
+                      : isInstalling
+                        ? "Installing…"
+                        : comingSoon
+                          ? "Coming soon"
+                          : paid
+                            ? "Get on Justflows"
+                            : "Install"}
                   </button>
                 </div>
               </div>

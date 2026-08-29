@@ -93,6 +93,9 @@ importers:
       '@justflows/installer':
         specifier: file:../../packages/installer
         version: link:../../packages/installer
+      '@justflows/jobs':
+        specifier: file:../../packages/jobs
+        version: link:../../packages/jobs
       '@justflows/plugin-api':
         specifier: file:../../packages/plugin-api
         version: link:../../packages/plugin-api
@@ -453,6 +456,9 @@ importers:
       '@types/node':
         specifier: ^26.2.0
         version: 26.2.0
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
       typescript:
         specifier: ^7.0.2
         version: 7.0.2

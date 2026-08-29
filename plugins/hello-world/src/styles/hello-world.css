@@ -1,0 +1,7 @@
+/* Example plugin-owned component style. Prefer theme tokens over fixed colours. */
+.jf-hello-world {
+  padding: var(--space-md, 1rem);
+  color: var(--color-text, inherit);
+  background: var(--color-surface, transparent);
+  border-radius: var(--radius-md, 0.5rem);
+}

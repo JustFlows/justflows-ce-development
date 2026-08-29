@@ -48,6 +48,9 @@ const plugin: PluginModule = {
       ctx.logger.info("Something was published", { contentId: event.contentId });
     });
   },
+  deleteData() {
+    // required — drop plugin tables and rows when the plugin is deleted
+  },
 };
 
 export default plugin;
@@ -353,7 +356,7 @@ ctx.hooks.action("content.published", reindex, { id: "search-reindex" });
 ## Synchronous hooks
 
 Most hooks are async. A few run on render paths that cannot wait — currently
-`content.render`, `http.responseHeaders`, `html.head`, and `site.underConstruction.render` (see `SYNC_FILTERS` in the SDK).
+`http.responseHeaders`, `html.head`, and `site.underConstruction.render` (see `SYNC_FILTERS` in the SDK).
 
 **On a synchronous hook, your handler must be synchronous.** An `async` handler
 there gets skipped and logged, because there is no safe way to wait for it and
@@ -361,14 +364,50 @@ substituting a pending promise for the value would be worse.
 
 ```ts
 // ✅ on a sync filter
-ctx.hooks.filter("content.render", (html) => html.trim());
+ctx.hooks.filter("html.head", (html) => html);
 
 // ❌ skipped with an error — this filter is applied synchronously
-ctx.hooks.filter("content.render", async (html) => await rewrite(html));
+ctx.hooks.filter("html.head", async (html) => await rewrite(html));
 ```
 
-If you need async work on a render path, do it earlier — on `content.output`,
-or in a job — and [cache the result](./CACHE.md).
+`content.blocks` runs on the stored block tree before HTML render, and `content.render` runs on the public body HTML afterwards. Both **may be async** (Shop loads catalog rows to fill `{{price}}` tags). If you need async work on a remaining sync filter, do it earlier — on `content.output`, or in a job — and [cache the result](./CACHE.md).
+
+---
+
+## Shipping a plugin stylesheet
+
+`theme.css` bakes your CSS into the site stylesheet at `/theme.css`, behind the
+same browser cache as the theme, with no second request. It runs once per
+stylesheet build, not per page, so the handler can do real work:
+
+```ts
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+let css: string | null = null;
+
+export async function registerStyles(ctx: PluginContext) {
+  if (css === null) {
+    // Ship the file in your plugin and minify it at build time.
+    css = await readFile(fileURLToPath(new URL("./styles/shop.css", import.meta.url)), "utf8");
+  }
+  ctx.hooks.filter("theme.css", (current) =>
+    current.includes("/* my-plugin */") ? current : `${current}\n/* my-plugin */\n${css}\n`,
+  );
+}
+```
+
+Lean on the theme's custom properties (`--color-*`, `--space-*`, `--radius-*`)
+so your components inherit the active theme. Deactivating the plugin removes the
+handler and the next build drops the CSS — nothing to clean up.
+
+Build and package the stylesheet below `dist/`; installed plugins do not run a
+CSS toolchain. Plugin CSS lands after theme styles, Customizer tokens, and block
+animations, but before the site owner's Additional CSS. The combined plugin
+contribution is capped at 512 KiB. It is trusted extension output and is not run
+through the editor Custom CSS sanitizer, so keep values static and never splice
+request or site data into CSS. See [PLUGINS.md](PLUGINS.md#ship-your-own-stylesheet)
+for the complete author workflow.
 
 ---
 
@@ -425,7 +464,7 @@ makes both correctness and performance attributable to a specific extension.
 | ---- | ------- |
 | `app.starting` / `app.started` | `{ version }` |
 | `app.stopping` | `{}` |
-| `content.created` / `deleted` | `{ contentId, siteId }` |
+| `content.created` / `deleted` | `{ contentId, siteId, type?, translationGroupId? }` — `content.deleted` also has `lastInTranslationGroup?` when the host knows whether other locales remain |
 | `content.updated` | `{ contentId, siteId }` — fires when the **canonical live row** changes (first publish, republish of a working revision, or an unpublished draft save). Saving a working revision of published content does **not** fire `content.updated`. |
 | `content.published` / `unpublished` | `{ contentId, siteId }` — `content.published` runs after the live snapshot is committed |
 | `content.revisionSaved` / `revisionDiscarded` / `revisionRestored` | `{ contentId, siteId, revisionId }` |
@@ -434,7 +473,7 @@ makes both correctness and performance attributable to a specific extension.
 | `user.created` / `updated` / `deleted` | `{ userId }` |
 | `auth.login` / `auth.logout` | `{ userId, email }` |
 | `auth.loginFailed` | `{ email, reason }` |
-| `plugin.installed` / `activated` / `deactivated` / `uninstalled` | `{ pluginId, version, siteId? }` |
+| `plugin.installed` / `activated` / `deactivated` / `deleteData` / `uninstalled` | `{ pluginId, version, siteId? }` — `plugin.deleteData` runs after that plugin's `deleteData()` hook |
 | `theme.installed` / `theme.activated` | `{ themeId, version, siteId? }` |
 | `request.before` | `{ method, path }` |
 | `request.after` | `{ method, path, statusCode, durationMs }` |
@@ -455,12 +494,17 @@ makes both correctness and performance attributable to a specific extension.
 | ---- | ----- | ------- |
 | `content.input` | `Record<string, unknown>` | `{ siteId }` |
 | `content.output` | `Record<string, unknown>` | `{ siteId }` |
-| `content.render` | `string` (HTML) | `{ siteId, contentId }` |
+| `content.blocks` | block tree | `{ siteId, contentId, type?, title?, excerpt?, translationGroupId? }` — applied on stored blocks before HTML render. Handlers may be async (Shop fills `{{price}}` tags here so heading text is replaced before `esc()`). |
+| `content.render` | `string` (HTML) | `{ siteId, contentId, type?, title?, excerpt?, translationGroupId? }` — applied on public body HTML after blocks render. Handlers may be async (Shop uses this to fill `{{price}}` and other product tags). |
 | `content.revision` | proposed snapshot | `{ siteId, contentId }` — filters the working revision before it is stored. Committed history is immutable. |
 | `media.metadata` | `Record<string, unknown>` | `{ siteId, mediaId }` |
 | `navigation.items` | `NavigationItem[]` | `{ siteId, location }` |
+| `admin.menu` | `AdminNavItem[]` | `{ siteId }` — extra admin sidebar pages. Set `domain` to a known group (`content`, `commerce`, `appearance`, `extensions`, `security`, `system`); unknown values fall back to `extensions`. Set `end` on a parent path so nested pages do not keep it selected. Optional `setupPath` tells the host which URL mounts `GET /ext/{pluginId}/setup`. Optional `contentType` tells the host to list every CMS entry of that type on the page. Requires `admin:extend`. Returning an invalid item is dropped. Deactivating the plugin removes the handler. |
+| `plugin.settings` | `Record<string, unknown>` | `{ pluginId, siteId }` — overlay Admin → Plugins → Settings values. The host applies this on the plugin runtime registry. |
+| `plugin.settings.write` | `Record<string, unknown>` | `{ pluginId, siteId }` — intercept a settings save. Return only the keys that should be stored in plugin settings KV. |
 | `http.responseHeaders` | `Record<string, string>` | `{ method, path }` |
 | `html.head` | `string` (extra `<head>` HTML) | `{ siteId, path, title, contentId? }` |
+| `theme.css` | `string` (CSS appended to `/theme.css`) | `{ siteId, preview }` — seeded with `""`; append your plugin's stylesheet. Lands after the theme and Customizer tokens, before the site owner's Additional CSS. Runs once per stylesheet build (cached, not per page), so handlers **may be async** — read a file and minify once, then memoise. Deactivating the plugin drops the handler and the next build omits the CSS. `preview` is true while the Customizer previews an unpublished draft. |
 | `seo.sitemapPaths` | `string[]` (URL paths) | `{ siteId }` |
 
 ---

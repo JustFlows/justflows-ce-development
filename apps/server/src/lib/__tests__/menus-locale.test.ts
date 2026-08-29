@@ -22,6 +22,20 @@ const contentRows = [
     title: "About us",
     translation_group_id: "group-about",
   },
+  {
+    id: "product-mug",
+    slug: "ceramic-mug",
+    locale: "en",
+    title: "Mug",
+    translation_group_id: "group-mug",
+  },
+  {
+    id: "product-mug-nl",
+    slug: "keramische-mok",
+    locale: "nl",
+    title: "Mok",
+    translation_group_id: "group-mug",
+  },
 ];
 
 vi.mock("../db.js", () => ({
@@ -87,5 +101,15 @@ describe("resolveMenuItems locale prefix", () => {
     );
 
     expect(items[0]?.url).toBe("/contact");
+  });
+
+  it("resolves product content links the same way as pages", async () => {
+    const items = await resolveMenuItems(
+      [{ id: "1", label: "Mug", type: "product", contentId: "product-mug" }],
+      "nl",
+      "en",
+    );
+
+    expect(items[0]?.url).toBe("/nl/keramische-mok");
   });
 });

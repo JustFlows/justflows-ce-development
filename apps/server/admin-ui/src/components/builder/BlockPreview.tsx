@@ -1,6 +1,7 @@
 import type { BlockNode } from "./types";
-import { parseBlockStyle, sanitizeRichText } from "@justflows/blocks";
+import { parseBlockStyle, sanitizeHtmlBlock, sanitizeRichText } from "@justflows/blocks";
 import MotionPreview from "./MotionPreview";
+import { applyMergeTags, useProductTags } from "../../lib/product-tags";
 
 interface BlockPreviewProps {
   block: BlockNode;
@@ -12,6 +13,8 @@ interface BlockPreviewProps {
 
 export function BlockPreview({ block, depth = 0, onSelect, selectedId, renderChildren }: BlockPreviewProps) {
   const p = block.props;
+  const tags = useProductTags();
+  const text = (value: unknown) => applyMergeTags(String(value ?? ""), tags);
   const isSelected = selectedId === block.id;
   const blockStyle = parseBlockStyle(p.style);
   const wrap = (content: React.ReactNode, label?: string) => (
@@ -152,12 +155,13 @@ export function BlockPreview({ block, depth = 0, onSelect, selectedId, renderChi
 
     case "core.paragraph":
       return wrap(
-        <p style={{ margin: 0 }} dangerouslySetInnerHTML={{ __html: sanitizeRichText((p.text as string) || "") || "<em style='color:var(--jf-text-3)'>Empty paragraph</em>" }} />,
+        <p style={{ margin: 0 }} dangerouslySetInnerHTML={{ __html: sanitizeRichText(text(p.text)) || "<em style='color:var(--jf-text-3)'>Empty paragraph</em>" }} />,
       );
 
     case "core.heading": {
       const Tag = `h${Math.min(6, Math.max(1, (p.level as number) ?? 2))}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
-      return wrap(<Tag style={{ margin: 0 }}>{(p.text as string) || <em style={{ color: "var(--jf-text-3)" }}>Heading</em>}</Tag>);
+      const heading = text(p.text);
+      return wrap(<Tag style={{ margin: 0 }}>{heading || <em style={{ color: "var(--jf-text-3)" }}>Heading</em>}</Tag>);
     }
 
     case "core.image":
@@ -234,9 +238,11 @@ export function BlockPreview({ block, depth = 0, onSelect, selectedId, renderChi
 
     case "core.html":
       return wrap(
-        <div style={{ background: "#fef9c3", padding: "0.5rem", borderRadius: 4, fontSize: "0.8rem", fontFamily: "monospace" }}>
-          {(p.html as string) || "<p>HTML</p>"}
-        </div>,
+        <div
+          dangerouslySetInnerHTML={{
+            __html: sanitizeHtmlBlock(text(p.html)) || "<p>HTML</p>",
+          }}
+        />,
       );
 
     case "justflows.gallery.grid": {
@@ -315,6 +321,150 @@ export function BlockPreview({ block, depth = 0, onSelect, selectedId, renderChi
                 {p.showDate !== false && <div style={{ height: 8, width: "40%", background: "var(--jf-border)", borderRadius: 2 }} />}
                 {p.showExcerpt !== false && <div style={{ height: 8, width: "90%", background: "var(--jf-border)", borderRadius: 2 }} />}
               </div>
+            ))}
+          </div>
+        </div>,
+      );
+    }
+
+    case "justflows.shop.gallery": {
+      const images = (Array.isArray(p.images) ? p.images : []) as Array<{ src?: string; alt?: string }>;
+      const shown = images.filter((item) => item.src).slice(0, 4);
+      if (shown.length === 0) {
+        return wrap(<div style={{ background: "var(--jf-surface-3)", padding: "1.5rem", borderRadius: 6, textAlign: "center", color: "var(--jf-text-3)" }}>Product gallery</div>);
+      }
+      return wrap(
+        <div>
+          <div style={{ fontSize: "0.7rem", color: "var(--jf-text-3)", marginBottom: "0.35rem", textTransform: "capitalize" }}>{String(p.layout || "thumbs")}</div>
+          <div style={{ display: "grid", gridTemplateColumns: shown.length === 1 ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: "0.5rem" }}>
+            {shown.map((item, i) => (
+              <img key={i} src={item.src} alt={item.alt ?? ""} style={{ width: "100%", height: shown.length === 1 ? 220 : 110, objectFit: "cover", borderRadius: 8 }} />
+            ))}
+          </div>
+        </div>,
+      );
+    }
+
+    case "justflows.shop.buy-box":
+      return wrap(
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <div style={{ fontSize: "1.35rem", fontWeight: 800 }}>{text(p.title) || "Product"}</div>
+          <div style={{ display: "flex", gap: "0.6rem", alignItems: "baseline" }}>
+            <strong>{text(p.price) || "Price"}</strong>
+            {text(p.comparePrice) ? <span style={{ color: "var(--jf-text-3)", textDecoration: "line-through" }}>{text(p.comparePrice)}</span> : null}
+          </div>
+          <div style={{ color: "var(--jf-text-3)", fontSize: "0.85rem" }}>{text(p.description)}</div>
+          <div style={{ background: "var(--jf-accent)", color: "#fff", borderRadius: 6, padding: "0.55rem 0.8rem", textAlign: "center", fontWeight: 700, fontSize: "0.85rem" }}>
+            {text(p.cartLabel) || "Add to cart"}
+          </div>
+        </div>,
+      );
+
+    case "justflows.shop.breadcrumbs": {
+      const items = (Array.isArray(p.items) ? p.items : []) as Array<{ name?: string }>;
+      return wrap(
+        <div style={{ fontSize: "0.8rem", color: "var(--jf-text-3)" }}>
+          {items.map((item) => item.name).filter(Boolean).join(" / ")}
+          {items.length ? " / " : ""}
+          {text(p.current) || "Product"}
+        </div>,
+      );
+    }
+
+    case "justflows.shop.highlights": {
+      const items = (Array.isArray(p.items) ? p.items : []) as string[];
+      return wrap(
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: "0.35rem" }}>{text(p.heading) || "Highlights"}</div>
+          <ul style={{ margin: 0, paddingLeft: "1.1rem", color: "var(--jf-text-3)", fontSize: "0.85rem" }}>
+            {items.slice(0, 6).map((item, i) => <li key={i}>{text(item)}</li>)}
+          </ul>
+        </div>,
+      );
+    }
+
+    case "justflows.shop.accordion": {
+      const sections = (Array.isArray(p.sections) ? p.sections : []) as Array<{ name?: string }>;
+      return wrap(
+        <div style={{ fontSize: "0.85rem" }}>
+          {sections.slice(0, 4).map((section, i) => (
+            <div key={i} style={{ borderTop: "1px solid var(--jf-border)", padding: "0.45rem 0", fontWeight: 600 }}>{section.name || "Details"}</div>
+          ))}
+        </div>,
+      );
+    }
+
+    case "justflows.shop.policies": {
+      const items = (Array.isArray(p.items) ? p.items : []) as Array<{ name?: string; imageSrc?: string }>;
+      return wrap(
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.75rem" }}>
+          {items.slice(0, 4).map((item, i) => (
+            <div key={i} style={{ fontSize: "0.8rem" }}>
+              {item.imageSrc ? <img src={item.imageSrc} alt="" style={{ height: 36, width: "auto" }} /> : null}
+              <div style={{ fontWeight: 600 }}>{item.name}</div>
+            </div>
+          ))}
+        </div>,
+      );
+    }
+
+    case "justflows.shop.reviews":
+      return wrap(
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: "0.35rem" }}>{text(p.heading) || "Customer Reviews"}</div>
+          <div style={{ color: "var(--jf-text-3)", fontSize: "0.85rem" }}>
+            {Number(p.average) > 0 ? `${p.average} ★ · ${p.totalCount || 0} reviews` : "No reviews yet"}
+          </div>
+        </div>,
+      );
+
+    case "justflows.shop.related": {
+      const items = (Array.isArray(p.items) ? p.items : []) as Array<{ imageSrc?: string; name?: string }>;
+      return wrap(
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: "0.5rem" }}>{text(p.heading) || "You may also like"}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(72px, 1fr))", gap: "0.5rem" }}>
+            {items.slice(0, 4).map((item, i) => (
+              item.imageSrc
+                ? <img key={i} src={item.imageSrc} alt={item.name ?? ""} style={{ width: "100%", height: 72, objectFit: "cover", borderRadius: 6 }} />
+                : <div key={i} style={{ height: 72, background: "var(--jf-border)", borderRadius: 6 }} />
+            ))}
+          </div>
+        </div>,
+      );
+    }
+
+    case "justflows.shop.product-list": {
+      const items = (Array.isArray(p.items) ? p.items : []) as Array<{ imageSrc?: string; name?: string; price?: string }>;
+      return wrap(
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: "0.5rem" }}>{text(p.heading) || "Product list"}</div>
+          <div style={{ fontSize: "0.7rem", color: "var(--jf-text-3)", marginBottom: "0.35rem", textTransform: "capitalize" }}>{String(p.layout || "inline").replace(/-/g, " ")}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(72px, 1fr))", gap: "0.5rem" }}>
+            {items.slice(0, 4).map((item, i) => (
+              <div key={i}>
+                {item.imageSrc
+                  ? <img src={item.imageSrc} alt={item.name ?? ""} style={{ width: "100%", height: 72, objectFit: "cover", borderRadius: 6 }} />
+                  : <div style={{ height: 72, background: "var(--jf-border)", borderRadius: 6 }} />}
+                <div style={{ fontSize: "0.7rem", marginTop: 4 }}>{item.name}</div>
+                <div style={{ fontSize: "0.7rem", fontWeight: 700 }}>{item.price}</div>
+              </div>
+            ))}
+          </div>
+        </div>,
+      );
+    }
+
+    case "justflows.shop.detail-shots": {
+      const items = (Array.isArray(p.items) ? p.items : []) as Array<{ src?: string; alt?: string }>;
+      return wrap(
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: "0.5rem" }}>{text(p.heading) || "The Fine Details"}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "0.5rem" }}>
+            {items.slice(0, 2).map((item, i) => (
+              item.src
+                ? <img key={i} src={item.src} alt={item.alt ?? ""} style={{ width: "100%", height: 100, objectFit: "cover", borderRadius: 6 }} />
+                : <div key={i} style={{ height: 100, background: "var(--jf-border)", borderRadius: 6 }} />
             ))}
           </div>
         </div>,

@@ -9,6 +9,7 @@ import BlockLayoutPanel from "./BlockLayoutPanel";
 import ReusablePanel, { type ReusableItem } from "./ReusablePanel";
 import { GRID_BLOCK_TYPE } from "./grid";
 import MediaImageField from "../MediaImageField";
+import { PRODUCT_TAG_INSERTS } from "../../lib/product-tags";
 
 const GALLERY_LAYOUTS = ["grid", "masonry", "carousel", "slideshow", "list"] as const;
 type GalleryLayoutValue = (typeof GALLERY_LAYOUTS)[number];
@@ -33,6 +34,97 @@ const fieldInput: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
+const fieldHint: React.CSSProperties = {
+  fontWeight: 400,
+  color: "var(--jf-text-3)",
+  fontSize: "0.7rem",
+};
+
+function linesOf(items: unknown, keys: string[]): string {
+  if (typeof items === "string") return items;
+  if (!Array.isArray(items)) return "";
+  return items
+    .map((row) => {
+      const item = row && typeof row === "object" ? (row as Record<string, unknown>) : {};
+      return keys.map((key) => String(item[key] ?? "")).join(" | ");
+    })
+    .join("\n");
+}
+
+function parsePipes(text: string, keys: string[]): Record<string, string>[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const bits = line.split("|").map((bit) => bit.trim());
+      const row: Record<string, string> = {};
+      keys.forEach((key, index) => {
+        row[key] = bits[index] ?? "";
+      });
+      if (keys.length > 0 && bits.length > keys.length) {
+        row[keys[keys.length - 1]!] = bits.slice(keys.length - 1).join(" | ");
+      }
+      return row;
+    });
+}
+
+function productListLines(items: unknown): string {
+  if (typeof items === "string") return items;
+  if (!Array.isArray(items)) return "";
+  return items
+    .map((row) => {
+      const item = row && typeof row === "object" ? (row as Record<string, unknown>) : {};
+      const colors = Array.isArray(item.colors)
+        ? (item.colors as Array<{ name?: string; colorBg?: string }>)
+            .map((color) => `${color.name ?? ""}:${color.colorBg ?? ""}`)
+            .join(",")
+        : String(item.colors ?? "");
+      return [
+        item.imageSrc,
+        item.name,
+        item.price,
+        item.href,
+        item.color,
+        item.description,
+        item.rating,
+        item.reviewCount,
+        colors,
+      ]
+        .map((value) => String(value ?? ""))
+        .join(" | ");
+    })
+    .join("\n");
+}
+
+function sectionsToText(sections: unknown): string {
+  if (typeof sections === "string") return sections;
+  if (!Array.isArray(sections)) return "";
+  return sections
+    .map((row) => {
+      const item = row && typeof row === "object" ? (row as Record<string, unknown>) : {};
+      const name = String(item.name ?? "");
+      const items = Array.isArray(item.items) ? item.items.map((line) => `- ${String(line)}`).join("\n") : "";
+      return `${name}\n${items}`.trim();
+    })
+    .join("\n\n");
+}
+
+function textToSections(text: string): Array<{ name: string; items: string[] }> {
+  return text
+    .replace(/\r\n/g, "\n")
+    .trim()
+    .split(/\n{2,}/)
+    .map((chunk) => {
+      const lines = chunk.split("\n").map((line) => line.trim()).filter(Boolean);
+      return {
+        name: (lines[0] ?? "Details").replace(/:$/, ""),
+        items: lines.slice(1).map((line) => line.replace(/^\s*[-*]\s*/, "")),
+      };
+    })
+    .filter((section) => section.name || section.items.length > 0);
+}
+
 interface BlockInspectorProps {
   block: BlockNode;
   catalogEntry?: BlockCatalogEntry;
@@ -45,6 +137,7 @@ interface BlockInspectorProps {
   reusable?: ReusableItem[];
   onReloadReusable?: () => void;
   onConvertToReusable?: (ref: string) => void;
+  enableProductTags?: boolean;
 }
 
 export default function BlockInspector({
@@ -57,6 +150,7 @@ export default function BlockInspector({
   reusable = [],
   onReloadReusable,
   onConvertToReusable,
+  enableProductTags = false,
 }: BlockInspectorProps) {
   const p = block.props;
   const set = (key: string, val: unknown) => {
@@ -67,18 +161,47 @@ export default function BlockInspector({
     }
   };
 
-  const textArea = (key: string, label: string, rows = 3) => (
-    <label style={fieldLabel}>
-      {label}
-      <textarea rows={rows} style={fieldInput} value={(p[key] as string) ?? ""} onChange={(e) => set(key, e.target.value)} />
-    </label>
+  const insertTag = (key: string, tag: string) => {
+    const current = String(p[key] ?? "");
+    const spacer = current && !current.endsWith(" ") ? " " : "";
+    set(key, `${current}${spacer}${tag}`);
+  };
+
+  const productTagBar = (key: string) =>
+    enableProductTags ? (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", margin: "-0.35rem 0 0.75rem" }}>
+        {PRODUCT_TAG_INSERTS.map((item) => (
+          <button
+            key={item.tag}
+            type="button"
+            className="jf-btn jf-btn--ghost"
+            style={{ fontSize: "0.7rem", padding: "0.15rem 0.4rem" }}
+            onClick={() => insertTag(key, item.tag)}
+          >
+            {item.tag}
+          </button>
+        ))}
+      </div>
+    ) : null;
+
+  const textArea = (key: string, label: string, rows = 3, withTags = false) => (
+    <>
+      <label style={fieldLabel}>
+        {label}
+        <textarea rows={rows} style={fieldInput} value={(p[key] as string) ?? ""} onChange={(e) => set(key, e.target.value)} />
+      </label>
+      {withTags ? productTagBar(key) : null}
+    </>
   );
 
-  const textInput = (key: string, label: string, placeholder = "") => (
-    <label style={fieldLabel}>
-      {label}
-      <input type="text" style={fieldInput} placeholder={placeholder} value={(p[key] as string) ?? ""} onChange={(e) => set(key, e.target.value)} />
-    </label>
+  const textInput = (key: string, label: string, placeholder = "", withTags = false) => (
+    <>
+      <label style={fieldLabel}>
+        {label}
+        <input type="text" style={fieldInput} placeholder={placeholder} value={(p[key] as string) ?? ""} onChange={(e) => set(key, e.target.value)} />
+      </label>
+      {withTags ? productTagBar(key) : null}
+    </>
   );
 
   const select = (key: string, label: string, options: { value: string; label: string }[]) => (
@@ -168,10 +291,10 @@ export default function BlockInspector({
       </>;
       break;
 
-    case "core.paragraph": fields = textArea("text", "Text", 5); break;
+    case "core.paragraph": fields = textArea("text", "Text", 5, true); break;
     case "core.heading":
       fields = <>
-        {textInput("text", "Heading text")}
+        {textInput("text", "Heading text", "", true)}
         <label style={fieldLabel}>Level
           <select style={fieldInput} value={(p.level as number) ?? 2} onChange={(e) => set("level", Number(e.target.value))}>
             {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>H{n}</option>)}
@@ -232,7 +355,7 @@ export default function BlockInspector({
       fields = <>{textArea("code", "Code", 8)}{textInput("language", "Language")}</>;
       break;
     case "core.embed": fields = textInput("url", "URL"); break;
-    case "core.html": fields = textArea("html", "HTML", 6); break;
+    case "core.html": fields = textArea("html", "HTML", 6, true); break;
     case "core.divider":
       fields = <p style={{ color: "var(--jf-text-3)", fontSize: "0.8rem", margin: 0 }}>No settings.</p>;
       break;
@@ -350,6 +473,218 @@ export default function BlockInspector({
         <p style={{ color: "var(--jf-text-3)", fontSize: "0.8rem", margin: 0 }}>
           Lists published posts, newest first. Pagination uses /page/2, /page/3, etc. under this page's URL.
         </p>
+      </>;
+      break;
+    case "justflows.shop.gallery":
+      fields = <>
+        {select("layout", "Layout", [
+          { value: "thumbs", label: "Thumbnails" },
+          { value: "featured", label: "Featured + two" },
+          { value: "mosaic", label: "Mosaic" },
+          { value: "single", label: "Single image" },
+        ])}
+        <label style={fieldLabel}>Images
+          <textarea
+            rows={6}
+            style={fieldInput}
+            value={linesOf(p.images, ["src", "alt"])}
+            onChange={(e) => set("images", parsePipes(e.target.value, ["src", "alt"]))}
+          />
+          <span style={fieldHint}>One image per line: URL | alt text</span>
+        </label>
+        <label style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
+          <input type="checkbox" checked={p.lightbox !== false} onChange={(e) => set("lightbox", e.target.checked)} />
+          Lightbox
+        </label>
+      </>;
+      break;
+    case "justflows.shop.buy-box":
+      fields = <>
+        {textInput("title", "Title", "{{title}}", true)}
+        {textInput("price", "Price", "{{price}}", true)}
+        {textInput("comparePrice", "Compare at price", "{{comparePrice}}", true)}
+        {textArea("description", "Description", 3, true)}
+        {textInput("meta", "Meta", "SKU {{sku}}", true)}
+        {textArea("attributes", "Options", 3, true)}
+        {textInput("cartLabel", "Add to cart label")}
+        {textInput("cartUrl", "Add to cart URL", "/cart")}
+        {textInput("stockNote", "Stock note")}
+        {textInput("shipping", "Shipping line", "", true)}
+        {textInput("guarantee", "Guarantee")}
+        <label style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
+          <input type="checkbox" checked={p.showRating === true} onChange={(e) => set("showRating", e.target.checked)} />
+          Show rating
+        </label>
+        {p.showRating === true ? (
+          <>
+            <label style={fieldLabel}>Average (0–5)
+              <input type="number" style={fieldInput} min={0} max={5} step={0.5} value={Number(p.ratingAverage) || 0} onChange={(e) => set("ratingAverage", Number(e.target.value))} />
+            </label>
+            {textInput("reviewCount", "Review count label")}
+          </>
+        ) : null}
+        <label style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
+          <input type="checkbox" checked={p.showWishlist === true} onChange={(e) => set("showWishlist", e.target.checked)} />
+          Show wishlist link
+        </label>
+      </>;
+      break;
+    case "justflows.shop.breadcrumbs":
+      fields = <>
+        {textInput("current", "Current page", "{{title}}", true)}
+        <label style={fieldLabel}>Trail
+          <textarea
+            rows={3}
+            style={fieldInput}
+            value={linesOf(p.items, ["name", "href"])}
+            onChange={(e) => set("items", parsePipes(e.target.value, ["name", "href"]))}
+          />
+          <span style={fieldHint}>One crumb per line: name | /path</span>
+        </label>
+      </>;
+      break;
+    case "justflows.shop.highlights":
+      fields = <>
+        {textInput("heading", "Heading")}
+        <label style={fieldLabel}>Items
+          <textarea
+            rows={5}
+            style={fieldInput}
+            value={Array.isArray(p.items) ? (p.items as string[]).join("\n") : String(p.items ?? "")}
+            onChange={(e) => set("items", e.target.value.split("\n").map((line) => line.replace(/^\s*[-*]\s*/, "").trim()).filter(Boolean))}
+          />
+        </label>
+      </>;
+      break;
+    case "justflows.shop.accordion":
+      fields = (
+        <label style={fieldLabel}>Sections
+          <textarea
+            rows={10}
+            style={fieldInput}
+            value={sectionsToText(p.sections)}
+            onChange={(e) => set("sections", textToSections(e.target.value))}
+          />
+          <span style={fieldHint}>Heading, then bullets. Blank line starts a new section.</span>
+        </label>
+      );
+      break;
+    case "justflows.shop.policies":
+      fields = (
+        <label style={fieldLabel}>Policies
+          <textarea
+            rows={6}
+            style={fieldInput}
+            value={linesOf(p.items, ["name", "description", "imageSrc"])}
+            onChange={(e) => set("items", parsePipes(e.target.value, ["name", "description", "imageSrc"]))}
+          />
+          <span style={fieldHint}>One card per line: name | description | icon URL</span>
+        </label>
+      );
+      break;
+    case "justflows.shop.reviews":
+      fields = <>
+        {textInput("heading", "Heading")}
+        <label style={fieldLabel}>Average (0–5)
+          <input type="number" style={fieldInput} min={0} max={5} step={0.5} value={Number(p.average) || 0} onChange={(e) => set("average", Number(e.target.value))} />
+        </label>
+        <label style={fieldLabel}>Total reviews
+          <input type="number" style={fieldInput} min={0} value={Number(p.totalCount) || 0} onChange={(e) => set("totalCount", Number(e.target.value))} />
+        </label>
+        <label style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
+          <input type="checkbox" checked={p.showHistogram === true} onChange={(e) => set("showHistogram", e.target.checked)} />
+          Show rating breakdown
+        </label>
+        <label style={fieldLabel}>Breakdown
+          <textarea
+            rows={5}
+            style={fieldInput}
+            value={Array.isArray(p.counts) ? (p.counts as Array<{ rating: number; count: number }>).map((row) => `${row.rating}:${row.count}`).join("\n") : String(p.counts ?? "")}
+            onChange={(e) => set("counts", e.target.value.split("\n").map((line) => {
+              const [rating, count] = line.split(/[:|]/);
+              return { rating: Number(rating) || 0, count: Number(count) || 0 };
+            }).filter((row) => row.rating > 0))}
+          />
+          <span style={fieldHint}>One row per rating: 5:12</span>
+        </label>
+        <label style={fieldLabel}>Featured reviews
+          <textarea
+            rows={6}
+            style={fieldInput}
+            value={linesOf(p.items, ["rating", "author", "title", "content", "avatarSrc"])}
+            onChange={(e) => set("items", parsePipes(e.target.value, ["rating", "author", "title", "content", "avatarSrc"]))}
+          />
+          <span style={fieldHint}>rating | author | title | content | avatar URL</span>
+        </label>
+        {textInput("writeLabel", "Write review label")}
+        {textInput("writeHref", "Write review URL")}
+      </>;
+      break;
+    case "justflows.shop.related":
+      fields = <>
+        {textInput("heading", "Heading")}
+        {select("layout", "Layout", [
+          { value: "cards", label: "Cards" },
+          { value: "overlay", label: "Overlay" },
+        ])}
+        <label style={fieldLabel}>Products
+          <textarea
+            rows={6}
+            style={fieldInput}
+            value={linesOf(p.items, ["imageSrc", "name", "price", "href", "color"])}
+            onChange={(e) => set("items", parsePipes(e.target.value, ["imageSrc", "name", "price", "href", "color"]))}
+          />
+          <span style={fieldHint}>image URL | name | price | link | color</span>
+        </label>
+      </>;
+      break;
+    case "justflows.shop.product-list":
+      fields = <>
+        {select("layout", "Layout", [
+          { value: "inline", label: "Inline price" },
+          { value: "cta", label: "CTA link" },
+          { value: "swatches", label: "Color swatches" },
+          { value: "tall", label: "Tall images" },
+          { value: "overlay", label: "Overlay + add button" },
+          { value: "simple", label: "Simple" },
+          { value: "favorites", label: "Tall images + CTA" },
+          { value: "border", label: "Border grid" },
+          { value: "supporting", label: "Supporting text" },
+          { value: "hover", label: "Hover CTA" },
+          { value: "cards", label: "Detail cards" },
+        ])}
+        {textInput("heading", "Heading")}
+        <label style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
+          <input type="checkbox" checked={p.headingHidden === true} onChange={(e) => set("headingHidden", e.target.checked)} />
+          Hide heading
+        </label>
+        {textInput("ctaLabel", "Collection link label")}
+        {textInput("ctaHref", "Collection link URL", "/shop")}
+        {String(p.layout) === "overlay" ? textInput("addLabel", "Add button label") : null}
+        <label style={fieldLabel}>Products
+          <textarea
+            rows={8}
+            style={fieldInput}
+            value={productListLines(p.items)}
+            onChange={(e) => set("items", parsePipes(e.target.value, ["imageSrc", "name", "price", "href", "color", "description", "rating", "reviewCount", "colors"]))}
+          />
+          <span style={fieldHint}>image URL | name | price | link | color | description | rating | reviews | Black:#111827,White:#F9FAFB</span>
+        </label>
+      </>;
+      break;
+    case "justflows.shop.detail-shots":
+      fields = <>
+        {textInput("heading", "Heading")}
+        {textArea("intro", "Intro", 3)}
+        <label style={fieldLabel}>Shots
+          <textarea
+            rows={5}
+            style={fieldInput}
+            value={linesOf(p.items, ["src", "alt", "text"])}
+            onChange={(e) => set("items", parsePipes(e.target.value, ["src", "alt", "text"]))}
+          />
+          <span style={fieldHint}>image URL | alt | caption</span>
+        </label>
       </>;
       break;
     default:

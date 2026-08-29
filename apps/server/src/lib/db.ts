@@ -32,6 +32,8 @@ function ensureEnvLoaded() {
 export interface DbClient {
   run(sql: string, params?: (string | number | boolean | null)[]): Promise<void>;
   query<T = Record<string, unknown>>(sql: string, params?: (string | number | boolean | null)[]): Promise<T[]>;
+  execute(sql: string, params?: (string | number | boolean | null)[]): Promise<number>;
+  transaction<T>(fn: (tx: Pick<DbClient, "run" | "query" | "execute">) => Promise<T>): Promise<T>;
   close(): Promise<void>;
 }
 
@@ -85,6 +87,37 @@ export async function getDb(): Promise<DbClient> {
         const rows = await sql.unsafe(pgQuery, params as Parameters<typeof sql.unsafe>[1]);
         return rows as unknown as T[];
       },
+      execute: async (query, params = []) => {
+        let i = 0;
+        const pgQuery = query.replace(/\?/g, () => `$${++i}`);
+        const rows = await sql.unsafe(pgQuery, params as Parameters<typeof sql.unsafe>[1]);
+        return Number((rows as { count?: number }).count ?? 0);
+      },
+      transaction: async (fn) => {
+        const value = await sql.begin(async (txSql) => {
+          const tx = {
+            run: async (query: string, params: (string | number | boolean | null)[] = []) => {
+              let i = 0;
+              const pgQuery = query.replace(/\?/g, () => `$${++i}`);
+              await txSql.unsafe(pgQuery, params as Parameters<typeof txSql.unsafe>[1]);
+            },
+            query: async <T>(query: string, params: (string | number | boolean | null)[] = []) => {
+              let i = 0;
+              const pgQuery = query.replace(/\?/g, () => `$${++i}`);
+              const rows = await txSql.unsafe(pgQuery, params as Parameters<typeof txSql.unsafe>[1]);
+              return rows as unknown as T[];
+            },
+            execute: async (query: string, params: (string | number | boolean | null)[] = []) => {
+              let i = 0;
+              const pgQuery = query.replace(/\?/g, () => `$${++i}`);
+              const rows = await txSql.unsafe(pgQuery, params as Parameters<typeof txSql.unsafe>[1]);
+              return Number((rows as { count?: number }).count ?? 0);
+            },
+          };
+          return fn(tx);
+        });
+        return value as Awaited<ReturnType<typeof fn>>;
+      },
       close: () => sql.end(),
     };
   } else {
@@ -102,17 +135,54 @@ export async function getDb(): Promise<DbClient> {
 
     _client = {
       run: async (query, params = []) => {
+        // DDL (DROP TABLE, SET …) cannot use prepared statements on MariaDB.
+        if (params.length === 0) {
+          await pool.query(query);
+          return;
+        }
         await pool.execute(query, params);
       },
       query: async <T>(query: string, params: (string | number | boolean | null)[] = []) => {
-        const [rows] = await pool.execute(query, params);
+        const [rows] =
+          params.length === 0 ? await pool.query(query) : await pool.execute(query, params);
         return rows as T[];
+      },
+      execute: async (query, params = []) => {
+        const [result] = await pool.execute(query, params);
+        return Number((result as { affectedRows?: number }).affectedRows ?? 0);
+      },
+      transaction: async (fn) => {
+        const conn = await pool.getConnection();
+        await conn.beginTransaction();
+        try {
+          const tx = {
+            run: async (query: string, params: (string | number | boolean | null)[] = []) => {
+              await conn.execute(query, params);
+            },
+            query: async <T>(query: string, params: (string | number | boolean | null)[] = []) => {
+              const [rows] = await conn.execute(query, params);
+              return rows as T[];
+            },
+            execute: async (query: string, params: (string | number | boolean | null)[] = []) => {
+              const [result] = await conn.execute(query, params);
+              return Number((result as { affectedRows?: number }).affectedRows ?? 0);
+            },
+          };
+          const value = await fn(tx);
+          await conn.commit();
+          return value;
+        } catch (err) {
+          await conn.rollback();
+          throw err;
+        } finally {
+          conn.release();
+        }
       },
       close: async () => pool.end(),
     };
   }
 
-  return _client;
+  return _client!;
 }
 
 /** Reset the cached client (call after install completes). */

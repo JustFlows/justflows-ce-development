@@ -178,6 +178,20 @@ describe("assembleThemeCss", () => {
     const css = assembleThemeCss("", tokens, "");
     expect(css).not.toContain("/* Theme styles */");
     expect(css).not.toContain("/* Custom CSS */");
+    expect(css).not.toContain("/* Plugin styles */");
+  });
+
+  it("slots plugin CSS after the theme and before Additional CSS", () => {
+    const pluginCss = ".jf-product-buy { color: red; }";
+    const css = assembleThemeCss(themeStyles, tokens, additionalCss, pluginCss);
+    expect(css.indexOf("--color-bg: #ffffff")).toBeLessThan(css.indexOf("/* Plugin styles */"));
+    expect(css.indexOf("/* Plugin styles */")).toBeLessThan(css.indexOf("/* Custom CSS */"));
+    expect(css.indexOf(".jf-product-buy")).toBeLessThan(css.indexOf("border-radius: 0"));
+  });
+
+  it("omits the plugin section when no plugin contributed CSS", () => {
+    const css = assembleThemeCss(themeStyles, tokens, additionalCss, "   ");
+    expect(css).not.toContain("/* Plugin styles */");
   });
 });
 

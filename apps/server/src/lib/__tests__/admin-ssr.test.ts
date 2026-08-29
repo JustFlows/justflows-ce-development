@@ -27,6 +27,7 @@ describe("admin SSR", () => {
     const paths = adminPrefetchPaths("/admin/menus");
     expect(paths).toContain("/api/menus");
     expect(paths).toContain("/api/languages");
+    expect(paths).toContain("/api/content-types");
     expect(paths).not.toContain("/api/content?type=page&status=published&limit=100");
   });
 

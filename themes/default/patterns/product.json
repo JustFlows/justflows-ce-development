@@ -1,0 +1,290 @@
+{
+  "id": "product",
+  "title": "Product detail",
+  "description": "Storefront product page: thumbnail gallery, buy box, description, specs accordion, reviews, and related products. Commerce values use {{price}}, {{sku}}, and other product tags.",
+  "category": "pages",
+  "requiresBlockTypes": [
+    "justflows.shop.gallery",
+    "justflows.shop.buy-box",
+    "justflows.shop.breadcrumbs",
+    "justflows.shop.accordion",
+    "justflows.shop.reviews",
+    "justflows.shop.related"
+  ],
+  "blocks": [
+    {
+      "id": "product-hero",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "default", "padding": "lg", "align": "left" },
+      "children": [
+        {
+          "id": "product-hero-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "product-crumbs",
+              "type": "justflows.shop.breadcrumbs",
+              "version": 1,
+              "props": {
+                "current": "{{title}}",
+                "items": [
+                  { "name": "Shop", "href": "/shop" }
+                ]
+              }
+            },
+            {
+              "id": "product-hero-cols",
+              "type": "core.columns",
+              "version": 1,
+              "props": { "columns": 2, "gap": "lg" },
+              "children": [
+                {
+                  "id": "product-gallery-col",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "product-gallery",
+                      "type": "justflows.shop.gallery",
+                      "version": 1,
+                      "props": {
+                        "layout": "thumbs",
+                        "lightbox": true,
+                        "images": [
+                          {
+                            "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-product-01.jpg",
+                            "alt": "Product photo 1"
+                          },
+                          {
+                            "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-product-02.jpg",
+                            "alt": "Product photo 2"
+                          },
+                          {
+                            "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-product-03.jpg",
+                            "alt": "Product photo 3"
+                          },
+                          {
+                            "src": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-product-04.jpg",
+                            "alt": "Product photo 4"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                },
+                {
+                  "id": "product-buy-col",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "product-buy",
+                      "type": "justflows.shop.buy-box",
+                      "version": 1,
+                      "props": {
+                        "title": "{{title}}",
+                        "price": "{{price}}",
+                        "comparePrice": "{{comparePrice}}",
+                        "description": "{{excerpt}}",
+                        "meta": "SKU {{sku}}",
+                        "attributes": "{{attributes}}",
+                        "cartLabel": "Add to cart",
+                        "cartUrl": "/cart",
+                        "shipping": "{{weight}} {{weightUnit}} · {{dimensions}}",
+                        "stockNote": "In stock and ready to ship",
+                        "showRating": false,
+                        "showWishlist": false
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "product-details",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "muted", "padding": "xl", "align": "left" },
+      "children": [
+        {
+          "id": "product-details-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "product-details-cols",
+              "type": "core.columns",
+              "version": 1,
+              "props": { "columns": 2, "gap": "lg" },
+              "children": [
+                {
+                  "id": "product-desc-col",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "product-desc-h",
+                      "type": "core.heading",
+                      "version": 1,
+                      "props": { "text": "Description", "level": 2 }
+                    },
+                    {
+                      "id": "product-desc-p1",
+                      "type": "core.paragraph",
+                      "version": 1,
+                      "props": { "text": "{{excerpt}}" }
+                    }
+                  ]
+                },
+                {
+                  "id": "product-specs-col",
+                  "type": "core.column",
+                  "version": 1,
+                  "props": {},
+                  "children": [
+                    {
+                      "id": "product-specs",
+                      "type": "justflows.shop.accordion",
+                      "version": 1,
+                      "props": {
+                        "sections": [
+                          {
+                            "name": "Specifications",
+                            "items": [
+                              "SKU: {{sku}}",
+                              "Type: {{type}}",
+                              "Visibility: {{visibility}}",
+                              "Price: {{price}}",
+                              "Regular price: {{regularPrice}}",
+                              "Sale price: {{salePrice}}",
+                              "Stock: {{stock}}",
+                              "Barcode: {{barcode}}",
+                              "Weight: {{weight}} {{weightUnit}}",
+                              "Dimensions: {{dimensions}}"
+                            ]
+                          },
+                          {
+                            "name": "Features",
+                            "items": ["Replace these bullets with construction and material details."]
+                          },
+                          {
+                            "name": "Shipping",
+                            "items": ["Replace this with your shipping and delivery copy."]
+                          },
+                          {
+                            "name": "Returns",
+                            "items": ["Replace this with your returns policy."]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "product-reviews",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "default", "padding": "xl", "align": "left" },
+      "children": [
+        {
+          "id": "product-reviews-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "product-reviews-block",
+              "type": "justflows.shop.reviews",
+              "version": 1,
+              "props": {
+                "heading": "Customer Reviews",
+                "average": 0,
+                "totalCount": 0,
+                "showHistogram": false,
+                "items": [],
+                "writeLabel": "Write a review",
+                "writeHref": "#"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "product-related",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "muted", "padding": "xl", "align": "left" },
+      "children": [
+        {
+          "id": "product-related-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "product-related-block",
+              "type": "justflows.shop.related",
+              "version": 1,
+              "props": {
+                "heading": "You may also like",
+                "layout": "cards",
+                "items": [
+                  {
+                    "name": "Related product",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-01.jpg",
+                    "imageAlt": "Related product 1",
+                    "price": "",
+                    "color": ""
+                  },
+                  {
+                    "name": "Related product",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-02.jpg",
+                    "imageAlt": "Related product 2",
+                    "price": "",
+                    "color": ""
+                  },
+                  {
+                    "name": "Related product",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-03.jpg",
+                    "imageAlt": "Related product 3",
+                    "price": "",
+                    "color": ""
+                  },
+                  {
+                    "name": "Related product",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-04.jpg",
+                    "imageAlt": "Related product 4",
+                    "price": "",
+                    "color": ""
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

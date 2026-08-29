@@ -31,6 +31,16 @@ describe("PackageManifestSchema adminMenu", () => {
     expect(parsed.adminMenu).toEqual([menuItem]);
   });
 
+  it("keeps contentType on an admin page so the host can list those CMS entries", () => {
+    const parsed = PackageManifestSchema.parse({
+      ...base,
+      permissions: ["admin:extend"],
+      adminMenu: [{ ...menuItem, contentType: "product" }],
+    });
+
+    expect(parsed.adminMenu?.[0]?.contentType).toBe("product");
+  });
+
   it("rejects admin pages without the admin:extend permission", () => {
     const result = PackageManifestSchema.safeParse({ ...base, adminMenu: [menuItem] });
 
@@ -73,5 +83,61 @@ describe("PackageManifestSchema version", () => {
     for (const version of ["1.0.0/etc", "1.0.0\\..\\..", "1.0.0 ", "1.0.0../x"]) {
       expect(PackageManifestSchema.safeParse({ ...base, version }).success).toBe(false);
     }
+  });
+});
+
+describe("PackageManifestSchema registry", () => {
+  it("defaults a free listed listing when registry is omitted", () => {
+    const parsed = PackageManifestSchema.parse(base);
+    expect(parsed.registry).toBeUndefined();
+  });
+
+  it("keeps commercial, visibility, and paid price", () => {
+    const parsed = PackageManifestSchema.parse({
+      ...base,
+      registry: {
+        commercialMarketplace: true,
+        listed: false,
+        free: false,
+        price: { amount: 49, currency: "EUR", interval: "year" },
+      },
+    });
+    expect(parsed.registry).toMatchObject({
+      commercialMarketplace: true,
+      listed: false,
+      free: false,
+      comingSoon: false,
+      price: { amount: 49, currency: "EUR", interval: "year" },
+    });
+  });
+
+  it("keeps a comingSoon listing visible but not installable", () => {
+    const parsed = PackageManifestSchema.parse({
+      ...base,
+      registry: {
+        commercialMarketplace: false,
+        listed: true,
+        free: true,
+        comingSoon: true,
+      },
+    });
+    expect(parsed.registry).toMatchObject({ comingSoon: true, listed: true, free: true });
+  });
+
+  it("keeps declared CMS content types", () => {
+    const parsed = PackageManifestSchema.parse({
+      ...base,
+      permissions: ["content:delete"],
+      contentTypes: ["product", "shop"],
+    });
+    expect(parsed.contentTypes).toEqual(["product", "shop"]);
+  });
+
+  it("rejects a paid listing without a price", () => {
+    const result = PackageManifestSchema.safeParse({
+      ...base,
+      registry: { free: false },
+    });
+    expect(result.success).toBe(false);
   });
 });

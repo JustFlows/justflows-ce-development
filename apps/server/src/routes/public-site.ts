@@ -14,6 +14,7 @@ import {
 import { localePath, matchActiveLocale, displayLocaleCode } from "../lib/i18n/locales.js";
 import { formatContentDate, getGeneralSettings } from "../lib/general-settings.js";
 import { hydrateSiteWidgets } from "../lib/site-widgets.js";
+import { applyContentBlocks, applyContentRender } from "../lib/content-render.js";
 import { createTranslator, type MessageCatalog } from "../lib/i18n/translate.js";
 import {
   defaultModsFromSchema,
@@ -584,7 +585,14 @@ async function renderHomeHtml(req: Request, reqPath: string, preview: boolean): 
   const blogCtx = await buildBlogRenderContext(ctx.locale, 1, reqPath);
   if (home) {
     const bodyHtml = withSiteWidgets(
-      await renderBlocksHtml(home.blocks.blocks, submittedFormIdFrom(req), blogCtx),
+      await applyContentRender(
+        await renderBlocksHtml(
+          await applyContentBlocks(home.blocks.blocks, home),
+          submittedFormIdFrom(req),
+          blogCtx,
+        ),
+        home,
+      ),
       withHeader,
     );
     return renderPage("home", {
@@ -708,7 +716,14 @@ async function renderSinglePageHtml(
   const withHeader = await applyPageHeader(withTranslations, pageContent.fields, preview, submittedFormIdFrom(req));
   const blogCtx = await buildBlogRenderContext(pageCtx.locale, pageNumber, basePath);
   const bodyHtml = withSiteWidgets(
-    await renderBlocksHtml(pageContent.blocks.blocks, submittedFormIdFrom(req), blogCtx),
+    await applyContentRender(
+      await renderBlocksHtml(
+        await applyContentBlocks(pageContent.blocks.blocks, pageContent),
+        submittedFormIdFrom(req),
+        blogCtx,
+      ),
+      pageContent,
+    ),
     withHeader,
   );
   return renderPage("single", {

@@ -7,6 +7,7 @@ import { assertPackageIsTrusted } from "../lib/package-trust.js";
 import { sendPackageInstallError } from "../lib/package-install-error.js";
 import { packagesInstalledDir } from "../lib/packages-dir.js";
 import { ARCHIVE_LIMITS } from "@justflows/installer";
+import { filterMarketplaceCatalogBody, marketplaceListingIsComingSoon, marketplaceListingIsPaid, marketplaceListingIsVisible } from "../lib/marketplace-catalog.js";
 
 const router = Router();
 
@@ -57,7 +58,9 @@ router.get("/", requireRole("administrator"), async (req, res) => {
     const body = await upstream.text();
     // Always JSON. Echoing the upstream Content-Type would let a compromised or
     // misconfigured registry serve text/html from this site's origin.
-    res.status(upstream.status).type("application/json").send(body);
+    res.status(upstream.status).type("application/json").send(
+      upstream.ok ? filterMarketplaceCatalogBody(body) : body,
+    );
   } catch (err) {
     res.status(503).json({ error: `Marketplace API unavailable: ${String(err)}` });
   }
@@ -84,9 +87,25 @@ router.post("/install", requireRole("administrator"), async (req, res) => {
       version?: string;
       channel?: string;
       pricing?: { type?: string };
+      registry?: {
+        listed?: boolean;
+        free?: boolean;
+        commercialMarketplace?: boolean;
+        comingSoon?: boolean;
+      };
     };
 
-    if (listing.pricing?.type === "paid" || listing.channel === "commercial") {
+    if (!marketplaceListingIsVisible(listing)) {
+      res.status(404).json({ error: `Listing not found (${id})` });
+      return;
+    }
+
+    if (marketplaceListingIsComingSoon(listing)) {
+      res.status(403).json({ error: "This listing is coming soon and cannot be installed yet." });
+      return;
+    }
+
+    if (marketplaceListingIsPaid(listing)) {
       res.status(402).json({
         error: "This listing is commercial. Get it on Justflows.",
         checkoutUrl: "https://justflows.com/marketplace",

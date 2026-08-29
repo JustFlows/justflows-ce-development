@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PluginMenuProvider } from "@components/PluginMenuProvider";
 import { SessionProvider } from "@components/SessionProvider";
+import { I18nProvider } from "../../i18n/I18nProvider";
 import { expectNoCriticalAxe } from "../../test/a11y";
 import LoginPage from "../LoginPage";
 import InstallPage from "../InstallPage";
@@ -172,11 +173,13 @@ describe("admin accessibility", () => {
   it("has no critical axe findings on plugins", async () => {
     const { container } = render(
       <MemoryRouter>
-        <SessionProvider>
-        <PluginMenuProvider>
-          <PluginsPage />
-        </PluginMenuProvider>
-        </SessionProvider>
+        <I18nProvider>
+          <SessionProvider>
+            <PluginMenuProvider>
+              <PluginsPage />
+            </PluginMenuProvider>
+          </SessionProvider>
+        </I18nProvider>
       </MemoryRouter>,
     );
     await waitFor(() => {
@@ -189,11 +192,13 @@ describe("admin accessibility", () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
-        <SessionProvider>
-        <PluginMenuProvider>
-          <PluginsPage />
-        </PluginMenuProvider>
-        </SessionProvider>
+        <I18nProvider>
+          <SessionProvider>
+            <PluginMenuProvider>
+              <PluginsPage />
+            </PluginMenuProvider>
+          </SessionProvider>
+        </I18nProvider>
       </MemoryRouter>,
     );
 

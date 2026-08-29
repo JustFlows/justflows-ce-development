@@ -25,6 +25,7 @@ import { invalidateContentCache } from "../lib/content-public.js";
 import { getRuntimeHooks } from "../lib/plugin-runtime.js";
 import { isHookAbortError } from "@justflows/core";
 import { sanitizeBlockDocument } from "@justflows/blocks";
+import { defaultBlocksForContentType, isEmptyBlockDocument } from "../lib/default-content-blocks.js";
 import { requireRole } from "../middleware/auth.js";
 import {
   canDeleteAnyContent,
@@ -58,7 +59,7 @@ const CreateSchema = z.object({
 
 const PatchSchema = z
   .object({
-    title: z.string().min(1).optional(),
+    title: z.string().optional(),
     slug: z.string().optional(),
     excerpt: z.string().nullable().optional(),
     blocks: z.unknown().optional(),
@@ -91,6 +92,26 @@ function hookCtx(session: { siteId: string; userId: string; role: string }) {
     siteId: session.siteId,
     source: "http" as const,
     actor: { userId: session.userId, role: session.role },
+  };
+}
+
+function translationGroupOf(row: { id?: unknown; translation_group_id?: unknown }, fallbackId: string): string {
+  return row.translation_group_id ? String(row.translation_group_id) : fallbackId;
+}
+
+function contentHookRef(
+  contentId: string,
+  siteId: string,
+  extras: { type?: string; translationGroupId?: string; lastInTranslationGroup?: boolean } = {},
+) {
+  return {
+    contentId,
+    siteId,
+    ...(extras.type ? { type: extras.type } : {}),
+    ...(extras.translationGroupId ? { translationGroupId: extras.translationGroupId } : {}),
+    ...(extras.lastInTranslationGroup !== undefined
+      ? { lastInTranslationGroup: extras.lastInTranslationGroup }
+      : {}),
   };
 }
 
@@ -227,6 +248,9 @@ router.post("/", requireRole(...CONTENT_WRITE_ROLES), async (req, res) => {
     }
 
     const db = await getDb();
+    const blockDoc = isEmptyBlockDocument(blocks)
+      ? await defaultBlocksForContentType(type)
+      : blocks;
 
     await db.run(
       `INSERT INTO content (id, site_id, type, title, slug, locale, translation_group_id, excerpt, blocks, fields, status, author_id, created_at, updated_at)
@@ -240,7 +264,7 @@ router.post("/", requireRole(...CONTENT_WRITE_ROLES), async (req, res) => {
         locale,
         translationGroupId,
         excerpt ?? null,
-        JSON.stringify(sanitizeBlockDocument(blocks)),
+        JSON.stringify(sanitizeBlockDocument(blockDoc)),
         JSON.stringify(fields ?? {}),
         session.userId,
         now(),
@@ -251,7 +275,7 @@ router.post("/", requireRole(...CONTENT_WRITE_ROLES), async (req, res) => {
     const rows = await db.query<Record<string, unknown>>("SELECT * FROM content WHERE id = ?", [id]);
     await hooks.dispatchAction(
       "content.created",
-      { contentId: id, siteId: session.siteId },
+      contentHookRef(id, session.siteId, { type, translationGroupId }),
       hookCtx,
     );
     res.status(201).json(serializeContentRow(rows[0]!));
@@ -310,6 +334,10 @@ router.post("/:id/translate", requireRole(...CONTENT_WRITE_ROLES), async (req, r
       source: "http" as const,
       actor: { userId: session.userId, role: session.role },
     };
+    const isProduct = String(source.type) === "product";
+    const title = isProduct ? "" : String(source.title);
+    const slug = String(source.slug);
+    const excerpt = isProduct || source.excerpt == null ? null : String(source.excerpt);
 
     try {
       await hooks.dispatchGate(
@@ -318,9 +346,9 @@ router.post("/:id/translate", requireRole(...CONTENT_WRITE_ROLES), async (req, r
           input: {
             siteId: session.siteId,
             type: String(source.type),
-            title: String(source.title),
-            slug: String(source.slug),
-            excerpt: source.excerpt == null ? null : String(source.excerpt),
+            title,
+            slug,
+            excerpt,
             fields: {},
           },
         },
@@ -343,8 +371,9 @@ router.post("/:id/translate", requireRole(...CONTENT_WRITE_ROLES), async (req, r
       }
     }
     const blocksValue = JSON.stringify(sanitizeBlockDocument(parsedBlocks));
-    const fieldsValue =
-      typeof source.fields === "string"
+    const fieldsValue = isProduct
+      ? JSON.stringify({})
+      : typeof source.fields === "string"
         ? source.fields
         : JSON.stringify(source.fields ?? {});
 
@@ -355,11 +384,11 @@ router.post("/:id/translate", requireRole(...CONTENT_WRITE_ROLES), async (req, r
         newId,
         session.siteId,
         String(source.type),
-        String(source.title),
-        String(source.slug),
+        title,
+        slug,
         locale,
         groupId,
-        source.excerpt == null ? null : String(source.excerpt),
+        excerpt,
         blocksValue,
         fieldsValue,
         session.userId,
@@ -374,7 +403,10 @@ router.post("/:id/translate", requireRole(...CONTENT_WRITE_ROLES), async (req, r
     );
     await hooks.dispatchAction(
       "content.created",
-      { contentId: newId, siteId: session.siteId },
+      contentHookRef(newId, session.siteId, {
+        type: String(source.type),
+        translationGroupId: groupId,
+      }),
       hookCtx,
     );
     res.status(201).json(serializeContentRow(created[0]!));
@@ -442,7 +474,7 @@ router.patch("/:id", requireRole(...CONTENT_WRITE_ROLES), async (req, res) => {
     }
 
     const ctx = hookCtx(session);
-    const contentRef = { contentId: id, siteId: session.siteId };
+    const contentRef = { contentId: id, siteId: session.siteId, type: String(row.type) };
     const status = String(row.status);
     const wantsPublish = body.data.status === "published";
     const wantsUnpublish = status === "published" && body.data.status !== undefined && body.data.status !== "published";
@@ -739,8 +771,8 @@ router.delete("/:id", requireRole(...CONTENT_WRITE_ROLES), async (req, res) => {
   const id = param(req.params.id);
   const db = await getDb();
 
-  const existing = await db.query<{ author_id: string | null }>(
-    "SELECT author_id FROM content WHERE id = ? AND site_id = ? LIMIT 1",
+  const existing = await db.query<{ author_id: string | null; type: string; translation_group_id: string | null }>(
+    "SELECT author_id, type, translation_group_id FROM content WHERE id = ? AND site_id = ? LIMIT 1",
     [id, session.siteId],
   );
   const row = existing[0];
@@ -761,7 +793,16 @@ router.delete("/:id", requireRole(...CONTENT_WRITE_ROLES), async (req, res) => {
     source: "http" as const,
     actor: { userId: session.userId, role: session.role },
   };
-  const contentRef = { contentId: id, siteId: session.siteId };
+  const groupId = translationGroupOf(row, id);
+  const siblings = await db.query<{ id: string }>(
+    "SELECT id FROM content WHERE site_id = ? AND translation_group_id = ? AND id != ? LIMIT 1",
+    [session.siteId, groupId, id],
+  );
+  const contentRef = contentHookRef(id, session.siteId, {
+    type: row.type,
+    translationGroupId: groupId,
+    lastInTranslationGroup: !siblings[0],
+  });
 
   try {
     await hooks.dispatchGate("content.beforeDelete", contentRef, hookCtx);
@@ -920,8 +961,8 @@ async function publishRow(
 
   await pruneHistoricalForContent(id, siteId);
   await invalidateContentCache();
-  await hooks.dispatchAction("content.updated", { contentId: id, siteId }, ctx);
-  await hooks.dispatchAction("content.published", { contentId: id, siteId }, ctx);
+  await hooks.dispatchAction("content.updated", { contentId: id, siteId, type: String(row.type) }, ctx);
+  await hooks.dispatchAction("content.published", { contentId: id, siteId, type: String(row.type) }, ctx);
   void auditLog({
     siteId,
     action: "content.published",

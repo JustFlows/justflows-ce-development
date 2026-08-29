@@ -28,6 +28,10 @@ export type PluginMenuItem = {
   icon: string;
   domain: string;
   end?: boolean;
+  /** When set, the host setup wizard mounts only on this path. */
+  setupPath?: string;
+  /** When set, the plugin host lists CMS entries of this type. */
+  contentType?: string;
 };
 
 export const ADMIN_DASHBOARD: NavItem = {
@@ -53,6 +57,12 @@ export const ADMIN_NAV_DOMAINS: NavDomain[] = [
       { key: "nav.media", to: "/admin/media", icon: "🖼" },
       { key: "nav.comments", to: "/admin/comments", icon: "💬" },
     ],
+  },
+  {
+    key: "nav.domains.commerce",
+    slug: "commerce",
+    icon: "🛍",
+    items: [],
   },
   {
     key: "nav.domains.appearance",

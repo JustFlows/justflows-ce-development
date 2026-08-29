@@ -68,7 +68,13 @@ function serializeMediaRow(row: Record<string, unknown>) {
 
 router.get("/openapi.json", async (req, res) => {
   if (!(await ensurePublicApiAccess(req, res))) return;
-  res.json(PUBLIC_API_OPENAPI);
+  const hooks = getRuntimeHooks();
+  const document = structuredClone(PUBLIC_API_OPENAPI) as import("@justflows/sdk").OpenApiDocument;
+  if (!hooks.has("openapi.document")) {
+    res.json(document);
+    return;
+  }
+  res.json(await hooks.applyFilter("openapi.document", document, { version: "v1" }));
 });
 
 router.get("/content-types", async (req, res) => {

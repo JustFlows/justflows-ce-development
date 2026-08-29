@@ -1,6 +1,7 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useT } from "../../i18n/I18nProvider";
+import ProductCatalogFields from "./ProductCatalogFields";
 
 interface SiteLanguage {
   code: string;
@@ -31,6 +32,9 @@ function NewContentForm() {
   const [languages, setLanguages] = useState<SiteLanguage[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const catalogPayloadRef = useRef<unknown>(null);
+  const catalogSaveRef = useRef<(() => Promise<boolean>) | null>(null);
+  const isProduct = type === "product";
 
   useEffect(() => {
     fetch("/api/languages/active")
@@ -80,6 +84,18 @@ function NewContentForm() {
         setError(data.error ?? "Failed to create");
         return;
       }
+      if (isProduct && catalogPayloadRef.current && typeof data.id === "string") {
+        const catalogRes = await fetch(`/ext/justflows.shop/catalog/${encodeURIComponent(data.id)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...(catalogPayloadRef.current as object), contentId: data.id }),
+        });
+        if (!catalogRes.ok) {
+          setError(t("shop.saveFailed"));
+          navigate(`/admin/content/${data.id}`);
+          return;
+        }
+      }
       navigate(`/admin/content/${data.id}`);
     } catch (e) {
       setError(String(e));
@@ -113,7 +129,7 @@ function NewContentForm() {
       <div className="jf-page">
         {error && <div className="jf-alert jf-alert--error" role="alert">{error}</div>}
 
-        <div className="jf-card" style={{ maxWidth: 820, width: "100%" }}>
+        <div className="jf-card" style={isProduct ? undefined : { maxWidth: 820, width: "100%" }}>
           <div className="jf-card__body jf-stack">
             <div className="jf-field">
               <label className="jf-sr-only" htmlFor="jf-new-title">{t("content.title")}</label>
@@ -168,6 +184,15 @@ function NewContentForm() {
             </div>
           </div>
         </div>
+
+        {isProduct && (
+          <ProductCatalogFields
+            contentId={null}
+            saveRef={catalogSaveRef}
+            payloadRef={catalogPayloadRef}
+            onDirtyChange={() => undefined}
+          />
+        )}
       </div>
     </>
   );

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { usePluginMenu } from "@components/PluginMenuProvider";
 import { useSessionRole } from "@components/SessionProvider";
+import { useT } from "../../i18n/I18nProvider";
 
 interface Plugin {
   id: string;
@@ -11,6 +12,7 @@ interface Plugin {
   status: "active" | "inactive" | "installed" | "error";
   publisher: string;
   settingsSchema?: Record<string, unknown>;
+  setupPath?: string;
 }
 
 const STATUS_VARIANT: Record<Plugin["status"], string> = {
@@ -24,11 +26,14 @@ export default function PluginsPage() {
   // Upload, activate/deactivate, delete, and per-plugin settings are all
   // administrator-only on the server; an editor can only read this list.
   const canManage = useSessionRole() === "administrator";
+  const { t } = useT();
+  const navigate = useNavigate();
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [uploadSuccess, setUploadSuccess] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Installing, activating, or deleting a plugin changes which admin pages exist.
@@ -94,16 +99,27 @@ export default function PluginsPage() {
       setPlugins((list) => list.map((p) =>
         p.id === id ? { ...p, status: action === "activate" ? "active" : "inactive" } : p));
       await refreshMenu();
+      if (action === "activate") {
+        const data = (await res.json().catch(() => ({}))) as { setupPath?: string };
+        if (typeof data.setupPath === "string" && data.setupPath.startsWith("/admin/")) {
+          navigate(data.setupPath);
+        }
+      }
     }
   }
 
-  async function deletePlugin(id: string) {
-    if (!confirm("Are you sure you want to delete this plugin? This cannot be undone.")) return;
-    const res = await fetch(`/api/plugins/${id}`, { method: "DELETE" });
-    if (res.ok) {
-      setPlugins((list) => list.filter((p) => p.id !== id));
-      await refreshMenu();
+  async function deletePlugin(plugin: Plugin) {
+    if (!confirm(t("plugins.deleteConfirm", { name: plugin.name }))) return;
+    setDeleteError("");
+    const res = await fetch(`/api/plugins/${encodeURIComponent(plugin.id)}`, { method: "DELETE" });
+    const data = (await res.json().catch(() => ({}))) as { error?: string; warning?: string };
+    if (!res.ok) {
+      setDeleteError(data.error ?? t("plugins.deleteFailed"));
+      return;
     }
+    setPlugins((list) => list.filter((p) => p.id !== plugin.id));
+    if (data.warning) setDeleteError(data.warning);
+    await refreshMenu();
   }
 
   return (
@@ -164,6 +180,12 @@ export default function PluginsPage() {
           <h2 className="jf-card__title">Installed plugins ({plugins.length})</h2>
         </div>
 
+        {deleteError && (
+          <div className="jf-card__body">
+            <div className="jf-alert jf-alert--error" role="alert">{deleteError}</div>
+          </div>
+        )}
+
         {loading ? (
           <div className="jf-card__body jf-stack jf-stack--sm">
             <div className="jf-skeleton" style={{ height: 64 }} />
@@ -198,7 +220,7 @@ export default function PluginsPage() {
                     <button className="jf-btn jf-btn--ghost" onClick={() => togglePlugin(p.id, p.status)}>
                       {p.status === "active" ? "Deactivate" : "Activate"}
                     </button>
-                    <button className="jf-btn jf-btn--danger" onClick={() => deletePlugin(p.id)}>
+                    <button className="jf-btn jf-btn--danger" onClick={() => void deletePlugin(p)}>
                       Delete
                     </button>
                   </div>

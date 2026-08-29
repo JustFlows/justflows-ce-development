@@ -61,6 +61,88 @@ export const DEFAULT_PROPS: Record<string, Record<string, unknown>> = {
     showFeaturedImage: true,
     postsPerPage: 0,
   },
+  "justflows.shop.gallery": {
+    layout: "thumbs",
+    lightbox: true,
+    images: [
+      { src: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-product-01.jpg", alt: "Product photo 1" },
+      { src: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-product-02.jpg", alt: "Product photo 2" },
+      { src: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-product-03.jpg", alt: "Product photo 3" },
+      { src: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-03-product-04.jpg", alt: "Product photo 4" },
+    ],
+  },
+  "justflows.shop.buy-box": {
+    title: "{{title}}",
+    price: "{{price}}",
+    comparePrice: "{{comparePrice}}",
+    description: "{{excerpt}}",
+    meta: "SKU {{sku}}",
+    attributes: "{{attributes}}",
+    cartLabel: "Add to cart",
+    cartUrl: "/cart",
+    shipping: "{{weight}} {{weightUnit}} · {{dimensions}}",
+    showRating: false,
+    showWishlist: false,
+  },
+  "justflows.shop.breadcrumbs": {
+    current: "{{title}}",
+    items: [{ name: "Shop", href: "/shop" }],
+  },
+  "justflows.shop.highlights": {
+    heading: "Highlights",
+    items: ["Replace these highlights with your product features."],
+  },
+  "justflows.shop.accordion": {
+    sections: [
+      { name: "Specifications", items: ["SKU: {{sku}}", "Price: {{price}}", "Stock: {{stock}}"] },
+      { name: "Shipping", items: ["Replace this with your shipping copy."] },
+    ],
+  },
+  "justflows.shop.policies": {
+    items: [
+      { name: "Free delivery", description: "Replace this with your shipping policy.", imageSrc: "https://tailwindcss.com/plus-assets/img/ecommerce/icons/icon-delivery-light.svg" },
+      { name: "Customer support", description: "Replace this with how customers can reach you.", imageSrc: "https://tailwindcss.com/plus-assets/img/ecommerce/icons/icon-chat-light.svg" },
+    ],
+  },
+  "justflows.shop.reviews": {
+    heading: "Customer Reviews",
+    average: 0,
+    totalCount: 0,
+    showHistogram: false,
+    items: [],
+    writeLabel: "Write a review",
+    writeHref: "#",
+  },
+  "justflows.shop.related": {
+    heading: "You may also like",
+    layout: "cards",
+    items: [
+      { name: "Related product", href: "/shop", imageSrc: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-01.jpg", imageAlt: "Related product 1", price: "", color: "" },
+      { name: "Related product", href: "/shop", imageSrc: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-02.jpg", imageAlt: "Related product 2", price: "", color: "" },
+    ],
+  },
+  "justflows.shop.product-list": {
+    layout: "inline",
+    heading: "Customers also purchased",
+    headingHidden: false,
+    ctaLabel: "",
+    ctaHref: "/shop",
+    addLabel: "Add to bag",
+    items: [
+      { name: "Basic Tee", href: "/shop", imageSrc: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-01.jpg", imageAlt: "Front of men's Basic Tee in black.", price: "$35", color: "Black", description: "Everyday cotton crewneck.", rating: 5, reviewCount: 38, colors: [{ name: "Black", colorBg: "#111827" }, { name: "White", colorBg: "#F9FAFB" }] },
+      { name: "Basic Tee", href: "/shop", imageSrc: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-02.jpg", imageAlt: "Front of men's Basic Tee in white.", price: "$35", color: "Aspen White", description: "Soft unisex fit.", rating: 5, reviewCount: 18, colors: [{ name: "Aspen White", colorBg: "#F9FAFB" }, { name: "Black", colorBg: "#111827" }] },
+      { name: "Basic Tee", href: "/shop", imageSrc: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-03.jpg", imageAlt: "Front of men's Basic Tee in dark gray.", price: "$35", color: "Charcoal", description: "Heavyweight jersey.", rating: 4, reviewCount: 21, colors: [{ name: "Charcoal", colorBg: "#4B5563" }, { name: "Black", colorBg: "#111827" }] },
+      { name: "Artwork Tee", href: "/shop", imageSrc: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-04.jpg", imageAlt: "Front of men's Artwork Tee in peach.", price: "$35", color: "Iso Dots", description: "Printed cotton tee.", rating: 5, reviewCount: 24, colors: [{ name: "Iso Dots", colorBg: "#FED7AA" }, { name: "Natural", colorBg: "#FEF3C7" }] },
+    ],
+  },
+  "justflows.shop.detail-shots": {
+    heading: "The Fine Details",
+    intro: "",
+    items: [
+      { src: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-04-detail-product-shot-01.jpg", alt: "Detail photo 1", text: "Replace this caption." },
+      { src: "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-04-detail-product-shot-02.jpg", alt: "Detail photo 2", text: "Replace this caption." },
+    ],
+  },
   "core.grid": { columns: 12, gap: "md", rowHeight: "auto" },
   "core.color-scheme": { style: "buttons", align: "right", showSystem: false },
   "core.language-switcher": { style: "codes", align: "right" },
@@ -114,7 +196,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   layout: "Layout",
   content: "Content",
   media: "Media",
+  commerce: "Commerce",
   site: "Site",
 };
 
-export const CATEGORY_ORDER = ["sections", "layout", "content", "media", "site"];
+export const CATEGORY_ORDER = ["sections", "layout", "content", "media", "commerce", "site"];

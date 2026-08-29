@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import BlockEditor, { type BlockDocument } from "@components/BlockEditor";
 import MediaImageField from "@components/MediaImageField";
 import { useSessionRole } from "@components/SessionProvider";
 import { useT } from "../../i18n/I18nProvider";
 import { fieldsWithHeader, headerFromFields } from "../../lib/page-header";
+import ProductCatalogFields from "./ProductCatalogFields";
+import { fetchProductPattern, isEmptyBlockDocument, shouldSeedProductLayout, usesPageBuilderChrome } from "../../lib/content-layout";
+import { catalogPreviewTags } from "../../lib/product-tags";
 
 interface ContentItem {
   id: string;
@@ -107,6 +110,10 @@ export default function EditContentPage() {
   const [revisions, setRevisions] = useState<RevisionSummary[]>([]);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [expandedRevisionId, setExpandedRevisionId] = useState<string | null>(null);
+  const [catalogDirty, setCatalogDirty] = useState(false);
+  const [catalogDraft, setCatalogDraft] = useState<Parameters<typeof catalogPreviewTags>[0]>(null);
+  const catalogSaveRef = useRef<(() => Promise<boolean>) | null>(null);
+  const onCatalogDirty = useCallback((next: boolean) => setCatalogDirty(next), []);
 
   useEffect(() => {
     fetch("/api/languages/active")
@@ -152,6 +159,12 @@ export default function EditContentPage() {
         if (!data.id) throw new Error("Content not found");
         setItem(data);
         setBaseline(JSON.stringify(data));
+        if (shouldSeedProductLayout(data) && isEmptyBlockDocument(data.blocks)) {
+          const pattern = await fetchProductPattern();
+          if (pattern) {
+            setItem((prev) => (prev ? { ...prev, blocks: pattern as ContentItem["blocks"] } : prev));
+          }
+        }
         const groupId = data.translationGroupId ?? data.id;
         fetch(`/api/content-types/${encodeURIComponent(data.type)}`)
           .then((tr) => tr.json())
@@ -169,10 +182,11 @@ export default function EditContentPage() {
       .finally(() => setLoading(false));
   }, [id, loadTranslations, loadRevisions]);
 
-  const dirty = useMemo(
+  const contentDirty = useMemo(
     () => Boolean(item) && JSON.stringify(item) !== baseline,
     [item, baseline],
   );
+  const dirty = contentDirty || catalogDirty;
 
   useEffect(() => {
     if (!dirty || saving || !item) return;
@@ -229,6 +243,26 @@ export default function EditContentPage() {
       return;
     }
 
+    if (!contentDirty) {
+      if (source === "autosave") setAutosaving(true);
+      else {
+        setSaving(true);
+        setSaved(false);
+      }
+      setError(null);
+      try {
+        const ok = await saveCatalogData();
+        if (ok && source !== "autosave") {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2500);
+        }
+      } finally {
+        setSaving(false);
+        setAutosaving(false);
+      }
+      return;
+    }
+
     if (source === "autosave") setAutosaving(true);
     else {
       setSaving(true);
@@ -260,6 +294,8 @@ export default function EditContentPage() {
       if (!res.ok) { setError(data.error ?? "Failed to save"); return; }
       setItem(data);
       setBaseline(JSON.stringify(data));
+      const catalogOk = await saveCatalogData();
+      if (!catalogOk) return;
       if (source !== "autosave") {
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
@@ -280,7 +316,7 @@ export default function EditContentPage() {
     setSaved(false);
     try {
       let versionToPublish = item.version;
-      if (dirty) {
+      if (contentDirty) {
         const {
           locale: _locale,
           translationGroupId: _group,
@@ -303,6 +339,8 @@ export default function EditContentPage() {
         setBaseline(JSON.stringify(savedItem));
         versionToPublish = savedItem.version;
       }
+      const catalogOk = await saveCatalogData();
+      if (!catalogOk) return;
       const res = await fetch(`/api/content/${id}/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -408,7 +446,7 @@ export default function EditContentPage() {
   async function deleteItem() {
     if (!confirm("Delete this content? This cannot be undone.")) return;
     await fetch(`/api/content/${id}`, { method: "DELETE" });
-    navigate("/admin/content");
+    navigate(item?.type === "product" ? "/admin/shop/products" : "/admin/content");
   }
 
   function patch(changes: Partial<ContentItem>) {
@@ -417,6 +455,13 @@ export default function EditContentPage() {
 
   function patchField(key: string, value: unknown) {
     patch({ fields: { ...(item?.fields ?? {}), [key]: value } });
+  }
+
+  async function saveCatalogData(): Promise<boolean> {
+    if (!catalogSaveRef.current) return true;
+    const ok = await catalogSaveRef.current();
+    if (!ok) setError(t("shop.saveFailed"));
+    return ok;
   }
 
   async function setAsHomePage(enabled: boolean) {
@@ -472,10 +517,12 @@ export default function EditContentPage() {
     );
   }
 
-  const isPage = item.type === "page";
+  const isPage = usesPageBuilderChrome(item.type);
+  const mergeTags = item.type === "product" ? catalogPreviewTags(catalogDraft, item) : undefined;
+  const isCmsPage = item.type === "page";
   const isHomePage = homePageId === item.id;
   const isBlogPage = blogPageId === item.id;
-  const label = typeLabel || (isPage ? t("content.editPage") : t("content.editPost"));
+  const label = typeLabel || (isCmsPage ? t("content.editPage") : t("content.editPost"));
   const itemLocale = item.locale ?? defaultLocale;
   const publicHref = localePath(itemLocale, item.slug ?? "", defaultLocale);
   const currentLang = languages.find((l) => l.code === itemLocale);
@@ -601,6 +648,16 @@ export default function EditContentPage() {
               </div>
             </div>
 
+            {item.type === "product" && (
+              <ProductCatalogFields
+                contentId={item.id}
+                translationGroupId={item.translationGroupId ?? item.id}
+                saveRef={catalogSaveRef}
+                onDirtyChange={onCatalogDirty}
+                onDraftChange={setCatalogDraft}
+              />
+            )}
+
             {typeFields.length > 0 && (
               <div className="jf-card">
                 <div className="jf-card__head">
@@ -637,6 +694,8 @@ export default function EditContentPage() {
                   compact
                   isPage={isPage}
                   enableHeader={isPage}
+                  mergeTags={mergeTags}
+                  enableProductTags={item.type === "product"}
                   header={isPage ? headerFromFields(item.fields) : undefined}
                   onHeaderChange={isPage ? (header) => setItem((prev) => (prev ? {
                     ...prev,
@@ -764,7 +823,7 @@ export default function EditContentPage() {
                   {t("content.previewDraft")} ↗
                 </a>
 
-                {isPage && canSetSitePages && (
+                {isCmsPage && canSetSitePages && (
                   <div className="jf-field">
                     {isHomePage ? (
                       <>
@@ -793,7 +852,7 @@ export default function EditContentPage() {
                   </div>
                 )}
 
-                {isPage && canSetSitePages && (
+                {isCmsPage && canSetSitePages && (
                   <div className="jf-field">
                     {isBlogPage ? (
                       <>

@@ -20,9 +20,12 @@ providers and credentials.
   services use the same contracts.
 - **Server-authoritative commerce:** the browser never decides prices, discounts,
   tax, shipping, stock, payment state, or order totals.
-- **Transactional data:** products may integrate with the content system, but
-  orders, payments, stock, refunds, fulfillments, and returns use dedicated,
-  strongly defined storage.
+- **Transactional data:** catalog products are Content entries of type `product`.
+  `shop_products` holds commerce fields (SKU, price, inventory flags) keyed by
+  the product's translation group (`content_id`), so every locale shares one
+  commerce row. Orders, payments, stock movements, refunds, fulfillments, and
+  returns use dedicated Shop tables. Store identity lives in `shop_stores`, not
+  `site_settings`.
 - **Jurisdiction-agnostic tax:** core provides a configurable tax engine and does
   not claim to determine a merchant's legal obligations. Automated tax services
   are adapters.
@@ -40,6 +43,13 @@ providers and credentials.
 ## Plugin and package boundaries
 
 ### Main plugin: `justflows.shop`
+
+Shop development lives in the plugin registry's
+[`plugins/ecommerce`](https://github.com/JustFlows/plugin-registry-service/tree/main/plugins/ecommerce).
+CE does not ship Shop, register it as a bundled plugin in product docs, or add
+Shop routes to core. Production sites install `justflows.shop` from the plugin
+registry. Companion modules
+(`justflows.payments`, `justflows.shipping-*`, and so on) follow the same path.
 
 The main Shop plugin owns:
 
@@ -101,8 +111,13 @@ cache, logger, settings service, block registry, or job system.
 - Plugin activation uses `PluginModule.activate(ctx)` and receives only scoped
   capabilities. Registrations are owned by the plugin and removed on
   deactivation.
-- Admin navigation uses manifest `adminMenu` entries and `admin:extend`; it does
-  not patch the core sidebar directly.
+- Admin navigation uses manifest `adminMenu` entries, the `admin.menu` filter
+  on activate, and `admin:extend`; it does not patch the core sidebar directly.
+  After first-run setup, `justflows.shop` contributes the commerce domain tabs
+  (store overview, catalog, attributes, inventory, orders, customers, checkout,
+  manual payments, shipping, tax, discounts, refunds, emails, reports). Nested
+  paths skip the setup wizard. First-party companion plugins add their own
+  `adminMenu` when installed.
 - Storefront components register through `ctx.blocks` under the owning plugin's
   namespace.
 - Cache access uses `ctx.cache`, with keys scoped by site, currency, locale,
@@ -322,7 +337,9 @@ Before declaring the commerce SDK stable, publish:
   - Use a separately configured commerce database to isolate storage and load
 - Connection test, dialect detection/confirmation, TLS status, migration status,
   and health diagnostics before enabling checkout
-- Automatic creation and validation of required pages:
+- Automatic creation and validation of required pages (Shop `activate()`
+  creates the `product` and `shop` content types, then publishes these pages
+  of type `shop` when they are missing; existing slugs are left unchanged):
   - Shop
   - Product
   - Product category
@@ -348,10 +365,13 @@ The merchant chooses one of two supported storage topologies per site:
    storage growth, and connection load from content/admin traffic.
 
 The choice is configured through the browser-first Shop setup UI and can also
-be supplied by environment variables for managed deployments. Database names,
-hosts, ports, TLS mode, and non-secret status may be shown to administrators;
-passwords and connection URLs are encrypted or environment-backed, write-only,
-redacted, and never returned by an API or included in diagnostics.
+be supplied by environment variables for managed deployments
+(`JUSTFLOWS_SHOP_DB_DRIVER`, `HOST`, `PORT`, `NAME`, `USER`, `PASSWORD`, `SSL`,
+and `SSL_REJECT_UNAUTHORIZED`). When those are set, topology is separate and
+the connection fields are read-only. Database names, hosts, ports, TLS mode, and
+non-secret status may be shown to administrators; passwords and connection URLs
+are encrypted or environment-backed, write-only, redacted, and never returned by
+an API or included in diagnostics.
 
 Both modes use the same Shop repository/service interfaces and pass the same
 dialect contract tests. No domain service may branch on storage topology beyond

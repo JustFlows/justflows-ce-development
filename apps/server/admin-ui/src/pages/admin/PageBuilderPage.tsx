@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import PageBuilder, { type BlockDocument } from "@components/builder/PageBuilder";
 import { fieldsWithHeader, headerFromFields } from "../../lib/page-header";
+import { fetchProductPattern, isEmptyBlockDocument, shouldSeedProductLayout, usesPageBuilderChrome } from "../../lib/content-layout";
+import { catalogPreviewTags } from "../../lib/product-tags";
 
 interface ContentItem {
   id: string;
@@ -11,6 +13,8 @@ interface ContentItem {
   status: string;
   version?: number;
   hasWorkingRevision?: boolean;
+  translationGroupId?: string | null;
+  excerpt?: string | null;
   blocks?: BlockDocument;
   fields?: Record<string, unknown>;
 }
@@ -24,13 +28,27 @@ export default function PageBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [catalogDraft, setCatalogDraft] = useState<Parameters<typeof catalogPreviewTags>[0]>(null);
 
   useEffect(() => {
     fetch(`/api/content/${id}`)
       .then(async (r) => {
         const data = await r.json() as ContentItem & { error?: string };
         if (!r.ok) throw new Error(data.error ?? "Failed to load");
+        if (shouldSeedProductLayout(data) && isEmptyBlockDocument(data.blocks)) {
+          const pattern = await fetchProductPattern();
+          if (pattern) data.blocks = pattern as ContentItem["blocks"];
+        }
         setItem(data);
+        if (data.type === "product") {
+          const group = data.translationGroupId ?? data.id;
+          fetch(`/ext/justflows.shop/catalog/${encodeURIComponent(data.id)}?group=${encodeURIComponent(group)}`)
+            .then((res) => res.json())
+            .then((body: Parameters<typeof catalogPreviewTags>[0] & { kind?: string }) => {
+              if (body && body.kind === "catalog") setCatalogDraft(body);
+            })
+            .catch(() => undefined);
+        }
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -85,7 +103,7 @@ export default function PageBuilderPage() {
     );
   }
 
-  const isPage = item.type === "page";
+  const isPage = usesPageBuilderChrome(item.type);
   const previewUrl = item.slug ? `${item.slug.startsWith("/") ? item.slug : `/${item.slug}`}?preview=1` : null;
 
   return (
@@ -131,6 +149,8 @@ export default function PageBuilderPage() {
           onChange={(blocks) => setItem((prev) => (prev ? { ...prev, blocks } : prev))}
           isPage={isPage}
           enableHeader={isPage}
+          mergeTags={item.type === "product" ? catalogPreviewTags(catalogDraft, item) : undefined}
+          enableProductTags={item.type === "product"}
           header={isPage ? headerFromFields(item.fields) : undefined}
           onHeaderChange={isPage ? (header) => setItem((prev) => (prev ? {
             ...prev,

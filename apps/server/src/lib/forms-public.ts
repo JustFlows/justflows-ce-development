@@ -5,7 +5,7 @@ import { getPlugin } from "./plugins-db.js";
 import { createPluginDataApi } from "./plugin-data.js";
 import { getSiteId } from "./themes-db.js";
 import { getRuntimeBlockRegistry } from "./runtime-blocks.js";
-import { getSiteSetting } from "./site-settings.js";
+import { getPluginSetting } from "./plugin-kv.js";
 import { getGeneralSettings } from "./general-settings.js";
 import { consumeRateLimit } from "./rate-limit.js";
 
@@ -334,7 +334,7 @@ async function notifyFormSubmission(
   values: Record<string, string>,
 ): Promise<void> {
   try {
-    const pluginNotify = await getSiteSetting<string>(siteId, `plugin.${FORMS_PLUGIN_ID}:notifyEmail`);
+    const pluginNotify = await getPluginSetting<string>(FORMS_PLUGIN_ID, siteId, "notifyEmail");
     const general = await getGeneralSettings(siteId);
     const to =
       typeof pluginNotify === "string" && pluginNotify.includes("@")

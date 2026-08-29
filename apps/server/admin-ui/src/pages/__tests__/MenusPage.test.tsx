@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SessionProvider } from "@components/SessionProvider";
@@ -34,6 +35,13 @@ const ABOUT = {
   type: "page",
   locale: "en-US",
 };
+const MUG = {
+  id: "product-mug",
+  title: "Ceramic mug",
+  slug: "ceramic-mug",
+  type: "product",
+  locale: "en-US",
+};
 
 function mockFetch(): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((input: RequestInfo | URL) => {
@@ -49,6 +57,16 @@ function mockFetch(): ReturnType<typeof vi.fn> {
         ],
       });
     }
+    if (path === "/api/content-types") {
+      return jsonResponse({
+        types: [
+          { slug: "page", label: "Page" },
+          { slug: "post", label: "Post" },
+          { slug: "product", label: "Product" },
+          { slug: "shop", label: "Shop" },
+        ],
+      });
+    }
     if (path === "/api/menus") {
       return jsonResponse({ menus: [{ id: "m1", slug: "primary", name: "Primary", items: [] }] });
     }
@@ -60,6 +78,12 @@ function mockFetch(): ReturnType<typeof vi.fn> {
       return jsonResponse({ items });
     }
     if (path.startsWith("/api/content?type=post")) {
+      return jsonResponse({ items: [] });
+    }
+    if (path.startsWith("/api/content?type=product")) {
+      return jsonResponse({ items: path.includes("locale=en-US") ? [MUG] : [] });
+    }
+    if (path.startsWith("/api/content?type=shop")) {
       return jsonResponse({ items: [] });
     }
     return jsonResponse({});
@@ -95,5 +119,28 @@ describe("MenusPage content picker", () => {
       .filter((path) => path.startsWith("/api/content?type=page"));
     expect(pageCalls.some((path) => path.includes("locale=en-US"))).toBe(true);
     expect(pageCalls.some((path) => !path.includes("locale="))).toBe(false);
+  });
+
+  it("lists other content types such as products in the picker", async () => {
+    const user = userEvent.setup();
+    const fetchMock = mockFetch();
+    renderPage();
+
+    expect(await screen.findByRole("button", { name: "Products" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Shop" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Products" }));
+    expect(await screen.findByText("Ceramic mug")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Add to menu" }));
+    expect(screen.getByDisplayValue("Ceramic mug")).toBeInTheDocument();
+    expect(screen.getByText("Product")).toBeInTheDocument();
+
+    const productCalls = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((path) => path.startsWith("/api/content?type=product"));
+    expect(productCalls.some((path) => path.includes("locale=en-US"))).toBe(true);
+    expect(productCalls.some((path) => !path.includes("locale="))).toBe(false);
   });
 });

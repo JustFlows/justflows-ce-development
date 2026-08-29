@@ -1,0 +1,100 @@
+{
+  "id": "product-list",
+  "title": "Product list",
+  "description": "Catalog grid with inline prices. Switch the Product list block layout for CTA, swatches, tall images, overlay, and other storefront looks. Uses Shop blocks.",
+  "category": "pages",
+  "requiresBlockTypes": ["justflows.shop.product-list"],
+  "blocks": [
+    {
+      "id": "product-list-section",
+      "type": "core.section",
+      "version": 1,
+      "props": { "background": "default", "padding": "lg", "align": "left" },
+      "children": [
+        {
+          "id": "product-list-wrap",
+          "type": "core.container",
+          "version": 1,
+          "props": { "width": "wide" },
+          "children": [
+            {
+              "id": "product-list",
+              "type": "justflows.shop.product-list",
+              "version": 1,
+              "props": {
+                "layout": "inline",
+                "heading": "Customers also purchased",
+                "headingHidden": false,
+                "ctaLabel": "",
+                "ctaHref": "/shop",
+                "addLabel": "Add to bag",
+                "items": [
+                  {
+                    "name": "Basic Tee",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-01.jpg",
+                    "imageAlt": "Front of men's Basic Tee in black.",
+                    "price": "$35",
+                    "color": "Black",
+                    "description": "Everyday cotton crewneck.",
+                    "rating": 5,
+                    "reviewCount": 38,
+                    "colors": [
+                      { "name": "Black", "colorBg": "#111827" },
+                      { "name": "White", "colorBg": "#F9FAFB" }
+                    ]
+                  },
+                  {
+                    "name": "Basic Tee",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-02.jpg",
+                    "imageAlt": "Front of men's Basic Tee in white.",
+                    "price": "$35",
+                    "color": "Aspen White",
+                    "description": "Soft unisex fit.",
+                    "rating": 5,
+                    "reviewCount": 18,
+                    "colors": [
+                      { "name": "Aspen White", "colorBg": "#F9FAFB" },
+                      { "name": "Black", "colorBg": "#111827" }
+                    ]
+                  },
+                  {
+                    "name": "Basic Tee",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-03.jpg",
+                    "imageAlt": "Front of men's Basic Tee in dark gray.",
+                    "price": "$35",
+                    "color": "Charcoal",
+                    "description": "Heavyweight jersey.",
+                    "rating": 4,
+                    "reviewCount": 21,
+                    "colors": [
+                      { "name": "Charcoal", "colorBg": "#4B5563" },
+                      { "name": "Black", "colorBg": "#111827" }
+                    ]
+                  },
+                  {
+                    "name": "Artwork Tee",
+                    "href": "/shop",
+                    "imageSrc": "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-01-related-product-04.jpg",
+                    "imageAlt": "Front of men's Artwork Tee in peach.",
+                    "price": "$35",
+                    "color": "Iso Dots",
+                    "description": "Printed cotton tee.",
+                    "rating": 5,
+                    "reviewCount": 24,
+                    "colors": [
+                      { "name": "Iso Dots", "colorBg": "#FED7AA" },
+                      { "name": "Natural", "colorBg": "#FEF3C7" }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

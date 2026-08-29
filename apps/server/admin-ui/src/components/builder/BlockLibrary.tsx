@@ -21,6 +21,7 @@ function pluginIdForBlockType(blockType: string): string {
 
 const PLUGIN_NAMES: Record<string, string> = {
   "justflows.forms": "Forms",
+  "justflows.shop": "Shop",
 };
 
 interface BlockLibraryProps {

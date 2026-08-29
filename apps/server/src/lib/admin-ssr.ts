@@ -120,6 +120,7 @@ export function adminPrefetchPaths(originalUrl: string): string[] {
   } else if (pathname === "/admin/menus") {
     paths.add("/api/menus");
     paths.add("/api/languages");
+    paths.add("/api/content-types");
   } else if (pathname === "/admin/users") {
     paths.add("/api/users");
   } else if (pathname === "/admin/settings") {
@@ -218,8 +219,12 @@ async function addDerivedResponses(
       langs?.languages?.find((lang) => lang.isDefault)?.code ?? langs?.languages?.[0]?.code;
     if (defaultLocale) {
       const localeQuery = `&locale=${encodeURIComponent(defaultLocale)}`;
-      derived.add(`/api/content?type=page&status=published&limit=100${localeQuery}`);
-      derived.add(`/api/content?type=post&status=published&limit=100${localeQuery}`);
+      const types = read<{ types?: Array<{ slug?: string }> }>("/api/content-types");
+      const slugs = (types?.types ?? []).map((type) => type.slug).filter((slug): slug is string => Boolean(slug));
+      const list = slugs.length > 0 ? slugs : ["page", "post"];
+      for (const type of list) {
+        derived.add(`/api/content?type=${encodeURIComponent(type)}&status=published&limit=100${localeQuery}`);
+      }
     }
   }
   if (pathname === "/admin/forms") {

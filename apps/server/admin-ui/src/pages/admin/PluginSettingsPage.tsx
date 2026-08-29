@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useSessionRole } from "@components/SessionProvider";
+import { initialJson } from "../../ssr-data";
 
 interface SettingField {
   type: "string" | "number" | "boolean" | "text";
@@ -16,6 +17,13 @@ interface SiteLanguage {
   isDefault?: boolean;
 }
 
+interface PluginSettingsPayload {
+  schema?: Record<string, SettingField>;
+  values?: Record<string, unknown>;
+  languages?: SiteLanguage[];
+  error?: string;
+}
+
 function localeValue(value: unknown, locale: string): string {
   if (typeof value === "string") return value;
   if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -25,36 +33,48 @@ function localeValue(value: unknown, locale: string): string {
   return "";
 }
 
+function asSettingsSchema(value: unknown): Record<string, SettingField> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, SettingField>;
+}
+
 export default function PluginSettingsPage() {
   const { id } = useParams<{ id: string }>();
   // Reading and saving plugin settings are both administrator-only on the
   // server, unlike the plugin list itself (administrator + editor).
   const role = useSessionRole();
   const canManage = role === "administrator";
-  const [schema, setSchema] = useState<Record<string, SettingField>>({});
-  const [values, setValues] = useState<Record<string, unknown>>({});
-  const [languages, setLanguages] = useState<SiteLanguage[]>([]);
+  const prefetched = id ? initialJson<PluginSettingsPayload>(`/api/plugins/${id}/settings`) : undefined;
+  const prefetchedSchema = asSettingsSchema(prefetched?.schema);
+  const [schema, setSchema] = useState<Record<string, SettingField>>(prefetchedSchema ?? {});
+  const [values, setValues] = useState<Record<string, unknown>>(prefetched?.values ?? {});
+  const [languages, setLanguages] = useState<SiteLanguage[]>(prefetched?.languages ?? []);
   const [locale, setLocale] = useState("en-US");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!prefetchedSchema);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+
+  function applyPayload(data: PluginSettingsPayload): void {
+    if (data.error) throw new Error(data.error);
+    const nextSchema = asSettingsSchema(data.schema);
+    if (!nextSchema) {
+      throw new Error("Plugin settings could not be loaded.");
+    }
+    const langs = data.languages ?? [];
+    setSchema(nextSchema);
+    setValues(data.values ?? {});
+    setLanguages(langs);
+    setLocale((current) => langs.find((lang) => lang.isDefault)?.code ?? langs[0]?.code ?? current);
+    setError("");
+  }
 
   useEffect(() => {
     if (!id || !canManage) return;
     fetch(`/api/plugins/${id}/settings`)
-      .then((r) => r.json())
-      .then((data: {
-        schema?: Record<string, SettingField>;
-        values?: Record<string, unknown>;
-        languages?: SiteLanguage[];
-        error?: string;
-      }) => {
-        if (data.error) throw new Error(data.error);
-        const langs = data.languages ?? [];
-        setSchema(data.schema ?? {});
-        setValues(data.values ?? {});
-        setLanguages(langs);
-        setLocale(langs.find((lang) => lang.isDefault)?.code ?? langs[0]?.code ?? "en-US");
+      .then(async (r) => {
+        const data = (await r.json()) as PluginSettingsPayload;
+        if (!r.ok) throw new Error(data.error ?? "Could not load plugin settings");
+        applyPayload(data);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
@@ -85,21 +105,29 @@ export default function PluginSettingsPage() {
     if (!id) return;
     setError("");
     setSaved(false);
-    const res = await fetch(`/api/plugins/${id}/settings`, {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    const next = await res.json() as { error?: string };
-    if (!res.ok) {
-      setError(next.error ?? "Save failed");
-      return;
+    try {
+      const res = await fetch(`/api/plugins/${id}/settings`, {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      const next = await res.json() as PluginSettingsPayload;
+      if (!res.ok) {
+        setError(next.error ?? "Save failed");
+        return;
+      }
+      if (asSettingsSchema(next.schema)) {
+        applyPayload(next);
+      } else {
+        const refreshed = await fetch(`/api/plugins/${id}/settings`);
+        const data = (await refreshed.json()) as PluginSettingsPayload;
+        if (!refreshed.ok) throw new Error(data.error ?? "Could not reload plugin settings");
+        applyPayload(data);
+      }
+      setSaved(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
     }
-    const refreshed = await fetch(`/api/plugins/${id}/settings`).then((r) => r.json()) as {
-      values?: Record<string, unknown>;
-    };
-    if (refreshed.values) setValues(refreshed.values);
-    setSaved(true);
   }
 
   function renderField(key: string, field: SettingField, localized: boolean) {
@@ -169,6 +197,10 @@ export default function PluginSettingsPage() {
 
       {loading ? (
         <div className="jf-card"><div className="jf-card__body">Loading…</div></div>
+      ) : error ? (
+        <div className="jf-card">
+          <div className="jf-alert jf-alert--error" role="alert">{error}</div>
+        </div>
       ) : Object.keys(schema).length === 0 ? (
         <div className="jf-card">
           <div className="jf-empty">

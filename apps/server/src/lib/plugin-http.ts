@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import type { Request, Response, NextFunction } from "express";
+import type { PluginHttpMethod } from "@justflows/sdk";
 import { isProtectedHeaderName, SECURITY_HEADER_DEFS } from "./security-headers.js";
 import { resolveSession } from "./auth-session.js";
 
@@ -47,22 +48,30 @@ export async function dispatchPluginHttp(
     return;
   }
 
-  const method = req.method === "POST" ? "POST" : req.method === "GET" ? "GET" : null;
+  const method: PluginHttpMethod | null =
+    req.method === "GET" ||
+    req.method === "POST" ||
+    req.method === "PUT" ||
+    req.method === "PATCH" ||
+    req.method === "DELETE"
+      ? req.method
+      : null;
   if (!method) {
     next();
     return;
   }
 
-  const match = loader.httpRouter.match(method, req.path);
-  if (!match) {
+  const matched = loader.httpRouter.match(method, req.path);
+  if (!matched) {
     next();
     return;
   }
+  const { route: match, params } = matched;
 
   // These routes are mounted at the application root, not under /api, so the
-  // csrfProtection middleware never sees them — every plugin POST was
+  // csrfProtection middleware never sees them — every plugin mutation was
   // cross-site forgeable. Checked here, on the one path that reaches them.
-  if (method === "POST") {
+  if (method !== "GET") {
     const { csrfProtection } = await import("../middleware/csrf.js");
     // Synchronous: it either calls next() or answers 403 itself, so the flag
     // is settled by the time the call returns.
@@ -91,6 +100,7 @@ export async function dispatchPluginHttp(
       method,
       path: req.path,
       query,
+      params,
       body: req.body,
       headers,
       session: session

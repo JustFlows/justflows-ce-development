@@ -150,7 +150,8 @@ export default function AdminShell() {
           </span>
         </div>
 
-        {activeDomain && <DomainSubnav domain={activeDomain} />}
+        {/* One page is already the sidebar item — don't repeat it as a top bar. */}
+        {activeDomain && activeDomain.items.length > 1 && <DomainSubnav domain={activeDomain} />}
         <Outlet />
       </main>
     </div>

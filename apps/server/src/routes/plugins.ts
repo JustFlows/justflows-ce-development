@@ -9,6 +9,7 @@ import {
   insertPlugin,
   listPlugins,
   pluginToDto,
+  type PluginRow,
 } from "../lib/plugins-db.js";
 import multer from "multer";
 import { assertPackageIsTrusted } from "../lib/package-trust.js";
@@ -20,11 +21,69 @@ import { sendServerError } from "../lib/send-error.js";
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
+function noStore(res: { setHeader: (name: string, value: string) => void }): void {
+  res.setHeader("Cache-Control", "private, no-store");
+}
+
+async function readPluginSettings(
+  plugin: PluginRow,
+  siteId: string,
+): Promise<{
+  schema: NonNullable<ReturnType<typeof pluginToDto>["settingsSchema"]> | Record<string, never>;
+  values: Record<string, unknown>;
+  languages: Array<{ code: string; nativeName?: string; isDefault?: boolean }>;
+}> {
+  const { ensurePluginRuntime, getRuntimeHooks } = await import("../lib/plugin-runtime.js");
+  await ensurePluginRuntime();
+  const { getPluginSetting } = await import("../lib/plugin-kv.js");
+  const { listLanguages, getDefaultLocale } = await import("../lib/i18n/languages-db.js");
+  const { asLocaleMap } = await import("../lib/seo-public.js");
+  const schema = pluginToDto(plugin).settingsSchema ?? {};
+  const languages = await listLanguages(siteId, true);
+  const defaultLocale = await getDefaultLocale(siteId);
+  const values: Record<string, unknown> = {};
+  for (const key of Object.keys(schema)) {
+    const raw = (await getPluginSetting(plugin.plugin_id, siteId, key)) ?? schema[key]?.default;
+    values[key] = schema[key]?.localized ? asLocaleMap(raw, defaultLocale) : raw;
+  }
+  const merged = (await getRuntimeHooks().applyFilter(
+    "plugin.settings",
+    values,
+    { pluginId: plugin.plugin_id, siteId },
+    { siteId, source: "http" },
+  )) as Record<string, unknown>;
+
+  if (plugin.plugin_id === "justflows.seo") {
+    const db = await import("../lib/db.js").then((m) => m.getDb());
+    const siteRows = await db.query<{ name: string; description: string | null }>(
+      "SELECT name, description FROM sites WHERE id = ? LIMIT 1",
+      [siteId],
+    );
+    const site = siteRows[0];
+    const titles = (merged.siteTitle ?? {}) as Record<string, string>;
+    const descriptions = (merged.defaultDescription ?? {}) as Record<string, string>;
+    if (site?.name && !titles[defaultLocale]) titles[defaultLocale] = site.name;
+    if (site?.description && !descriptions[defaultLocale]) descriptions[defaultLocale] = site.description;
+    merged.siteTitle = titles;
+    merged.defaultDescription = descriptions;
+  }
+
+  if (plugin.plugin_id === "justflows.analytics") {
+    const { parseGoogleTagId } = await import("../lib/google-tag.js");
+    const parsed = parseGoogleTagId(String(merged.googleTagId ?? ""));
+    merged.googleTagId = parsed ?? "";
+  }
+
+  return { schema, values: merged, languages };
+}
+
 // The installed extension set and its versions fingerprint the site.
 router.get("/", requireRole("administrator", "editor"), async (req, res) => {
   const session = req.session!;
 
   try {
+    const { ensurePluginRuntime } = await import("../lib/plugin-runtime.js");
+    await ensurePluginRuntime();
     const plugins = await listPlugins(session.siteId);
     res.json({ plugins });
   } catch (err) {
@@ -101,7 +160,9 @@ router.post("/:id/activate", requireRole("administrator"), async (req, res) => {
   auditFromRequest(req, "plugin.activated", { target: pluginId });
   const { revalidateOnUpdate } = await import("../lib/cache-revalidate.js");
   await revalidateOnUpdate("plugin");
-  res.json({ ok: true });
+  const row = await getPlugin(session.siteId, pluginId);
+  const setupPath = row ? pluginToDto(row).setupPath : undefined;
+  res.json({ ok: true, ...(setupPath ? { setupPath } : {}) });
 });
 
 router.post("/:id/deactivate", requireRole("administrator"), async (req, res) => {
@@ -119,10 +180,51 @@ router.post("/:id/deactivate", requireRole("administrator"), async (req, res) =>
 router.delete("/:id", requireRole("administrator"), async (req, res) => {
   const session = req.session!;
   const pluginId = param(req.params.id);
-  const { runtimeDeactivatePlugin } = await import("../lib/plugin-runtime.js");
-  await deletePlugin(session.siteId, pluginId);
+  const row = await getPlugin(session.siteId, pluginId);
+  const version = row?.version ?? "";
+  const { runtimeDeactivatePlugin, runtimeDeletePluginData, getRuntimeHooks } = await import(
+    "../lib/plugin-runtime.js"
+  );
+  const { purgePluginStorage, purgePluginContent, shouldPurgePluginContent, shouldPurgePluginData } = await import("../lib/plugin-purge.js");
+  const shouldPurge = await shouldPurgePluginData(session.siteId, pluginId);
+  const shouldPurgeContent = await shouldPurgePluginContent(session.siteId, pluginId);
+
+  let hookError: string | undefined;
+  try {
+    await runtimeDeletePluginData(session.siteId, pluginId);
+  } catch (err) {
+    const { sanitizeProbeError } = await import("../lib/db-probe.js");
+    hookError = sanitizeProbeError(err);
+  }
+
+  if (shouldPurgeContent) {
+    const purgedContent = await purgePluginContent(session.siteId, pluginId, row?.manifest);
+    if (!purgedContent.ok) {
+      res.status(500).json({
+        error: purgedContent.error ?? hookError ?? "Plugin pages and posts could not be deleted",
+      });
+      return;
+    }
+  }
+
+  if (shouldPurge) {
+    const purged = await purgePluginStorage(session.siteId, pluginId);
+    if (!purged.ok) {
+      res.status(500).json({ error: purged.error ?? hookError ?? "Plugin data could not be deleted" });
+      return;
+    }
+  }
+
   await runtimeDeactivatePlugin(session.siteId, pluginId).catch(() => null);
+  await deletePlugin(session.siteId, pluginId);
   auditFromRequest(req, "plugin.deleted", { target: pluginId });
+  await getRuntimeHooks()
+    .dispatchAction(
+      "plugin.uninstalled",
+      { pluginId, version, siteId: session.siteId },
+      { siteId: session.siteId, source: "system" },
+    )
+    .catch(() => null);
   const { revalidateOnUpdate } = await import("../lib/cache-revalidate.js");
   await revalidateOnUpdate("plugin");
   res.json({ ok: true });
@@ -148,82 +250,73 @@ router.get("/:id", requireRole("administrator", "editor"), async (req, res) => {
 });
 
 router.get("/:id/settings", requireRole("administrator"), async (req, res) => {
-  const pluginId = param(req.params.id);
-  const plugin = await getPlugin(req.session!.siteId, pluginId);
-  if (!plugin) {
-    res.status(404).json({ error: "Plugin not found" });
-    return;
+  try {
+    const pluginId = param(req.params.id);
+    const plugin = await getPlugin(req.session!.siteId, pluginId);
+    if (!plugin) {
+      res.status(404).json({ error: "Plugin not found" });
+      return;
+    }
+    noStore(res);
+    res.json(await readPluginSettings(plugin, req.session!.siteId));
+  } catch (err) {
+    sendServerError(res, "plugins", err);
   }
-  const { getSiteSetting } = await import("../lib/site-settings.js");
-  const { listLanguages, getDefaultLocale } = await import("../lib/i18n/languages-db.js");
-  const { asLocaleMap } = await import("../lib/seo-public.js");
-  const schema = pluginToDto(plugin).settingsSchema ?? {};
-  const languages = await listLanguages(req.session!.siteId, true);
-  const defaultLocale = await getDefaultLocale(req.session!.siteId);
-  const values: Record<string, unknown> = {};
-  for (const key of Object.keys(schema)) {
-    const raw = (await getSiteSetting(req.session!.siteId, `plugin.${pluginId}:${key}`)) ?? schema[key]?.default;
-    values[key] = schema[key]?.localized ? asLocaleMap(raw, defaultLocale) : raw;
-  }
-
-  if (pluginId === "justflows.seo") {
-    const db = await import("../lib/db.js").then((m) => m.getDb());
-    const siteRows = await db.query<{ name: string; description: string | null }>(
-      "SELECT name, description FROM sites WHERE id = ? LIMIT 1",
-      [req.session!.siteId],
-    );
-    const site = siteRows[0];
-    const titles = (values.siteTitle ?? {}) as Record<string, string>;
-    const descriptions = (values.defaultDescription ?? {}) as Record<string, string>;
-    if (site?.name && !titles[defaultLocale]) titles[defaultLocale] = site.name;
-    if (site?.description && !descriptions[defaultLocale]) descriptions[defaultLocale] = site.description;
-    values.siteTitle = titles;
-    values.defaultDescription = descriptions;
-  }
-
-  if (pluginId === "justflows.analytics") {
-    const { parseGoogleTagId } = await import("../lib/google-tag.js");
-    const parsed = parseGoogleTagId(String(values.googleTagId ?? ""));
-    values.googleTagId = parsed ?? "";
-  }
-
-  res.json({ schema, values, languages });
 });
 
 router.put("/:id/settings", requireRole("administrator"), async (req, res) => {
-  const pluginId = param(req.params.id);
-  const plugin = await getPlugin(req.session!.siteId, pluginId);
-  if (!plugin) {
-    res.status(404).json({ error: "Plugin not found" });
-    return;
-  }
-  const body = (req.body ?? {}) as Record<string, unknown>;
-  const { setSiteSetting } = await import("../lib/site-settings.js");
-  const schema = pluginToDto(plugin).settingsSchema ?? {};
-  for (const key of Object.keys(schema)) {
-    if (!(key in body)) continue;
-    if (pluginId === "justflows.analytics" && key === "googleTagId") {
-      const { parseGoogleTagId } = await import("../lib/google-tag.js");
-      const raw = String(body[key] ?? "").trim();
-      if (!raw) {
-        await setSiteSetting(req.session!.siteId, `plugin.${pluginId}:${key}`, "");
+  try {
+    const pluginId = param(req.params.id);
+    const plugin = await getPlugin(req.session!.siteId, pluginId);
+    if (!plugin) {
+      res.status(404).json({ error: "Plugin not found" });
+      return;
+    }
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const { setPluginSetting } = await import("../lib/plugin-kv.js");
+    const { ensurePluginRuntime, getRuntimeHooks } = await import("../lib/plugin-runtime.js");
+    await ensurePluginRuntime();
+    const schema = pluginToDto(plugin).settingsSchema ?? {};
+    const siteId = req.session!.siteId;
+    let next: Record<string, unknown> = {};
+    for (const key of Object.keys(schema)) {
+      if (!(key in body)) continue;
+      if (pluginId === "justflows.analytics" && key === "googleTagId") {
+        const { parseGoogleTagId } = await import("../lib/google-tag.js");
+        const raw = String(body[key] ?? "").trim();
+        if (!raw) {
+          next[key] = "";
+          continue;
+        }
+        const parsed = parseGoogleTagId(raw);
+        if (!parsed) {
+          res.status(400).json({ error: "Enter a Google tag ID such as G-XXXXXXXX or GTM-XXXXXXX." });
+          return;
+        }
+        next[key] = parsed;
         continue;
       }
-      const parsed = parseGoogleTagId(raw);
-      if (!parsed) {
-        res.status(400).json({ error: "Enter a Google tag ID such as G-XXXXXXXX or GTM-XXXXXXX." });
-        return;
-      }
-      await setSiteSetting(req.session!.siteId, `plugin.${pluginId}:${key}`, parsed);
-      continue;
+      next[key] = body[key];
     }
-    await setSiteSetting(req.session!.siteId, `plugin.${pluginId}:${key}`, body[key]);
+    next = (await getRuntimeHooks().applyFilter(
+      "plugin.settings.write",
+      next,
+      { pluginId, siteId },
+      { siteId, source: "http" },
+    )) as Record<string, unknown>;
+    for (const [key, value] of Object.entries(next)) {
+      if (!(key in schema)) continue;
+      await setPluginSetting(pluginId, siteId, key, value);
+    }
+    const { clearGoogleTagIdCache } = await import("../lib/analytics-public.js");
+    clearGoogleTagIdCache();
+    const { revalidateOnUpdate } = await import("../lib/cache-revalidate.js");
+    await revalidateOnUpdate("plugin");
+    noStore(res);
+    res.json(await readPluginSettings(plugin, siteId));
+  } catch (err) {
+    sendServerError(res, "plugins", err);
   }
-  const { clearGoogleTagIdCache } = await import("../lib/analytics-public.js");
-  clearGoogleTagIdCache();
-  const { revalidateOnUpdate } = await import("../lib/cache-revalidate.js");
-  await revalidateOnUpdate("plugin");
-  res.json({ ok: true });
 });
 
 router.get("/:id/data/:collection", requireRole("administrator"), async (req, res) => {
