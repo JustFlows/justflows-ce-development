@@ -58,6 +58,10 @@ function bool(value: unknown): boolean {
 function date(value: unknown): string {
   return value instanceof Date ? value.toISOString() : String(value);
 }
+/** `YYYY-MM-DD HH:MM:SS` — the shape MySQL DATETIME accepts and SQLite sorts correctly. */
+function sqlTime(value: Date = new Date()): string {
+  return value.toISOString().replace("T", " ").replace(/\.\d+Z$/, "");
+}
 function endpoint(row: Record<string, unknown>): WebhookEndpoint {
   return {
     id: String(row.id),
@@ -116,7 +120,8 @@ export async function createWebhook(
     throw new Error("One or more event types are not registered");
   const id = randomUUID();
   const secret = createWebhookSecret();
-  const now = new Date().toISOString();
+  const stamp = new Date();
+  const now = sqlTime(stamp);
   await (
     await getDb()
   ).run(
@@ -140,8 +145,8 @@ export async function createWebhook(
       url: url.toString(),
       events: [...new Set(input.events)],
       active: true,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: stamp.toISOString(),
+      updatedAt: stamp.toISOString(),
     },
     secret,
   };
@@ -156,7 +161,7 @@ export async function updateWebhook(
   const allowed = new Set(await listWebhookEventTypes());
   if (input.events.some((event) => !allowed.has(event)))
     throw new Error("One or more event types are not registered");
-  const now = new Date().toISOString();
+  const now = sqlTime();
   await (
     await getDb()
   ).run(
@@ -199,7 +204,7 @@ export async function rotateWebhookSecret(siteId: string, id: string): Promise<s
     await getDb()
   ).run(
     "UPDATE webhook_endpoints SET secret_ciphertext = ?, updated_at = ? WHERE id = ? AND site_id = ?",
-    [encryptSecret(secret), new Date().toISOString(), id, siteId],
+    [encryptSecret(secret), sqlTime(), id, siteId],
   );
   return secret;
 }
@@ -237,7 +242,7 @@ export async function enqueueWebhookEvent(
     [siteId, true],
   );
   let count = 0;
-  const now = new Date().toISOString();
+  const now = sqlTime();
   for (const target of endpoints) {
     const events = JSON.parse(String(target.events)) as string[];
     if (!events.includes(event)) continue;
@@ -257,7 +262,7 @@ function backoff(attempt: number): number {
 
 export async function processDueWebhookDeliveries(): Promise<number> {
   const db = await getDb();
-  const now = new Date().toISOString();
+  const now = sqlTime();
   const rows = await db.query<Record<string, unknown>>(
     "SELECT d.id, d.endpoint_id, d.site_id, d.payload, d.attempt_count, e.url, e.secret_ciphertext FROM webhook_deliveries d JOIN webhook_endpoints e ON e.id = d.endpoint_id WHERE d.status = 'pending' AND d.next_attempt_at <= ? AND e.active = ? ORDER BY d.next_attempt_at ASC LIMIT 20",
     [now, true],
@@ -272,7 +277,7 @@ async function deliver(row: Record<string, unknown>): Promise<void> {
   const attempt = Number(row.attempt_count) + 1;
   await db.run(
     "UPDATE webhook_deliveries SET status = 'processing', attempt_count = ?, updated_at = ? WHERE id = ?",
-    [attempt, new Date().toISOString(), id],
+    [attempt, sqlTime(), id],
   );
   try {
     const url = await validateWebhookUrl(String(row.url));
@@ -301,7 +306,7 @@ async function deliver(row: Record<string, unknown>): Promise<void> {
     }
     const responseBody = (await response.text()).slice(0, 2048);
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${responseBody}`);
-    const done = new Date().toISOString();
+    const done = sqlTime();
     await db.run(
       "UPDATE webhook_deliveries SET status = 'delivered', response_status = ?, response_body = ?, error = NULL, delivered_at = ?, updated_at = ? WHERE id = ?",
       [response.status, responseBody, done, done, id],
@@ -309,14 +314,14 @@ async function deliver(row: Record<string, unknown>): Promise<void> {
     await notifyDelivery(row, attempt, "delivered", response.status, responseBody, null);
   } catch (error) {
     const terminal = attempt >= MAX_ATTEMPTS;
-    const next = new Date(Date.now() + backoff(attempt)).toISOString();
+    const next = sqlTime(new Date(Date.now() + backoff(attempt)));
     await db.run(
       "UPDATE webhook_deliveries SET status = ?, error = ?, next_attempt_at = ?, updated_at = ? WHERE id = ?",
       [
         terminal ? "failed" : "pending",
         String(error).slice(0, 1024),
         next,
-        new Date().toISOString(),
+        sqlTime(),
         id,
       ],
     );
@@ -393,7 +398,7 @@ export async function redeliverWebhook(siteId: string, id: string): Promise<bool
   if (!found[0]) return false;
   await db.run(
     "UPDATE webhook_deliveries SET status = 'pending', attempt_count = 0, response_status = NULL, response_body = NULL, error = NULL, next_attempt_at = ?, delivered_at = NULL, updated_at = ? WHERE id = ? AND site_id = ?",
-    [new Date().toISOString(), new Date().toISOString(), id, siteId],
+    [sqlTime(), sqlTime(), id, siteId],
   );
   scheduler.enqueue("webhooks.deliver");
   return true;
@@ -408,7 +413,7 @@ export async function startWebhookJobs(): Promise<void> {
     await getDb()
   ).run(
     "UPDATE webhook_deliveries SET status = 'pending', next_attempt_at = ?, updated_at = ? WHERE status = 'processing'",
-    [new Date().toISOString(), new Date().toISOString()],
+    [sqlTime(), sqlTime()],
   );
   scheduler.register({
     name: "webhooks.deliver",
