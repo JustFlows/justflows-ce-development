@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { randomUUID } from "node:crypto";
-import type { PluginContentApi } from "@justflows/sdk";
+import type { PluginContentApi, PluginPublishedEntry } from "@justflows/sdk";
 import {
   ContentTypeFieldsSchema,
   ContentTypeSlugSchema,
@@ -10,6 +10,7 @@ import {
 } from "@justflows/content";
 import { sanitizeBlockDocument } from "@justflows/blocks";
 import { getDb } from "./db.js";
+import { serializeContentRow } from "./content-api.js";
 import { createContentType, getContentTypeBySlug } from "./content-types-db.js";
 import { getDefaultLocale } from "./i18n/languages-db.js";
 import { clearHomePageIfMatches } from "./home-page.js";
@@ -35,8 +36,106 @@ function slugify(value: string): string {
     .slice(0, 200);
 }
 
+/** Optional expiry timestamp a plugin or import may have stored on a content row. */
+function expiryTimestamp(fields: Record<string, unknown>): number | null {
+  for (const key of ["expiresAt", "expiryDate", "unpublishAt"]) {
+    const raw = fields[key];
+    if (typeof raw === "string" && raw.trim()) {
+      const parsed = Date.parse(raw);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+  }
+  return null;
+}
+
+async function resolveAuthorId(
+  siteId: string,
+  username: string,
+): Promise<string | null> {
+  const db = await getDb();
+  const rows = await db.query<{ id: string }>(
+    "SELECT id FROM users WHERE site_id = ? AND username = ? LIMIT 1",
+    [siteId, username],
+  );
+  return rows[0] ? String(rows[0].id) : null;
+}
+
+async function authorNames(siteId: string, ids: string[]): Promise<Map<string, string>> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (!unique.length) return new Map();
+  const db = await getDb();
+  const rows = await db.query<{ id: string; display_name: string; username: string }>(
+    `SELECT id, display_name, username FROM users
+     WHERE site_id = ? AND id IN (${unique.map(() => "?").join(", ")})`,
+    [siteId, ...unique],
+  );
+  return new Map(rows.map((row) => [String(row.id), row.display_name || row.username]));
+}
+
 export function createPluginContentApi(pluginId: string, siteId: string): PluginContentApi {
   return {
+    async listPublished(query = {}) {
+      const limit = Math.min(Math.max(Math.floor(query.limit ?? 20), 1), 200);
+      const types = (query.types ?? []).map((slug) => slug.trim()).filter(Boolean);
+      const authorId =
+        query.authorId ??
+        (query.authorUsername ? await resolveAuthorId(siteId, query.authorUsername) : undefined);
+      if (query.authorUsername && !authorId) return [];
+
+      const db = await getDb();
+      const params: (string | number)[] = [siteId];
+      let sql = "SELECT * FROM content WHERE site_id = ? AND status = 'published'";
+      if (types.length) {
+        sql += ` AND type IN (${types.map(() => "?").join(", ")})`;
+        params.push(...types);
+      }
+      if (query.locale) {
+        sql += " AND locale = ?";
+        params.push(query.locale);
+      }
+      if (authorId) {
+        sql += " AND author_id = ?";
+        params.push(authorId);
+      }
+      // Over-fetch so scheduled/expired rows dropped in JS still leave a full page.
+      sql += " ORDER BY COALESCE(published_at, created_at) DESC LIMIT ?";
+      params.push(Math.min(limit * 3, 600));
+
+      const rows = await db.query<Record<string, unknown>>(sql, params);
+      const now = Date.now();
+      const entries = rows
+        .map((row) => serializeContentRow(row))
+        .filter((entry) => {
+          if (!query.includeScheduled && entry.publishedAt) {
+            const published = Date.parse(entry.publishedAt);
+            if (!Number.isNaN(published) && published > now) return false;
+          }
+          const expiry = expiryTimestamp(entry.fields);
+          return expiry === null || expiry > now;
+        })
+        .slice(0, limit);
+
+      const names = await authorNames(
+        siteId,
+        entries.map((entry) => entry.authorId ?? ""),
+      );
+
+      return entries.map<PluginPublishedEntry>((entry) => ({
+        id: entry.id,
+        type: entry.type,
+        title: entry.title,
+        slug: entry.slug,
+        locale: entry.locale,
+        excerpt: entry.excerpt,
+        fields: entry.fields,
+        authorId: entry.authorId,
+        authorName: (entry.authorId && names.get(entry.authorId)) || null,
+        publishedAt: entry.publishedAt,
+        updatedAt: entry.updatedAt,
+        createdAt: entry.createdAt,
+      }));
+    },
+
     async ensureType(input) {
       const slug = normalizeContentTypeSlug(ContentTypeSlugSchema.parse(input.slug));
       if (isBuiltinContentTypeSlug(slug)) {

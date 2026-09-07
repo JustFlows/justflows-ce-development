@@ -230,6 +230,15 @@ export const PluginManifestSchema = z
     maxJustflowsVersion: z.string().optional(),
     permissions: z.array(PluginPermissionSchema).default([]),
     main: z.string().default("index.js"),
+    /**
+     * First-party opt-in. A handful of bundled plugin ids (`justflows.seo`, …)
+     * are normally left inactive at runtime because the host renders their
+     * behaviour itself. Setting this to `true` tells the host the shipped module
+     * is host-cooperative — it only augments (e.g. adds feed routes and
+     * autodiscovery) and never re-registers what the host already owns — so the
+     * host may activate it. Ignored for third-party plugins.
+     */
+    hostCooperative: z.boolean().optional(),
     settingsSchema: z
       .record(
         z.string(),
@@ -604,7 +613,46 @@ export type PluginContentDeleteTypeResult = {
   typeDeleted: boolean;
 };
 
+/** One published content entry as returned by {@link PluginContentApi.listPublished}. */
+export interface PluginPublishedEntry {
+  id: string;
+  type: string;
+  title: string;
+  slug: string;
+  locale: string;
+  excerpt: string | null;
+  fields: Record<string, unknown>;
+  authorId: string | null;
+  /** `users.display_name` (or username), resolved by the host; null when unattributed. */
+  authorName: string | null;
+  /** ISO 8601, or null when never explicitly dated. */
+  publishedAt: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface PluginListPublishedQuery {
+  /** Content-type slugs. Omit for every type. */
+  types?: string[];
+  /** Restrict to one locale. Omit for every active locale. */
+  locale?: string;
+  authorId?: string;
+  /** `users.username`; resolved to an id by the host. */
+  authorUsername?: string;
+  /** Newest first. Default 20, hard cap 200. */
+  limit?: number;
+  /** Include entries whose `publishedAt` is in the future. Default false. */
+  includeScheduled?: boolean;
+}
+
 export interface PluginContentApi {
+  /**
+   * List published content, newest first. Requires the `content:read` permission.
+   * Scheduled (future `publishedAt`) and expired entries are excluded unless
+   * `includeScheduled` is set.
+   */
+  listPublished(query?: PluginListPublishedQuery): Promise<PluginPublishedEntry[]>;
+
   /** Create a content type if this site does not already have that slug. */
   ensureType(input: {
     slug: string;
@@ -899,8 +947,17 @@ export interface PluginContext {
    * Create content types and pages the plugin needs. Requires `content:create`.
    * Publishing a page also requires `content:publish`. `deleteType` requires
    * `content:delete`. Existing slugs are left alone on create (idempotent).
+   * `listPublished` requires `content:read`.
    */
   content: PluginContentApi;
+
+  /** The site's configured locales. Read-only; no permission required. */
+  i18n: {
+    /** The site's default locale code (BCP-47), e.g. `en-US`. */
+    defaultLocale(): Promise<string>;
+    /** Every active locale code, default first. */
+    locales(): Promise<string[]>;
+  };
 
   logger: {
     debug(message: string, context?: Record<string, unknown>): void;

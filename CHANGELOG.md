@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
-## [0.2.1.dev.1] [UNRELEASED]
+## [0.2.1-dev.1] [UNRELEASED]
 
 ### Added
 
@@ -56,6 +56,33 @@ and this project uses [Semantic Versioning](https://semver.org/).
   (visibility applied), so appended items sit alongside the author's. See
   [Hooks → Contributing a menu design preset](docs/HOOKS.md#contributing-a-menu-design-preset).
   ([#61](https://github.com/JustFlows/justflows-ce/issues/61))
+
+- **Platform support for syndication feeds.** The RSS 2.0 / Atom 1.0 / JSON Feed
+  1.1 feature itself ships in the first-party **SEO Toolkit** plugin
+  (`justflows.seo`, via the plugin registry); this release adds the host and SDK
+  surfaces it needs, all of them generally useful:
+  - `ctx.content.listPublished(query?)` — a plugin can read published entries
+    (by type / locale / author / date; scheduled and expired excluded), requires
+    the `content:read` permission.
+  - `ctx.i18n.defaultLocale()` / `ctx.i18n.locales()` — the site's configured
+    locales, read-only.
+  - The `html.head` filter context gains `locale` (the page's content locale),
+    so a plugin can emit locale-aware `<head>` tags.
+  - A manifest may declare `hostCooperative: true`. The runtime normally leaves
+    the first-party ids it renders itself (`justflows.seo`, …) inactive; the flag
+    means the installed module only augments (feed routes, autodiscovery) and is
+    safe to activate.
+  - `/admin/seo` redirects to `/admin/plugins/justflows.seo/settings`, so the SEO
+    Toolkit plugin can contribute a "SEO" nav entry with a dotless `adminMenu`
+    path (its id has a dot, which the manifest validator rejects in a path).
+  - The hard-coded `justflows.seo` settings schema was removed from the host — an
+    installed SEO plugin now supplies its own.
+  - Content editor → **SEO** tab gains an **Exclude from RSS / Atom / JSON feeds**
+    checkbox for every content type (`fields.seoFeedExclude`), shown only while an
+    SEO plugin that owns feeds is active.
+  Per-taxonomy feeds remain open — the `taxonomies` / `terms` tables have no
+  term-assignment UI or public archive yet.
+  ([#102](https://github.com/JustFlows/justflows-ce/issues/102))
 
 ### Changed
 

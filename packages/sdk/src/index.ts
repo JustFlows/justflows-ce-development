@@ -160,6 +160,8 @@ export type {
   PluginContentField,
   PluginContentEnsureResult,
   PluginContentDeleteTypeResult,
+  PluginPublishedEntry,
+  PluginListPublishedQuery,
   JustflowsRuntimeVersions,
 } from "./plugin.js";
 

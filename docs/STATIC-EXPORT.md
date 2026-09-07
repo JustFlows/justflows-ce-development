@@ -22,6 +22,7 @@ A run produces:
 | `index.html`, `<slug>/index.html`                                          | every published page/post, default locale                                                                                                  |
 | `<locale>/…/index.html`                                                    | each non-default active locale (from `localePath()`)                                                                                       |
 | `sitemap.xml`, `robots.txt`                                                | fetched from the origin verbatim (always exported)                                                                                         |
+| `feed.xml`, `feed.atom`, `feed.json`, `<locale>/feed.*`                    | syndication feeds — seeded by the SEO Toolkit plugin's `staticExport.routes` filter, one set per active locale, when feeds are enabled     |
 | `favicon.ico`                                                              | the configured favicon, redirect followed (only if one is set)                                                                             |
 | `404.html`                                                                 | the themed not-found page                                                                                                                  |
 | `theme.css`, `/js/*`, `/uploads/*`, `/assets/*`, `/css-providers/*`, fonts | every same-origin sub-resource referenced by an exported page                                                                              |
@@ -154,8 +155,8 @@ then runs an **incremental** export:
 
 | Change                                                    | What rebuilds                                                                                                                                          |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| publish / unpublish / update a page or post               | that page's routes (per the manifest `deps`), its translation siblings, every route with a dynamic list (blog/archive/home), and `sitemap.xml`         |
-| delete / unpublish so a URL now 404s                      | that page's files are **removed** and `sitemap.xml` is rewritten                                                                                       |
+| publish / unpublish / update a page or post               | that page's routes (per the manifest `deps`), its translation siblings, every route with a dynamic list (blog/archive/home), `sitemap.xml`, and the syndication feeds |
+| delete / unpublish so a URL now 404s                      | that page's files are **removed** and `sitemap.xml` + feeds are rewritten                                                                              |
 | menu, theme, Customizer, CSS provider, or settings change | **every** route, plus `theme.css` and other assets                                                                                                     |
 | newly published page                                      | picked up by the incremental run that publish triggers — discovery re-reads the live sitemap and published list and seeds any path not in the manifest |
 

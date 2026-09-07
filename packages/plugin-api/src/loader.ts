@@ -50,6 +50,11 @@ export type PluginDatabasesFactory = (
   permissions: ReadonlySet<PluginPermission>,
 ) => PluginDatabasesApi;
 export type PluginContentFactory = (pluginId: string, siteId: string) => PluginContentApi;
+/** Read-only view of the site's configured locales, exposed to plugins as `ctx.i18n`. */
+export type PluginI18nProvider = (siteId: string) => {
+  defaultLocale(): Promise<string>;
+  locales(): Promise<string[]>;
+};
 export type PluginSettingsAdapter = {
   get<T = unknown>(siteId: string, pluginId: string, key: string): Promise<T | undefined>;
   set<T = unknown>(siteId: string, pluginId: string, key: string, value: T): Promise<void>;
@@ -119,6 +124,7 @@ const NULL_DATABASES: PluginDatabasesApi = {
 };
 
 const NULL_CONTENT: PluginContentApi = {
+  listPublished: async () => [],
   ensureType: async () => {
     throw new Error("Content API is not available in this runtime");
   },
@@ -139,6 +145,7 @@ export class PluginLoader {
   private readonly secretsFactory: PluginSecretsFactory;
   private readonly databasesFactory: PluginDatabasesFactory;
   private readonly contentFactory: PluginContentFactory;
+  private readonly i18nProvider: PluginI18nProvider;
   private readonly jobsCleanup: ((pluginId: string) => void) | undefined;
   private readonly mailCleanup: ((pluginId: string) => void) | undefined;
   private readonly settingsAdapter: PluginSettingsAdapter;
@@ -163,6 +170,7 @@ export class PluginLoader {
       secretsFactory?: PluginSecretsFactory;
       databasesFactory?: PluginDatabasesFactory;
       contentFactory?: PluginContentFactory;
+      i18nProvider?: PluginI18nProvider;
       jobsCleanup?: (pluginId: string) => void;
       mailCleanup?: (pluginId: string) => void;
       settingsAdapter?: PluginSettingsAdapter;
@@ -202,6 +210,12 @@ export class PluginLoader {
     this.databasesFactory =
       options?.databasesFactory ?? ((_pluginId, _siteId, _permissions) => NULL_DATABASES);
     this.contentFactory = options?.contentFactory ?? (() => NULL_CONTENT);
+    this.i18nProvider =
+      options?.i18nProvider ??
+      (() => ({
+        defaultLocale: async () => "en-US",
+        locales: async () => ["en-US"],
+      }));
     this.jobsCleanup = options?.jobsCleanup;
     this.mailCleanup = options?.mailCleanup;
     this.settingsAdapter = options?.settingsAdapter ?? {
@@ -484,6 +498,7 @@ export class PluginLoader {
           ),
       },
       content: this.scopedContent(pluginId, siteId, permissions),
+      i18n: this.i18nProvider(siteId),
       blocks: {
         register: (definition) => {
           if (!definition.type.startsWith(`${pluginId}.`) && definition.type !== pluginId) {
@@ -528,7 +543,17 @@ export class PluginLoader {
         `Plugin "${pluginId}" cannot delete content without the "content:delete" permission. Add it to the plugin manifest.`,
       );
     };
+    const assertRead = (): void => {
+      if (permissions.has("content:read")) return;
+      throw new Error(
+        `Plugin "${pluginId}" cannot read content without the "content:read" permission. Add it to the plugin manifest.`,
+      );
+    };
     return {
+      listPublished: (query) => {
+        assertRead();
+        return inner.listPublished(query);
+      },
       ensureType: (input) => {
         assertCreate();
         return inner.ensureType(input);

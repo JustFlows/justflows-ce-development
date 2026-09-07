@@ -696,7 +696,10 @@ export interface FilterValueMap {
   "plugin.settings.write": [Record<string, unknown>, { pluginId: string; siteId: string }];
   "openapi.document": [OpenApiDocument, { version: string }];
   "http.responseHeaders": [Record<string, string>, { method: string; path: string }];
-  "html.head": [string, { siteId: string; path: string; title: string; contentId?: string }];
+  "html.head": [
+    string,
+    { siteId: string; path: string; locale: string; title: string; contentId?: string },
+  ];
   /**
    * The analytics `<head>` markup the host is about to emit (the Google Tag from
    * the first-party Analytics plugin, when one is configured). Seeded with that

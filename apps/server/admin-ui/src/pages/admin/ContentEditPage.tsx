@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { type BlockDocument } from "@components/BlockEditor";
 import MediaImageField from "@components/MediaImageField";
 import { useSessionRole } from "@components/SessionProvider";
+import { usePluginMenu } from "@components/PluginMenuProvider";
 import { useT } from "../../i18n/I18nProvider";
 import HeaderRefField from "@components/builder/HeaderRefField";
 import { fieldsWithHeaderRef, headerRefFromFields } from "../../lib/page-header";
@@ -96,6 +97,11 @@ export default function EditContentPage() {
   // an author or contributor can still edit and publish this content.
   const role = useSessionRole();
   const canSetSitePages = role === "administrator" || role === "editor";
+
+  // The bundled SEO Toolkit plugin owns syndication feeds; it only contributes an
+  // admin-menu entry while active, so its presence there is the "SEO active" signal.
+  const { items: pluginMenuItems } = usePluginMenu();
+  const seoPluginActive = pluginMenuItems.some((entry) => entry.pluginId === "justflows.seo");
 
   const [item, setItem] = useState<ContentItem | null>(null);
   const [baseline, setBaseline] = useState<string>("");
@@ -888,6 +894,31 @@ export default function EditContentPage() {
                         }
                         onChange={(url) => patchField("seoImage", url)}
                       />
+                      {seoPluginActive && (
+                        <div className="jf-field">
+                          <label
+                            className="jf-row"
+                            style={{ gap: "0.5rem" }}
+                            htmlFor="jf-seo-feed-exclude"
+                          >
+                            <input
+                              id="jf-seo-feed-exclude"
+                              type="checkbox"
+                              checked={
+                                item.fields?.seoFeedExclude === true ||
+                                item.fields?.seoFeedExclude === "true" ||
+                                item.fields?.seoFeedExclude === 1
+                              }
+                              onChange={(e) => patchField("seoFeedExclude", e.target.checked)}
+                            />
+                            Exclude from RSS / Atom / JSON feeds
+                          </label>
+                          <span className="jf-field__hint">
+                            The page stays public and in the sitemap; it is left out of every
+                            syndication feed.
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

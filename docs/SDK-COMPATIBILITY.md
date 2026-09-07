@@ -45,6 +45,21 @@ Plugins additionally receive executable runtime context and can inspect
 `SDK_API_VERSION` from `@justflows/sdk`. `ctx.version` continues to mean the
 plugin's own version.
 
+### SDK `0.1.6` — additive
+
+- `ctx.content.listPublished(query?)` returns published entries (`type`, `slug`,
+  `locale`, `fields`, `authorId` / `authorName`, dates). Requires `content:read`;
+  scheduled and expired entries are excluded unless `includeScheduled` is set.
+- `ctx.i18n.defaultLocale()` and `ctx.i18n.locales()` expose the site's locale
+  configuration read-only (no permission).
+- The `html.head` filter context gains `locale` (the current page's content
+  locale). Existing handlers that ignore it are unaffected.
+- A plugin manifest may declare `hostCooperative: true`. It is meaningful only
+  for the handful of first-party ids the host would otherwise leave
+  inactive (`justflows.seo`); it tells the runtime the shipped module only
+  augments host behavior and is safe to activate. Ignored for third-party
+  plugins.
+
 Authenticated plugin HTTP requests expose additive `session.capabilities` and
 `session.scopes` fields. They describe the user's effective access after custom
 role, grants, denies, and resource constraints. Existing role names remain
