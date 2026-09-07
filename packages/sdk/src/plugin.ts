@@ -98,16 +98,8 @@ export const AdminMenuItemSchema = z.object({
   label: z.string().min(1).max(60),
   /** Optional admin i18n catalog key, e.g. "nav.analytics". */
   labelKey: z.string().max(120).optional(),
-  /**
-   * Admin application path. Must live under /admin/ — the host serves nothing
-   * else. `.` and `@` are allowed so an item can link to the plugin's own
-   * settings screen, `/admin/plugins/<plugin.id>/settings` (`..` is still
-   * rejected).
-   */
-  path: z
-    .string()
-    .regex(/^\/admin\/[a-z0-9][a-z0-9\-/.@]*$/, "Menu path must be an /admin/… route")
-    .refine((value) => !value.includes(".."), "Menu path must not contain '..'"),
+  /** Admin application path. Must live under /admin/ — the host serves nothing else. */
+  path: z.string().regex(/^\/admin\/[a-z0-9][a-z0-9\-/]*$/, "Menu path must be an /admin/… route"),
   icon: z.string().min(1).max(8).default("🔌"),
   domain: z.enum(ADMIN_MENU_DOMAINS).default("extensions"),
   /** Match the path exactly instead of as a prefix. */

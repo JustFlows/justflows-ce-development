@@ -72,8 +72,9 @@ and this project uses [Semantic Versioning](https://semver.org/).
     the first-party ids it renders itself (`justflows.seo`, …) inactive; the flag
     means the installed module only augments (feed routes, autodiscovery) and is
     safe to activate.
-  - `adminMenu` paths may contain `.` / `@`, so a plugin can point a nav entry at
-    its own `/admin/plugins/<plugin.id>/settings` screen (`..` still rejected).
+  - `/admin/seo` redirects to `/admin/plugins/justflows.seo/settings`, so the SEO
+    Toolkit plugin can contribute a "SEO" nav entry with a dotless `adminMenu`
+    path (its id has a dot, which the manifest validator rejects in a path).
   - The hard-coded `justflows.seo` settings schema was removed from the host — an
     installed SEO plugin now supplies its own.
   - Content editor → **SEO** tab gains an **Exclude from RSS / Atom / JSON feeds**

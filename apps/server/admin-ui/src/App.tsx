@@ -126,6 +126,19 @@ export default function App() {
               <Route path="security/admin-path" element={<AdminPathPage />} />
               <Route path="security/account" element={<AccountSecurityPage />} />
               <Route path="security/audit" element={<AuditLogPage />} />
+              {/* The SEO Toolkit plugin's nav entry uses a dotless `/admin/seo`
+                  path — its id (`justflows.seo`) has a dot, which the manifest
+                  validator rejects in an adminMenu path. Send it to the plugin's
+                  settings screen. */}
+              <Route
+                path="seo"
+                element={
+                  <Navigate
+                    to={publicAdminPath("/admin/plugins/justflows.seo/settings")}
+                    replace
+                  />
+                }
+              />
               <Route path="*" element={<PluginHostPage />} />
             </Route>
             <Route path="*" element={<Navigate to={publicAdminPath("/admin")} replace />} />
