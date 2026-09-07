@@ -14,12 +14,50 @@ data, and language alternates. Search crawlers do not need to execute React or
 wait for an API request to discover page content.
 
 The public renderer also owns localized URLs, redirects to canonical paths,
-`robots.txt`, `sitemap.xml`, theme CSS, page caching, and preview authorization.
-Do not move public content or SEO metadata into the admin React bundle.
+`robots.txt`, `sitemap.xml`, syndication feeds, theme CSS, page caching, and
+preview authorization. Do not move public content or SEO metadata into the admin
+React bundle.
 
-The same renderer can be **crawled to static files** for object-storage / CDN
+### Syndication feeds
+
+Unlike meta tags and `sitemap.xml`, RSS 2.0 / Atom 1.0 / JSON Feed 1.1 output is
+**not** host-rendered — it is owned by the first-party **SEO Toolkit** plugin
+(`justflows.seo`, published through the plugin registry, not bundled in this
+repo). Its manifest declares `hostCooperative: true`, so once installed the
+runtime activates it (see `plugin-runtime.ts` — `isRuntimeSkippedFirstParty`)
+instead of leaving it inert like the other first-party plugins the host renders
+itself. It then wires itself up through public SDK surfaces only:
+
+- `ctx.http.get("/feed.xml", …)` and the locale / type / author variants
+  (`ctx.content.listPublished()` provides the entries; `ctx.i18n` the locales);
+- `html.head` filter for the `<link rel="alternate">` autodiscovery tags;
+- `content.published|updated|unpublished|deleted` actions to drop its cached
+  feed bodies (`ctx.cache`, `feed:` prefix);
+- `staticExport.routes` filter to seed the exporter with the feed URLs.
+
+| URL | Feed |
+| --- | --- |
+| `/feed.xml` | Site-wide — the content types in the SEO setting `feedTypes` (posts by default) |
+| `/<type>/feed.xml` | One content type |
+| `/author/<username>/feed.xml` | One author |
+| `/<locale>/…/feed.xml` | Any of the above, for a non-default locale (`.atom` / `.json` alongside every `.xml`) |
+
+Feeds are locale-aware, list the newest `feedItemCount` entries (default 20),
+exclude scheduled (`publishedAt` in the future), expired, and per-entry
+opted-out (`fields.seoFeedExclude`, the "Exclude from feeds" checkbox on any
+item's SEO tab) items, carry plain-text summaries (or none, per
+`feedContentDepth`), optionally an author (`feedIncludeAuthor`, default off) and
+featured image (`feedIncludeImage`), and advertise a `rel="self"` link plus an
+optional WebSub hub (`feedWebSubHub`). Settings live on the `justflows.seo`
+plugin (Admin → Extensions → SEO). Per-taxonomy feeds from
+issue [#102](https://github.com/JustFlows/justflows-ce/issues/102) are not built
+yet — the `taxonomies` / `terms` tables have no term-assignment UI or public
+archive to feed from.
+
+The site can still be **crawled to static files** for object-storage / CDN
 hosting: `apps/server/src/lib/static-export/` fetches every published route over
-loopback and writes the HTML, assets, `sitemap.xml`, `robots.txt`, and
+loopback and writes the HTML, assets, `sitemap.xml`, `robots.txt`, the
+syndication feeds (via the plugin's `staticExport.routes` seeds), and
 `theme.css` to a folder, with a manifest and optional publish-triggered
 rebuilds. See [Static / edge export](STATIC-EXPORT.md).
 

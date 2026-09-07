@@ -75,32 +75,11 @@ function parsePluginRow(row: PluginRow): PluginRow {
   };
 }
 
+// `justflows.seo` is intentionally absent: the first-party SEO Toolkit plugin
+// (published through the registry) ships its own `settingsSchema` (SEO fields +
+// the feed settings) and activates at runtime, so the schema resolves from the
+// installed manifest / live module — not a copy pinned here.
 const FIRST_PARTY_SETTINGS_SCHEMA: Record<string, NonNullable<PluginDto["settingsSchema"]>> = {
-  "justflows.seo": {
-    siteTitle: {
-      type: "string",
-      label: "Site title",
-      description: "Used in the header and as the default document title for this language.",
-      default: "",
-      localized: true,
-    },
-    defaultDescription: {
-      type: "text",
-      label: "Meta description",
-      description: "Default description for this language when a page has no SEO description of its own.",
-      default: "",
-      localized: true,
-    },
-    titleTemplate: {
-      type: "string",
-      label: "Title template",
-      description: "%s is replaced with the page title.",
-      default: "%s",
-      localized: true,
-    },
-    twitterHandle: { type: "string", label: "Twitter handle", default: "" },
-    extraSitemapPaths: { type: "text", label: "Extra sitemap paths (one per line)", default: "" },
-  },
   "justflows.analytics": {
     googleTagId: {
       type: "text",

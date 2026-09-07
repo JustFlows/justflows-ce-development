@@ -48,7 +48,7 @@ describe("plugin hook context", () => {
     await loader.activate(plugin.manifest.id, "site-1");
 
     expect(seen?.version).toBe("1.0.0");
-    expect(seen?.runtime).toEqual({ justflows: "0.1.8-dev.1", sdk: "0.1.5", sdkApi: 1 });
+    expect(seen?.runtime).toEqual({ justflows: "0.1.8-dev.1", sdk: "0.1.6", sdkApi: 1 });
   });
 
   it("attributes a plugin's registrations to the plugin", async () => {

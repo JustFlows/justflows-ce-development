@@ -90,6 +90,12 @@ export function suggestCacheControl(
     if (/\/(sitemap\.xml|robots\.txt)$/i.test(urlPath)) {
       return `public, max-age=${browserCache.htmlMaxAge}`;
     }
+    if (/\/feed\.(xml|atom|json)$/i.test(urlPath)) {
+      return (
+        `public, max-age=${browserCache.htmlMaxAge}, ` +
+        `stale-while-revalidate=${browserCache.staleWhileRevalidate}`
+      );
+    }
     if (contentType.includes("text/html")) {
       return (
         `public, max-age=${browserCache.htmlMaxAge}, ` +

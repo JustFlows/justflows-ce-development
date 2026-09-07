@@ -785,6 +785,7 @@ async function renderPage(view: string, data: Record<string, unknown>): Promise<
       {
         siteId,
         path: String(data.restPath ?? "/"),
+        locale: String(data.locale ?? ""),
         title: pageTitle,
         contentId:
           typeof data.content === "object" && data.content && "id" in (data.content as object)

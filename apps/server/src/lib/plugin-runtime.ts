@@ -138,25 +138,52 @@ async function activateActivePlugins(): Promise<void> {
   if (!siteId) return;
 
   const db = await getDb();
-  const rows = await db.query<{ plugin_id: string }>(
-    "SELECT plugin_id FROM plugins WHERE site_id = ? AND status = 'active'",
+  const rows = await db.query<{ plugin_id: string; manifest: unknown }>(
+    "SELECT plugin_id, manifest FROM plugins WHERE site_id = ? AND status = 'active'",
     [siteId],
   );
 
   for (const row of rows) {
-    // SEO output is host-rendered from plugin settings + content fields.
-    // Skip runtime activate so the installed 1.2.0 module cannot duplicate head tags.
-    if (row.plugin_id === "justflows.seo") continue;
-    // Analytics is host-recorded into plugin_data. Skip the 0.9.0 module so page
-    // views are not counted twice and /justflows-analytics is not a public page.
-    if (row.plugin_id === "justflows.analytics") continue;
-    if (row.plugin_id === "justflows.gallery") continue;
+    if (isRuntimeSkippedFirstParty(row.plugin_id, row.manifest)) continue;
     try {
       await loader.activate(row.plugin_id, siteId);
     } catch (err) {
       console.error(`[plugins] activation failed for ${row.plugin_id}:`, err);
     }
   }
+}
+
+/**
+ * First-party plugins whose behaviour the host renders itself, so their module is
+ * normally left inactive at runtime.
+ *
+ * - `justflows.analytics` / `justflows.gallery` stay skipped unconditionally —
+ *   their modules would double-count page views or expose a public page.
+ * - `justflows.seo` is skipped **unless** its installed manifest declares
+ *   `hostCooperative: true`. The SEO Toolkit package sets that flag from its
+ *   `justflows.json`; it means the module only augments (feed routes,
+ *   autodiscovery) and never re-registers `/sitemap.xml` or a full `<head>`
+ *   block, so the host may safely activate it. An older SEO package without the
+ *   flag stays skipped.
+ */
+function isRuntimeSkippedFirstParty(pluginId: string, manifest: unknown): boolean {
+  if (pluginId === "justflows.analytics" || pluginId === "justflows.gallery") return true;
+  if (pluginId === "justflows.seo") return !manifestIsHostCooperative(manifest);
+  return false;
+}
+
+function manifestIsHostCooperative(manifest: unknown): boolean {
+  const parsed =
+    typeof manifest === "string"
+      ? (() => {
+          try {
+            return JSON.parse(manifest) as Record<string, unknown>;
+          } catch {
+            return {};
+          }
+        })()
+      : ((manifest as Record<string, unknown> | null) ?? {});
+  return parsed.hostCooperative === true;
 }
 
 /** Bootstrap App + PluginLoader and activate plugins that are marked active in the DB. */
@@ -216,6 +243,12 @@ export async function ensurePluginRuntime(): Promise<void> {
         databasesFactory: (pluginId, siteId, permissions) =>
           createPluginDatabasesApi(pluginId, siteId, permissions),
         contentFactory: (pluginId, siteId) => createPluginContentApi(pluginId, siteId),
+        i18nProvider: (siteId) => ({
+          defaultLocale: async () =>
+            (await import("./i18n/languages-db.js")).getDefaultLocale(siteId),
+          locales: async () =>
+            (await import("./i18n/languages-db.js")).getActiveLocaleCodes(siteId),
+        }),
         blockRegistry: pluginBlockAdapter(),
         coreCookies: async () => (await import("./cookie-registry.js")).getCoreCookies(),
         cookieOverrides: async (siteId) =>
@@ -280,9 +313,15 @@ async function ensureRegistered(siteId: string, pluginId: string): Promise<void>
 }
 
 export async function runtimeActivatePlugin(siteId: string, pluginId: string): Promise<void> {
-  if (pluginId === "justflows.seo") return;
-  if (pluginId === "justflows.analytics") return;
-  if (pluginId === "justflows.gallery") return;
+  if (pluginId === "justflows.analytics" || pluginId === "justflows.gallery") return;
+  if (pluginId === "justflows.seo") {
+    const db = await getDb();
+    const rows = await db.query<{ manifest: unknown }>(
+      "SELECT manifest FROM plugins WHERE site_id = ? AND plugin_id = ? LIMIT 1",
+      [siteId, pluginId],
+    );
+    if (isRuntimeSkippedFirstParty(pluginId, rows[0]?.manifest)) return;
+  }
   await ensureRegistered(siteId, pluginId);
   if (!loader) throw new Error("Plugin runtime is unavailable");
   await loader.activate(pluginId, siteId);
