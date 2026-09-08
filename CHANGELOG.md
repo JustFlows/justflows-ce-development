@@ -9,6 +9,13 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Permalink settings.** Administrators can choose post URL presets or custom
+  token structures, configure content-type and taxonomy bases, and select a
+  trailing-slash policy. Known previous URLs redirect to current URLs with 301s;
+  reserved routes and URL collisions are checked before saving. Core public
+  links, canonical tags, and sitemap entries follow the active structure.
+  ([#96](https://github.com/JustFlows/justflows-ce/issues/96))
+
 - **Visual menu designer.** Admin → Menus is now a full designer instead of a
   flat link list: a drag-and-drop item tree with indent/outdent and undo/redo, a
   live `?preview=1` iframe, and one-click design presets. Each menu carries a

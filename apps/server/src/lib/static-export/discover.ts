@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { contentPermalink, getPermalinkState } from "../permalinks-db.js";
 import { getSiteId } from "../themes-db.js";
 import { listPublishedContent } from "../content-public.js";
 import { getHomeContent } from "../home-page.js";
@@ -40,6 +41,10 @@ function extractSitemapLocs(xml: string): string[] {
 export async function discoverRoutes(
   fetchText: (path: string) => Promise<{ ok: boolean; body: string }>,
 ): Promise<DiscoveredRoutes> {
+  const permalinkSiteId = await getSiteId();
+  if (permalinkSiteId && (await getPermalinkState(permalinkSiteId)).settings.structure.startsWith("/?")) {
+    throw new Error("Static export requires path-based permalinks. Choose a preset other than Plain in Settings → Permalinks.");
+  }
   const paths = new Set<string>(["/"]);
   const contentPaths = new Map<string, string[]>();
   const translationGroups = new Map<string, string>();
@@ -74,7 +79,7 @@ export async function discoverRoutes(
         (item.id === home.id ||
           (item.translationGroupId != null && item.translationGroupId === home.translationGroupId));
       const slugPath = isHome || item.slug === "home" || item.slug === "" ? "/" : `/${item.slug}`;
-      const urlPath = normalizeUrlPath(localePath(item.locale, slugPath, defaultLocale));
+      const urlPath = normalizeUrlPath(isHome || slugPath === "/" ? localePath(item.locale, "/", defaultLocale) : await contentPermalink(item));
       paths.add(urlPath);
       const list = contentPaths.get(item.id) ?? [];
       if (!list.includes(urlPath)) list.push(urlPath);

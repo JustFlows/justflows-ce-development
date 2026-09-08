@@ -61,6 +61,7 @@ vi.mock("../db.js", () => ({
 
 vi.mock("../i18n/languages-db.js", () => ({
   getActiveLocaleCodes: async () => ["en", "nl"],
+  getDefaultLocale: async () => "en",
 }));
 
 const { resolveMenuItems } = await import("../menus-db.js");
@@ -70,7 +71,7 @@ describe("resolveMenuItems locale prefix", () => {
     vi.clearAllMocks();
   });
 
-  it("keeps page links on the current locale even when the item points at the default-language page", async () => {
+  it("uses translated permalinks and the canonical default-language URL when no translation exists", async () => {
     const items = await resolveMenuItems(
       [
         { id: "1", label: "contact", type: "page", contentId: "page-contact" },
@@ -80,7 +81,7 @@ describe("resolveMenuItems locale prefix", () => {
       "en",
     );
 
-    expect(items.map((item) => item.url)).toEqual(["/nl/contact", "/nl/about-us"]);
+    expect(items.map((item) => item.url)).toEqual(["/nl/contact", "/about-us"]);
   });
 
   it("prefixes custom internal URLs with the current locale", async () => {

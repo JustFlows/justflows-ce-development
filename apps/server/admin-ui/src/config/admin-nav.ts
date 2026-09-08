@@ -114,6 +114,7 @@ export const ADMIN_NAV_DOMAINS: NavDomain[] = [
     items: [
       { key: "nav.users", to: "/admin/users", icon: "👤" },
       { key: "nav.settings", to: "/admin/settings", icon: "⚙" },
+      { key: "nav.permalinks", to: "/admin/settings/permalinks", icon: "↗" },
       { key: "nav.emails", to: "/admin/emails", icon: "✉" },
       { key: "nav.languages", to: "/admin/languages", icon: "🌐" },
       { key: "nav.webhooks", to: "/admin/webhooks", icon: "↗" },
@@ -223,6 +224,7 @@ const NAV_ACCESS: Record<string, string[]> = {
   "/admin/health": ["administrator"],
   "/admin/updates": ["administrator"],
   "/admin/webhooks": ["administrator"],
+  "/admin/settings/permalinks": ["administrator"],
   "/admin/analytics": ["administrator", "editor"],
 };
 

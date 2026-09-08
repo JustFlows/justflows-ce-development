@@ -50,7 +50,8 @@
     "shopDiscounts": "Discounts",
     "shopRefunds": "Refunds",
     "shopEmails": "Emails",
-    "shopReports": "Reports"
+    "shopReports": "Reports",
+    "permalinks": "Permalinks"
   },
   "webhooks": {
     "title": "Webhooks",
@@ -688,5 +689,34 @@
         }
       }
     }
+  },
+  "permalinks": {
+    "title": "Permalinks",
+    "taxonomies": "Taxonomy bases",
+    "description": "Choose public URL structures for your content and taxonomy archives.",
+    "failed": "Could not load or save permalink settings.",
+    "retry": "Retry",
+    "saved": "Permalinks saved. {count} previous content URLs recorded for 301 redirects.",
+    "warning": "Changing URLs can affect search rankings and external links. Known published URLs are redirected automatically. Imported URLs, ambiguous URLs shared by multiple items, deleted content, handwritten links, and unrecorded historical URLs cannot be mapped automatically. Review redirects after saving.",
+    "preset": "Post URL preset",
+    "plain": "Plain (content ID query)",
+    "day": "Day and name",
+    "month": "Month and name",
+    "name": "Post name",
+    "numeric": "Numeric / ID",
+    "custom": "Custom",
+    "structure": "Post structure",
+    "tokens": "Tokens: %year%, %monthnum%, %day% (UTC publication date), %postname% (slug), %id% (content UUID), %category% (first category slug), %author% (author ID), %type% (content type). Include %postname% or %id%.",
+    "slash": "Trailing slash",
+    "never": "Without trailing slash",
+    "always": "With trailing slash",
+    "types": "Content type bases",
+    "baseHelp": "Use a path such as resources/articles, without surrounding slashes. Leave a type base empty to keep its slug at the site root.",
+    "categoryBase": "Category base",
+    "tagBase": "Tag base",
+    "localeHelp": "Locale prefixes appear before the structure. The default locale has no prefix; other enabled locales keep their full locale tag. The homepage stays at the locale root.",
+    "save": "Save permalinks",
+    "saving": "Saving…",
+    "history": "Historical content URLs ({count})"
   }
 }

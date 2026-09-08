@@ -34,7 +34,32 @@ import { resolveFaviconUrl } from "../lib/theme-customize.js";
 import { sendServerError } from "../lib/send-error.js";
 import type { CommentSettings } from "../lib/comments-settings.js";
 
+import { PermalinkSettingsSchema, PERMALINK_PRESETS } from "../lib/permalinks.js";
+import { getPermalinkState, savePermalinks, PermalinkConflictError } from "../lib/permalinks-db.js";
+import { listContentTypes } from "../lib/content-types-db.js";
+
 const router = Router();
+router.get("/permalinks", requireSession, requireRole("administrator"), async (req, res) => {
+  try {
+    const siteId = req.session!.siteId;
+    const state = await getPermalinkState(siteId);
+    const db = await getDb();
+    const taxonomies = await db.query<{ slug: string; name: string }>("SELECT slug, name FROM taxonomies WHERE site_id = ? ORDER BY slug", [siteId]);
+    res.json({ ...state, presets: PERMALINK_PRESETS, types: await listContentTypes(siteId), taxonomies });
+  } catch (err) { sendServerError(res, "permalinks", err); }
+});
+router.put("/permalinks", requireSession, requireRole("administrator"), async (req, res) => {
+  const parsed = PermalinkSettingsSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.issues[0]?.message }); return; }
+  try {
+    const redirectsCreated = await savePermalinks(req.session!.siteId, parsed.data);
+    auditFromRequest(req, "settings.changed", { detail: "permalinks" });
+    res.json({ ok: true, redirectsCreated });
+  } catch (err) {
+    if (err instanceof PermalinkConflictError) { res.status(409).json({ error: err.message }); return; }
+    sendServerError(res, "permalinks", err);
+  }
+});
 
 const Schema = z.object({
   site_name: z.string().min(1).optional(),

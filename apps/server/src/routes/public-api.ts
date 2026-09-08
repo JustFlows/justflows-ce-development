@@ -1,3 +1,4 @@
+import { contentPermalink } from "../lib/permalinks-db.js";
 import { Router } from "express";
 import os from "node:os";
 import fs from "node:fs/promises";
@@ -48,7 +49,8 @@ async function serializePublicContent(
   preview = false,
 ): Promise<ReturnType<typeof serializeContentRow>> {
   const overlaid = preview ? await overlayWorkingOnRow(row, true) : row;
-  const payload = serializeContentRow(overlaid);
+  const content = serializeContentRow(overlaid);
+  const payload = { ...content, links: { self: await contentPermalink(content) } };
   const hooks = getRuntimeHooks();
   if (!hooks.has("content.output")) return payload;
   return hooks.applyFilter("content.output", payload, { siteId });
@@ -203,7 +205,7 @@ router.get("/content", async (req, res) => {
     const locale = await resolveContentLocale(localeParam, siteId);
 
     let sql =
-      "SELECT id, site_id, type, title, slug, locale, excerpt, status, fields, published_at, updated_at FROM content WHERE site_id = ? AND locale = ? AND trashed_at IS NULL";
+      "SELECT id, site_id, type, title, slug, locale, excerpt, status, fields, author_id, created_at, published_at, updated_at FROM content WHERE site_id = ? AND locale = ? AND trashed_at IS NULL";
     const params: (string | number | boolean | null)[] = [siteId, locale];
 
     if (!preview) {

@@ -22,6 +22,7 @@ import PageBuilderPage from "./pages/admin/PageBuilderPage";
 import MenusPage from "./pages/admin/MenusPage";
 import UsersPage from "./pages/admin/UsersPage";
 import EditUserPage from "./pages/admin/EditUserPage";
+import PermalinksPage from "./pages/admin/PermalinksPage";
 import SettingsPage from "./pages/admin/SettingsPage";
 import EmailsPage from "./pages/admin/EmailsPage";
 import CommentsPage from "./pages/admin/CommentsPage";
@@ -111,6 +112,7 @@ export default function App() {
               <Route path="users" element={<UsersPage />} />
               <Route path="users/:id" element={<EditUserPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="settings/permalinks" element={<PermalinksPage />} />
               <Route path="emails" element={<EmailsPage />} />
               <Route path="comments" element={<CommentsPage />} />
               <Route path="trash" element={<TrashPage />} />

@@ -1,3 +1,6 @@
+import { esc } from "@justflows/blocks";
+import type { ContentResponse } from "../lib/content-api.js";
+import { createPermalinkRouter } from "./permalinks.js";
 import { Router, type Request, type Response } from "express";
 import ejs from "ejs";
 import path from "node:path";
@@ -911,7 +914,7 @@ function languageLinksFor(
   currentLocale: string,
   restPath: string,
   defaultLocale: string,
-  translations: Array<{ locale: string; slug: string }> = [],
+  translations: Array<{ locale: string; slug: string; href?: string }> = [],
 ): Array<{
   code: string;
   name: string;
@@ -929,7 +932,7 @@ function languageLinksFor(
     return {
       code: lang.code,
       name: lang.nativeName,
-      href: localePath(lang.code, path, defaultLocale),
+      href: translations.find((tr) => tr.locale === lang.code)?.href ?? localePath(lang.code, path, defaultLocale),
       current: lang.code === currentLocale,
       displayCode: displayLocaleCode(lang.code),
       ...localePresentation(lang.code),
@@ -1249,6 +1252,23 @@ router.get("/sitemap.xml", async (_req, res, next) => {
   }
 });
 
+router.use(createPermalinkRouter({
+  canView: ensureSiteIsPublic,
+  previewAllowed: isPreviewAllowed,
+  async renderContent(req, res, { content, path, basePath, pageNumber, alternates }) {
+    const preview = await isPreviewAllowed(req, res);
+    await sendPublicHtml(req, res, path, preview, () =>
+      renderSinglePageHtml(req, res, path, content.slug, content.locale, preview, alternates, pageNumber, basePath, content));
+  },
+  async renderArchive(req, res, { path, name, items }) {
+    await sendPublicHtml(req, res, path, false, async () => {
+      const ctx = await buildPageContext(req, res, path);
+      const bodyHtml = `<h1>${esc(name)}</h1><ul>${items.map((item) => `<li><a href="${esc(item.path)}">${esc(item.title)}</a></li>`).join("")}</ul>`;
+      return renderPage("template", { ...ctx, publicPath: path, title: name, bodyHtml });
+    });
+  },
+}));
+
 router.get("/", async (req, res, next) => {
   if (req.path !== "/") {
     next();
@@ -1283,9 +1303,17 @@ async function renderSinglePageHtml(
   alternates: Array<{ locale: string; slug: string; href: string }>,
   pageNumber: number,
   basePath: string,
+  resolvedContent?: ContentResponse,
 ): Promise<string> {
-  const pageCtx = await buildPageContext(req, res, reqPath, preview);
-  const pageContent = await getPublishedContentBySlug(slug, locale, preview);
+  const pageCtx = { ...await buildPageContext(req, res, reqPath, preview), publicPath: reqPath };
+  let pageContent = resolvedContent ?? await getPublishedContentBySlug(slug, locale, preview);
+  if (resolvedContent) {
+    const { getDb } = await import("../lib/db.js");
+    const { serializeContentRow } = await import("../lib/content-api.js");
+    const { overlayWorkingOnRow } = await import("../lib/content-revisions.js");
+    const rows = await (await getDb()).query<Record<string, unknown>>(`SELECT * FROM content WHERE id = ? AND site_id = ? AND trashed_at IS NULL AND ${preview ? "status IN ('published', 'draft')" : "status = 'published'"}`, [resolvedContent.id, resolvedContent.siteId]);
+    pageContent = rows[0] ? serializeContentRow(preview ? await overlayWorkingOnRow(rows[0], true) : rows[0]) : null;
+  }
   if (!pageContent) {
     return renderNotFoundHtml(pageCtx);
   }

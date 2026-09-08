@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+import { slashPath } from "./permalinks.js";
+import { contentPermalink, getPermalinkState, listPermalinkTerms, taxonomyPermalink } from "./permalinks-db.js";
 import { getPlugin } from "./plugins-db.js";
 import { getPluginSetting } from "./plugin-kv.js";
 import { getHomeContent } from "./home-page.js";
@@ -184,6 +186,7 @@ export async function buildSitemapXml(siteId: string): Promise<string> {
   const defaultLocale = await getDefaultLocale();
   const published = await listPublishedContent(siteId);
   const home = await getHomeContent(siteId, defaultLocale, false);
+  const { settings: permalinks } = await getPermalinkState(siteId);
   const paths = new Set<string>(["/", ...settings.extraSitemapPaths]);
 
   for (const item of published) {
@@ -192,9 +195,13 @@ export async function buildSitemapXml(siteId: string): Promise<string> {
       (item.id === home.id ||
         (item.translationGroupId && item.translationGroupId === home.translationGroupId));
     const pagePath = isHome || item.slug === "home" || item.slug === "" ? "/" : `/${item.slug}`;
-    paths.add(localePath(item.locale, pagePath, defaultLocale));
+    paths.add(isHome || pagePath === "/" ? slashPath(localePath(item.locale, "/", defaultLocale), permalinks.trailingSlash) : await contentPermalink(item));
   }
 
+  for (const term of await listPermalinkTerms(siteId)) {
+    const locales = new Set(published.filter((item) => term.contentIds.includes(item.id)).map((item) => item.locale));
+    for (const locale of locales) paths.add(taxonomyPermalink(term, locale, permalinks, defaultLocale));
+  }
   const { getRuntimeHooks } = await import("./plugin-runtime.js");
   const hooks = getRuntimeHooks();
   let pathList = [...paths];

@@ -1,3 +1,4 @@
+import { uniquePermalinkSlug, rememberContentPermalink, PermalinkConflictError } from "../lib/permalinks-db.js";
 import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -253,9 +254,15 @@ router.post(
         res.status(400).json({ error: `Unknown content type "${type}"` });
         return;
       }
-      const slug = body.data.slug ? slugify(body.data.slug) : slugify(title);
+      let slug = body.data.slug ? slugify(body.data.slug) : slugify(title);
       const id = randomUUID();
       const locale = await resolveContentLocale(body.data.locale, session.siteId);
+      try {
+        slug = await uniquePermalinkSlug(serializeContentRow({ id, site_id: session.siteId, type, title, slug, locale, status: "draft", created_at: now(), author_id: session.userId, fields: fields ?? {} }));
+      } catch (err) {
+        if (err instanceof PermalinkConflictError) { res.status(409).json({ error: err.message }); return; }
+        throw err;
+      }
       const translationGroupId = body.data.translationGroupId ?? id;
       const hooks = getRuntimeHooks();
       const hookCtx = {
@@ -554,6 +561,14 @@ router.patch("/:id", requireSession, async (req, res) => {
       return;
     }
 
+    if (body.data.slug !== undefined) {
+      try {
+        body.data.slug = await uniquePermalinkSlug({ ...serializeContentRow(row), slug: slugify(body.data.slug) });
+      } catch (err) {
+        if (err instanceof PermalinkConflictError) { res.status(409).json({ error: err.message }); return; }
+        throw err;
+      }
+    }
     const ctx = hookCtx(session);
     const contentRef = { contentId: id, siteId: session.siteId, type: String(row.type) };
     const status = String(row.status);
@@ -1163,13 +1178,22 @@ async function publishRow(
     throw err;
   }
 
+  const publishedAt = serializeContentRow(row).publishedAt ?? new Date().toISOString();
+  const nextContent = { ...serializeContentRow(row), ...proposed, status: "published", publishedAt };
+  try {
+    proposed.slug = await uniquePermalinkSlug(nextContent);
+    nextContent.slug = proposed.slug;
+  } catch (err) {
+    if (err instanceof PermalinkConflictError) { res.status(409).json({ error: err.message }); return; }
+    throw err;
+  }
   let historicalId: string | null = null;
   historicalId = await insertHistoricalIfChanged(row, session.userId);
 
   try {
     const applied = await applySnapshotToContent(id, siteId, proposed, {
       status: "published",
-      publishedAt: now(),
+      publishedAt,
       expectedVersion: liveVersion,
     });
     if (!applied) {
@@ -1186,6 +1210,7 @@ async function publishRow(
     throw err;
   }
 
+  await rememberContentPermalink(serializeContentRow(row), nextContent);
   await pruneHistoricalForContent(id, siteId);
   await invalidateContentCache();
   await hooks.dispatchAction(

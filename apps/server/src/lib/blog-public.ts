@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
+import { contentPermalink } from "./permalinks-db.js";
 import { esc, safeMediaSrc } from "@justflows/blocks";
 import { getRuntimeBlockRegistry } from "./runtime-blocks.js";
 import { listPublishedPostsPage } from "./content-public.js";
-import { localePath } from "./i18n/locales.js";
 import { formatContentDate } from "./general-settings.js";
 import type { ContentResponse } from "./content-api.js";
 
@@ -63,8 +63,7 @@ function featuredImageOf(post: ContentResponse): string {
   return typeof raw === "string" ? safeMediaSrc(raw) : "";
 }
 
-function postListItemHtml(post: ContentResponse, props: BlogPostListProps, ctx: BlogPostListRenderContext, dateLabel: string): string {
-  const href = localePath(post.locale, `/${post.slug}`, ctx.defaultLocale);
+function postListItemHtml(post: ContentResponse, props: BlogPostListProps, ctx: BlogPostListRenderContext, dateLabel: string, href: string): string {
   const image = props.showFeaturedImage ? featuredImageOf(post) : "";
   const media = image
     ? `<a class="post-thumb" href="${esc(href)}" tabindex="-1" aria-hidden="true"><img src="${image}" alt="" loading="lazy"></a>`
@@ -127,7 +126,8 @@ export async function renderBlogPostListBlockHtml(
     items.map((post) => (props.showDate && post.publishedAt ? formatContentDate(post.publishedAt) : Promise.resolve(""))),
   );
 
-  const rows = items.map((post, i) => postListItemHtml(post, props, ctx, dateLabels[i] ?? "")).join("\n");
+  const hrefs = await Promise.all(items.map(contentPermalink));
+  const rows = items.map((post, i) => postListItemHtml(post, props, ctx, dateLabels[i] ?? "", hrefs[i]!)).join("\n");
   const listClass =
     props.layout === "grid" ? `post-list post-list--grid post-list--cols-${props.columns}` : "post-list";
   const totalPages = Math.max(1, Math.ceil(total / limit));

@@ -23,6 +23,7 @@ async function contentCacheTtl(): Promise<number> {
 import { revalidateOnUpdate } from "./cache-revalidate.js";
 
 export async function invalidateContentCache(): Promise<void> {
+  await getJfCache().invalidate("content:permalink:");
   await revalidateOnUpdate("content");
 }
 

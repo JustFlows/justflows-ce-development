@@ -1,3 +1,5 @@
+import { contentPermalink } from "./permalinks-db.js";
+import { serializeContentRow, type ContentResponse } from "./content-api.js";
 /**
  * Data-access helpers for the menus table.
  */
@@ -19,7 +21,7 @@ import {
   type MenuDesignSeed,
 } from "@justflows/sdk";
 import { getDb } from "./db.js";
-import { localizePublicPath, localePath } from "./i18n/locales.js";
+import { localizePublicPath } from "./i18n/locales.js";
 import { getActiveLocaleCodes } from "./i18n/languages-db.js";
 import { getSiteId } from "./themes-db.js";
 import { sanitizeNavUrl } from "./nav-url.js";
@@ -578,13 +580,7 @@ function composeRel(item: Pick<MenuItem, "target" | "rel">): string | undefined 
   return extra;
 }
 
-interface MenuContentRef {
-  id: string;
-  slug: string;
-  locale: string;
-  title: string;
-  translationGroupId: string | null;
-}
+type MenuContentRef = ContentResponse;
 
 async function loadContentByIds(
   ids: string[],
@@ -596,26 +592,13 @@ async function loadContentByIds(
   const db = await getDb();
   const placeholders = ids.map(() => "?").join(", ");
   const statusClause = preview ? "status IN ('published', 'draft')" : "status = 'published'";
-  const rows = await db.query<{
-    id: string;
-    slug: string;
-    locale: string;
-    title: string;
-    translation_group_id: string | null;
-  }>(
-    `SELECT id, slug, locale, title, translation_group_id FROM content WHERE id IN (${placeholders}) AND ${statusClause}`,
+  const rows = await db.query<Record<string, unknown>>(
+    `SELECT * FROM content WHERE id IN (${placeholders}) AND ${statusClause}`,
     ids,
   );
 
   for (const row of rows) {
-    map.set(String(row.id), {
-      id: String(row.id),
-      slug: String(row.slug),
-      locale: String(row.locale),
-      title: String(row.title),
-      translationGroupId:
-        row.translation_group_id == null ? null : String(row.translation_group_id),
-    });
+    map.set(String(row.id), serializeContentRow(row));
   }
   return map;
 }
@@ -632,14 +615,8 @@ async function loadTranslationsByGroup(
   const db = await getDb();
   const placeholders = ids.map(() => "?").join(", ");
   const statusClause = preview ? "status IN ('published', 'draft')" : "status = 'published'";
-  const rows = await db.query<{
-    id: string;
-    slug: string;
-    locale: string;
-    title: string;
-    translation_group_id: string | null;
-  }>(
-    `SELECT id, slug, locale, title, translation_group_id FROM content
+  const rows = await db.query<Record<string, unknown>>(
+    `SELECT * FROM content
      WHERE translation_group_id IN (${placeholders}) AND locale = ? AND ${statusClause}`,
     [...ids, locale],
   );
@@ -647,13 +624,7 @@ async function loadTranslationsByGroup(
   for (const row of rows) {
     const groupId = row.translation_group_id == null ? null : String(row.translation_group_id);
     if (!groupId) continue;
-    map.set(groupId, {
-      id: String(row.id),
-      slug: String(row.slug),
-      locale: String(row.locale),
-      title: String(row.title),
-      translationGroupId: groupId,
-    });
+    map.set(groupId, serializeContentRow(row));
   }
   return map;
 }
@@ -742,15 +713,14 @@ export async function resolveMenuItems(
   );
   const activeLocales = await getActiveLocaleCodes();
 
-  function resolveContentUrl(content: MenuContentRef): string {
+  async function resolveContentUrl(content: MenuContentRef): Promise<string> {
     const translated =
       content.locale === locale
         ? content
         : content.translationGroupId
           ? translationMap.get(content.translationGroupId)
           : undefined;
-    const slug = translated?.slug ?? content.slug;
-    return localePath(locale, `/${slug}`, defaultLocale);
+    return contentPermalink(translated ?? content);
   }
 
   async function resolveList(list: MenuItem[]): Promise<ResolvedNavItem[]> {
@@ -766,7 +736,7 @@ export async function resolveMenuItems(
       if (isContentLinkedMenuItem(linked)) {
         const content = contentMap.get(linked.contentId);
         if (content) {
-          url = resolveContentUrl(content);
+          url = await resolveContentUrl(content);
           if (!label) {
             const translated = content.translationGroupId
               ? translationMap.get(content.translationGroupId)
