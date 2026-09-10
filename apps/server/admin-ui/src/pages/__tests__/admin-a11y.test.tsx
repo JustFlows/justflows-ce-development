@@ -159,7 +159,7 @@ describe("admin accessibility", () => {
   it("has no critical axe findings on the content list", async () => {
     const { container } = render(
       <MemoryRouter>
-        <ContentListPage />
+        <I18nProvider><ContentListPage /></I18nProvider>
       </MemoryRouter>,
     );
     await waitFor(() => {

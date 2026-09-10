@@ -45,6 +45,12 @@ Plugins additionally receive executable runtime context and can inspect
 `SDK_API_VERSION` from `@justflows/sdk`. `ctx.version` continues to mean the
 plugin's own version.
 
+### In development — search
+
+`SearchBackend`, `SearchDocument`, and the permission-gated `search.backend`
+filter are additive. Existing plugins and themes continue to use database
+search without implementing anything. See [Search](SEARCH.md).
+
 ### SDK `0.1.6` — additive
 
 - `ctx.content.listPublished(query?)` returns published entries (`type`, `slug`,

@@ -99,6 +99,19 @@ describe("plugin hook context", () => {
     expect(loader.patternRegistry.all()).toEqual([]);
   });
 
+  it("requires content:read for a search backend and cleans up on deactivation", async () => {
+    await expect(activate(makePlugin({}, ctx => {
+      ctx.hooks.filter("search.backend", current => current);
+    }))).rejects.toThrow(/content:read/);
+    const engine = { id: "example", search: async () => [], upsert: async () => {}, remove: async () => {} };
+    const { app, loader } = await activate(makePlugin({ permissions: ["content:read"] }, ctx => {
+      ctx.hooks.filter("search.backend", () => engine);
+    }));
+    expect(await app.hooks.applyFilter("search.backend", null, { siteId: "site-1" })).toBe(engine);
+    await loader.deactivate("justflows.test", "site-1");
+    expect(await app.hooks.applyFilter("search.backend", null, { siteId: "site-1" })).toBeNull();
+  });
+
   it("refuses a sensitive hook without the declared permission", async () => {
     await expect(
       activate(

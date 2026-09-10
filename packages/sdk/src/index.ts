@@ -239,3 +239,5 @@ export type {
   PatternSet,
   ThemePatternRegistration,
 } from "./patterns.js";
+
+export type { SearchBackend, SearchDocument } from "./search.js";

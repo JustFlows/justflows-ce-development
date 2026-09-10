@@ -51,3 +51,6 @@ export type {
   ContentFieldKind,
 } from "./service/content-types.js";
 
+
+export { SearchQuerySchema, searchTokens, searchHighlight } from "./search.js";
+export type { SearchQuery } from "./search.js";

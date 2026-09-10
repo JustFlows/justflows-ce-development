@@ -33,6 +33,8 @@ const helloWorld: PluginModule = {
     ctx.logger.info("Hello World plugin activating");
 
     await registerHelloWorldStyles(ctx);
+    // Optional external search integration: see search-backend-example.ts and
+    // docs/SEARCH.md. It is not enabled by this zero-permission example.
 
     ctx.patterns.register({
       id: "welcome-cta",

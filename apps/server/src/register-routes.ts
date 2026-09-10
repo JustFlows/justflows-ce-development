@@ -64,6 +64,9 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
   const { ensurePluginRuntime } = await import("./lib/plugin-runtime.js");
   await ensurePluginRuntime();
   if (isInstalled()) {
+    const { getSiteId: getSearchSiteId } = await import("./lib/site-settings.js");
+    const searchSiteId = await getSearchSiteId();
+    if (searchSiteId) await (await import("./lib/search-db.js")).startSearchIndex(searchSiteId);
     const { startWebhookJobs } = await import("./lib/webhooks.js");
     await startWebhookJobs();
     const { installStaticExportAutoRebuild } = await import("./lib/static-export/auto.js");
@@ -154,6 +157,7 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
 
   app.use(blockIfInstalled);
 
+  app.use("/api/search", requireInstalled, (await import("./routes/search.js")).default);
   app.use("/api/content", requireInstalled, contentRoutes);
   app.use("/api/trash", requireInstalled, trashRoutes);
   app.use("/api/media", requireInstalled, mediaRoutes);

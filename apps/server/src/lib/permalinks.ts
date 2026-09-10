@@ -13,6 +13,7 @@ export const PERMALINK_PRESETS = {
 } as const;
 export const RESERVED_PERMALINK_SEGMENTS = new Set([
   "admin",
+  "search",
   "api",
   "ext",
   "install",

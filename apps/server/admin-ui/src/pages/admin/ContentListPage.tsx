@@ -1,3 +1,4 @@
+import { useT } from "../../i18n/I18nProvider";
 import { useEffect, useState } from "react";
 import { Link } from "../../admin-router";
 import { initialJson } from "../../ssr-data";
@@ -32,6 +33,7 @@ function contentListPath(locale: string | null): string {
 }
 
 export default function ContentPage() {
+  const { t } = useT();
   const prefetchedLanguages = initialJson<{ languages?: Array<{ code: string; isDefault?: boolean }> }>(
     "/api/languages",
   );
@@ -84,7 +86,33 @@ export default function ContentPage() {
       .catch(() => {});
   }, [defaultLocale]);
 
-  const filtered = items.filter(
+  const [query, setQuery] = useState("");
+  const [searchItems, setSearchItems] = useState<ContentItem[]>([]);
+  const [searchPage, setSearchPage] = useState(1);
+  const [searchTotal, setSearchTotal] = useState(0);
+  const [searchBusy, setSearchBusy] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  useEffect(() => { setSearchPage(1); }, [query, filter, statusFilter]);
+  useEffect(() => {
+    if (!query.trim()) { setSearchItems([]); setSearchBusy(false); setSearchError(""); return; }
+    const controller = new AbortController();
+    setSearchBusy(true); setSearchError(""); setSearchItems([]);
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({ q: query, page: String(searchPage), limit: "20" });
+      if (defaultLocale) params.set("locale", defaultLocale);
+      if (filter !== "all") params.set("type", filter);
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      void fetch(`/api/search?${params}`, { signal: controller.signal }).then(async response => {
+        if (!response.ok) throw new Error();
+        const result = await response.json();
+        if (!controller.signal.aborted) { setSearchItems(result.items); setSearchTotal(result.total); }
+      }).catch(() => { if (!controller.signal.aborted) setSearchError(t("search.error")); })
+        .finally(() => { if (!controller.signal.aborted) setSearchBusy(false); });
+    }, 250);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [query, filter, statusFilter, searchPage, defaultLocale, t]);
+
+  const filtered = query.trim() ? searchItems : items.filter(
     (i) =>
       (filter === "all" || i.type === filter) &&
       (statusFilter === "all" || i.status === statusFilter),
@@ -123,6 +151,53 @@ export default function ContentPage() {
         </div>
       </header>
 
+      <label className="jf-field" style={{ maxWidth: "22rem" }}>
+        <span className="jf-field__label">{t("search.query")}</span>
+        <input
+          className="jf-input"
+          type="search"
+          value={query}
+          maxLength={200}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
+      {searchBusy && (
+        <p className="jf-meta" role="status">
+          {t("search.loading")}
+        </p>
+      )}
+      {searchError && (
+        <div className="jf-alert jf-alert--error" role="alert">
+          {searchError}
+        </div>
+      )}
+      {query.trim() && !searchBusy && !searchError && (
+        <nav
+          className="jf-row"
+          style={{ gap: "0.75rem", justifyContent: "center" }}
+          aria-label={t("search.pagination")}
+        >
+          <button
+            className="jf-btn jf-btn--ghost jf-btn--sm"
+            disabled={searchPage === 1}
+            onClick={() => setSearchPage((p) => p - 1)}
+          >
+            <span aria-hidden="true">← </span>
+            {t("search.previous")}
+          </button>
+          <span className="jf-meta">
+            {searchTotal} {t("search.results")}
+          </span>
+          <button
+            className="jf-btn jf-btn--ghost jf-btn--sm"
+            disabled={searchPage * 20 >= searchTotal || searchPage >= 100}
+            onClick={() => setSearchPage((p) => p + 1)}
+          >
+            {t("search.next")}
+            <span aria-hidden="true"> →</span>
+          </button>
+        </nav>
+      )}
       <div className="jf-filterbar">
         {["all", ...types.map((t) => t.slug)].map((t) => (
           <button
@@ -146,17 +221,19 @@ export default function ContentPage() {
           </button>
         ))}
         <span className="jf-meta" style={{ marginInlineStart: "auto" }}>
-          {filtered.length} of {items.length}
+          {filtered.length} of {query.trim() ? searchTotal : items.length}
         </span>
       </div>
 
       <div className="jf-card">
-        {filtered.length === 0 ? (
+        {query.trim() && (searchBusy || searchError) ? null : filtered.length === 0 ? (
           <div className="jf-empty">
             <span className="jf-empty__icon" aria-hidden="true">
               📝
             </span>
-            <span className="jf-empty__title">Nothing here yet</span>
+            <span className="jf-empty__title">
+              {query.trim() ? t("search.empty") : "Nothing here yet"}
+            </span>
             <p>
               {items.length === 0
                 ? "Create your first post or page to get started."

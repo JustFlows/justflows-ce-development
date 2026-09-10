@@ -32,5 +32,20 @@
   "comments.posted_ok": "Bedankt — je reactie is geplaatst.",
   "comments.captcha_failed": "De antispamcontrole is mislukt. Probeer het opnieuw.",
   "comments.error_generic": "Je reactie kon niet worden geplaatst. Probeer het opnieuw.",
-  "comments.closed": "Reacties zijn gesloten voor dit bericht."
+  "comments.closed": "Reacties zijn gesloten voor dit bericht.",
+  "search.title": "Zoeken op de site",
+  "search.query": "Inhoud zoeken",
+  "search.filters": "Filters",
+  "search.type": "Inhoudstype",
+  "search.taxonomy": "Taxonomie",
+  "search.term": "Term",
+  "search.after": "Vanaf",
+  "search.before": "Tot en met",
+  "search.submit": "Zoeken",
+  "search.prompt": "Voer woorden in om gepubliceerde inhoud te zoeken.",
+  "search.results": "resultaten",
+  "search.empty": "Geen resultaten. Probeer minder woorden of andere filters.",
+  "search.pagination": "Zoekpagina’s",
+  "search.previous": "Vorige",
+  "search.next": "Volgende"
 }

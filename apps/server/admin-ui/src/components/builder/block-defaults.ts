@@ -144,6 +144,7 @@ export const DEFAULT_PROPS: Record<string, Record<string, unknown>> = {
     ],
   },
   "core.grid": { columns: 12, gap: "md", rowHeight: "auto" },
+  "core.search": { label: "Search", contentType: "", taxonomy: "", term: "", showFilters: false, limit: 20 },
   "core.color-scheme": {
     style: "buttons",
     align: "right",

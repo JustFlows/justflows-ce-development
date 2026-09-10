@@ -637,6 +637,8 @@ export interface GateEventMap {
  * next value; returning nothing keeps the previous value and logs a warning.
  */
 export interface FilterValueMap {
+  /** Supply an external candidate engine; host authorization is never delegated. */
+  "search.backend": [import("./search.js").SearchBackend | null, { siteId: string }];
   /** Event names administrators may subscribe to. Plugins append their names. */
   "webhook.eventTypes": [string[], Record<string, never>];
   /** Shape JSON-safe event data before the host builds and signs its envelope. */
@@ -810,6 +812,7 @@ export const HOOK_PERMISSION_PREFIXES: ReadonlyArray<{
   readonly prefix: string;
   readonly permission: string;
 }> = [
+  { prefix: "search.", permission: "content:read" },
   { prefix: "auth.", permission: "auth:hook" },
   { prefix: "user.", permission: "users:read" },
   { prefix: "admin.", permission: "admin:extend" },

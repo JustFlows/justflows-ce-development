@@ -2324,3 +2324,110 @@ html[data-theme="dark"] .jf-color-scheme__toggle .jf-color-scheme__icon--moon {
 .jf-comments__submit:hover {
   background: var(--color-primary-hover);
 }
+
+/* Public search — matches the theme's form + surface language, and works
+   without a CSS provider or client-side JavaScript. */
+.jf-search-page {
+  max-width: var(--max-width);
+  margin-inline: auto;
+  padding: var(--space-6) var(--space-4);
+}
+.jf-search-page > h1 {
+  margin: 0 0 var(--space-4);
+}
+
+.jf-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.jf-search label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.jf-search input {
+  max-width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 400;
+}
+.jf-search button {
+  align-self: end;
+  padding: 0.6rem 1.2rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.jf-search button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+.jf-search button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.jf-search details {
+  flex-basis: 100%;
+}
+.jf-search summary {
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.jf-search details[open] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.jf-search details[open] summary {
+  flex-basis: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.jf-search-results {
+  margin: var(--space-4) 0;
+  padding-inline-start: 1.5rem;
+}
+.jf-search-results li {
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+.jf-search-results h2 {
+  margin: 0 0 0.35rem;
+  font-size: var(--h3-size);
+}
+.jf-search-results p {
+  margin: 0 0 0.35rem;
+  overflow-wrap: anywhere;
+}
+.jf-search-results small {
+  color: var(--color-muted);
+}
+
+.jf-search-pagination {
+  display: flex;
+  gap: var(--space-4);
+  margin-block: var(--space-4);
+}
+
+.jf-search :focus-visible,
+.jf-search-page a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

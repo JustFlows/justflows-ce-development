@@ -32,5 +32,20 @@
   "comments.posted_ok": "Danke — Ihr Kommentar wurde veröffentlicht.",
   "comments.captcha_failed": "Die Spam-Prüfung ist fehlgeschlagen. Bitte versuchen Sie es erneut.",
   "comments.error_generic": "Ihr Kommentar konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
-  "comments.closed": "Die Kommentare für diesen Beitrag sind geschlossen."
+  "comments.closed": "Die Kommentare für diesen Beitrag sind geschlossen.",
+  "search.title": "Website-Suche",
+  "search.query": "Inhalte suchen",
+  "search.filters": "Filter",
+  "search.type": "Inhaltstyp",
+  "search.taxonomy": "Taxonomie",
+  "search.term": "Begriff",
+  "search.after": "Von",
+  "search.before": "Bis",
+  "search.submit": "Suchen",
+  "search.prompt": "Suchbegriffe für veröffentlichte Inhalte eingeben.",
+  "search.results": "Ergebnisse",
+  "search.empty": "Keine Treffer. Versuchen Sie weniger Wörter oder andere Filter.",
+  "search.pagination": "Suchseiten",
+  "search.previous": "Zurück",
+  "search.next": "Weiter"
 }

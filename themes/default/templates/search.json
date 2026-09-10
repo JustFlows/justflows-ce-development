@@ -1,0 +1,7 @@
+{
+  "title": "Search results",
+  "description": "The search form, filters, matching content, and pagination.",
+  "blocks": [
+    { "id": "search-content", "type": "core.post-content", "version": 1, "props": { "wrap": "post" } }
+  ]
+}

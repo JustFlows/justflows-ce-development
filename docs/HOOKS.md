@@ -280,6 +280,7 @@ Most hooks are open to any plugin. A few require a declared permission:
 | -------------- | ---------------------------- |
 | `auth.*`       | `auth:hook`                  |
 | `user.*`       | `users:read`                 |
+| `search.*`     | `content:read`               |
 
 ```json
 {
@@ -785,3 +786,11 @@ hooks. Keep server logic in plugins, presentation defaults in themes.
 - `packages/sdk/src/hooks.ts` — typed hook contracts
 - `packages/core/src/hooks/registry.ts` — the implementation
 - `packages/core/src/__tests__/hooks.test.ts` — behaviour, exhaustively
+
+## Search backend filter
+
+`search.backend` receives `SearchBackend | null` and `{ siteId }`. Return an
+engine implementing `search`, `upsert`, and `remove`, or preserve the existing
+value. The hook requires `content:read`, is removed on deactivation, and cannot
+override host publication/access checks. See [Search](SEARCH.md) for lifecycle,
+candidate limits, privacy, and the canonical plugin example.

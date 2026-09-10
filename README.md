@@ -185,6 +185,8 @@ old behaviour. Do not set that on a public host.
 
 | Feature                                                  | Where                                       |
 | -------------------------------------------------------- | ------------------------------------------- |
+| Search published content | `/search` or the Search block — [guide](docs/SEARCH.md) |
+| Configure and rebuild search | Admin → Tools → Site search |
 | Write posts and pages                                    | Admin → Content                             |
 | Build pages and post bodies with blocks                  | Admin → Content → Open page builder         |
 | Choose or create a paginated blog index                  | Admin → Theme builder → Blog                |

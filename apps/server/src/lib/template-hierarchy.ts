@@ -42,7 +42,7 @@ export type TemplatePartSlot = (typeof TEMPLATE_PART_SLOTS)[number];
  *                 page or the blog index sits there.
  * - `singular`  — one content row (page, post, or a custom content type).
  * - `archive`   — a list view for a content type (not yet routed; reserved).
- * - `search`    — search results (not yet routed; reserved).
+ * - `search`    — public search results, filters, and pagination.
  * - `notFound`  — nothing matched the URL.
  */
 export type TemplateQuery =

@@ -164,6 +164,8 @@
   "SDK_VERSION",
   "SENSITIVE_PERMISSIONS",
   "SYNC_FILTERS",
+  "SearchBackend",
+  "SearchDocument",
   "StaticExportCompletedEvent",
   "StaticExportDeployEvent",
   "TEMPLATE_PART_SLOTS",

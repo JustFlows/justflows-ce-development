@@ -35,5 +35,20 @@
   "comments.posted_ok": "Thanks — your comment has been posted.",
   "comments.captcha_failed": "The anti-spam check failed. Please try again.",
   "comments.error_generic": "Your comment could not be posted. Please try again.",
-  "comments.closed": "Comments are closed for this post."
+  "comments.closed": "Comments are closed for this post.",
+  "search.title": "Site search",
+  "search.query": "Search content",
+  "search.filters": "Filters",
+  "search.type": "Content type",
+  "search.taxonomy": "Taxonomy",
+  "search.term": "Term",
+  "search.after": "From",
+  "search.before": "Through",
+  "search.submit": "Search",
+  "search.prompt": "Enter words to search published content.",
+  "search.results": "results",
+  "search.empty": "No matching content. Try fewer words or different filters.",
+  "search.pagination": "Search pages",
+  "search.previous": "Previous",
+  "search.next": "Next"
 }

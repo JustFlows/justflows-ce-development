@@ -8,7 +8,7 @@ export type {
   BlockRenderNode,
 } from "./registry/block-registry.js";
 export { coreBlocks } from "./core/index.js";
-export { sanitizeRichText, sanitizeHtmlBlock, sanitizePlainText } from "./sanitize.js";
+export { sanitizeRichText, sanitizeHtmlBlock, sanitizePlainText, extractPlainText } from "./sanitize.js";
 export { sanitizeBlockDocument } from "./sanitize-document.js";
 export { esc, safeHref, safeMediaSrc, sanitizeHref, sanitizeMediaSrc } from "./safe-url.js";
 export { renderResponsiveImage, sanitizeSizes, sanitizeSrcset } from "./responsive-image.js";

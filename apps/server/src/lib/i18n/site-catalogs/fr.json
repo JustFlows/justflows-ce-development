@@ -32,5 +32,20 @@
   "comments.posted_ok": "Merci — votre commentaire a été publié.",
   "comments.captcha_failed": "La vérification anti-spam a échoué. Veuillez réessayer.",
   "comments.error_generic": "Votre commentaire n’a pas pu être publié. Veuillez réessayer.",
-  "comments.closed": "Les commentaires sont fermés pour cet article."
+  "comments.closed": "Les commentaires sont fermés pour cet article.",
+  "search.title": "Recherche sur le site",
+  "search.query": "Rechercher du contenu",
+  "search.filters": "Filtres",
+  "search.type": "Type de contenu",
+  "search.taxonomy": "Taxonomie",
+  "search.term": "Terme",
+  "search.after": "Du",
+  "search.before": "Au",
+  "search.submit": "Rechercher",
+  "search.prompt": "Saisissez des mots pour rechercher du contenu publié.",
+  "search.results": "résultats",
+  "search.empty": "Aucun résultat. Essayez moins de mots ou d’autres filtres.",
+  "search.pagination": "Pages de recherche",
+  "search.previous": "Précédent",
+  "search.next": "Suivant"
 }

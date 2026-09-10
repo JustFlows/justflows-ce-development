@@ -8,6 +8,7 @@ const mockCtx = {
     action: vi.fn(),
     filter: vi.fn(),
   },
+  patterns: { register: vi.fn() },
   settings: {
     get: vi.fn().mockResolvedValue(undefined),
     set: vi.fn().mockResolvedValue(undefined),

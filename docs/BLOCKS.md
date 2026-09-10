@@ -410,3 +410,10 @@ the media Gallery block â€” no script. Sample product photos are placeholders â€
 replace them from Media.
 Add to cart is a link to `/cart` until checkout exists. These blocks are not
 core; the Patterns panel asks you to install Shop when they are missing.
+
+## Built-in Search block
+
+`core.search` is a first-party GET search form with `label`, `contentType`,
+`taxonomy`, `term`, `showFilters`, and `limit` props. It appears in the Site
+category and works in pages and site chrome. See [Search](SEARCH.md) for
+visibility, pagination, query behavior, and locale-aware rendering.

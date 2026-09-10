@@ -151,6 +151,7 @@ export async function restoreTrashItem(siteId: string, type: TrashType, id: stri
         "UPDATE content SET slug = ?, original_slug = NULL, status = COALESCE(original_status, 'draft'), original_status = NULL, trashed_at = NULL, trashed_by = NULL, updated_at = ? WHERE id = ? AND site_id = ?",
         [slug, nowSql(), id, siteId],
       );
+      await (await import("./search-db.js")).indexSearchContent(siteId, id).catch(() => console.error("[justflows] Search index update after trash operation failed"));
     } else {
       await db.run(
         "UPDATE menus SET slug = ?, original_slug = NULL, trashed_at = NULL, trashed_by = NULL WHERE id = ? AND site_id = ?",
@@ -216,6 +217,7 @@ export async function purgeTrashItem(
     id,
     siteId,
   ]);
+  if (type === "content") await (await import("./search-db.js")).indexSearchContent(siteId, id).catch(() => console.error("[justflows] Search index update after trash operation failed"));
 }
 
 export async function purgeExpiredTrash(): Promise<number> {

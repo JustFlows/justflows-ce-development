@@ -10,6 +10,21 @@ export const PUBLIC_API_OPENAPI = {
   },
   servers: [{ url: "/api/v1" }],
   paths: {
+    "/search": {
+      get: {
+        summary: "Search published content (preview never includes drafts)",
+        parameters: [
+          ...["q", "locale", "type", "taxonomy", "term", "after", "before"].map(name => ({ name, in: "query", schema: { type: "string" } })),
+          { name: "page", in: "query", schema: { type: "integer", minimum: 1, maximum: 100 } },
+          { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 50 } },
+        ],
+        responses: {
+          "200": { description: "items (id, title, url, excerpt, highlights as text/match segments), total, page, limit, hasMore, backend, typoTolerance" },
+          "400": { description: "Invalid search parameters" },
+          "429": { description: "Too many searches" },
+        },
+      },
+    },
     "/content": {
       get: {
         summary: "List published content",

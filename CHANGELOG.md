@@ -9,6 +9,14 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Built-in site search.** Public `/search` pages and the `core.search` block
+  support locale, type, taxonomy/date filters, relevance, highlighting, and
+  pagination. Admin content search uses a shared incremental database full-text
+  index with access scopes; Tools adds visibility settings and index rebuild.
+  The headless search API and documented plugin backend interface preserve
+  live publication checks, with rate limiting and opt-in anonymous metrics stored in the database (no console or file logging).
+  ([#101](https://github.com/JustFlows/justflows-ce/issues/101))
+
 - **Automatic responsive images and modern formats.** Raster uploads now
   generate a configurable set of width-scaled variants plus WebP (and AVIF when
   enabled) alongside the untouched original, inline on upload and backfillable

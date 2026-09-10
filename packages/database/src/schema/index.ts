@@ -9,3 +9,5 @@ export * from "./plugins.js";
 export * from "./themes.js";
 
 export * from "./redirects.js";
+
+export * from "./search.js";

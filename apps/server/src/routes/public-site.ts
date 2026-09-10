@@ -1,3 +1,7 @@
+import { rateLimit } from "express-rate-limit";
+import { SearchQuerySchema } from "@justflows/content";
+import { searchContent } from "../lib/search-db.js";
+import { renderSearchPage } from "../lib/search-render.js";
 import { esc } from "@justflows/blocks";
 import type { ContentResponse } from "../lib/content-api.js";
 import { createPermalinkRouter } from "./permalinks.js";
@@ -470,6 +474,10 @@ function withSiteWidgets(
     t: (key: string) => string;
   },
 ): string {
+  html = html.replace(/<span data-jf-search-text="([a-z]+)">[^<]*<\/span>/g, (markup, key: string) =>
+    ["type", "taxonomy", "term", "after", "before", "submit"].includes(key) ? `<span>${esc(ctx.t(`search.${key}`))}</span>` : markup);
+  const searchLocale = ctx.languageLinks.find(link => link.current)?.code;
+  if (searchLocale) html = html.replaceAll('action="/search"', `action="/${esc(searchLocale)}/search"`);
   return hydrateSiteWidgets(html, {
     languageLinks: ctx.languageLinks,
     usersCanRegister: ctx.usersCanRegister,
@@ -1284,6 +1292,27 @@ router.get("/sitemap.xml", async (_req, res, next) => {
   } catch (err) {
     console.error("[justflows] sitemap render failed:", err);
     res.status(500).type("text/plain").send("Internal server error");
+  }
+});
+
+router.get(["/search", "/:locale/search"], rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: "draft-8", legacyHeaders: false }), async (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("X-Robots-Tag", "noindex, follow");
+  if (!(await ensureSiteIsPublic(req, res))) return;
+  const parsed = SearchQuerySchema.safeParse(req.query);
+  if (!parsed.success) { res.status(400).type("text/plain").send("Invalid search parameters"); return; }
+  try {
+    const ctx = await buildPageContext(req, res, req.path);
+    if (ctx.restPath !== "/search" && ctx.restPath !== "/search/") { res.status(404).type("text/plain").send("Not found"); return; }
+    const query = { ...parsed.data, locale: ctx.locale };
+    const result = await searchContent(ctx.siteId, query);
+    const bodyHtml = renderSearchPage(query, result, ctx.publicPath, ctx.t);
+    const viewData = { title: ctx.t("search.title"), discourageSearchEngines: true };
+    const themed = await renderThemeTemplateHtml({ kind: "search" }, ctx,
+      templateBlockContext({ content: null, formattedDate: null, contentBodyHtml: bodyHtml }, ctx, {}), viewData);
+    res.type("html").send(themed ?? await renderPage("template", { ...ctx, ...viewData, bodyHtml }));
+  } catch {
+    res.status(500).type("text/plain").send("Search is temporarily unavailable");
   }
 });
 

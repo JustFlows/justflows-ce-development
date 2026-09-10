@@ -1,3 +1,4 @@
+import { useT } from "../../i18n/I18nProvider";
 import { useEffect, useRef, useState } from "react";
 import type { BlockNode, BlockCatalogEntry } from "./types";
 import { syncColumnCount } from "./block-defaults";
@@ -153,6 +154,7 @@ export default function BlockInspector({
   onConvertToReusable,
   enableProductTags = false,
 }: BlockInspectorProps) {
+  const { t } = useT();
   const p = block.props;
   const set = (key: string, val: unknown) => {
     const next = { ...p, [key]: val };
@@ -454,6 +456,16 @@ export default function BlockInspector({
         <p style={{ color: "var(--jf-text-3)", fontSize: "0.8rem", margin: 0 }}>
           Register is shown on the public site only when Settings → Anyone can register is on.
         </p>
+      </>;
+      break;
+    case "core.search":
+      fields = <>
+        {textInput("label", t("search.label"))}
+        {textInput("contentType", t("search.scope"), t("search.allTypes"))}
+        {textInput("taxonomy", t("search.taxonomySlug"))}
+        {textInput("term", t("search.termSlug"))}
+        {textInput("limit", t("search.limit"))}
+        <label><input type="checkbox" checked={p.showFilters === true} onChange={e => onChange({ ...p, showFilters: e.target.checked })} /> {t("search.showFilters")}</label>
       </>;
       break;
     case "core.group":

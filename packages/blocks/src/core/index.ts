@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+import { searchBlock } from "./search.js";
 import type { BlockDefinition } from "../registry/block-registry.js";
 import { sanitizeHtmlBlock, sanitizeRichText } from "../sanitize.js";
 import { esc, safeHref, safeMediaSrc } from "../safe-url.js";
@@ -75,6 +77,7 @@ function sanitizeResponsiveProp(raw: unknown): SanitizedResponsive | null {
 }
 
 export const coreBlocks: BlockDefinition[] = [
+  searchBlock,
   {
     type: "core.paragraph",
     version: 1,

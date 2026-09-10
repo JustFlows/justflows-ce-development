@@ -1,3 +1,4 @@
+import { SearchToolsCard } from "../../components/SearchToolsCard";
 import { useEffect, useRef, useState } from "react";
 import { waitForSiteRestart } from "../../lib/wait-for-restart.js";
 
@@ -1301,6 +1302,7 @@ export default function ToolsPage() {
         </div>
       </div>
 
+      <SearchToolsCard />
       <ResponsiveImagesCard />
     </div>
   );

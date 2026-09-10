@@ -1,3 +1,4 @@
+import { useT } from "../../i18n/I18nProvider";
 import { cloneElement, isValidElement, useEffect, type ReactElement } from "react";
 import type { BlockNode } from "./types";
 import { parseBlockStyle, sanitizeHtmlBlock, sanitizeRichText } from "@justflows/blocks";
@@ -47,6 +48,7 @@ export function BlockPreview({
   selectedId,
   renderChildren,
 }: BlockPreviewProps) {
+  const { t } = useT();
   const p = block.props;
   const tags = useProductTags();
   const text = (value: unknown) => applyMergeTags(String(value ?? ""), tags);
@@ -113,6 +115,14 @@ export function BlockPreview({
   };
 
   switch (block.type) {
+    case "core.search": {
+      const label = typeof p.label === "string" && p.label && p.label !== "Search" ? p.label : t("search.submit");
+      return wrap(<div className="jf-search" aria-label={label}>
+        <label>{label}<input type="search" disabled placeholder={label} /></label>
+        {p.showFilters === true && <span>{t("search.filters")}: {t("search.type")}, {t("search.taxonomy")}, {t("search.after")}</span>}
+        <button type="button" disabled>{label}</button>
+      </div>);
+    }
     case "core.section": {
       const bg = (p.background as string) || "default";
       const pad = (p.padding as string) || "lg";

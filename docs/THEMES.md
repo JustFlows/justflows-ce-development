@@ -489,3 +489,10 @@ resolved header before render. See [HOOKS.md](HOOKS.md#contributing-a-header-des
 
 Presentation defaults (site title, tagline, colors) live in Customizer mods.
 Behavior belongs in plugins via hooks.
+
+### Search results
+
+`/search` and locale-prefixed search URLs resolve the `search` template slot.
+Place `core.post-content` in `templates/search.json` for the live form, filters,
+results, and pagination. `themes/default/templates/search.json` is the minimal
+example. [Search](SEARCH.md) documents CSS classes and the headless contract.

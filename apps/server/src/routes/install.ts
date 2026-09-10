@@ -329,6 +329,8 @@ router.post("/", async (req, res) => {
 
     resetDb();
     await sql.close();
+    await (await import("../lib/plugin-runtime.js")).ensurePluginRuntime();
+    await (await import("../lib/search-db.js")).startSearchIndex(siteId);
 
     if (account.emailDetails) {
       const mailed = await sendInstallDetailsMail({

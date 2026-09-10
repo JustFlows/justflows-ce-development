@@ -1,10 +1,13 @@
+import { rateLimit } from "express-rate-limit";
+import { SearchQuerySchema } from "@justflows/content";
+import { searchContent } from "../lib/search-db.js";
 import { contentPermalink } from "../lib/permalinks-db.js";
 import { Router } from "express";
 import { getDb } from "../lib/db.js";
 import { runHealthChecks } from "../lib/health-checks.js";
 import { serializeContentRow } from "../lib/content-api.js";
 import { overlayWorkingOnRow } from "../lib/content-revisions.js";
-import { resolveContentLocale, getDefaultLocale } from "../lib/i18n/languages-db.js";
+import { resolveContentLocale, getDefaultLocale, getActiveLocaleCodes } from "../lib/i18n/languages-db.js";
 import { listContentTypes } from "../lib/content-types-db.js";
 import { PUBLIC_API_OPENAPI } from "../lib/openapi-v1.js";
 import {
@@ -76,6 +79,22 @@ router.get("/openapi.json", async (req, res) => {
     return;
   }
   res.json(await hooks.applyFilter("openapi.document", document, { version: "v1" }));
+});
+
+router.get("/search", rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: "draft-8", legacyHeaders: false }), async (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  if (!(await ensurePublicApiAccess(req, res))) return;
+  const parsed = SearchQuerySchema.safeParse(req.query);
+  if (!parsed.success) { res.status(400).json({ error: "Invalid search parameters" }); return; }
+  try {
+    const siteId = await getSiteId();
+    if (!siteId) { res.status(404).json({ error: "Not found" }); return; }
+    if (parsed.data.locale && !(await getActiveLocaleCodes(siteId)).some(locale => locale.toLowerCase() === parsed.data.locale!.toLowerCase())) {
+      res.status(400).json({ error: "Unknown search locale" }); return;
+    }
+    const locale = await resolveContentLocale(parsed.data.locale ?? await getDefaultLocale(siteId), siteId);
+    res.json(await searchContent(siteId, { ...parsed.data, locale }));
+  } catch (err) { sendServerError(res, "search", err); }
 });
 
 router.get("/content-types", async (req, res) => {

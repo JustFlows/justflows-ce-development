@@ -32,5 +32,20 @@
   "comments.posted_ok": "Gracias — tu comentario se ha publicado.",
   "comments.captcha_failed": "La comprobación antispam ha fallado. Inténtalo de nuevo.",
   "comments.error_generic": "No se pudo publicar tu comentario. Inténtalo de nuevo.",
-  "comments.closed": "Los comentarios están cerrados para esta entrada."
+  "comments.closed": "Los comentarios están cerrados para esta entrada.",
+  "search.title": "Búsqueda del sitio",
+  "search.query": "Buscar contenido",
+  "search.filters": "Filtros",
+  "search.type": "Tipo de contenido",
+  "search.taxonomy": "Taxonomía",
+  "search.term": "Término",
+  "search.after": "Desde",
+  "search.before": "Hasta",
+  "search.submit": "Buscar",
+  "search.prompt": "Escribe palabras para buscar contenido publicado.",
+  "search.results": "resultados",
+  "search.empty": "Sin resultados. Prueba menos palabras u otros filtros.",
+  "search.pagination": "Páginas de búsqueda",
+  "search.previous": "Anterior",
+  "search.next": "Siguiente"
 }

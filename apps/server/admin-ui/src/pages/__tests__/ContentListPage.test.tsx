@@ -1,3 +1,4 @@
+import { I18nProvider } from "../../i18n/I18nProvider";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -81,7 +82,7 @@ describe("ContentListPage", () => {
   it("renders content links with the configured admin URL for opening in a new tab", async () => {
     mockFetch();
     setAdminSsrPayload({ adminBasePath: "/admin-test", url: "/admin-test/content", locale: "en", responses: {} });
-    render(<MemoryRouter initialEntries={["/admin-test/content"]}><ContentListPage /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/admin-test/content"]}><I18nProvider><ContentListPage /></I18nProvider></MemoryRouter>);
     expect(await screen.findByRole("link", { name: "About us" })).toHaveAttribute("href", "/admin-test/content/page-about");
     expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/admin-test/content/page-home-en");
     for (const link of screen.getAllByRole("link")) {
@@ -93,7 +94,7 @@ describe("ContentListPage", () => {
     const fetchMock = mockFetch();
     render(
       <MemoryRouter>
-        <ContentListPage />
+        <I18nProvider><ContentListPage /></I18nProvider>
       </MemoryRouter>,
     );
 
