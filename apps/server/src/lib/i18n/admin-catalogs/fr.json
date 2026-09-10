@@ -5,9 +5,11 @@
       "content": "Contenu",
       "commerce": "Boutique",
       "appearance": "Apparence",
+      "users": "Utilisateurs",
       "extensions": "Extensions",
+      "tools": "Outils",
       "security": "Sécurité",
-      "system": "Système"
+      "system": "Paramètres"
     },
     "content": "Contenu",
     "contentTypes": "Types de contenu",

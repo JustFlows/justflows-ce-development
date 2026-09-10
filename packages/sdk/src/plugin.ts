@@ -79,7 +79,9 @@ export const ADMIN_MENU_DOMAINS = [
   "content",
   "commerce",
   "appearance",
+  "users",
   "extensions",
+  "tools",
   "security",
   "system",
 ] as const;

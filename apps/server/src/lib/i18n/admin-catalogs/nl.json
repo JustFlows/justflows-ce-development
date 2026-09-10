@@ -5,9 +5,11 @@
       "content": "Content",
       "commerce": "Winkel",
       "appearance": "Weergave",
+      "users": "Gebruikers",
       "extensions": "Extensies",
+      "tools": "Tools",
       "security": "Beveiliging",
-      "system": "Systeem"
+      "system": "Instellingen"
     },
     "content": "Content",
     "contentTypes": "Contenttypes",
