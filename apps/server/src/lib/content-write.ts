@@ -20,6 +20,7 @@ import {
   rowToSnapshot,
   serializeEditorContent,
   upsertWorkingRevision,
+  RevisionConflictError,
 } from "./content-revisions.js";
 import { snapshotsEqual, type ContentSnapshot } from "@justflows/content";
 import { resolveContentLocale } from "./i18n/languages-db.js";
@@ -59,7 +60,7 @@ export const PatchContentSchema = z
     excerpt: z.string().nullable().optional(),
     blocks: z.unknown().optional(),
     fields: z.record(z.string(), z.unknown()).optional(),
-    status: z.enum(["draft", "published", "archived", "scheduled"]).optional(),
+    status: z.enum(["draft", "published", "archived"]).optional(),
     expectedVersion: z.number().int().positive().optional(),
     source: z.enum(["manual", "autosave", "import", "api"]).optional(),
   })
@@ -73,6 +74,13 @@ export type WriteResponse = {
   json: (body: unknown) => void;
   status: (code: number) => { json: (body: unknown) => void };
 };
+
+async function auditScheduleOverride(row: Record<string, unknown>, actor: ContentActor, preserveExpiry = false): Promise<void> {
+  if (!row.publish_on && (preserveExpiry || !row.unpublish_on)) return;
+  await auditLog({ siteId: actor.siteId, target: String(row.id), actorId: actor.userId, actorRole: actor.role,
+    action: preserveExpiry && row.unpublish_on ? "content.schedule_changed" : "content.schedule_cancelled",
+    detail: "Schedule superseded by a manual content transition" });
+}
 
 export function slugify(s: string): string {
   return s
@@ -179,12 +187,16 @@ export async function saveWorkingRow(
     throw err;
   }
 
-  const saved = await upsertWorkingRevision(row, {
+  let saved;
+  try { saved = await upsertWorkingRevision(row, {
     snapshot: proposed,
     source: patch.source ?? "manual",
     actorId: actor.userId,
     baseVersion: Number(row.version ?? 1) || 1,
-  });
+  }); } catch (err) {
+    if (err instanceof RevisionConflictError) { res.status(409).json({ error: err.message }); return; }
+    throw err;
+  }
   if (saved) {
     await hooks.dispatchAction(
       "content.revisionSaved",
@@ -287,6 +299,7 @@ export async function publishRow(
     throw err;
   }
 
+  await auditScheduleOverride(row, actor, true);
   await rememberContentPermalink(serializeContentRow(row), nextContent);
   await pruneHistoricalForContent(id, siteId);
   await invalidateContentCache();
@@ -333,6 +346,7 @@ export async function unpublishRow(
     return;
   }
   await archiveThenDeleteWorking(row, actor.userId);
+  await auditScheduleOverride(row, actor);
   await invalidateContentCache();
   await getRuntimeHooks().dispatchAction(
     "content.unpublished",
@@ -398,21 +412,24 @@ export async function applyDraftUpdate(
   if (patch.status !== undefined) {
     fields.push("status = ?");
     values.push(patch.status);
+    fields.push("publish_on = NULL", "unpublish_on = NULL");
   }
   if (fields.length === 0) {
     res.status(400).json({ error: "No fields to update" });
     return;
   }
   fields.push("updated_at = ?", "version = version + 1");
-  values.push(now(), id, actor.siteId);
+  values.push(now(), id, actor.siteId, Number(row.version));
   const db = await getDb();
-  await db.run(`UPDATE content SET ${fields.join(", ")} WHERE id = ? AND site_id = ?`, values);
+  const changed = await db.execute(`UPDATE content SET ${fields.join(", ")} WHERE id = ? AND site_id = ? AND version = ?`, values);
+  if (changed !== 1) { res.status(409).json({ error: "Content changed; reload before saving" }); return; }
 
+  if (patch.status !== undefined) await auditScheduleOverride(row, actor);
   const rows = await db.query<Record<string, unknown>>(
     "SELECT * FROM content WHERE id = ? AND site_id = ? LIMIT 1",
     [id, actor.siteId],
   );
-  await hooks.dispatchAction("content.updated", contentRef, ctx);
+  await hooks.dispatchAction(row.status === "scheduled" && patch.status === undefined ? "content.revisionSaved" : "content.updated", contentRef, ctx);
   res.json(rows[0] ? serializeEditorContent(rows[0], null) : { error: "Not found" });
 }
 
@@ -542,7 +559,7 @@ export async function trashContentEntry(
 
   const trashedSlug = `${row.type}-trash-${id}`;
   await db.run(
-    "UPDATE content SET original_slug = slug, original_status = status, slug = ?, status = 'trashed', trashed_at = ?, trashed_by = ?, updated_at = ? WHERE id = ? AND site_id = ?",
+    "UPDATE content SET original_slug = slug, original_status = status, slug = ?, status = 'trashed', publish_on = NULL, unpublish_on = NULL, trashed_at = ?, trashed_by = ?, updated_at = ? WHERE id = ? AND site_id = ?",
     [trashedSlug, now(), actor.userId, now(), id, actor.siteId],
   );
   await invalidateContentCache();

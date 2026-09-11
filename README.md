@@ -304,3 +304,10 @@ and only updated from `develop`.
 - Only commit example files such as `.env.example`.
 - See [SECURITY.md](SECURITY.md) for the install token, package signatures, and
   how to report vulnerabilities.
+
+### Scheduled publishing
+
+Posts, pages, custom content types and working revisions support future publication
+and optional expiry, with site/browser timezone display, a publishing agenda and
+shareable draft previews. See [Scheduled publishing](docs/SCHEDULING.md) for author
+instructions, permissions, API usage and restart recovery.

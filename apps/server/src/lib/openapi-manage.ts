@@ -84,6 +84,13 @@ export const MANAGE_API_OPENAPI = {
       patch: op("Update a content entry (draft, working revision, publish or unpublish)", "content:update"),
       delete: op("Move a content entry to trash", "content:delete"),
     },
+    "/content/{id}/schedule": { put: {
+      ...op("Set, change or cancel publishing/expiry (also requires content:update)", "content:publish"),
+      requestBody: { required: true, content: { "application/json": { schema: {
+        type: "object", required: ["publishOn", "unpublishOn", "expectedVersion"], additionalProperties: false,
+        properties: { publishOn: { type: ["string", "null"], format: "date-time" }, unpublishOn: { type: ["string", "null"], format: "date-time" }, expectedVersion: { type: "integer", minimum: 1 } },
+      } } } },
+    } },
     "/content/{id}/publish": { post: op("Publish a content entry", "content:publish") },
     "/content/{id}/unpublish": { post: op("Return a published entry to draft", "content:publish") },
     "/content/{id}/revisions": { get: op("List revisions", "content:revisions:read") },

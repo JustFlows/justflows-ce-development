@@ -794,3 +794,12 @@ engine implementing `search`, `upsert`, and `remove`, or preserve the existing
 value. The hook requires `content:read`, is removed on deactivation, and cannot
 override host publication/access checks. See [Search](SEARCH.md) for lifecycle,
 candidate limits, privacy, and the canonical plugin example.
+
+## Scheduled content transitions
+
+Scheduling metadata does not emit `content.published` or `content.unpublished`.
+The due transition runs the publish gates and emits the matching action after
+commit, with context `source: "job"` and stable `eventId` / `scheduleEventId`
+fields. Durable event replay is at least once; deduplicate external side effects
+by `eventId`. Existing action failure isolation still applies. See
+[Scheduled publishing](SCHEDULING.md).

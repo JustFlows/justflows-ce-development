@@ -1,3 +1,4 @@
+import ContentAgenda from "../../components/ContentAgenda";
 import { useT } from "../../i18n/I18nProvider";
 import { useEffect, useState } from "react";
 import { Link } from "../../admin-router";
@@ -10,6 +11,8 @@ interface ContentItem {
   slug: string;
   locale: string;
   status: string;
+  publishOn?: string | null;
+  unpublishOn?: string | null;
   updatedAt: string;
   hasWorkingRevision?: boolean;
 }
@@ -19,7 +22,7 @@ interface ContentTypeSummary {
   label: string;
 }
 
-const STATUS_FILTERS = ["all", "draft", "published"] as const;
+const STATUS_FILTERS = ["all", "draft", "published", "scheduled"] as const;
 
 function defaultLocaleCode(
   languages?: Array<{ code: string; isDefault?: boolean }>,
@@ -52,6 +55,7 @@ export default function ContentPage() {
   const [blogPageId, setBlogPageId] = useState<string | null>(
     prefetchedSettings?.blog_page_id ?? null,
   );
+  const [agenda, setAgenda] = useState(false);
   const [filter, setFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>("all");
 
@@ -115,7 +119,7 @@ export default function ContentPage() {
   const filtered = query.trim() ? searchItems : items.filter(
     (i) =>
       (filter === "all" || i.type === filter) &&
-      (statusFilter === "all" || i.status === statusFilter),
+      (statusFilter === "all" || (statusFilter === "scheduled" ? Boolean(i.publishOn || i.unpublishOn) : i.status === statusFilter)),
   );
 
   const typeLabel = (slug: string) => types.find((t) => t.slug === slug)?.label ?? slug;
@@ -198,6 +202,7 @@ export default function ContentPage() {
           </button>
         </nav>
       )}
+      <button className="jf-btn jf-btn--secondary" aria-pressed={agenda} onClick={() => setAgenda(value => !value)}>{t("scheduling.agenda")}</button>
       <div className="jf-filterbar">
         {["all", ...types.map((t) => t.slug)].map((t) => (
           <button
@@ -225,7 +230,7 @@ export default function ContentPage() {
         </span>
       </div>
 
-      <div className="jf-card">
+      {agenda || statusFilter === "scheduled" ? <ContentAgenda type={filter} locale={null} /> : <div className="jf-card">
         {query.trim() && (searchBusy || searchError) ? null : filtered.length === 0 ? (
           <div className="jf-empty">
             <span className="jf-empty__icon" aria-hidden="true">
@@ -282,6 +287,7 @@ export default function ContentPage() {
                     <td className="jf-td--mono">{item.locale ?? "—"}</td>
                     <td>
                       <StatusBadge status={item.status} hasWorkingRevision={item.hasWorkingRevision} />
+                      {(item.publishOn || item.unpublishOn) && <span className="jf-badge">{t("scheduling.title")}</span>}
                     </td>
                     <td className="jf-td--mono">/{item.slug}</td>
                     <td className="jf-td--muted">
@@ -298,7 +304,7 @@ export default function ContentPage() {
             </table>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

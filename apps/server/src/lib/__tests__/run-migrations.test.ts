@@ -35,6 +35,7 @@ describe("MIGRATION_ORDER", () => {
       "0027_media_responsive",
       "0028_site_search",
       "0029_search_metrics",
+      "0030_content_scheduling",
     ]);
   });
 

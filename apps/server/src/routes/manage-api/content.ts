@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { Router, type Request } from "express";
+import { ContentScheduleSchema, ScheduleError, setContentSchedule } from "../../lib/content-scheduling-db.js";
 import { getDb } from "../../lib/db.js";
 import { serializeContentRow } from "../../lib/content-api.js";
 import {
@@ -55,7 +56,7 @@ router.get("/", async (req, res) => {
     const access = await getEffectiveAccess(owner.userId, owner.siteId, owner.role, db);
     const readScope = access.policy.scopes?.["content:read"];
     let sql = `SELECT c.id, c.type, c.title, c.slug, c.locale, c.translation_group_id, c.excerpt, c.status,
-              c.author_id, c.published_at, c.created_at, c.updated_at, c.version,
+              c.author_id, c.publish_on, c.unpublish_on, c.published_at, c.created_at, c.updated_at, c.version,
               w.id AS working_revision_id
        FROM content c
        LEFT JOIN revisions w ON w.content_id = c.id AND w.site_id = c.site_id AND w.${revisionColumn("kind")} = 'working'
@@ -66,8 +67,8 @@ router.get("/", async (req, res) => {
       params.push(type);
     }
     if (status) {
-      sql += " AND c.status = ?";
-      params.push(status);
+      if (status === "scheduled") sql += " AND (c.publish_on IS NOT NULL OR c.unpublish_on IS NOT NULL) AND c.trashed_at IS NULL";
+      else { sql += " AND c.status = ?"; params.push(status); }
     } else {
       sql += " AND c.trashed_at IS NULL";
     }
@@ -141,7 +142,7 @@ router.patch("/:id", async (req, res) => {
     const status = String(row.status);
     const wantsUnpublish =
       status === "published" && body.data.status !== undefined && body.data.status !== "published";
-    if (wantsPublish && !(await ensureKeyCan(req, res, "content:publish", resource))) return;
+    if ((wantsPublish || (body.data.status !== undefined && Boolean(row.publish_on || row.unpublish_on))) && !(await ensureKeyCan(req, res, "content:publish", resource))) return;
 
     const actor = actorOf(req);
     if (status === "published" && wantsUnpublish) {
@@ -158,6 +159,23 @@ router.patch("/:id", async (req, res) => {
     }
     await applyDraftUpdate(row, body.data, actor, res);
   } catch (err) {
+    sendServerError(res, "manage.content", err);
+  }
+});
+
+router.put("/:id/schedule", async (req, res) => {
+  const parsed = ContentScheduleSchema.safeParse(req.body);
+  if (!parsed.success) return badRequest(res, parsed.error.issues[0]?.message ?? "Invalid schedule");
+  try {
+    const actor = actorOf(req);
+    const row = await loadRow(actor.siteId, req.params.id);
+    if (!row) return notFound(res);
+    const resource = { contentType: String(row.type), locale: String(row.locale), ownerId: row.author_id as string | null };
+    if (!(await ensureKeyCan(req, res, "content:publish", resource)) || !(await ensureKeyCan(req, res, "content:update", resource))) return;
+    await setContentSchedule(req.params.id, actor, parsed.data);
+    sendJson(req, res, serializeContentRow((await loadRow(actor.siteId, req.params.id))!));
+  } catch (err) {
+    if (err instanceof ScheduleError) { res.status(err.status).json({ error: err.message }); return; }
     sendServerError(res, "manage.content", err);
   }
 });

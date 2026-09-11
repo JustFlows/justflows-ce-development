@@ -32,6 +32,8 @@ export interface ContentResponse {
   blocks: BlockDocument;
   fields: Record<string, unknown>;
   authorId: string | null;
+  publishOn?: string | null;
+  unpublishOn?: string | null;
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -106,6 +108,8 @@ export function serializeContentRow(row: Record<string, unknown>): ContentRespon
     blocks: normalizeBlocks(row.blocks),
     fields: normalizeFields(row.fields),
     authorId: row.author_id == null ? null : String(row.author_id),
+    publishOn: toIsoTimestamp(row.publish_on),
+    unpublishOn: toIsoTimestamp(row.unpublish_on),
     publishedAt: toIsoTimestamp(row.published_at),
     createdAt: toIsoTimestamp(row.created_at) ?? "",
     updatedAt: toIsoTimestamp(row.updated_at) ?? "",

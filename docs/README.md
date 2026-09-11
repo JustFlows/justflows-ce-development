@@ -4,6 +4,7 @@ Justflows Community Edition is extended with plugins, themes, and CSS providers.
 
 | Guide                                              | When to read it                                                   |
 | -------------------------------------------------- | ----------------------------------------------------------------- |
+| [Scheduled publishing](SCHEDULING.md) | Publish dates, expiry, revisions, timezones, agenda and preview links |
 | [Search](SEARCH.md) | Public and admin search, index lifecycle, and external backends |
 | [Access control](ACCESS-CONTROL.md)                | Custom roles, scoped user access, and device sessions             |
 | [Redirect manager](REDIRECTS.md)                   | Redirect rules, 404 reports, URL suggestions, CSV and automation  |

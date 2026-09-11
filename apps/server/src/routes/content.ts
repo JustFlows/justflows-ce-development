@@ -1,3 +1,6 @@
+import { createContentPreview } from "../lib/content-preview.js";
+import { rateLimit } from "express-rate-limit";
+import { ContentScheduleSchema, ScheduleError, setContentSchedule } from "../lib/content-scheduling-db.js";
 import { uniquePermalinkSlug, PermalinkConflictError } from "../lib/permalinks-db.js";
 import { Router } from "express";
 import { randomUUID } from "node:crypto";
@@ -84,7 +87,7 @@ router.get("/", requireSession, async (req, res) => {
       return;
     }
     let sql = `SELECT c.id, c.type, c.title, c.slug, c.locale, c.translation_group_id, c.excerpt, c.status,
-              c.author_id, c.published_at, c.created_at, c.updated_at, c.version,
+              c.author_id, c.publish_on, c.unpublish_on, c.published_at, c.created_at, c.updated_at, c.version,
               w.id AS working_revision_id
        FROM content c
        LEFT JOIN revisions w ON w.content_id = c.id AND w.site_id = c.site_id AND w.${revisionColumn("kind")} = 'working'
@@ -96,8 +99,8 @@ router.get("/", requireSession, async (req, res) => {
       params.push(type);
     }
     if (status) {
-      sql += " AND c.status = ?";
-      params.push(status);
+      if (status === "scheduled") sql += " AND (c.publish_on IS NOT NULL OR c.unpublish_on IS NOT NULL) AND c.trashed_at IS NULL";
+      else { sql += " AND c.status = ?"; params.push(status); }
     } else {
       sql += " AND c.trashed_at IS NULL";
     }
@@ -122,7 +125,7 @@ router.get("/", requireSession, async (req, res) => {
       params.push(session.userId);
     }
 
-    sql += " ORDER BY c.updated_at DESC LIMIT ?";
+    sql += status === "scheduled" ? " ORDER BY c.id ASC LIMIT ?" : " ORDER BY c.updated_at DESC LIMIT ?";
     params.push(limit + 1);
 
     const rows = await db.query<Record<string, unknown>>(sql, params);
@@ -380,7 +383,7 @@ router.patch("/:id", requireSession, async (req, res) => {
     }
 
     if (
-      body.data.status === "published" &&
+      (body.data.status === "published" || (body.data.status !== undefined && Boolean(row.publish_on || row.unpublish_on))) &&
       !(await userCan(session, "content:publish", {
         contentType: String(row.type),
         locale: String(row.locale),
@@ -421,6 +424,47 @@ router.patch("/:id", requireSession, async (req, res) => {
 
     await applyDraftUpdate(row, body.data, session, res);
   } catch (err) {
+    sendServerError(res, "content", err);
+  }
+});
+
+const scheduleRateLimit = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: "draft-8", legacyHeaders: false });
+
+router.post("/:id/preview-link", requireSession, scheduleRateLimit, async (req, res) => {
+  const session = req.session!;
+  const id = param(req.params.id);
+  try {
+    const db = await getDb();
+    const [row] = await db.query<Record<string, unknown>>("SELECT * FROM content WHERE id = ? AND site_id = ? AND trashed_at IS NULL LIMIT 1", [id, session.siteId]);
+    if (!row) { res.status(404).json({ error: "Not found" }); return; }
+    const resource = { contentType: String(row.type), locale: String(row.locale), ownerId: row.author_id as string | null };
+    if (!(await userCan(session, "content:read", resource)) || !(await userCan(session, "content:update", resource))) {
+      res.status(403).json({ error: "Forbidden" }); return;
+    }
+    const token = createContentPreview({ contentId: id, siteId: session.siteId, version: Number(row.version) });
+    res.setHeader("Cache-Control", "private, no-store");
+    res.json({ url: `/preview/${token}` });
+  } catch (err) { sendServerError(res, "content", err); }
+});
+
+router.put("/:id/schedule", requireSession, scheduleRateLimit, async (req, res) => {
+  const parsed = ContentScheduleSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.issues[0]?.message }); return; }
+  const session = req.session!;
+  const id = param(req.params.id);
+  try {
+    const db = await getDb();
+    const [row] = await db.query<Record<string, unknown>>("SELECT * FROM content WHERE id = ? AND site_id = ? AND trashed_at IS NULL LIMIT 1", [id, session.siteId]);
+    if (!row) { res.status(404).json({ error: "Not found" }); return; }
+    const resource = { contentType: String(row.type), locale: String(row.locale), ownerId: row.author_id as string | null };
+    if (!(await userCan(session, "content:publish", resource)) || !(await userCan(session, "content:update", resource))) {
+      res.status(403).json({ error: "Forbidden" }); return;
+    }
+    await setContentSchedule(id, session, parsed.data);
+    const [next] = await db.query<Record<string, unknown>>("SELECT * FROM content WHERE id = ? AND site_id = ? LIMIT 1", [id, session.siteId]);
+    res.json(serializeEditorContent(next!, await getWorkingRevision(id, session.siteId)));
+  } catch (err) {
+    if (err instanceof ScheduleError) { res.status(err.status).json({ error: err.message }); return; }
     sendServerError(res, "content", err);
   }
 });
@@ -733,6 +777,13 @@ router.post("/:id/discard-draft", requireSession, async (req, res) => {
     }
     const working = await getWorkingRevision(id, session.siteId);
     if (working) {
+      if (row.publish_on) {
+        const changed = await db.execute("UPDATE content SET publish_on = NULL, version = version + 1 WHERE id = ? AND site_id = ? AND version = ?", [id, session.siteId, Number(row.version)]);
+        if (changed !== 1) { res.status(409).json({ error: "Content changed; reload before discarding" }); return; }
+        row.publish_on = null;
+        row.version = Number(row.version) + 1;
+        await auditLog({ siteId: session.siteId, action: row.unpublish_on ? "content.schedule_changed" : "content.schedule_cancelled", actorId: session.userId, target: id, detail: "Scheduled draft discarded" });
+      }
       await archiveThenDeleteWorking(row, session.userId);
       await getRuntimeHooks().dispatchAction(
         "content.revisionDiscarded",

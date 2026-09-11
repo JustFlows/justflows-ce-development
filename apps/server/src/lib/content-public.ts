@@ -22,7 +22,11 @@ async function contentCacheTtl(): Promise<number> {
 
 import { revalidateOnUpdate } from "./cache-revalidate.js";
 
-export async function invalidateContentCache(): Promise<void> {
+export async function invalidateContentCache(force = false): Promise<void> {
+  if (force) {
+    const { revalidateSelected } = await import("./cache-revalidate.js");
+    await revalidateSelected(["content", "pages", "menus"]);
+  }
   await getJfCache().invalidate("content:permalink:");
   await revalidateOnUpdate("content");
 }
@@ -35,7 +39,7 @@ async function loadPublishedRow(
 ): Promise<Record<string, unknown> | null> {
   const db = await getDb();
   const statusClause = preview
-    ? "AND status IN ('published', 'draft')"
+    ? "AND status IN ('published', 'draft', 'scheduled')"
     : "AND status = 'published'";
   const rows = await db.query<Record<string, unknown>>(
     `SELECT * FROM content WHERE site_id = ? AND slug = ? AND locale = ? ${statusClause} LIMIT 1`,
@@ -52,7 +56,7 @@ async function loadPublishedTranslation(
 ): Promise<Record<string, unknown> | null> {
   const db = await getDb();
   const statusClause = preview
-    ? "AND status IN ('published', 'draft')"
+    ? "AND status IN ('published', 'draft', 'scheduled')"
     : "AND status = 'published'";
   const rows = await db.query<Record<string, unknown>>(
     `SELECT * FROM content WHERE site_id = ? AND translation_group_id = ? AND locale = ? ${statusClause} LIMIT 1`,

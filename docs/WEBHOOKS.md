@@ -89,3 +89,13 @@ ctx.hooks.action("webhook.delivered", ({ event, status, responseStatus, data }) 
 `webhook.payload` runs before the envelope is bounded and signed.
 `webhook.delivered` receives the event data and the bounded receiver response or
 error after every attempt; it never receives another endpoint's secret.
+
+## Scheduled content
+
+Setting, changing or cancelling a schedule does not send a publication webhook.
+At the actual publish/expiry transition, matching delivery rows are queued in
+the same database transaction as content. The subsequent action dispatch does
+not enqueue those deliveries again. The payload includes `eventId` and
+`scheduleEventId`; delivery retries retain their normal signed delivery identity.
+A completely missed publication window expires without a publication webhook.
+See [Scheduled publishing](SCHEDULING.md).

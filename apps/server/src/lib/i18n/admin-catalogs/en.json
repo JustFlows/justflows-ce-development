@@ -859,5 +859,27 @@
     "termSlug": "Term slug",
     "limit": "Results per page (1–50)",
     "showFilters": "Show filters"
+  },
+  "scheduling": {
+    "timezone": "Input timezone",
+    "localeFilter": "Language code (empty for all languages)",
+    "title": "Schedule",
+    "zones": "Site timezone: {site}. Enter times in your timezone: {user}.",
+    "savedDraft": "The latest saved draft will publish at the scheduled time.",
+    "saveFirst": "Save your changes before scheduling.",
+    "publishOn": "Publish on",
+    "unpublishOn": "Unpublish on (optional)",
+    "save": "Save schedule",
+    "cancel": "Cancel schedule",
+    "saved": "Schedule saved.",
+    "cancelled": "Schedule cancelled.",
+    "invalidTime": "This local time does not exist. Choose another time.",
+    "error": "Could not load or save the schedule.",
+    "agenda": "Publishing agenda",
+    "refresh": "Refresh",
+    "loading": "Loading schedules…",
+    "empty": "No scheduled content.",
+    "sharePreview": "Share draft preview",
+    "previewReady": "Preview link (valid for 24 hours)"
   }
 }

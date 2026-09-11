@@ -1,3 +1,4 @@
+import ContentSchedule from "../../components/ContentSchedule";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "../../admin-router";
@@ -27,6 +28,8 @@ interface ContentItem {
   excerpt?: string;
   fields?: Record<string, unknown>;
   status: string;
+  publishOn?: string | null;
+  unpublishOn?: string | null;
   blocks?: BlockDocument;
   version?: number;
   hasWorkingRevision?: boolean;
@@ -117,6 +120,7 @@ export default function EditContentPage() {
   const [typeFields, setTypeFields] = useState<ContentTypeField[]>([]);
   const [typeLabel, setTypeLabel] = useState("");
   const [homePageId, setHomePageId] = useState<string | null>(null);
+  const [siteTimezone, setSiteTimezone] = useState("UTC");
   const [homeSaving, setHomeSaving] = useState(false);
   const [blogPageId, setBlogPageId] = useState<string | null>(null);
   const [blogSaving, setBlogSaving] = useState(false);
@@ -149,7 +153,8 @@ export default function EditContentPage() {
   useEffect(() => {
     fetch("/api/settings")
       .then((r) => r.json())
-      .then((data: { home_page_id?: string | null; blog_page_id?: string | null }) => {
+      .then((data: { home_page_id?: string | null; blog_page_id?: string | null; timezone?: string }) => {
+        setSiteTimezone(data.timezone ?? "UTC");
         setHomePageId(typeof data.home_page_id === "string" ? data.home_page_id : null);
         setBlogPageId(typeof data.blog_page_id === "string" ? data.blog_page_id : null);
       })
@@ -1098,6 +1103,8 @@ export default function EditContentPage() {
                     other languages.
                   </span>
                 </div>
+
+                <ContentSchedule item={item} disabled={saving || autosaving || dirty} siteTimezone={siteTimezone} onSaved={(next) => { setItem(next); setBaseline(JSON.stringify(next)); }} />
 
                 {item.hasWorkingRevision && (
                   <p className="jf-field__hint" style={{ margin: 0 }}>

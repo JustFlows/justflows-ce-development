@@ -131,3 +131,13 @@ Universal components must not read `window`, `document`, `navigator`, or
 handlers, or the client entry. New initial GET requests must be added to the
 route-aware prefetch list in `apps/server/src/lib/admin-ssr.ts` or replaced with
 a server loader, and should have an SSR test.
+
+## Scheduled content lifecycle
+
+The server owns persisted publishing/expiry deadlines and the
+`@justflows/jobs` scanner in `lib/content-scheduling-db.ts`. Row-locked
+transactions commit content, history, webhook deliveries and an event together;
+post-commit events invalidate caches and notify plugins. The latest saved working
+revision replaces the live snapshot only at its due time. Signed single-entry
+previews render through the public renderer with public theme/navigation data.
+See [Scheduled publishing](SCHEDULING.md) for timing, retries and API contracts.
