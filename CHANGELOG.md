@@ -5,6 +5,30 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [0.2.3] [UNRELEASED]
+
+### Added
+
+- **Force reinstall from Admin → Updates.** A "Force reinstall" button
+  re-downloads and reapplies whatever the update gateway currently publishes
+  as latest, even when it's the version already installed, to repair a
+  corrupted core install (a bad copy, an interrupted dependency install, a
+  manually edited file) without waiting on a new release. It runs the exact
+  same verified pipeline as a normal remote update — checksum and signature
+  checks included — and still restarts the site.
+
+### Fixed
+
+- **Core update dependency install could fail with `ERR_PNPM_OUTDATED_LOCKFILE`.**
+  `scripts/make-zip.sh` shipped the full monorepo `pnpm-lock.yaml` in release
+  archives alongside `package.json` manifests that `prepare-hosting.js` had
+  already stripped `devDependencies` from for npm hosting, so
+  `pnpm install --frozen-lockfile` rejected the mismatch on any host with pnpm
+  on `PATH`. Release archives no longer include `pnpm-lock.yaml`, and applying
+  a core update now removes a stale one left by an earlier release before
+  installing, so dependency install falls through to the npm +
+  `package-lock.json` the package actually ships.
+
 ## [0.2.2]
 
 ### Added

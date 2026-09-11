@@ -177,3 +177,31 @@ export async function getAvailableCoreUpdate(
     autoUpdatable: isAutoUpdateEligible(currentVersion, latest.version),
   };
 }
+
+/**
+ * The gateway's latest published release, regardless of whether it is newer
+ * than the installed version. Backs "force reinstall" — re-downloading and
+ * reapplying the current build to repair a corrupted install (a bad copy, a
+ * botched `npm install`, a manual file edit) without waiting on a new release.
+ * Always bypasses the discovery cache so a stale "no release" answer can't
+ * block a repair.
+ */
+export async function getLatestCoreReleaseForReinstall(): Promise<AvailableCoreUpdate | null> {
+  const currentVersion = getJustflowsVersion();
+  const latest = await fetchLatestCoreRelease(true);
+  if (!latest || !latest.downloadUrl) return null;
+  if (!parseCoreVersion(latest.version)) return null;
+
+  return {
+    id: "justflows",
+    name: "Justflows",
+    type: "core",
+    currentVersion,
+    availableVersion: latest.version,
+    notesUrl: latest.notesUrl,
+    publishedAt: latest.publishedAt,
+    downloadUrl: latest.downloadUrl,
+    sha256Url: latest.sha256Url,
+    autoUpdatable: isAutoUpdateEligible(currentVersion, latest.version),
+  };
+}

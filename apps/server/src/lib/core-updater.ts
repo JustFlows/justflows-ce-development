@@ -406,6 +406,17 @@ export async function applyCoreUpdate(
         : migrate.output.slice(-500) || "Migration failed — will retry after restart",
     });
 
+    // The manifests an update package ships are npm-only hosting copies —
+    // `prepare-hosting.js` rewrites workspace:* specs to file: paths and
+    // strips devDependencies before the archive is built. A pnpm-lock.yaml
+    // describing the pre-hosting monorepo no longer matches them, so
+    // `pnpm install --frozen-lockfile` fails deterministically wherever pnpm
+    // happens to be on PATH. Update packages never ship one, but an earlier
+    // release cycle can have left one on disk (copying files never deletes
+    // ones the new package doesn't include) — drop it so install always falls
+    // through to the npm + package-lock.json this package actually ships.
+    await fsp.rm(path.join(root, "pnpm-lock.yaml"), { force: true });
+
     const install = runDependencyInstall(root);
     record({
       step: "npm install",

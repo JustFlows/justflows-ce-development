@@ -203,9 +203,15 @@ function main() {
 
     log("Installing production dependencies…");
     const installCode = run("npm", ["install", "--omit=dev", "--ignore-scripts"]);
+
+    // The patched manifests (file: paths, no devDependencies) are only needed
+    // for the npm install above; node_modules is what the rest of this script
+    // and any later `pnpm turbo run build` actually use. Restore them now so a
+    // successful hosting install doesn't leave a dev checkout unbuildable.
+    restoreDevManifests();
+
     if (installCode !== 0) {
       restorePnpmNodeModules(pnpmTree);
-      restoreDevManifests();
       process.exit(installCode);
     }
     if (pnpmTree) {
