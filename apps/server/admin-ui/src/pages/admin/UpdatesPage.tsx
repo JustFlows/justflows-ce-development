@@ -361,6 +361,38 @@ export default function UpdatesPage() {
     );
   }
 
+  /**
+   * Re-download and reapply whatever the gateway currently publishes as
+   * latest, even if it's the version already installed. Repairs a corrupted
+   * install (bad copy, interrupted dependency install, a manually edited
+   * file) without waiting on a new release — same pipeline as a normal
+   * remote update, so it still restarts the site.
+   */
+  async function forceReinstall() {
+    if (
+      !window.confirm(
+        `Force reinstall Justflows v${currentVersion}? This re-downloads and reapplies the current release and restarts the site.`,
+      )
+    ) {
+      return;
+    }
+    setInstalling(true);
+    setLog([]);
+    addLog(`Force reinstalling Justflows v${currentVersion}…`);
+
+    await runUpdateFlow(
+      fetchWithTimeout(
+        "/api/updates/remote",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ force: true }),
+        },
+        2 * 60 * 1000,
+      ),
+    );
+  }
+
   async function toggleAutoUpdate(next: boolean) {
     setSavingAuto(true);
     try {
@@ -398,6 +430,14 @@ export default function UpdatesPage() {
             disabled={checking || busy}
           >
             {checking ? "Checking…" : "Check for updates"}
+          </button>
+          <button
+            className="jf-btn jf-btn--ghost"
+            onClick={forceReinstall}
+            disabled={checking || busy}
+            title="Re-download and reapply the current release — use this to repair a broken install"
+          >
+            Force reinstall
           </button>
         </div>
       </header>

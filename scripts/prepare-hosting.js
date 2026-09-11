@@ -132,6 +132,11 @@ function main() {
   root.scripts = root.scripts ?? {};
   root.scripts["build:server"] = "node scripts/install-all.js --build-only";
   delete root.workspaces;
+  // Same reasoning as patchFile(): a root devDependency like the aliased
+  // "typescript": "npm:@typescript/typescript6@..." collides with the real
+  // typescript/vitest ensureBuildTooling() installs and crashes npm's
+  // arborist ("Cannot read properties of undefined (reading 'extraneous')").
+  delete root.devDependencies;
   fs.writeFileSync(rootPkgPath, `${JSON.stringify(root, null, 2)}\n`);
 
   console.log("[prepare-hosting] Patched package.json files for npm hosting.");

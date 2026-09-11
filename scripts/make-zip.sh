@@ -146,6 +146,7 @@ if [ "${NESTED:-0}" = "1" ]; then
     -x "$NAME/install-token/*" \
     -x "$NAME/tmp/*" \
     -x "$NAME/.node-version" \
+    -x "$NAME/pnpm-lock.yaml" \
     -x "$NAME/.gitignore" \
     -x "$NAME/.eslintrc.js" \
     -x "$NAME/.prettierrc" \
@@ -236,6 +237,7 @@ else
     -x "install-token/*" \
     -x "tmp/*" \
     -x ".node-version" \
+    -x "pnpm-lock.yaml" \
     -x ".gitignore" \
     -x ".eslintrc.js" \
     -x ".prettierrc" \

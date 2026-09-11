@@ -6,7 +6,10 @@ import { getDb } from "../lib/db.js";
 import { getJustflowsVersion } from "../lib/version.js";
 import { requireRole } from "../middleware/auth.js";
 import { auditFromRequest } from "../lib/audit-log.js";
-import { getAvailableCoreUpdate } from "../lib/core-release-check.js";
+import {
+  getAvailableCoreUpdate,
+  getLatestCoreReleaseForReinstall,
+} from "../lib/core-release-check.js";
 import {
   AUTO_UPDATE_MAX_SCOPE,
   isAutoUpdateKillSwitchOn,
@@ -129,22 +132,36 @@ router.post("/upload", requireRole("administrator"), upload.single("file"), asyn
   }
 });
 
-/** Download + verify + install the latest published release (the "Update" button). */
+/**
+ * Download + verify + install the latest published release (the "Update"
+ * button). With `force: true` in the body, skip the "must be newer" gate and
+ * re-download + reapply whatever the gateway currently publishes as latest —
+ * even if that's the version already installed. This is the "force reinstall"
+ * path: it repairs a corrupted install (bad copy, interrupted `npm install`,
+ * a manually edited file) without waiting on a new release, and runs the same
+ * verified pipeline as a normal remote update.
+ */
 router.post("/remote", requireRole("administrator"), async (req, res) => {
+  const force = req.body?.force === true;
+
   let update: Awaited<ReturnType<typeof getAvailableCoreUpdate>>;
   try {
-    update = await getAvailableCoreUpdate({ force: true });
+    update = force
+      ? await getLatestCoreReleaseForReinstall()
+      : await getAvailableCoreUpdate({ force: true });
   } catch (err) {
     res.status(503).json({ error: `Update check failed: ${String(err)}` });
     return;
   }
   if (!update) {
-    res.status(409).json({ error: "No newer release is available" });
+    res.status(409).json({
+      error: force ? "No published release found to reinstall" : "No newer release is available",
+    });
     return;
   }
 
   const requested = typeof req.body?.version === "string" ? req.body.version : undefined;
-  if (requested && requested !== update.availableVersion) {
+  if (!force && requested && requested !== update.availableVersion) {
     res.status(409).json({
       error: `Requested v${requested} but the available release is v${update.availableVersion}`,
     });
@@ -153,7 +170,9 @@ router.post("/remote", requireRole("administrator"), async (req, res) => {
 
   auditFromRequest(req, "core.updated", {
     target: `justflows@${update.availableVersion}`,
-    detail: `remote ${update.currentVersion} -> ${update.availableVersion}`,
+    detail: force
+      ? `force reinstall v${update.availableVersion}`
+      : `remote ${update.currentVersion} -> ${update.availableVersion}`,
   });
 
   try {
