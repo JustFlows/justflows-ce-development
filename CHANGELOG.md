@@ -9,6 +9,13 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Scheduled publishing and expiry.** Schedule posts, pages, custom content and
+  working revisions from the editor, with browser/site timezone display, a
+  filterable publishing agenda and signed draft-preview links. Database-backed
+  jobs catch up after restarts and publish or expire each entry independently of
+  its translations. Actual transitions update webhooks, feed hooks, sitemap and
+  caches, with revision history and schedule audit entries. ([#98](https://github.com/JustFlows/justflows-ce/issues/98))
+
 - **Force reinstall from Admin → Updates.** A "Force reinstall" button
   re-downloads and reapplies whatever the update gateway currently publishes
   as latest, even when it's the version already installed, to repair a

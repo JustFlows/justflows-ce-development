@@ -187,6 +187,8 @@ export async function getDb(): Promise<DbClient> {
       database,
       waitForConnections: true,
       connectionLimit: 5,
+      // The application writes UTC DATETIME values, including content deadlines.
+      timezone: "Z",
       ...(useSsl ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized } } : {}),
     });
 

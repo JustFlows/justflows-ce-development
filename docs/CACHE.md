@@ -384,3 +384,12 @@ Verify in browser DevTools → Network: look for `Content-Encoding: gzip` and
 
 For a mental model: **`@justflows/cache`** is the library; **`getJfCache()`**
 is the one shared instance the running server uses.
+
+## Scheduled transitions
+
+Due publishing and expiry clear content, page and menu caches through the
+committed scheduling event. This is mandatory even when optional save-time
+revalidation is disabled, so cached pages cannot retain an expired entry until
+TTL. Feed plugins invalidate on the actual `content.published` /
+`content.unpublished` action. Shared preview responses are always private and
+`no-store`. See [Scheduled publishing](SCHEDULING.md).

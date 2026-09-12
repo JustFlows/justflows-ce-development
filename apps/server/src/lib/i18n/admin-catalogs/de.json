@@ -507,5 +507,27 @@
     "termSlug": "Begriffs-Slug",
     "limit": "Ergebnisse pro Seite (1–50)",
     "showFilters": "Filter anzeigen"
+  },
+  "scheduling": {
+    "timezone": "Eingabezeitzone",
+    "localeFilter": "Sprachcode (leer für alle Sprachen)",
+    "title": "Zeitplan",
+    "zones": "Website-Zeitzone: {site}. Zeiten in Ihrer Zeitzone eingeben: {user}.",
+    "savedDraft": "Der zuletzt gespeicherte Entwurf wird zum geplanten Zeitpunkt veröffentlicht.",
+    "saveFirst": "Speichern Sie Ihre Änderungen vor der Planung.",
+    "publishOn": "Veröffentlichen am",
+    "unpublishOn": "Veröffentlichung beenden am (optional)",
+    "save": "Zeitplan speichern",
+    "cancel": "Zeitplan abbrechen",
+    "saved": "Zeitplan gespeichert.",
+    "cancelled": "Zeitplan abgebrochen.",
+    "invalidTime": "Diese Ortszeit existiert nicht. Wählen Sie eine andere Zeit.",
+    "error": "Der Zeitplan konnte nicht geladen oder gespeichert werden.",
+    "agenda": "Veröffentlichungsagenda",
+    "refresh": "Aktualisieren",
+    "loading": "Zeitpläne werden geladen…",
+    "empty": "Keine geplanten Inhalte.",
+    "sharePreview": "Entwurfsvorschau teilen",
+    "previewReady": "Vorschaulink (24 Stunden gültig)"
   }
 }

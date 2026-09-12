@@ -554,5 +554,27 @@
     "termSlug": "Termslug",
     "limit": "Resultaten per pagina (1–50)",
     "showFilters": "Filters tonen"
+  },
+  "scheduling": {
+    "timezone": "Tijdzone voor invoer",
+    "localeFilter": "Taalcode (leeg voor alle talen)",
+    "title": "Planning",
+    "zones": "Sitetijdzone: {site}. Voer tijden in jouw tijdzone in: {user}.",
+    "savedDraft": "Het laatst opgeslagen concept wordt op het geplande tijdstip gepubliceerd.",
+    "saveFirst": "Sla je wijzigingen op voordat je plant.",
+    "publishOn": "Publiceren op",
+    "unpublishOn": "Publicatie intrekken op (optioneel)",
+    "save": "Planning opslaan",
+    "cancel": "Planning annuleren",
+    "saved": "Planning opgeslagen.",
+    "cancelled": "Planning geannuleerd.",
+    "invalidTime": "Deze lokale tijd bestaat niet. Kies een andere tijd.",
+    "error": "De planning kon niet worden geladen of opgeslagen.",
+    "agenda": "Publicatieagenda",
+    "refresh": "Vernieuwen",
+    "loading": "Planning laden…",
+    "empty": "Geen geplande inhoud.",
+    "sharePreview": "Conceptvoorbeeld delen",
+    "previewReady": "Voorbeeldlink (24 uur geldig)"
   }
 }

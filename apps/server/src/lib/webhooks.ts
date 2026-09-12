@@ -3,7 +3,7 @@
 import { createHmac, randomBytes, randomUUID } from "node:crypto";
 import { JobScheduler } from "@justflows/jobs";
 import type { HookContext } from "@justflows/core";
-import { getDb } from "./db.js";
+import { getDb, type DbClient } from "./db.js";
 import { decryptSecret, encryptSecret } from "./secret-box.js";
 import { validateWebhookUrl } from "./webhook-url.js";
 
@@ -213,6 +213,7 @@ export async function enqueueWebhookEvent(
   event: string,
   data: unknown,
   context: HookContext = {},
+  client?: Pick<DbClient, "run" | "query">,
 ): Promise<number> {
   const siteId =
     context.siteId ??
@@ -236,7 +237,7 @@ export async function enqueueWebhookEvent(
   const payload = JSON.stringify(envelope);
   if (Buffer.byteLength(payload) > MAX_WEBHOOK_PAYLOAD_BYTES)
     throw new Error("Webhook payload exceeds 256 KiB");
-  const db = await getDb();
+  const db = client ?? await getDb();
   const endpoints = await db.query<EndpointRow>(
     "SELECT id, site_id, url, events, secret_ciphertext FROM webhook_endpoints WHERE site_id = ? AND active = ?",
     [siteId, true],
@@ -252,7 +253,7 @@ export async function enqueueWebhookEvent(
     );
     count++;
   }
-  if (count > 0) scheduler.enqueue("webhooks.deliver");
+  if (count > 0 && !client) scheduler.enqueue("webhooks.deliver");
   return count;
 }
 
@@ -364,6 +365,8 @@ export async function refreshWebhookEventHooks(): Promise<void> {
     hooks.action(
       event,
       async (payload, context) => {
+        // Scheduled transitions already persisted delivery rows atomically.
+        if (context.source === "job" && payload && typeof payload === "object" && "scheduleEventId" in payload) return;
         await enqueueWebhookEvent(event, payload, context);
       },
       { id: `core.webhook.${event}` },

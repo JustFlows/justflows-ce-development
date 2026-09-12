@@ -507,5 +507,27 @@
     "termSlug": "Slug du terme",
     "limit": "Résultats par page (1–50)",
     "showFilters": "Afficher les filtres"
+  },
+  "scheduling": {
+    "timezone": "Fuseau horaire de saisie",
+    "localeFilter": "Code de langue (vide pour toutes les langues)",
+    "title": "Planification",
+    "zones": "Fuseau du site : {site}. Saisissez les heures dans votre fuseau : {user}.",
+    "savedDraft": "Le dernier brouillon enregistré sera publié à l’heure prévue.",
+    "saveFirst": "Enregistrez vos modifications avant de planifier.",
+    "publishOn": "Publier le",
+    "unpublishOn": "Dépublier le (facultatif)",
+    "save": "Enregistrer la planification",
+    "cancel": "Annuler la planification",
+    "saved": "Planification enregistrée.",
+    "cancelled": "Planification annulée.",
+    "invalidTime": "Cette heure locale n’existe pas. Choisissez une autre heure.",
+    "error": "Impossible de charger ou d’enregistrer la planification.",
+    "agenda": "Agenda de publication",
+    "refresh": "Actualiser",
+    "loading": "Chargement des planifications…",
+    "empty": "Aucun contenu planifié.",
+    "sharePreview": "Partager l’aperçu du brouillon",
+    "previewReady": "Lien d’aperçu (valable 24 heures)"
   }
 }

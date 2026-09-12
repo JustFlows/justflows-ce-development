@@ -13,6 +13,7 @@ import { users } from "./users.js";
 
 export const contentStatusEnum = pgEnum("content_status", [
   "draft",
+  "scheduled",
   "published",
   "unpublished",
   "trashed",
@@ -30,6 +31,9 @@ export const content = pgTable("content", {
   blocks: jsonb("blocks").notNull().default([]),
   status: contentStatusEnum("status").notNull().default("draft"),
   authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+  publishOn: timestamp("publish_on", { withTimezone: true }),
+  unpublishOn: timestamp("unpublish_on", { withTimezone: true }),
+  scheduleActorId: uuid("schedule_actor_id"),
   publishedAt: timestamp("published_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

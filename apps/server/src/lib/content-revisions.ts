@@ -184,7 +184,7 @@ export function serializeEditorContent(
 export async function getWorkingRevision(
   contentId: string,
   siteId: string,
-  db?: DbClient,
+  db?: Pick<DbClient, "query">,
 ): Promise<StoredRevision | null> {
   const client = db ?? (await getDb());
   const rows = await client.query<Record<string, unknown>>(
@@ -278,12 +278,12 @@ export async function upsertWorkingRevision(
 
   const stamp = nowSql();
   if (existing) {
-    await db.run(
+    const changed = await db.execute(
       `UPDATE revisions
        SET title = ?, slug = ?, excerpt = ?, locale = ?, translation_group_id = ?,
            blocks = ?, fields = ?, version = ?, base_version = ?, ${sourceCol()} = ?,
            updated_at = ?, updated_by = ?
-       WHERE id = ? AND content_id = ? AND site_id = ? AND ${kindCol()} = 'working'`,
+       WHERE id = ? AND content_id = ? AND site_id = ? AND ${kindCol()} = 'working' AND version = ?`,
       [
         input.snapshot.title,
         input.snapshot.slug,
@@ -300,8 +300,10 @@ export async function upsertWorkingRevision(
         existing.id,
         contentId,
         siteId,
+        existing.version,
       ],
     );
+    if (changed !== 1) throw new RevisionConflictError();
     return (await getWorkingRevision(contentId, siteId, db)) ?? existing;
   }
 
@@ -338,8 +340,9 @@ export async function insertHistoricalSnapshot(
   liveRow: Record<string, unknown>,
   actorId: string | null,
   snapshot: ContentSnapshot = rowToSnapshot(liveRow),
+  client?: Pick<DbClient, "run">,
 ): Promise<string> {
-  const db = await getDb();
+  const db = client ?? await getDb();
   const id = randomUUID();
   const stamp = nowSql();
   await db.run(
@@ -455,21 +458,19 @@ export async function applySnapshotToContent(
   if (extras.status) {
     fields.push("status = ?");
     values.push(extras.status);
+    fields.push("publish_on = NULL");
+    if (extras.status !== "published") fields.push("unpublish_on = NULL");
   }
   if (extras.publishedAt !== undefined) {
     fields.push("published_at = COALESCE(published_at, ?)");
     values.push(extras.publishedAt);
   }
   values.push(contentId, siteId, extras.expectedVersion);
-  await db.run(
+  const affected = await db.execute(
     `UPDATE content SET ${fields.join(", ")} WHERE id = ? AND site_id = ? AND version = ?`,
     values,
   );
-  const rows = await db.query<{ version: number }>(
-    "SELECT version FROM content WHERE id = ? AND site_id = ? LIMIT 1",
-    [contentId, siteId],
-  );
-  return Number(rows[0]?.version) === extras.expectedVersion + 1;
+  return affected === 1;
 }
 
 export async function maxHistoryForSite(siteId: string): Promise<number> {
@@ -542,4 +543,8 @@ export function serializeRevision(rev: StoredRevision, opts: { includeBody?: boo
   };
   if (!opts.includeBody) return summary;
   return { ...summary, blocks: rev.blocks, fields: rev.fields };
+}
+
+export class RevisionConflictError extends Error {
+  constructor() { super("The working revision changed while saving; reload and try again"); }
 }

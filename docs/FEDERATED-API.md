@@ -63,7 +63,7 @@ credential). Cookie auth on these routes still requires it.
 
 | Area | Routes | Capability |
 | --- | --- | --- |
-| Content | `GET/POST /content`, `GET/PATCH/DELETE /content/{id}`, `POST /content/{id}/publish` · `/unpublish`, `GET /content/{id}/revisions[/{revisionId}]` | `content:read` / `create` / `update` / `publish` / `delete` / `revisions:read` |
+| Content | `GET/POST /content`, `GET/PATCH/DELETE /content/{id}`, `POST /content/{id}/publish` · `/unpublish`, `PUT /content/{id}/schedule`, `GET /content/{id}/revisions[/{revisionId}]` | `content:read` / `create` / `update` / `publish` / `delete` / `revisions:read` |
 | Media | `GET /media`, `GET /media/{id}`, `POST /media` (multipart, field `file`), `DELETE /media/{id}` | `media:read` / `upload` / `delete` |
 | Comments | `GET /comments`, `PATCH /comments` (bulk), `PATCH /comments/{id}`, `POST /comments/{id}/reply`, `DELETE /comments` | `comments:moderate` |
 | Menus | `GET/POST /menus`, `GET/PUT/DELETE /menus/{slug}` | `content:read` / `settings:manage` |
@@ -123,3 +123,12 @@ authenticated surface. It declares the `bearerAuth` scheme and notes the
 capability each operation requires (`x-required-capability`). Plugins that
 register routes extend it through the `openapi.document` filter, exactly as for
 `/api/v1`.
+
+## Publishing schedules
+
+`PUT /content/{id}/schedule` requires both scoped `content:publish` and
+`content:update`. Send nullable ISO-offset `publishOn` and `unpublishOn` dates
+plus the current `expectedVersion`; both dates `null` cancel the schedule.
+Content responses expose those dates, and `status=scheduled` listing includes
+live entries with scheduled revisions or expiry. See
+[Scheduled publishing](SCHEDULING.md#http-contract) for validation and examples.

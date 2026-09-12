@@ -25,6 +25,8 @@ export interface ContentItem {
   blocks: BlockDocument;
   fields: Record<string, unknown>;
   authorId?: string | null;
+  publishOn?: string | null;
+  unpublishOn?: string | null;
   publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;

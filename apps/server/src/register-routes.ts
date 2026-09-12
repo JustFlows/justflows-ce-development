@@ -71,6 +71,8 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
     await startWebhookJobs();
     const { installStaticExportAutoRebuild } = await import("./lib/static-export/auto.js");
     installStaticExportAutoRebuild();
+    const { startContentScheduleJobs } = await import("./lib/content-scheduling-db.js");
+    startContentScheduleJobs();
   }
 
   const [

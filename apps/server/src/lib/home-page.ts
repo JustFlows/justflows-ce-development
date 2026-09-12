@@ -68,7 +68,7 @@ async function loadContentRow(
 
 function isUsable(row: Record<string, unknown>, preview: boolean): boolean {
   const status = String(row.status ?? "");
-  if (preview) return status === "published" || status === "draft";
+  if (preview) return status === "published" || status === "draft" || status === "scheduled";
   return status === "published";
 }
 
@@ -91,7 +91,7 @@ export async function getHomeContent(
   const db = await getDb();
 
   if (groupId) {
-    const statusClause = preview ? "status IN ('published', 'draft')" : "status = 'published'";
+    const statusClause = preview ? "status IN ('published', 'draft', 'scheduled')" : "status = 'published'";
     const localized = await db.query<Record<string, unknown>>(
       `SELECT * FROM content WHERE site_id = ? AND translation_group_id = ? AND locale = ? AND ${statusClause} LIMIT 1`,
       [siteId, groupId, locale],

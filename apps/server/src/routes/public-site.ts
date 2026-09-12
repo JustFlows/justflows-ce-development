@@ -1,3 +1,5 @@
+import { verifyContentPreview } from "../lib/content-preview.js";
+import { serializeContentRow } from "../lib/content-api.js";
 import { rateLimit } from "express-rate-limit";
 import { SearchQuerySchema } from "@justflows/content";
 import { searchContent } from "../lib/search-db.js";
@@ -132,6 +134,28 @@ import { getAdminPathConfig, toPublicAdminPath } from "../lib/admin-path.js";
 
 const templateDir = viewsDir();
 const router = Router();
+
+router.get("/preview/:token", rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: "draft-8", legacyHeaders: false }), async (req, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  const preview = verifyContentPreview(req.params.token);
+  if (!preview || preview.siteId !== await getSiteId()) { res.status(404).send("Preview unavailable"); return; }
+  try {
+    const db = await getDb();
+    const [row] = await db.query<Record<string, unknown>>(
+      "SELECT * FROM content WHERE id = ? AND site_id = ? AND version = ? AND trashed_at IS NULL LIMIT 1",
+      [preview.contentId, preview.siteId, preview.version],
+    );
+    if (!row) { res.status(404).send("Preview unavailable"); return; }
+    const content = serializeContentRow(row);
+    // Only this row is previewed; menus, templates and all other content stay public.
+    const locale = await getDefaultLocale(content.siteId);
+    const publicPath = localePath(content.locale, `/${content.slug}`, locale);
+    res.type("html").send(await renderSinglePageHtml(req, res, publicPath, content.slug, content.locale, false, [], 1, publicPath, content, true));
+  } catch { res.status(500).send("Preview unavailable"); }
+});
+
 const blockRegistry = getRuntimeBlockRegistry();
 registerBlogPostListBlock();
 registerCommentsBlock();
@@ -1429,6 +1453,7 @@ async function renderSinglePageHtml(
   pageNumber: number,
   basePath: string,
   resolvedContent?: ContentResponse,
+  scopedPreview = false,
 ): Promise<string> {
   const pageCtx = { ...(await buildPageContext(req, res, reqPath, preview)), publicPath: reqPath };
   let pageContent = resolvedContent ?? (await getPublishedContentBySlug(slug, locale, preview));
@@ -1439,11 +1464,11 @@ async function renderSinglePageHtml(
     const rows = await (
       await getDb()
     ).query<Record<string, unknown>>(
-      `SELECT * FROM content WHERE id = ? AND site_id = ? AND trashed_at IS NULL AND ${preview ? "status IN ('published', 'draft')" : "status = 'published'"}`,
+      `SELECT * FROM content WHERE id = ? AND site_id = ? AND trashed_at IS NULL AND ${preview || scopedPreview ? "status IN ('published', 'draft', 'scheduled')" : "status = 'published'"}`,
       [resolvedContent.id, resolvedContent.siteId],
     );
     pageContent = rows[0]
-      ? serializeContentRow(preview ? await overlayWorkingOnRow(rows[0], true) : rows[0])
+      ? serializeContentRow(preview || scopedPreview ? await overlayWorkingOnRow(rows[0], true) : rows[0])
       : null;
   }
   if (!pageContent) {

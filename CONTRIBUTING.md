@@ -142,3 +142,10 @@ listings must use a **GPL-compatible license**. See `LICENSING.md` and
 - Licensing: `legal@justflows.com`
 - Security: see `SECURITY.md` or email `security@justflows.com`
 - Conduct: see `CODE_OF_CONDUCT.md`
+
+### Scheduling integration tests
+
+The opt-in scheduling suite uses a fresh disposable `schedule_test` database
+and verifies the new migration, concurrent workers, restart catch-up, revisions,
+locale isolation, expiry and durable events on PostgreSQL, MySQL and MariaDB.
+See [the scheduling verification commands](docs/SCHEDULING.md#developer-verification).

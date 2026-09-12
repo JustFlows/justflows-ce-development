@@ -155,7 +155,7 @@ singular when there's only one entry.
 - Never edit the shipped `0012_baseline` or a later applied migration (see
   `AGENTS.md`). Add the next number, even if only one dialect's schema
   actually changes. Find the highest number in `migrations/` and use the next number;
-  `0029_search_metrics` is currently the latest.
+  `0030_content_scheduling` is currently the latest.
 - Add each new migration name to `MIGRATION_ORDER` in
   `apps/server/src/lib/run-migrations.ts`. The runner skips names already
   recorded in `_migrations`.

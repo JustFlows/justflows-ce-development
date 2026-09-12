@@ -507,5 +507,27 @@
     "termSlug": "Slug del término",
     "limit": "Resultados por página (1–50)",
     "showFilters": "Mostrar filtros"
+  },
+  "scheduling": {
+    "timezone": "Zona horaria de entrada",
+    "localeFilter": "Código de idioma (vacío para todos los idiomas)",
+    "title": "Programación",
+    "zones": "Zona horaria del sitio: {site}. Introduce las horas en tu zona: {user}.",
+    "savedDraft": "El último borrador guardado se publicará a la hora programada.",
+    "saveFirst": "Guarda los cambios antes de programar.",
+    "publishOn": "Publicar el",
+    "unpublishOn": "Retirar publicación el (opcional)",
+    "save": "Guardar programación",
+    "cancel": "Cancelar programación",
+    "saved": "Programación guardada.",
+    "cancelled": "Programación cancelada.",
+    "invalidTime": "Esta hora local no existe. Elige otra hora.",
+    "error": "No se pudo cargar o guardar la programación.",
+    "agenda": "Agenda de publicación",
+    "refresh": "Actualizar",
+    "loading": "Cargando programaciones…",
+    "empty": "No hay contenido programado.",
+    "sharePreview": "Compartir vista previa del borrador",
+    "previewReady": "Enlace de vista previa (válido durante 24 horas)"
   }
 }

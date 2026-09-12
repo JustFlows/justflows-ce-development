@@ -584,3 +584,9 @@ the origin field with this install's `APP_URL`.
 - [Cache](CACHE.md) — the `cache.revalidated` trigger the auto-rebuild listens on
 - [Hooks](HOOKS.md) — full hook reference
 - [Architecture](ARCHITECTURE.md) — public SEO rendering
+
+Scheduled publishing and expiry invoke the normal publication/unpublication
+hooks when the transition commits, triggering configured automatic rebuilds.
+The application worker must remain running to execute schedules and rebuild
+exports; static files alone cannot run the scheduler. See
+[Scheduled publishing](SCHEDULING.md).
