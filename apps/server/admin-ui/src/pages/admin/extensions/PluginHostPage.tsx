@@ -6,6 +6,7 @@ import { navLabel, type PluginMenuItem } from "../../../config/admin-nav";
 import { internalAdminPath, publicAdminPath } from "../../../admin-path";
 import { useT } from "../../../i18n/I18nProvider";
 import PluginSetupWizard from "./PluginSetupWizard";
+import { catalogRowsForDefaultLanguage } from "../../../lib/translation-groups";
 
 /**
  * Host shell for an admin path a plugin contributed (manifest `adminMenu` or
@@ -261,39 +262,6 @@ type ContentListItem = {
   updatedAt: string;
   hasWorkingRevision?: boolean;
 };
-
-/**
- * One catalog row per translation group. Prefer the site default language.
- * A group that has no default-language entry still appears once, so it can
- * be opened and translated from the editor.
- */
-export function catalogRowsForDefaultLanguage(
-  items: ContentListItem[],
-  defaultLocale: string,
-): ContentListItem[] {
-  const byGroup = new Map<string, ContentListItem[]>();
-  for (const item of items) {
-    const key = item.translationGroupId || item.id;
-    const group = byGroup.get(key);
-    if (group) group.push(item);
-    else byGroup.set(key, [item]);
-  }
-
-  const seen = new Set<string>();
-  const rows: ContentListItem[] = [];
-  for (const item of items) {
-    const key = item.translationGroupId || item.id;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const group = byGroup.get(key) ?? [item];
-    rows.push(
-      group.find((entry) => entry.locale === defaultLocale) ??
-        group.find((entry) => entry.id === key) ??
-        group[0]!,
-    );
-  }
-  return rows;
-}
 
 function defaultLocaleFrom(body: unknown): string {
   const languages = (body as { languages?: Array<{ code?: string; isDefault?: boolean }> } | null)
