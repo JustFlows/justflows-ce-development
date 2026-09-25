@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { z } from "zod";
+import type { ThemeLayoutScope } from "@justflows/sdk";
 import type { ContentResponse } from "../content/content-api.js";
 import { localePath } from "../i18n/locales.js";
 
@@ -83,6 +84,7 @@ export const DEFAULT_PERMALINK_SETTINGS: PermalinkSettings = {
   taxonomyBases: {},
   trailingSlash: "never",
 };
+
 export type PermalinkContent = Pick<
   ContentResponse,
   "id" | "slug" | "type" | "locale" | "publishedAt" | "createdAt" | "authorId" | "fields"
@@ -100,6 +102,7 @@ export function permalinkPath(
   content: PermalinkContent,
   settings: PermalinkSettings,
   defaultLocale: string,
+  scopes: ThemeLayoutScope[] = [],
 ): string {
   const date = new Date(content.publishedAt || content.createdAt);
   const validDate = Number.isFinite(date.getTime()) ? date : new Date(0);
@@ -116,11 +119,17 @@ export function permalinkPath(
   const typeBase = Object.hasOwn(settings.typeBases, content.type)
     ? settings.typeBases[content.type]
     : undefined;
-  const structure = typeBase
-    ? `/${typeBase}/%postname%/`
-    : content.type === "post"
-      ? settings.structure
-      : "/%postname%/";
+  const parent = scopes.find(
+    (scope) => scope.index?.type === content.type && scope.index.slug === content.slug,
+  );
+  const indexBase = parent?.base ?? (typeBase && content.slug === typeBase ? typeBase : undefined);
+  const structure = indexBase
+    ? `/${indexBase}/`
+    : typeBase
+      ? `/${typeBase}/%postname%/`
+      : content.type === "post"
+        ? settings.structure
+        : "/%postname%/";
   const path = structure.replace(/%([a-z]+)%/g, (_, token: string) =>
     encodeURIComponent(values[token]!),
   );

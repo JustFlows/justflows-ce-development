@@ -44,6 +44,19 @@ describe("parseAdminAppSpec", () => {
     });
   });
 
+  it("keeps locale files that are relative json paths", () => {
+    expect(
+      parseAdminAppSpec(
+        {
+          dir: "dist/admin",
+          locales: { nl: "locales/nl.json", "nl-NL": "locales/nl.json", bad: "../secret.json", en: "locales/en.txt" },
+          routes: [{ path: "tax", entry: "tax.html" }],
+        },
+        "acme.forms",
+      )?.locales,
+    ).toEqual({ nl: "locales/nl.json", "nl-NL": "locales/nl.json" });
+  });
+
   it("honours an explicit relative dir", () => {
     expect(
       parseAdminAppSpec({ dir: "dist/admin", routes: [{ path: "x", entry: "x.html" }] }, "acme.forms"),

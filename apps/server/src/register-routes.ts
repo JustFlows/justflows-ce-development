@@ -13,6 +13,18 @@ import { getAdminPathConfig, toInternalAdminPath } from "./lib/admin/admin-path.
 /** Admin SPA document routes, including the common trailing-slash root. */
 export const ADMIN_PAGE_PATH_RE = /^\/admin(?:\/.*)?$/;
 
+/**
+ * Admin URLs that are real files, not documents. A plugin id can contain a
+ * dot (`acme.forms`), so `/admin/plugins/acme.forms` must still be a
+ * document — a bare trailing dot-segment is not an asset.
+ */
+const ADMIN_STATIC_EXT_RE =
+  /\.(?:js|mjs|css|map|json|svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|txt|html?)$/i;
+
+export function isAdminSpaDocument(pathname: string): boolean {
+  return ADMIN_PAGE_PATH_RE.test(pathname) && !ADMIN_STATIC_EXT_RE.test(pathname);
+}
+
 /** Register heavy routes (dynamic import — keeps Passenger startup fast). */
 export async function registerDeferredRoutes(app: express.Application): Promise<void> {
   // .env can be lost (an ephemeral container, a botched restore) while the
@@ -448,7 +460,7 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
   app.use("/admin", requireInstalled, adminAccessGate);
 
   app.get(ADMIN_PAGE_PATH_RE, requireInstalled, (req, res, next) => {
-    if (req.path.match(/\.\w+$/)) {
+    if (!isAdminSpaDocument(req.path)) {
       next();
       return;
     }

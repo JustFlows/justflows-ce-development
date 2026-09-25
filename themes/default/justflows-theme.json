@@ -28,12 +28,7 @@
     "testimonial": "./patterns/testimonial.json",
     "cta": "./patterns/cta.json",
     "faq": "./patterns/faq.json",
-    "landing": "./patterns/landing.json",
-    "product": "./patterns/product.json",
-    "product-mosaic": "./patterns/product-mosaic.json",
-    "product-story": "./patterns/product-story.json",
-    "product-list": "./patterns/product-list.json",
-    "ecommerce-storefront": "./patterns/ecommerce-storefront.json"
+    "landing": "./patterns/landing.json"
   },
   "templates": {
     "index": "./templates/index.json",

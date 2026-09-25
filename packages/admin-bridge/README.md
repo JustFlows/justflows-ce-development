@@ -31,6 +31,8 @@ bridge.ready();        // tell the host you have mounted; it replies with contex
 | `onContext(fn)` | subscribe to context (replays the latest to late subscribers) |
 | `onRoute(fn)` | host-driven navigation under your plugin's path subtree |
 | `navigate(path)` | ask the host to go to another `/admin/…` page (or an absolute URL → new tab) |
+| `reportSections(sections)` | publish content-editor menu entries (`{ id, label }`) |
+| `onSection(fn)` | the host selected one of those entries |
 | `reportHeight(px)` | one-off height report |
 | `autoResize(el?)` | observe an element and report its height on change; returns a stop fn |
 | `destroy()` | remove every listener/observer this bridge installed |

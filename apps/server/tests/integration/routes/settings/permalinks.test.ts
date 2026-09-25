@@ -57,6 +57,7 @@ beforeEach(() => {
   state = {
     settings: { ...defaults, structure: PERMALINK_PRESETS.day, trailingSlash: "always" },
     redirects: { "/old": "p1" },
+    layoutScopes: [],
   };
   items = [
     serializeContentRow({

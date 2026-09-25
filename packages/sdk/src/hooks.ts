@@ -98,7 +98,14 @@ export interface ContentConflict {
   readonly actualVersion: number;
 }
 
-/** Context for `content.render` — public HTML after blocks have been rendered. */
+/** Fields copied into a new translation. Plugins may blank or reshape them. */
+export interface ContentTranslationSeed {
+  type: string;
+  title: string;
+  excerpt: string | null;
+  fields: unknown;
+  blocks: unknown;
+}
 export interface ContentRenderContext {
   readonly siteId: string;
   readonly contentId: string;
@@ -524,6 +531,8 @@ export interface AdminNavItem {
   setupPath?: string;
   /** Host lists CMS entries of this type on the plugin page. */
   contentType?: string;
+  /** When false, the page is reachable but omitted from the admin nav. */
+  listed?: boolean;
 }
 
 /** OpenAPI 3.1 document plugins may extend through the `openapi.document` filter. */
@@ -639,15 +648,44 @@ export interface GateEventMap {
 export interface FilterValueMap {
   /** Supply an external candidate engine; host authorization is never delegated. */
   "search.backend": [import("./search.js").SearchBackend | null, { siteId: string }];
+  /**
+   * Content types included in public search. Seeded from search settings
+   * (`page` and `post` when unset). Plugins append their own type slugs.
+   */
+  "search.publicTypes": [string[], { siteId: string }];
   /** Event names administrators may subscribe to. Plugins append their names. */
   "webhook.eventTypes": [string[], Record<string, never>];
   /** Shape JSON-safe event data before the host builds and signs its envelope. */
   "webhook.payload": [unknown, { event: string; siteId: string }];
   "content.input": [Record<string, unknown>, { siteId: string }];
   "content.output": [Record<string, unknown>, { siteId: string }];
-  /** Stored blocks before HTML render. Shop fills `{{price}}` tags here. */
+  /** Stored blocks before HTML render. Plugins fill `{{tags}}` here. */
   "content.blocks": [unknown, ContentRenderContext];
   "content.render": [string, ContentRenderContext];
+  /**
+   * Merge-tag values for the editor preview. Seeded with title and excerpt.
+   * Plugins add their own keys. Keys are the names inside `{{name}}`.
+   */
+  "content.mergeTags": [Record<string, string>, ContentRenderContext];
+  /**
+   * Block editor vs field editor for a content type. Seeded with `"blocks"` for
+   * `page` and `"fields"` otherwise. Plugins return `"blocks"` for types that
+   * use the page builder.
+   */
+  "content.editor": ["blocks" | "fields", { siteId: string; type: string }];
+  /**
+   * Title, excerpt, fields, and blocks copied when a translation is created.
+   * Plugins return a replacement seed.
+   */
+  "content.translationSeed": [
+    ContentTranslationSeed,
+    { siteId: string; sourceId: string; locale: string },
+  ];
+  /**
+   * Content types that start from a same-named pattern. Seeded with `["post"]`.
+   * Plugins append their own type slugs.
+   */
+  "content.patternTypes": [string[], { siteId: string }];
   /**
    * The rendered public comments block (`justflows.comments.thread`). The value
    * is the default HTML; return replacement HTML for full markup control, or
@@ -733,6 +771,19 @@ export interface FilterValueMap {
    * Customizer is previewing an unpublished draft.
    */
   "theme.css": [string, { siteId: string; preview: boolean }];
+  /**
+   * Layout targets in the theme customizer (content width and wide width).
+   * Seeded with `[]`. An active plugin appends one entry per public section
+   * whose width should differ from the site default. Deactivating the plugin
+   * removes the entry. Core does not ship any.
+   */
+  "theme.layoutScopes": [ThemeLayoutScope[], { siteId: string }];
+  /**
+   * Default permalink bases keyed by content type. Seeded with the stored
+   * bases. A plugin fills bases for its own types; stored values already in
+   * the seed win. Deactivating the plugin drops the defaults.
+   */
+  "permalinks.typeBases": [Record<string, string>, { siteId: string }];
   "seo.sitemapPaths": [string[], { siteId: string }];
   /**
    * The seed URL paths the static-site exporter will crawl, before link
@@ -767,6 +818,17 @@ export interface FilterValueMap {
   "email.html": [string, EmailDeliveryContext];
   /** Adjust final plain text. Changed output is stripped to plain text. */
   "email.text": [string, EmailDeliveryContext];
+}
+
+/** One customizer layout target contributed by an active plugin. */
+export interface ThemeLayoutScope {
+  /** Stable id used in CSS and stored mods, such as `product`. */
+  id: string;
+  label: string;
+  /** Public prefix without slashes, such as `product`. */
+  base: string;
+  /** CMS row published at `/{base}` — the parent of entries under that prefix. */
+  index?: { type: string; slug: string };
 }
 
 /** Filters applied on synchronous render paths — handlers must not be async. */

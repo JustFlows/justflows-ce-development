@@ -17,6 +17,7 @@ import {
 } from "../../lib/content/content-types-db.js";
 import { requireRole } from "../../middleware/auth.js";
 import { CONTENT_READ_ROLES } from "../../lib/auth/rbac.js";
+import { getRuntimeHooks } from "../../lib/plugins/plugin-runtime.js";
 import { param } from "../../lib/http/params.js";
 import { sendServerError } from "../../lib/http/send-error.js";
 
@@ -46,12 +47,20 @@ router.get("/", requireRole(...CONTENT_READ_ROLES), async (_req, res) => {
 
 router.get("/:slug", requireRole(...CONTENT_READ_ROLES), async (req, res) => {
   try {
+    const session = req.session!;
     const type = await getContentTypeBySlug(param(req.params.slug));
     if (!type) {
       res.status(404).json({ error: "Not found" });
       return;
     }
-    res.json({ type });
+    const seeded = type.slug === "page" ? "blocks" : "fields";
+    const editor = await getRuntimeHooks().applyFilter(
+      "content.editor",
+      seeded,
+      { siteId: session.siteId, type: type.slug },
+      { siteId: session.siteId, source: "http" },
+    );
+    res.json({ type: { ...type, editor: editor === "blocks" ? "blocks" : "fields" } });
   } catch (err) {
     sendServerError(res, "content-types", err);
   }

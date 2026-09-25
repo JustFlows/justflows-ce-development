@@ -31,13 +31,8 @@ function hookContext(content: ContentRenderInput) {
   return { siteId: content.siteId, source: "http" as const };
 }
 
-function looksTagged(value: string): boolean {
-  return value.includes("{{") || value.includes("&#123;");
-}
-
-/** Fill `{{tags}}` in block props before HTML render (Shop catalog, and similar). */
+/** Fill `{{tags}}` in block props before HTML render. Plugins do the filling. */
 export async function applyContentBlocks<T>(blocks: T, content: ContentRenderInput): Promise<T> {
-  if (!looksTagged(JSON.stringify(blocks))) return blocks;
   await ensurePluginRuntime();
   return getRuntimeHooks().applyFilter(
     "content.blocks",

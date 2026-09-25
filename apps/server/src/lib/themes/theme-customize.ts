@@ -279,6 +279,10 @@ export interface ThemeMods {
   radius?: Record<string, string | number>;
   shadow?: Record<string, string>;
   layout?: Record<string, string | number>;
+  /**
+   * Layout overrides for one content type, stored as `contentWidth__product`.
+   * The type index (`/product`) and every URL under it share these values.
+   */
   navigation?: Record<string, string>;
   advanced?: Record<string, string>;
   /** Extra sections a theme package contributes via its manifest `customize` block. */
@@ -596,6 +600,31 @@ export function modsToCssVariables(
   }
 
   return vars;
+}
+
+const LAYOUT_SCOPE = /^[a-z][a-z0-9-]{0,59}$/;
+
+/** CSS for one content-type layout. Empty when that type has no override. */
+export function layoutScopeCss(mods: ThemeMods, scope: string): string {
+  if (!LAYOUT_SCOPE.test(scope)) return "";
+  const layout = mods.layout ?? {};
+  const widthControl = THEME_CUSTOMIZE_SCHEMA.layout?.controls.contentWidth;
+  const wideControl = THEME_CUSTOMIZE_SCHEMA.layout?.controls["--max-width-wide"];
+  const declarations: string[] = [];
+  const width = layout[`contentWidth__${scope}`];
+  const wide = layout[`--max-width-wide__${scope}`];
+  if (width != null) {
+    declarations.push(
+      `--max-width:${clampNumber(width, Number(widthControl?.default ?? 720), widthControl?.min ?? 320, widthControl?.max ?? 2400)}px`,
+    );
+  }
+  if (wide != null) {
+    declarations.push(
+      `--max-width-wide:${clampNumber(wide, Number(wideControl?.default ?? 1100), wideControl?.min ?? 800, wideControl?.max ?? 1600)}px`,
+    );
+  }
+  if (!declarations.length) return "";
+  return `body.jf-layout-${scope}{${declarations.map((item) => `${item};`).join("")}}`;
 }
 
 /**

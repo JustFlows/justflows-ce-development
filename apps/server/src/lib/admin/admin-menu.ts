@@ -25,6 +25,8 @@ export interface AdminMenuEntry extends Omit<PluginAdminMenuItem, "path"> {
    * (`/ext/<pluginId>/admin/<entry>`). Absent for host-rendered plugin pages.
    */
   adminAppUrl?: string;
+  /** Locale code → catalog URL, from `adminApp.locales` in the plugin manifest. */
+  adminCatalogs?: Record<string, string>;
 }
 
 const ADMIN_MENU_DOMAIN_SET = new Set([
@@ -125,6 +127,7 @@ function sanitizeItem(raw: unknown, pluginId: string): AdminMenuEntry | null {
       ? domain
       : "extensions") as PluginAdminMenuItem["domain"],
     end: item.end === true ? true : undefined,
+    listed: item.listed === false ? false : undefined,
     setupPath: setupPath ?? undefined,
     contentType: contentType && CONTENT_TYPE_SLUG_RE.test(contentType) ? contentType : undefined,
   };
@@ -218,7 +221,7 @@ export async function listPluginAdminMenu(siteId: string): Promise<AdminMenuEntr
  */
 export function stampAdminAppUrls(
   items: AdminMenuEntry[],
-  routes: Array<{ pluginId: string; path: string; entryUrl: string; title?: string }>,
+  routes: Array<{ pluginId: string; path: string; entryUrl: string; title?: string; catalogs?: Record<string, string> }>,
 ): AdminMenuEntry[] {
   if (routes.length === 0) return items;
   const byKey = new Map(routes.map((r) => [`${r.pluginId} ${r.path}`, r]));
@@ -230,6 +233,7 @@ export function stampAdminAppUrls(
     return {
       ...item,
       adminAppUrl: route.entryUrl,
+      ...(route.catalogs ? { adminCatalogs: route.catalogs } : {}),
       label: route.title ? route.title.slice(0, 60) : item.label,
     };
   });
@@ -256,6 +260,7 @@ export function stampAdminAppUrls(
       icon: "🔌",
       domain: "extensions" as PluginAdminMenuItem["domain"],
       adminAppUrl: route.entryUrl,
+      ...(route.catalogs ? { adminCatalogs: route.catalogs } : {}),
     });
     takenPaths.add(route.path);
   }

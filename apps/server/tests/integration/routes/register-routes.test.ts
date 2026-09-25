@@ -2,7 +2,7 @@
 
 import express from "express";
 import { describe, expect, it } from "vitest";
-import { ADMIN_PAGE_PATH_RE } from "../../../src/register-routes.js";
+import { ADMIN_PAGE_PATH_RE, isAdminSpaDocument } from "../../../src/register-routes.js";
 
 describe("admin SPA route matching", () => {
   it.each(["/admin", "/admin/", "/admin/content", "/admin/content/new"])(
@@ -14,6 +14,13 @@ describe("admin SPA route matching", () => {
 
   it.each(["/administrator", "/api/admin", "/"])("does not claim %s", (pathname) => {
     expect(ADMIN_PAGE_PATH_RE.test(pathname)).toBe(false);
+  });
+
+  it("serves the shop namespace root even though the plugin id contains a dot", () => {
+    expect(isAdminSpaDocument("/admin/plugins/justflows.shop")).toBe(true);
+    expect(isAdminSpaDocument("/admin/plugins/justflows.shop/attributes")).toBe(true);
+    expect(isAdminSpaDocument("/admin/assets/index-abc123.js")).toBe(false);
+    expect(isAdminSpaDocument("/admin/plugins/justflows.shop/admin/attributes.css")).toBe(false);
   });
 });
 

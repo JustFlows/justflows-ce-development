@@ -225,10 +225,37 @@ router.post(
         source: "http" as const,
         actor: { userId: session.userId, role: session.role },
       };
-      const isProduct = String(source.type) === "product";
-      const title = isProduct ? "" : String(source.title);
       const slug = String(source.slug);
-      const excerpt = isProduct || source.excerpt == null ? null : String(source.excerpt);
+      let parsedBlocks: unknown = source.blocks;
+      if (typeof source.blocks === "string") {
+        try {
+          parsedBlocks = JSON.parse(source.blocks);
+        } catch {
+          parsedBlocks = { version: 1, blocks: [] };
+        }
+      }
+      let parsedFields: unknown = source.fields ?? {};
+      if (typeof source.fields === "string") {
+        try {
+          parsedFields = JSON.parse(source.fields);
+        } catch {
+          parsedFields = {};
+        }
+      }
+      const seed = await hooks.applyFilter(
+        "content.translationSeed",
+        {
+          type: String(source.type),
+          title: String(source.title),
+          excerpt: source.excerpt == null ? null : String(source.excerpt),
+          fields: parsedFields,
+          blocks: parsedBlocks,
+        },
+        { siteId: session.siteId, sourceId: String(source.id), locale },
+        hookCtx,
+      );
+      const title = typeof seed?.title === "string" ? seed.title : String(source.title);
+      const excerpt = seed?.excerpt == null ? null : String(seed.excerpt);
 
       try {
         await hooks.dispatchGate(
@@ -253,20 +280,8 @@ router.post(
         throw err;
       }
 
-      let parsedBlocks: unknown = source.blocks;
-      if (typeof source.blocks === "string") {
-        try {
-          parsedBlocks = JSON.parse(source.blocks);
-        } catch {
-          parsedBlocks = { version: 1, blocks: [] };
-        }
-      }
-      const blocksValue = JSON.stringify(sanitizeBlockDocument(parsedBlocks));
-      const fieldsValue = isProduct
-        ? JSON.stringify({})
-        : typeof source.fields === "string"
-          ? source.fields
-          : JSON.stringify(source.fields ?? {});
+      const blocksValue = JSON.stringify(sanitizeBlockDocument(seed?.blocks ?? parsedBlocks));
+      const fieldsValue = JSON.stringify(seed?.fields ?? {});
 
       await db.run(
         `INSERT INTO content (id, site_id, type, title, slug, locale, translation_group_id, excerpt, blocks, fields, status, author_id, created_at, updated_at)
@@ -306,6 +321,45 @@ router.post(
     }
   },
 );
+
+router.get("/:id/merge-tags", requireSession, async (req, res) => {
+  const session = req.session!;
+  const id = param(req.params.id);
+  const db = await getDb();
+  const rows = await db.query<Record<string, unknown>>(
+    "SELECT id, type, title, excerpt, translation_group_id FROM content WHERE id = ? AND site_id = ? LIMIT 1",
+    [id, session.siteId],
+  );
+  const row = rows[0];
+  if (!row) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const hooks = getRuntimeHooks();
+  const tags = await hooks.applyFilter(
+    "content.mergeTags",
+    {
+      title: String(row.title ?? ""),
+      excerpt: row.excerpt == null ? "" : String(row.excerpt),
+    },
+    {
+      siteId: session.siteId,
+      contentId: String(row.id),
+      type: String(row.type ?? ""),
+      title: String(row.title ?? ""),
+      excerpt: row.excerpt == null ? null : String(row.excerpt),
+      translationGroupId: String(row.translation_group_id ?? row.id),
+    },
+    { siteId: session.siteId, source: "http" },
+  );
+  const clean: Record<string, string> = {};
+  if (tags && typeof tags === "object") {
+    for (const [key, value] of Object.entries(tags)) {
+      if (typeof value === "string" && /^[a-zA-Z][a-zA-Z0-9_]*$/.test(key)) clean[key] = value;
+    }
+  }
+  res.json({ tags: clean });
+});
 
 router.get("/:id", requireSession, async (req, res) => {
   const session = req.session!;

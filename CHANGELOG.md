@@ -19,8 +19,15 @@ and this project uses [Semantic Versioning](https://semver.org/).
   identically — self-hosted, no external requests — in both the editor's
   canvas and the published page.
 
+### Changed
+
+- **Theme layout targets come from the active plugin.** `theme.layoutScopes` adds a customizer layout section (content width and wide width) for a public prefix and the pages under it. `permalinks.typeBases` contributes that type's default permalink base. Core ships neither; deactivating the plugin removes both. Shop registers Product (`/product`) and Shop (`/shop`) while it is active.
+
+- **Plugin content lists show one row per item.** A menu page such as Shop → Products lists the site's default language only. Other translations stay on the content editor, where the language switcher already lives.
+
 ### Fixed
 
+- **Product options show in the content editor menu.** Editing a product listed one Product data item for the whole catalog. Images, pricing, inventory, shipping, attributes, variations, categories, and tags are now separate menu entries, and the editor shows the one you pick.
 - Public navigation accessibility labels and PWA install/update prompts now use the site translation catalogs, while preserving custom install text. ([#127](https://github.com/JustFlows/justflows-ce/issues/127))
 - Completed missing translation keys for builder controls, security settings, and update progress in all five admin languages. Restart messages, block counts, and language previews now respect localization; blank translations are filled, and under-construction and static error pages translate their text and declare the correct document language. ([#17](https://github.com/JustFlows/justflows-ce/issues/17))
 

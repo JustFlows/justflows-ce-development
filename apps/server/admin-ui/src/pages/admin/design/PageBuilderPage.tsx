@@ -4,8 +4,7 @@ import { useNavigate } from "../../../admin-router";
 import PageBuilder, { type BlockDocument } from "@components/builder/PageBuilder";
 import HeaderRefField from "@components/builder/HeaderRefField";
 import { fieldsWithHeaderRef, headerRefFromFields } from "../../../lib/page-header";
-import { fetchProductPattern, isEmptyBlockDocument, shouldSeedProductLayout, usesPageBuilderChrome } from "../../../lib/content-layout";
-import { catalogPreviewTags } from "../../../lib/product-tags";
+import { fetchTypePattern, isEmptyBlockDocument, shouldSeedTypePattern, usesBlockEditor } from "../../../lib/content-layout";
 import { useT } from "../../../i18n/I18nProvider";
 
 interface ContentItem {
@@ -32,27 +31,31 @@ export default function PageBuilderPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
-  const [catalogDraft, setCatalogDraft] = useState<Parameters<typeof catalogPreviewTags>[0]>(null);
+  const [mergeTags, setMergeTags] = useState<Record<string, string> | undefined>(undefined);
+  const [blockEditor, setBlockEditor] = useState(false);
 
   useEffect(() => {
     fetch(`/api/content/${id}`)
       .then(async (r) => {
         const data = await r.json() as ContentItem & { error?: string };
         if (!r.ok) throw new Error(data.error ?? t("pageBuilderPage.loadError"));
-        if (shouldSeedProductLayout(data) && isEmptyBlockDocument(data.blocks)) {
-          const pattern = await fetchProductPattern();
+        if (shouldSeedTypePattern(data) && isEmptyBlockDocument(data.blocks)) {
+          const pattern = await fetchTypePattern(data.type);
           if (pattern) data.blocks = pattern as ContentItem["blocks"];
         }
         setItem(data);
-        if (data.type === "product") {
-          const group = data.translationGroupId ?? data.id;
-          fetch(`/ext/justflows.shop/catalog/${encodeURIComponent(data.id)}?group=${encodeURIComponent(group)}`)
-            .then((res) => res.json())
-            .then((body: Parameters<typeof catalogPreviewTags>[0] & { kind?: string }) => {
-              if (body && body.kind === "catalog") setCatalogDraft(body);
-            })
-            .catch(() => undefined);
-        }
+        fetch(`/api/content-types/${encodeURIComponent(data.type)}`)
+          .then((res) => res.json())
+          .then((body: { type?: { editor?: string } }) => {
+            setBlockEditor(body.type?.editor === "blocks");
+          })
+          .catch(() => undefined);
+        fetch(`/api/content/${encodeURIComponent(data.id)}/merge-tags`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((body: { tags?: Record<string, string> } | null) => {
+            if (body?.tags && Object.keys(body.tags).length > 0) setMergeTags(body.tags);
+          })
+          .catch(() => undefined);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -107,7 +110,7 @@ export default function PageBuilderPage() {
     );
   }
 
-  const isPage = usesPageBuilderChrome(item.type);
+  const isPage = usesBlockEditor(item.type, blockEditor);
   const previewUrl = item.slug ? `${item.slug.startsWith("/") ? item.slug : `/${item.slug}`}?preview=1` : null;
 
   return (
@@ -162,8 +165,7 @@ export default function PageBuilderPage() {
           value={item.blocks ?? { version: 1, blocks: [] }}
           onChange={(blocks) => setItem((prev) => (prev ? { ...prev, blocks } : prev))}
           isPage={isPage}
-          mergeTags={item.type === "product" ? catalogPreviewTags(catalogDraft, item) : undefined}
-          enableProductTags={item.type === "product"}
+          mergeTags={mergeTags}
         />
       </div>
     </div>

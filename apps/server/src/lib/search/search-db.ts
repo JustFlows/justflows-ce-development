@@ -19,11 +19,21 @@ export const SearchSettingsSchema = z.object({
         .max(60),
     )
     .max(100)
-    .default(["page", "post", "product"]),
+    .default(["page", "post"]),
   queryLogging: z.boolean().default(false),
 });
 export async function getSearchSettings(siteId: string) {
-  return SearchSettingsSchema.parse((await getSiteSetting(siteId, "search")) ?? {});
+  const settings = SearchSettingsSchema.parse((await getSiteSetting(siteId, "search")) ?? {});
+  const contributed = await getRuntimeHooks().applyFilter(
+    "search.publicTypes",
+    settings.publicTypes,
+    { siteId },
+    { siteId, source: "http" },
+  );
+  const publicTypes = (Array.isArray(contributed) ? contributed : settings.publicTypes)
+    .filter((slug): slug is string => typeof slug === "string" && /^[a-z0-9][a-z0-9-]*$/.test(slug))
+    .slice(0, 100);
+  return { ...settings, publicTypes };
 }
 export async function saveSearchSettings(siteId: string, value: unknown) {
   const settings = SearchSettingsSchema.parse(value);

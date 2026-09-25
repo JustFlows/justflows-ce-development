@@ -62,6 +62,7 @@ describe("PluginManifestSchema — adminApp", () => {
     const parsed = PluginManifestSchema.parse({
       ...withPerm,
       adminApp: {
+        locales: { en: "locales/en.json" },
         routes: [
           { entry: "index.html", title: "Forms" },
           { path: "submissions", entry: "index.html" },
@@ -77,9 +78,18 @@ describe("PluginManifestSchema — adminApp", () => {
   it("accepts a nested build dir", () => {
     const parsed = PluginManifestSchema.parse({
       ...withPerm,
-      adminApp: { dir: "dist/admin", routes: [{ path: "board", entry: "app/index.html" }] },
+      adminApp: { dir: "dist/admin", locales: { en: "locales/en.json" }, routes: [{ path: "board", entry: "app/index.html" }] },
     });
     expect(parsed.adminApp?.dir).toBe("dist/admin");
+  });
+
+  it("requires an English catalog", () => {
+    const result = PluginManifestSchema.safeParse({
+      ...withPerm,
+      adminApp: { routes: [{ entry: "index.html" }] },
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.some((issue) => issue.path.join(".") === "adminApp.locales.en")).toBe(true);
   });
 
   it("requires the admin:extend permission", () => {
@@ -133,7 +143,7 @@ describe("PluginManifestSchema — plugin-relative admin paths", () => {
         { id: "board", label: "Board", path: "board" },
         { id: "nested", label: "Nested", path: "board/archive" },
       ],
-      adminApp: { routes: [{ path: "board", entry: "index.html" }] },
+      adminApp: { locales: { en: "locales/en.json" }, routes: [{ path: "board", entry: "index.html" }] },
     });
     expect(parsed.adminMenu?.map((m) => m.path)).toEqual([
       "/admin/plugins/justflows.widget",

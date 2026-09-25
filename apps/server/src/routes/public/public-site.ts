@@ -37,8 +37,10 @@ import {
   getNavigationMenuSlugs,
   getSiteIdentity,
   getThemeMods,
+  layoutScopeCss,
   mergeMods,
 } from "../../lib/themes/theme-customize.js";
+import { listLayoutScopes } from "../../lib/themes/layout-scopes.js";
 import {
   getEffectiveMenuDesign,
   getEffectiveMenuItems,
@@ -195,6 +197,22 @@ async function loadCatalog(locale: string): Promise<MessageCatalog> {
     }
   }
   return {};
+}
+
+async function layoutForContent(content: { type: string; slug: string; siteId: string }, preview: boolean): Promise<{
+  bodyClass?: string;
+  layoutCss?: string;
+}> {
+  const scopes = await listLayoutScopes(content.siteId);
+  const match = scopes.find(
+    (scope) =>
+      scope.id === content.type ||
+      (scope.index?.type === content.type && scope.index.slug === content.slug),
+  );
+  if (!match) return {};
+  const css = layoutScopeCss(await loadThemeMods(preview), match.id);
+  if (!css) return {};
+  return { bodyClass: `jf-layout-${match.id}`, layoutCss: css };
 }
 
 async function loadThemeMods(preview = false): Promise<ReturnType<typeof mergeMods>> {
@@ -1006,6 +1024,11 @@ async function renderPage(view: string, data: Record<string, unknown>): Promise<
   if (pluginAssetHead) {
     headExtra = headExtra ? `${headExtra}\n${pluginAssetHead}` : pluginAssetHead;
   }
+  const layoutCss = typeof data.layoutCss === "string" ? data.layoutCss : "";
+  if (/^body\.jf-layout-[a-z0-9-]+\{(?:--max-width:[0-9]+px;)?(?:--max-width-wide:[0-9]+px;)?\}$/.test(layoutCss)) {
+    const style = `<style>${layoutCss}</style>`;
+    headExtra = headExtra ? `${headExtra}\n${style}` : style;
+  }
   // The Forms plugin ships its own enhancement script via `manifest.assets`,
   // so it is already in `pluginAssetHead` above — nothing forms-specific here.
   let pwaBody = "";
@@ -1742,8 +1765,13 @@ async function renderSinglePageHtml(
   if (!pageContent) {
     return renderNotFoundHtml(pageCtx, req, res, reqPath);
   }
+  const layout = await layoutForContent(
+    { type: String(pageContent.type), slug: String(pageContent.slug ?? slug), siteId: pageContent.siteId },
+    preview,
+  );
   const withTranslations = {
     ...pageCtx,
+    ...layout,
     languageLinks: languageLinksFor(
       pageCtx.languages,
       pageCtx.locale,

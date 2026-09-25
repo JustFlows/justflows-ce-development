@@ -21,16 +21,16 @@ function asRecord(value: unknown): Record<string, unknown> {
   return { ...(value as Record<string, unknown>) };
 }
 
-const SHOP_MEDIA_KEYS = new Set(["src", "imageSrc", "avatarSrc"]);
-const SHOP_HREF_KEYS = new Set(["href", "url"]);
+const MEDIA_KEYS = new Set(["src", "imageSrc", "avatarSrc"]);
+const HREF_KEYS = new Set(["href", "url"]);
 
-function sanitizeShopMediaItem(item: unknown): unknown {
+function sanitizeLinkedItem(item: unknown): unknown {
   if (!item || typeof item !== "object" || Array.isArray(item)) return item;
   const row = { ...(item as Record<string, unknown>) };
   for (const [key, value] of Object.entries(row)) {
     if (typeof value !== "string") continue;
-    if (SHOP_MEDIA_KEYS.has(key)) row[key] = sanitizeMediaSrc(value);
-    else if (SHOP_HREF_KEYS.has(key)) row[key] = sanitizeHref(value);
+    if (MEDIA_KEYS.has(key)) row[key] = sanitizeMediaSrc(value);
+    else if (HREF_KEYS.has(key)) row[key] = sanitizeHref(value);
   }
   if (Array.isArray(row["colors"])) {
     row["colors"] = row["colors"].map((color) => {
@@ -74,13 +74,13 @@ function sanitizeProps(type: string, props: Record<string, unknown>): Record<str
     );
   }
 
-  if (type.startsWith("justflows.shop.")) {
+  if (!type.startsWith("core.")) {
     for (const key of ["cartUrl", "wishlistUrl", "writeHref", "ctaHref"]) {
       if (typeof next[key] === "string") next[key] = sanitizeHref(next[key] as string);
     }
     for (const key of ["images", "items"]) {
       if (Array.isArray(next[key])) {
-        next[key] = (next[key] as unknown[]).map((item) => sanitizeShopMediaItem(item));
+        next[key] = (next[key] as unknown[]).map((item) => sanitizeLinkedItem(item));
       }
     }
   }

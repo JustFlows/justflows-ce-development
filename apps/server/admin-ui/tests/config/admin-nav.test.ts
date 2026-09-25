@@ -3,8 +3,11 @@ import {
   ADMIN_NAV_DOMAINS,
   buildNavDomains,
   canAccessPath,
+  contentEditorNav,
   filterDomainsByRole,
+  isDomainActive,
   navRuleFor,
+  parsePluginSections,
 } from "../../src/config/admin-nav";
 
 describe("navRuleFor", () => {
@@ -82,6 +85,56 @@ describe("filterDomainsByRole", () => {
   });
 });
 
+describe("content editor plugin sections", () => {
+  it("lists each published section instead of one plugin screen", () => {
+    const nav = contentEditorNav({
+      contentLabel: "Content",
+      seoLabel: "SEO",
+      discussionLabel: "Discussion",
+      revisionsLabel: "Revisions",
+      advancedLabel: "Advanced",
+      pluginLabel: "Product data",
+      pluginSections: [
+        { id: "images", label: "Images" },
+        { id: "pricing", label: "Pricing" },
+      ],
+    });
+    expect(nav.map((item) => item.label)).toEqual([
+      "Content",
+      "Images",
+      "Pricing",
+      "SEO",
+      "Discussion",
+      "Revisions",
+      "Advanced",
+    ]);
+    expect(nav.map((item) => item.id)).toContain("plugin:pricing");
+  });
+
+  it("keeps the single plugin label when the frame has not published sections", () => {
+    const nav = contentEditorNav({
+      contentLabel: "Content",
+      seoLabel: "SEO",
+      discussionLabel: "Discussion",
+      revisionsLabel: "Revisions",
+      advancedLabel: "Advanced",
+      pluginLabel: "Product data",
+    });
+    expect(nav.map((item) => item.label)).toContain("Product data");
+  });
+
+  it("drops unsafe section ids and labels", () => {
+    expect(
+      parsePluginSections([
+        { id: "images", label: "Images" },
+        { id: "../x", label: "Bad" },
+        { id: "pricing", label: "   " },
+        { id: "images", label: "Again" },
+      ]),
+    ).toEqual([{ id: "images", label: "Images" }]);
+  });
+});
+
 describe("buildNavDomains", () => {
   it("places a commerce plugin page in the commerce sidebar domain", () => {
     const domains = buildNavDomains([
@@ -107,6 +160,9 @@ describe("buildNavDomains", () => {
     expect(commerce?.items.map((item) => item.to)).toEqual(["/admin/plugins/justflows.shop", "/admin/plugins/justflows.shop/products"]);
     expect(commerce?.items[0]?.end).toBe(true);
     expect(filterDomainsByRole(domains, "administrator").map((d) => d.slug)).toContain("commerce");
+    const shopPath = "/admin/plugins/justflows.shop";
+    expect(isDomainActive(commerce!, shopPath)).toBe(true);
+    expect(isDomainActive(domains.find((d) => d.slug === "extensions")!, shopPath)).toBe(false);
   });
 
   it("keeps an unknown plugin domain out of a new sidebar group", () => {

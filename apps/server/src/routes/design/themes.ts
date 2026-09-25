@@ -18,6 +18,7 @@ import {
   schemaWithThemeControls,
   type ThemeMods,
 } from "../../lib/themes/theme-customize.js";
+import { listLayoutScopes } from "../../lib/themes/layout-scopes.js";
 import {
   clearThemeHomeDraft,
   defaultHomeBlocksFromTheme,
@@ -41,6 +42,8 @@ import { getBlogPageId, setBlogPageId } from "../../lib/content/blog-page.js";
 import { getDb } from "../../lib/database/db.js";
 import { getDefaultLocale } from "../../lib/i18n/languages-db.js";
 import { sanitizeBlockDocument } from "@justflows/blocks";
+import { pluginPatternById } from "../../lib/content/default-content-blocks.js";
+import { ensurePluginRuntime } from "../../lib/plugins/plugin-runtime.js";
 import { listThemePatterns, loadThemePattern } from "../../lib/themes/theme-files.js";
 import {
   activateTheme,
@@ -188,12 +191,25 @@ router.get("/patterns/:slug", requireRole(...CONTENT_READ_ROLES), async (req, re
     const siteId = await getSiteId();
     const theme = siteId ? await getActiveTheme(siteId) : null;
     const themeId = theme?.theme_id ?? "justflows.default";
-    const pattern = loadThemePattern(themeId, param(req.params.slug), themeInstalledPath(theme));
-    if (!pattern) {
+    const slug = param(req.params.slug);
+    const pattern = loadThemePattern(themeId, slug, themeInstalledPath(theme));
+    if (pattern) {
+      res.json({ pattern });
+      return;
+    }
+    await ensurePluginRuntime();
+    const registered = pluginPatternById(slug);
+    if (!registered) {
       res.status(404).json({ error: "Pattern not found" });
       return;
     }
-    res.json({ pattern });
+    res.json({
+      pattern: {
+        ...registered,
+        source: "plugin",
+        blocks: sanitizeBlockDocument({ version: 1, blocks: registered.blocks }).blocks,
+      },
+    });
   } catch (err) {
     sendServerError(res, "themes", err);
   }
@@ -562,6 +578,7 @@ router.get("/customize", requireRole(...THEME_CUSTOMIZE_ROLES), async (_req, res
       defaultBlogBlocks,
       publishedBlogBlocks: blogPublished?.blocks.length ? blogPublished : null,
       blogPageId,
+      layoutScopes: await listLayoutScopes(siteId),
       pages: pageRows.map((row) => ({
         id: String(row.id),
         title: String(row.title),

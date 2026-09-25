@@ -37,6 +37,7 @@ export type {
   ActionHandlerFor,
   GateHandlerFor,
   FilterHandlerFor,
+  ThemeLayoutScope,
   AppEvent,
   ContentRef,
   ContentDeletedRef,

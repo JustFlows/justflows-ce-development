@@ -35,10 +35,35 @@ export interface AdminContext {
   routePath: string;
   /** `"dark"`, `"light"`, or `""` when the viewer follows the system setting. */
   theme: string;
+  /**
+   * Locale code → catalog URL from the plugin manifest `adminApp.locales`.
+   * Absent when the plugin did not declare locale files.
+   */
+  catalogs?: Record<string, string>;
+  /**
+   * Content row this frame is editing, when the host embeds the app inside the
+   * content editor. Absent on a plugin's own admin screen.
+   */
+  contentId?: string;
+  /** Translation group for that row. Defaults to `contentId` when omitted. */
+  translationGroupId?: string;
+  /**
+   * Editor menu section the host is showing, when this frame is embedded in
+   * the content editor and has published sections with `reportSections`.
+   */
+  sectionId?: string;
+}
+
+/** One content-editor menu entry a plugin publishes for the row it is editing. */
+export interface AdminEditorSection {
+  id: string;
+  label: string;
 }
 
 type ContextListener = (context: AdminContext) => void;
 type RouteListener = (routePath: string) => void;
+type SaveListener = (requestId: string) => void;
+type SectionListener = (sectionId: string) => void;
 
 export interface AdminBridge {
   /** Tell the host the app has mounted. The host replies by delivering `context`. */
@@ -52,6 +77,22 @@ export interface AdminBridge {
    * the admin URL changed and the frame's router should follow without a reload.
    */
   onRoute(listener: RouteListener): () => void;
+  /**
+   * The host asked this frame to persist. Call `reportSaved` when the write
+   * finishes. `requestId` pairs the reply with that request.
+   */
+  onSave(listener: SaveListener): () => void;
+  /** Reply to `onSave`. `error` is a short message the host can show. */
+  reportSaved(requestId: string, ok: boolean, error?: string): void;
+  /** Tell the host the frame has unsaved edits. */
+  reportDirty(dirty: boolean): void;
+  /**
+   * Publish content-editor menu entries. The host lists them beside Content
+   * and SEO and tells the frame which one is selected via `onSection`.
+   */
+  reportSections(sections: AdminEditorSection[]): void;
+  /** The host selected one of the sections published with `reportSections`. */
+  onSection(listener: SectionListener): () => void;
   /** Ask the host to navigate elsewhere (`/admin/…` path, or an absolute URL → new tab). */
   navigate(path: string): void;
   /** Report the content height so the host can size the iframe. */
@@ -80,6 +121,8 @@ export function createAdminBridge(): AdminBridge {
   let context: AdminContext | null = null;
   const contextListeners = new Set<ContextListener>();
   const routeListeners = new Set<RouteListener>();
+  const saveListeners = new Set<SaveListener>();
+  const sectionListeners = new Set<SectionListener>();
   let resizeObserver: ResizeObserver | null = null;
   let frame = 0;
 
@@ -96,16 +139,23 @@ export function createAdminBridge(): AdminBridge {
       type?: string;
       context?: unknown;
       routePath?: unknown;
+      requestId?: unknown;
+      sectionId?: unknown;
     };
     if (!data || data.source !== HOST_SOURCE) return;
 
     if (data.type === "context" && data.context && typeof data.context === "object") {
       context = data.context as AdminContext;
       for (const listener of contextListeners) listener(context);
+    } else if (data.type === "save" && typeof data.requestId === "string") {
+      for (const listener of saveListeners) listener(data.requestId);
     } else if (data.type === "route" && typeof data.routePath === "string") {
       const routePath = data.routePath;
       if (context) context = { ...context, routePath };
       for (const listener of routeListeners) listener(routePath);
+    } else if (data.type === "section" && typeof data.sectionId === "string") {
+      if (context) context = { ...context, sectionId: data.sectionId };
+      for (const listener of sectionListeners) listener(data.sectionId);
     }
   }
 
@@ -126,6 +176,34 @@ export function createAdminBridge(): AdminBridge {
     onRoute(listener) {
       routeListeners.add(listener);
       return () => routeListeners.delete(listener);
+    },
+    onSave(listener) {
+      saveListeners.add(listener);
+      return () => saveListeners.delete(listener);
+    },
+    reportSaved(requestId, ok, error) {
+      if (typeof requestId !== "string" || !requestId) return;
+      post({
+        type: "saved",
+        requestId,
+        ok: ok === true,
+        ...(typeof error === "string" && error ? { error } : {}),
+      });
+    },
+    reportDirty(dirty) {
+      post({ type: "dirty", dirty: dirty === true });
+    },
+    reportSections(sections) {
+      if (!Array.isArray(sections)) return;
+      const clean = sections
+        .filter((section) => section && typeof section.id === "string" && typeof section.label === "string")
+        .slice(0, 12)
+        .map((section) => ({ id: section.id.slice(0, 40), label: section.label.slice(0, 60) }));
+      post({ type: "sections", sections: clean });
+    },
+    onSection(listener) {
+      sectionListeners.add(listener);
+      return () => sectionListeners.delete(listener);
     },
     navigate(path) {
       if (typeof path === "string" && path) post({ type: "navigate", path });
@@ -161,6 +239,8 @@ export function createAdminBridge(): AdminBridge {
       resizeObserver = null;
       contextListeners.clear();
       routeListeners.clear();
+      saveListeners.clear();
+      sectionListeners.clear();
       if (frame) cancelAnimationFrame(frame);
     },
   };

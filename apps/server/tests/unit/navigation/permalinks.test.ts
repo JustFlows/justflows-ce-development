@@ -55,6 +55,22 @@ describe("permalink structures", () => {
       ),
     ).toBe("/uncategorized/unknown/abc-123");
   });
+  it("uses a plugin layout scope as the parent of that type", () => {
+    const settings = { ...defaults, typeBases: { product: "product", shop: "shop" } };
+    const scopes = [
+      { id: "product", label: "Product", base: "product", index: { type: "shop", slug: "product" } },
+      { id: "shop", label: "Shop", base: "shop", index: { type: "shop", slug: "shop" } },
+    ];
+    expect(permalinkPath({ ...post, type: "product", slug: "kids-raincoat" }, settings, "en-US", scopes)).toBe(
+      "/product/kids-raincoat",
+    );
+    expect(permalinkPath({ ...post, type: "shop", slug: "product" }, settings, "en-US", scopes)).toBe("/product");
+    expect(permalinkPath({ ...post, type: "shop", slug: "shop" }, settings, "en-US", scopes)).toBe("/shop");
+    expect(permalinkPath({ ...post, type: "shop", slug: "cart" }, settings, "en-US", scopes)).toBe("/shop/cart");
+    expect(permalinkPath({ ...post, type: "product", slug: "kids-raincoat" }, defaults, "en-US")).toBe(
+      "/kids-raincoat",
+    );
+  });
   it("puts locale before nested type bases and preserves page slugs", () => {
     expect(
       permalinkPath(

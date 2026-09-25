@@ -9,14 +9,19 @@ import { usePluginMenu } from "@components/PluginMenuProvider";
 import { useT } from "../../../i18n/I18nProvider";
 import HeaderRefField from "@components/builder/HeaderRefField";
 import { fieldsWithHeaderRef, headerRefFromFields } from "../../../lib/page-header";
-import ProductCatalogFields from "./ProductCatalogFields";
 import {
-  fetchProductPattern,
+  contentEditorFor,
+  contentEditorNav,
+  contentListPath,
+  type PluginEditorSection,
+} from "../../../config/admin-nav";
+import PluginContentFrame, { type PluginContentFrameHandle } from "./PluginContentFrame";
+import {
+  fetchTypePattern,
   isEmptyBlockDocument,
-  shouldSeedProductLayout,
-  usesPageBuilderChrome,
+  shouldSeedTypePattern,
+  usesBlockEditor,
 } from "../../../lib/content-layout";
-import { catalogPreviewTags } from "../../../lib/product-tags";
 
 interface ContentItem {
   id: string;
@@ -85,7 +90,7 @@ interface RevisionSummary {
 
 const VISIBLE_REVISION_HISTORY = 5;
 
-type EditSection = "content" | "seo" | "discussion" | "revisions" | "advanced";
+type EditSection = "content" | "plugin" | "seo" | "discussion" | "revisions" | "advanced" | `plugin:${string}`;
 
 function localePath(locale: string, slug: string, defaultLocale: string): string {
   const path = `/${slug}`;
@@ -134,10 +139,31 @@ export default function EditContentPage() {
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [expandedRevisionId, setExpandedRevisionId] = useState<string | null>(null);
   const [section, setSection] = useState<EditSection>("content");
-  const [catalogDirty, setCatalogDirty] = useState(false);
-  const [catalogDraft, setCatalogDraft] = useState<Parameters<typeof catalogPreviewTags>[0]>(null);
-  const catalogSaveRef = useRef<(() => Promise<boolean>) | null>(null);
-  const onCatalogDirty = useCallback((next: boolean) => setCatalogDirty(next), []);
+  const [pluginSections, setPluginSections] = useState<PluginEditorSection[]>([]);
+  const [pluginDirty, setPluginDirty] = useState(false);
+  const [blockEditor, setBlockEditor] = useState(false);
+  const pluginFrameRef = useRef<PluginContentFrameHandle | null>(null);
+  const onPluginDirty = useCallback((next: boolean) => setPluginDirty(next), []);
+  const onPluginSections = useCallback((next: PluginEditorSection[]) => {
+    setPluginSections((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+  }, []);
+  const pluginEditor = contentEditorFor(pluginMenuItems, item?.type);
+
+  useEffect(() => {
+    if (!pluginEditor) setPluginSections([]);
+  }, [pluginEditor]);
+  const pluginSectionActive = section === "plugin" || section.startsWith("plugin:");
+  const activePluginSection = section.startsWith("plugin:")
+    ? section.slice("plugin:".length)
+    : pluginSections[0]?.id;
+
+  useEffect(() => {
+    if (pluginSections.length === 0) return;
+    const known = pluginSections.some((entry) => section === `plugin:${entry.id}`);
+    if (section === "plugin" || (section.startsWith("plugin:") && !known)) {
+      setSection(`plugin:${pluginSections[0]!.id}`);
+    }
+  }, [pluginSections, section]);
 
   useEffect(() => {
     fetch("/api/languages/active")
@@ -186,8 +212,8 @@ export default function EditContentPage() {
         if (!data.id) throw new Error(t("content.notFoundError"));
         setItem(data);
         setBaseline(JSON.stringify(data));
-        if (shouldSeedProductLayout(data) && isEmptyBlockDocument(data.blocks)) {
-          const pattern = await fetchProductPattern();
+        if (shouldSeedTypePattern(data) && isEmptyBlockDocument(data.blocks)) {
+          const pattern = await fetchTypePattern(data.type);
           if (pattern) {
             setItem((prev) =>
               prev ? { ...prev, blocks: pattern as ContentItem["blocks"] } : prev,
@@ -197,9 +223,10 @@ export default function EditContentPage() {
         const groupId = data.translationGroupId ?? data.id;
         fetch(`/api/content-types/${encodeURIComponent(data.type)}`)
           .then((tr) => tr.json())
-          .then((body: { type?: { label?: string; fields?: ContentTypeField[] } }) => {
+          .then((body: { type?: { label?: string; fields?: ContentTypeField[]; editor?: string } }) => {
             setTypeLabel(body.type?.label ?? data.type);
             setTypeFields(body.type?.fields ?? []);
+            setBlockEditor(body.type?.editor === "blocks" || data.type === "page");
           })
           .catch(() => {
             setTypeLabel(data.type);
@@ -215,7 +242,7 @@ export default function EditContentPage() {
     () => Boolean(item) && JSON.stringify(item) !== baseline,
     [item, baseline],
   );
-  const dirty = contentDirty || catalogDirty;
+  const dirty = contentDirty || pluginDirty;
 
   useEffect(() => {
     if (!dirty || saving || !item) return;
@@ -499,7 +526,7 @@ export default function EditContentPage() {
     if (!confirm(t("content.deleteConfirm")))
       return;
     await fetch(`/api/content/${id}`, { method: "DELETE" });
-    navigate(item?.type === "product" ? "/admin/plugins/justflows.shop/products" : "/admin/content");
+    navigate(contentListPath(pluginMenuItems, item?.type) ?? "/admin/content");
   }
 
   function patch(changes: Partial<ContentItem>) {
@@ -511,10 +538,10 @@ export default function EditContentPage() {
   }
 
   async function saveCatalogData(): Promise<boolean> {
-    if (!catalogSaveRef.current) return true;
-    const ok = await catalogSaveRef.current();
-    if (!ok) setError(t("shop.saveFailed"));
-    return ok;
+    if (!pluginEditor || !pluginFrameRef.current) return true;
+    const result = await pluginFrameRef.current.save();
+    if (!result.ok) setError(result.error || t("content.pluginDataSaveFailed"));
+    return result.ok;
   }
 
   async function setAsHomePage(enabled: boolean) {
@@ -570,7 +597,7 @@ export default function EditContentPage() {
     );
   }
 
-  const isPage = usesPageBuilderChrome(item.type);
+  const isPage = usesBlockEditor(item.type, blockEditor);
   const isCmsPage = item.type === "page";
   const isHomePage = homePageId === item.id;
   const isBlogPage = blogPageId === item.id;
@@ -694,27 +721,39 @@ export default function EditContentPage() {
 
             <div className="jf-editpane">
               <nav className="jf-editnav" aria-label={t("content.settingsSectionsAriaLabel")}>
-                {(
-                  [
-                    ["content", t("content.contentHeading")],
-                    ["seo", t("content.seoHeading")],
-                    ["discussion", t("content.discussionHeading")],
-                    ["revisions", t("content.revisions")],
-                    ["advanced", t("content.advancedHeading")],
-                  ] as [EditSection, string][]
-                ).map(([id, navLabel]) => (
+                {contentEditorNav({
+                  contentLabel: t("content.contentHeading"),
+                  seoLabel: t("content.seoHeading"),
+                  discussionLabel: t("content.discussionHeading"),
+                  revisionsLabel: t("content.revisions"),
+                  advancedLabel: t("content.advancedHeading"),
+                  pluginLabel: pluginEditor?.label,
+                  pluginSections,
+                }).map((entry) => (
                   <button
-                    key={id}
+                    key={entry.id}
                     type="button"
-                    className={`jf-editnav__item${section === id ? " is-active" : ""}`}
-                    onClick={() => setSection(id)}
+                    className={`jf-editnav__item${section === entry.id ? " is-active" : ""}`}
+                    onClick={() => setSection(entry.id as EditSection)}
                   >
-                    {navLabel}
+                    {entry.label}
                   </button>
                 ))}
               </nav>
 
               <div className="jf-editsection">
+                {pluginEditor && (
+                  <PluginContentFrame
+                    ref={pluginFrameRef}
+                    item={pluginEditor}
+                    contentId={item.id}
+                    translationGroupId={item.translationGroupId ?? item.id}
+                    hidden={!pluginSectionActive}
+                    sectionId={pluginSectionActive ? activePluginSection : undefined}
+                    onDirty={onPluginDirty}
+                    onSections={onPluginSections}
+                  />
+                )}
                 {section === "content" && (
                   <>
                     <div className="jf-card">
@@ -754,16 +793,6 @@ export default function EditContentPage() {
                         </div>
                       </div>
                     </div>
-
-                    {item.type === "product" && (
-                      <ProductCatalogFields
-                        contentId={item.id}
-                        translationGroupId={item.translationGroupId ?? item.id}
-                        saveRef={catalogSaveRef}
-                        onDirtyChange={onCatalogDirty}
-                        onDraftChange={setCatalogDraft}
-                      />
-                    )}
 
                     {typeFields.length > 0 && (
                       <div className="jf-card">

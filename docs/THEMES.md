@@ -52,17 +52,10 @@ contract too. When both files ship, keep their ranges identical. See
 | `demo/header.json`      | Site header chrome when no header-library default is set |
 | `demo/footer.json`      | Site footer blocks when the site never customised one    |
 
-The bundled Default theme includes a **Product detail** pattern (`patterns/product.json`)
-plus **Product mosaic**, **Product story**, **Product list**, and **Ecommerce storefront**. Creating a `product` content row
-(or opening one whose canvas is still empty) loads Product detail so the page
-builder starts with a Shop gallery, buy box, specs accordion, reviews, and
-related products instead of a blank canvas. Commerce values are tags (`{{title}}`,
-`{{price}}`, `{{sku}}`, `{{stock}}`, `{{attributes}}`, …) filled from the Product
-card and content fields when the page renders. Those patterns set
-`requiresBlockTypes` for the Shop blocks they use. **Product list** is a catalog
-grid (`justflows.shop.product-list`) for shop and category pages. **Ecommerce storefront**
-is a homepage (`patterns/ecommerce-storefront.json`) with a hero image-tile collage,
-category mosaic, story banner, favorites, and sale strip.
+The bundled Default theme includes marketing patterns (home, about, contact,
+hero, features, pricing, testimonials, call to action, FAQ, and landing). A
+plugin can register more patterns, including one whose id matches a content
+type so new rows of that type start from that layout.
 
 A pattern is a portable, versioned JSON document:
 
