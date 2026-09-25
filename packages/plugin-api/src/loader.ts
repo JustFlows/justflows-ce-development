@@ -15,6 +15,7 @@ import {
   type PluginMailTransportApi,
   type PluginSecretsApi,
   type PluginDatabasesApi,
+  type PluginUsersApi,
   type PluginBlockDefinition,
   type PluginContentApi,
   type HookRegisterOptions,
@@ -51,6 +52,11 @@ export type PluginDatabasesFactory = (
   permissions: ReadonlySet<PluginPermission>,
 ) => PluginDatabasesApi;
 export type PluginContentFactory = (pluginId: string, siteId: string) => PluginContentApi;
+export type PluginUsersFactory = (
+  pluginId: string,
+  siteId: string,
+  permissions: ReadonlySet<PluginPermission>,
+) => PluginUsersApi;
 /** Read-only view of the site's configured locales, exposed to plugins as `ctx.i18n`. */
 export type PluginI18nProvider = (siteId: string) => {
   defaultLocale(): Promise<string>;
@@ -124,6 +130,12 @@ const NULL_DATABASES: PluginDatabasesApi = {
   columns: async () => [],
 };
 
+const NULL_USERS: PluginUsersApi = {
+  create: async () => {
+    throw new Error("User creation is not available in this runtime");
+  },
+};
+
 const NULL_CONTENT: PluginContentApi = {
   listPublished: async () => [],
   ensureType: async () => {
@@ -146,6 +158,7 @@ export class PluginLoader {
   private readonly secretsFactory: PluginSecretsFactory;
   private readonly databasesFactory: PluginDatabasesFactory;
   private readonly contentFactory: PluginContentFactory;
+  private readonly usersFactory: PluginUsersFactory;
   private readonly i18nProvider: PluginI18nProvider;
   private readonly jobsCleanup: ((pluginId: string) => void) | undefined;
   private readonly mailCleanup: ((pluginId: string) => void) | undefined;
@@ -172,6 +185,7 @@ export class PluginLoader {
       secretsFactory?: PluginSecretsFactory;
       databasesFactory?: PluginDatabasesFactory;
       contentFactory?: PluginContentFactory;
+      usersFactory?: PluginUsersFactory;
       i18nProvider?: PluginI18nProvider;
       jobsCleanup?: (pluginId: string) => void;
       mailCleanup?: (pluginId: string) => void;
@@ -213,6 +227,7 @@ export class PluginLoader {
     this.databasesFactory =
       options?.databasesFactory ?? ((_pluginId, _siteId, _permissions) => NULL_DATABASES);
     this.contentFactory = options?.contentFactory ?? (() => NULL_CONTENT);
+    this.usersFactory = options?.usersFactory ?? (() => NULL_USERS);
     this.i18nProvider =
       options?.i18nProvider ??
       (() => ({
@@ -448,6 +463,25 @@ export class PluginLoader {
       },
       roles: {
         register: (definition) => this.roleRegistry.register(pluginId, definition),
+      },
+      users: {
+        create: async (input, actor) => {
+          if (!permissions.has("users:manage")) {
+            throw new Error(
+              `Plugin "${pluginId}" cannot create users without the "users:manage" permission`,
+            );
+          }
+          const role = String(input.role ?? "");
+          const registered = this.roleRegistry.get(role);
+          if (!registered || registered.pluginId !== pluginId) {
+            return {
+              ok: false,
+              status: 400,
+              error: "Plugins can only create users in a role they registered.",
+            };
+          }
+          return this.usersFactory(pluginId, siteId, permissions).create(input, actor);
+        },
       },
       diagnostics: {
         register: (check) => {

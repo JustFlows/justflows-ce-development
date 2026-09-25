@@ -515,6 +515,42 @@ export interface PluginRolesApi {
   register(definition: PluginRoleDefinition): void;
 }
 
+/** Signed-in staff member a plugin attributes a user mutation to. */
+export interface PluginUserActor {
+  userId: string;
+  role: string;
+}
+
+export interface PluginUserCreateInput {
+  email: string;
+  username: string;
+  displayName: string;
+  password: string;
+  /** Must be a role this plugin registered. Core roles are rejected. */
+  role: string;
+}
+
+export interface PluginCreatedUser {
+  id: string;
+  email: string;
+  username: string;
+  displayName: string;
+  role: string;
+}
+
+export type PluginUserCreateResult =
+  | { ok: true; user: PluginCreatedUser }
+  | { ok: false; status: number; error: string };
+
+export interface PluginUsersApi {
+  /**
+   * Create a site user in a role this plugin registered.
+   * Requires the `users:manage` manifest permission. The host still applies
+   * password policy, uniqueness, and audit logging.
+   */
+  create(input: PluginUserCreateInput, actor: PluginUserActor): Promise<PluginUserCreateResult>;
+}
+
 /** The signed-in user behind a plugin request, when there is one. */
 export interface PluginHttpSession {
   userId: string;
@@ -982,6 +1018,7 @@ export interface PluginContext {
   readonly permissions: ReadonlySet<PluginPermission>;
   readonly capabilities: PluginCapabilitiesApi;
   readonly roles: PluginRolesApi;
+  readonly users: PluginUsersApi;
   readonly diagnostics: PluginDiagnosticsApi;
 
   /**

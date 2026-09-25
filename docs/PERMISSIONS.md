@@ -115,3 +115,8 @@ async activate(ctx) {
 The id is 2–32 lowercase letters, digits, and hyphens. A plugin cannot replace
 a core role (`subscriber`, `contributor`, `author`, `editor`, `administrator`)
 or another plugin's registration.
+
+`ctx.users.create` needs the `users:manage` manifest permission. It can only
+assign a role that same plugin registered, so Shop can create a `customer`
+and cannot create an administrator. The host still enforces password policy,
+uniqueness, and the audit log. The `actor` is the signed-in staff member.
