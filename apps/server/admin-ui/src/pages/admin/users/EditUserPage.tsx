@@ -48,7 +48,7 @@ export default function EditUserPage() {
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState("subscriber");
-  const [roles, setRoles] = useState<Array<{ id: string; name: string; builtIn: boolean }>>([]);
+  const [roles, setRoles] = useState<Array<{ id: string; name: string; builtIn: boolean; pluginId?: string | null }>>([]);
   const [capabilities, setCapabilities] = useState<string[]>([]);
   const [grants, setGrants] = useState<string[]>([]);
   const [denies, setDenies] = useState<string[]>([]);
@@ -88,7 +88,7 @@ export default function EditUserPage() {
   useEffect(() => {
     fetch("/api/roles").then(async (res) => {
       const data = await res.json() as {
-        roles?: Array<{ id: string; name: string; builtIn: boolean }>;
+        roles?: Array<{ id: string; name: string; builtIn: boolean; pluginId?: string | null }>;
         capabilities?: Array<string | { id: string }>;
       };
       if (res.ok) {
@@ -133,7 +133,9 @@ export default function EditUserPage() {
 
       const body: Record<string, unknown> = { displayName };
       if (roleChanged) {
-        body.role = ROLES.includes(role) ? role : undefined;
+        const selected = roles.find((entry) => entry.id === role);
+        const assignsUserRole = !selected || selected.builtIn || Boolean(selected.pluginId);
+        if (assignsUserRole) body.role = role;
         body.roleId = role;
       }
       if (grantsChanged) body.grants = grants;

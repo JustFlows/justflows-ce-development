@@ -29,7 +29,7 @@ import {
 import type { BlockNode } from "../../lib/runtime/types.js";
 import { listMenuDesignPresets } from "../../lib/navigation/menu-design-presets.js";
 import { requireRole } from "../../middleware/auth.js";
-import { CONTENT_READ_ROLES, MENU_WRITE_ROLES, USER_ROLE_VALUES } from "../../lib/auth/rbac.js";
+import { CONTENT_READ_ROLES, MENU_WRITE_ROLES, STORED_ROLE_ID } from "../../lib/auth/rbac.js";
 import { param } from "../../lib/http/params.js";
 import { assertAllowedNavUrl } from "../../lib/navigation/nav-url.js";
 import { isSafeAssetUrl } from "../../lib/media/favicon.js";
@@ -45,7 +45,7 @@ const REL_TOKEN_RE = /^[a-z][a-z0-9-]{0,39}$/;
 
 const MenuItemVisibilitySchema = z.object({
   auth: z.enum(["any", "guest", "authenticated"]).optional(),
-  roles: z.array(z.enum(USER_ROLE_VALUES)).max(10).optional(),
+  roles: z.array(z.string().regex(STORED_ROLE_ID)).max(10).optional(),
   locales: z.array(z.string().min(1).max(20)).max(50).optional(),
   devices: z.array(z.enum(["desktop", "tablet", "mobile"])).max(3).optional(),
   condition: z

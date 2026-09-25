@@ -2544,7 +2544,8 @@
         "contributor": "Medewerker",
         "author": "Auteur",
         "editor": "Redacteur",
-        "administrator": "Beheerder"
+        "administrator": "Beheerder",
+        "customer": "Klant"
       }
     },
     "locale": {

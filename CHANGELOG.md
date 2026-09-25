@@ -9,6 +9,11 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Shop registers a Customer role.** Activating the Shop plugin adds a `customer` user role with no administration access. It appears in New User Default Role, user invites, and the user editor, and can be the role new registrations receive. Deactivating Shop removes it from those lists.
+- **Shop → Customers can add a customer.** The form collects the sign-in account, phone, company, tax ID, invoice address, and shipping address. The new account is also created under Admin → Users with the customer role. Plugins that declare `users:manage` can create users only in a role they registered.
+- **Shop → Customers can edit a customer.** Open a customer to change their name, phone, company, tax ID, invoice address, and shipping address. The sign-in address stays on the user account.
+- **Shop → Customers can import customers.** CSV, JSON, and XML files create or update customers, including invoice and shipping addresses. A new email also creates a user with the customer role. A matching email updates the shop record and leaves the existing sign-in alone.
+
 - **Inline images, footnotes, and math formulas in the paragraph/quote editor.**
   The inline rich-text toolbar gained an image button (upload a file, paste a
   URL, or pick from the media library), strikethrough, and a "More formats"

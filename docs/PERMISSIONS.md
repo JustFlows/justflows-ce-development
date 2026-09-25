@@ -92,3 +92,31 @@ effective access until its owning plugin registers it again.
 A plugin that contributes an admin page still runs in the signed-in user's
 session. An author without `plugins:install` cannot upload packages even if a
 plugin UI looks like it could.
+
+## Plugin-defined user roles
+
+A plugin can add a role while it is active. The id is stored on `users.role`
+and shows up in New User Default Role, invites, and the user editor. Shop
+registers `customer` (no administration capabilities) on activation.
+Deactivation removes the role from those lists; accounts that already have it
+keep the stored id and lose the plugin's capabilities until it is active again.
+
+```ts
+async activate(ctx) {
+  ctx.roles.register({
+    id: "customer",
+    label: "Customer",
+    description: "Registered shop customer. No administration access.",
+    capabilities: [],
+  });
+}
+```
+
+The id is 2–32 lowercase letters, digits, and hyphens. A plugin cannot replace
+a core role (`subscriber`, `contributor`, `author`, `editor`, `administrator`)
+or another plugin's registration.
+
+`ctx.users.create` needs the `users:manage` manifest permission. It can only
+assign a role that same plugin registered, so Shop can create a `customer`
+and cannot create an administrator. The host still enforces password policy,
+uniqueness, and the audit log. The `actor` is the signed-in staff member.

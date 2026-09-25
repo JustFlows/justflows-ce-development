@@ -15,6 +15,7 @@ import {
   type PluginMailTransportApi,
   type PluginSecretsApi,
   type PluginDatabasesApi,
+  type PluginUsersApi,
   type PluginBlockDefinition,
   type PluginContentApi,
   type HookRegisterOptions,
@@ -26,6 +27,7 @@ import type { App } from "@justflows/core";
 import { PluginHttpRouter } from "./http-router.js";
 import { PluginCookieRegistry } from "./cookie-registry.js";
 import { PluginCapabilityRegistry } from "./capability-registry.js";
+import { PluginRoleRegistry } from "./role-registry.js";
 import { PluginDiagnosticRegistry } from "./diagnostic-registry.js";
 import { PluginPatternRegistry } from "./pattern-registry.js";
 
@@ -50,6 +52,11 @@ export type PluginDatabasesFactory = (
   permissions: ReadonlySet<PluginPermission>,
 ) => PluginDatabasesApi;
 export type PluginContentFactory = (pluginId: string, siteId: string) => PluginContentApi;
+export type PluginUsersFactory = (
+  pluginId: string,
+  siteId: string,
+  permissions: ReadonlySet<PluginPermission>,
+) => PluginUsersApi;
 /** Read-only view of the site's configured locales, exposed to plugins as `ctx.i18n`. */
 export type PluginI18nProvider = (siteId: string) => {
   defaultLocale(): Promise<string>;
@@ -123,6 +130,12 @@ const NULL_DATABASES: PluginDatabasesApi = {
   columns: async () => [],
 };
 
+const NULL_USERS: PluginUsersApi = {
+  create: async () => {
+    throw new Error("User creation is not available in this runtime");
+  },
+};
+
 const NULL_CONTENT: PluginContentApi = {
   listPublished: async () => [],
   ensureType: async () => {
@@ -145,6 +158,7 @@ export class PluginLoader {
   private readonly secretsFactory: PluginSecretsFactory;
   private readonly databasesFactory: PluginDatabasesFactory;
   private readonly contentFactory: PluginContentFactory;
+  private readonly usersFactory: PluginUsersFactory;
   private readonly i18nProvider: PluginI18nProvider;
   private readonly jobsCleanup: ((pluginId: string) => void) | undefined;
   private readonly mailCleanup: ((pluginId: string) => void) | undefined;
@@ -157,6 +171,7 @@ export class PluginLoader {
   readonly httpRouter: PluginHttpRouter;
   readonly cookieRegistry: PluginCookieRegistry;
   readonly capabilityRegistry: PluginCapabilityRegistry;
+  readonly roleRegistry: PluginRoleRegistry;
   readonly diagnosticRegistry: PluginDiagnosticRegistry;
   readonly patternRegistry: PluginPatternRegistry;
 
@@ -170,6 +185,7 @@ export class PluginLoader {
       secretsFactory?: PluginSecretsFactory;
       databasesFactory?: PluginDatabasesFactory;
       contentFactory?: PluginContentFactory;
+      usersFactory?: PluginUsersFactory;
       i18nProvider?: PluginI18nProvider;
       jobsCleanup?: (pluginId: string) => void;
       mailCleanup?: (pluginId: string) => void;
@@ -186,6 +202,7 @@ export class PluginLoader {
       cookieOverrides?: (siteId: string) => Promise<Record<string, CookieCategory>>;
       cookieRegistry?: PluginCookieRegistry;
       capabilityRegistry?: PluginCapabilityRegistry;
+      roleRegistry?: PluginRoleRegistry;
       diagnosticRegistry?: PluginDiagnosticRegistry;
       patternRegistry?: PluginPatternRegistry;
     },
@@ -210,6 +227,7 @@ export class PluginLoader {
     this.databasesFactory =
       options?.databasesFactory ?? ((_pluginId, _siteId, _permissions) => NULL_DATABASES);
     this.contentFactory = options?.contentFactory ?? (() => NULL_CONTENT);
+    this.usersFactory = options?.usersFactory ?? (() => NULL_USERS);
     this.i18nProvider =
       options?.i18nProvider ??
       (() => ({
@@ -227,6 +245,7 @@ export class PluginLoader {
     this.httpRouter = options?.httpRouter ?? new PluginHttpRouter();
     this.cookieRegistry = options?.cookieRegistry ?? new PluginCookieRegistry();
     this.capabilityRegistry = options?.capabilityRegistry ?? new PluginCapabilityRegistry();
+    this.roleRegistry = options?.roleRegistry ?? new PluginRoleRegistry();
     this.diagnosticRegistry = options?.diagnosticRegistry ?? new PluginDiagnosticRegistry();
     this.patternRegistry = options?.patternRegistry ?? new PluginPatternRegistry();
     const coreCookies = options?.coreCookies ?? [];
@@ -373,6 +392,7 @@ export class PluginLoader {
     this.httpRouter.removePlugin(pluginId);
     this.cookieRegistry.removePlugin(pluginId);
     this.capabilityRegistry.removePlugin(pluginId);
+    this.roleRegistry.removePlugin(pluginId);
     this.diagnosticRegistry.removePlugin(pluginId);
     this.patternRegistry.removePlugin(pluginId);
     this.jobsCleanup?.(pluginId);
@@ -440,6 +460,28 @@ export class PluginLoader {
       permissions,
       capabilities: {
         register: (definition) => this.capabilityRegistry.register(pluginId, definition),
+      },
+      roles: {
+        register: (definition) => this.roleRegistry.register(pluginId, definition),
+      },
+      users: {
+        create: async (input, actor) => {
+          if (!permissions.has("users:manage")) {
+            throw new Error(
+              `Plugin "${pluginId}" cannot create users without the "users:manage" permission`,
+            );
+          }
+          const role = String(input.role ?? "");
+          const registered = this.roleRegistry.get(role);
+          if (!registered || registered.pluginId !== pluginId) {
+            return {
+              ok: false,
+              status: 400,
+              error: "Plugins can only create users in a role they registered.",
+            };
+          }
+          return this.usersFactory(pluginId, siteId, permissions).create(input, actor);
+        },
       },
       diagnostics: {
         register: (check) => {

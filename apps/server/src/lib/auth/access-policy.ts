@@ -68,10 +68,12 @@ export async function getEffectiveAccess(
   const definitions = await availableCapabilityDefinitions();
   const available = new Set<string>(definitions.map(({ id }) => id));
   const roleId = row?.role_id ?? fallbackRole;
+  const { getPluginLoader } = await import("../plugins/plugin-runtime.js");
+  const pluginRole = getPluginLoader()?.roleRegistry.get(fallbackRole);
   const roleCapabilities = row?.role_id
     ? validCapabilities(parseJson(row.capabilities_json, []), available)
     : [
-        ...(ROLE_CAPABILITIES[fallbackRole] ?? []),
+        ...(pluginRole ? pluginRole.capabilities : (ROLE_CAPABILITIES[fallbackRole] ?? [])),
         ...definitions.filter((definition) => definition.pluginId && (definition.defaultRoles ?? ["administrator"]).includes(fallbackRole)).map(({ id }) => id),
       ];
   // A per-user row can exist purely to carry grants/denies/scopes for a

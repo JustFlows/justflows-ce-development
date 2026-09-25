@@ -5,7 +5,8 @@ import { z } from "zod";
 import { getDb, type DbClient } from "../database/db.js";
 import { hashPassword } from "./password.js";
 import { getGeneralSettings } from "../settings/general-settings.js";
-import { USER_ROLE_VALUES } from "./rbac.js";
+import { isAssignableRole, listAssignableRoles } from "./assignable-roles.js";
+import { STORED_ROLE_ID } from "./rbac.js";
 import { PasswordSchema } from "./password-policy.js";
 import { revokeUserSessions } from "./auth-session.js";
 import { auditLog } from "../security/audit-log.js";
@@ -110,7 +111,7 @@ export const CreateUserSchema = z.object({
   username: z.string().min(2).max(60),
   displayName: z.string().min(1),
   password: PasswordSchema,
-  role: z.enum(USER_ROLE_VALUES).optional(),
+  role: z.string().regex(STORED_ROLE_ID).optional(),
 });
 export type CreateUserInput = z.infer<typeof CreateUserSchema>;
 
@@ -121,6 +122,9 @@ export async function createUser(
   const { email, username, displayName, password } = input;
   const general = await getGeneralSettings(actor.siteId);
   const role = input.role ?? general.defaultRole;
+  if (!(await isAssignableRole(role))) {
+    return { status: 400, body: { error: "Unknown role" } };
+  }
   const passwordHash = await hashPassword(password);
   const id = randomUUID();
   await (
@@ -136,7 +140,7 @@ export async function createUser(
 }
 
 export const PatchUserSchema = z.object({
-  role: z.enum(USER_ROLE_VALUES).optional(),
+  role: z.string().regex(STORED_ROLE_ID).optional(),
   roleId: z.string().min(1).max(80).optional(),
   grants: z.array(z.string().regex(CAPABILITY_ID_PATTERN)).max(250).optional(),
   denies: z.array(z.string().regex(CAPABILITY_ID_PATTERN)).max(250).optional(),
@@ -176,8 +180,13 @@ export async function updateUser(
     }
   }
 
+  if (role && !(await isAssignableRole(role))) {
+    return { status: 400, body: { error: "Unknown role" } };
+  }
+
   let customRoleId: string | null = null;
-  if (roleId && !(USER_ROLE_VALUES as readonly string[]).includes(roleId)) {
+  const assignable = new Set((await listAssignableRoles()).map((entry) => entry.id));
+  if (roleId && !assignable.has(roleId)) {
     const found = await db.query<{ id: string }>(
       "SELECT id FROM access_roles WHERE id = ? AND site_id = ? LIMIT 1",
       [roleId, actor.siteId],
@@ -186,8 +195,10 @@ export async function updateUser(
     customRoleId = roleId;
   }
 
+  const storedRole = role ?? (roleId && assignable.has(roleId) ? roleId : undefined);
+
   let targetRole: string | undefined;
-  if (role || accessChanged) {
+  if (storedRole || accessChanged) {
     const target = (
       await db.query<{ role: string }>("SELECT role FROM users WHERE id = ? AND site_id = ? LIMIT 1", [
         targetUserId,
@@ -197,9 +208,9 @@ export async function updateUser(
     if (!target) return { status: 404, body: { error: "User not found" } };
     targetRole = target.role;
     if (
-      role &&
+      storedRole &&
       target.role === "administrator" &&
-      role !== "administrator" &&
+      storedRole !== "administrator" &&
       (await countAdministrators(db, actor.siteId)) <= 1
     ) {
       return { status: 400, body: { error: "Cannot demote the last administrator" } };
@@ -208,9 +219,9 @@ export async function updateUser(
 
   const fields: string[] = [];
   const values: (string | number | boolean | null)[] = [];
-  if (role) {
+  if (storedRole) {
     fields.push("role = ?");
-    values.push(role);
+    values.push(storedRole);
   }
   if (displayName) {
     fields.push("display_name = ?");
@@ -230,7 +241,7 @@ export async function updateUser(
     const current = await getEffectiveAccess(
       targetUserId,
       actor.siteId,
-      role ?? targetRole ?? "subscriber",
+      storedRole ?? targetRole ?? "subscriber",
       db,
     );
     await db.transaction(async (tx) => {
@@ -262,7 +273,7 @@ export async function updateUser(
       { siteId: actor.siteId, source: "http", actor: { userId: actor.userId, role: actor.role } },
     );
   }
-  if (role) audit(actor, "user.role_changed", targetUserId, `role=${role}`);
+  if (storedRole) audit(actor, "user.role_changed", targetUserId, `role=${storedRole}`);
   await emitUserEvent("user.updated", targetUserId, actor.siteId);
   return { status: 200, body: { ok: true } };
 }
