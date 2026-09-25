@@ -499,6 +499,28 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@26.2.0)(jsdom@30.0.1)(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(tsx@4.23.12))
 
+  plugins/ecommerce:
+    dependencies:
+      '@justflows/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+    devDependencies:
+      '@justflows/admin-bridge':
+        specifier: workspace:*
+        version: link:../../packages/admin-bridge
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@types/node@26.2.0)(jsdom@30.0.1)(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(tsx@4.23.12))
+
   plugins/hello-world:
     dependencies:
       '@justflows/sdk':

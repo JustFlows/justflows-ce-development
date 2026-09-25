@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useT } from "../../i18n/I18nProvider";
 import MediaImageField from "../MediaImageField";
 import MegaRegionEditor from "./MegaRegionEditor";
@@ -7,10 +8,7 @@ import { emptyLinksRegion, emptyPromoRegion } from "./mega-region";
 const BUTTON_SIZES = ["sm", "md", "lg"] as const;
 const isButtonPreset = (preset: string | undefined) => Boolean(preset && preset.startsWith("button"));
 
-// Mirrors the host's `USER_ROLE_VALUES` (rbac.ts). The admin app keeps its own
-// role literals per screen rather than sharing a module — see UsersPage /
-// SettingsPage — so this list is local by that established convention.
-const VISIBILITY_ROLES = ["administrator", "editor", "author", "contributor", "subscriber"] as const;
+const CORE_VISIBILITY_ROLES = ["administrator", "editor", "author", "contributor", "subscriber"];
 const DEVICES: Array<"desktop" | "tablet" | "mobile"> = ["desktop", "tablet", "mobile"];
 const BADGE_TONES = ["info", "success", "warning", "danger"] as const;
 
@@ -34,6 +32,22 @@ export default function MenuItemDrawer({
   onClose,
 }: MenuItemDrawerProps) {
   const { t } = useT();
+  const [visibilityRoles, setVisibilityRoles] = useState(CORE_VISIBILITY_ROLES);
+
+  useEffect(() => {
+    fetch("/api/roles")
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json() as {
+          roles?: Array<{ id: string; builtIn?: boolean; pluginId?: string | null }>;
+        };
+        const assignable = (data.roles ?? [])
+          .filter((role) => role.builtIn || role.pluginId)
+          .map((role) => role.id);
+        if (assignable.length > 0) setVisibilityRoles(assignable);
+      })
+      .catch(() => undefined);
+  }, []);
 
   function set(updater: (draft: MenuItem) => MenuItem) {
     onChange(updateItem(items, item.id, updater));
@@ -345,7 +359,7 @@ export default function MenuItemDrawer({
         <div className="jf-field">
           <span className="jf-field__label">{t("menus.visibility.roles")}</span>
           <div className="jf-filterbar">
-            {VISIBILITY_ROLES.map((role) => (
+            {[...new Set([...visibilityRoles, ...(visibility.roles ?? [])])].map((role) => (
               <button
                 key={role}
                 type="button"

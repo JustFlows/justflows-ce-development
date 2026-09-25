@@ -26,6 +26,7 @@ import type { App } from "@justflows/core";
 import { PluginHttpRouter } from "./http-router.js";
 import { PluginCookieRegistry } from "./cookie-registry.js";
 import { PluginCapabilityRegistry } from "./capability-registry.js";
+import { PluginRoleRegistry } from "./role-registry.js";
 import { PluginDiagnosticRegistry } from "./diagnostic-registry.js";
 import { PluginPatternRegistry } from "./pattern-registry.js";
 
@@ -157,6 +158,7 @@ export class PluginLoader {
   readonly httpRouter: PluginHttpRouter;
   readonly cookieRegistry: PluginCookieRegistry;
   readonly capabilityRegistry: PluginCapabilityRegistry;
+  readonly roleRegistry: PluginRoleRegistry;
   readonly diagnosticRegistry: PluginDiagnosticRegistry;
   readonly patternRegistry: PluginPatternRegistry;
 
@@ -186,6 +188,7 @@ export class PluginLoader {
       cookieOverrides?: (siteId: string) => Promise<Record<string, CookieCategory>>;
       cookieRegistry?: PluginCookieRegistry;
       capabilityRegistry?: PluginCapabilityRegistry;
+      roleRegistry?: PluginRoleRegistry;
       diagnosticRegistry?: PluginDiagnosticRegistry;
       patternRegistry?: PluginPatternRegistry;
     },
@@ -227,6 +230,7 @@ export class PluginLoader {
     this.httpRouter = options?.httpRouter ?? new PluginHttpRouter();
     this.cookieRegistry = options?.cookieRegistry ?? new PluginCookieRegistry();
     this.capabilityRegistry = options?.capabilityRegistry ?? new PluginCapabilityRegistry();
+    this.roleRegistry = options?.roleRegistry ?? new PluginRoleRegistry();
     this.diagnosticRegistry = options?.diagnosticRegistry ?? new PluginDiagnosticRegistry();
     this.patternRegistry = options?.patternRegistry ?? new PluginPatternRegistry();
     const coreCookies = options?.coreCookies ?? [];
@@ -373,6 +377,7 @@ export class PluginLoader {
     this.httpRouter.removePlugin(pluginId);
     this.cookieRegistry.removePlugin(pluginId);
     this.capabilityRegistry.removePlugin(pluginId);
+    this.roleRegistry.removePlugin(pluginId);
     this.diagnosticRegistry.removePlugin(pluginId);
     this.patternRegistry.removePlugin(pluginId);
     this.jobsCleanup?.(pluginId);
@@ -440,6 +445,9 @@ export class PluginLoader {
       permissions,
       capabilities: {
         register: (definition) => this.capabilityRegistry.register(pluginId, definition),
+      },
+      roles: {
+        register: (definition) => this.roleRegistry.register(pluginId, definition),
       },
       diagnostics: {
         register: (check) => {

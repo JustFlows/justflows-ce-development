@@ -15,6 +15,8 @@ interface User {
 
 const ROLES = ["administrator", "editor", "author", "contributor", "subscriber"];
 
+type InviteRole = { id: string; name: string; builtIn?: boolean; pluginId?: string | null };
+
 export default function UsersPage() {
   // Inviting, editing and removing are all administrator-only on the server;
   // an editor can only read this list, so those controls simply aren't here
@@ -24,11 +26,23 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [showInvite, setShowInvite] = useState(false);
   const [invite, setInvite] = useState({ email: "", role: "subscriber" });
+  const [inviteRoles, setInviteRoles] = useState<InviteRole[]>(ROLES.map((id) => ({ id, name: id, builtIn: true })));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [removingId, setRemovingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/roles")
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json() as { roles?: InviteRole[] };
+        const assignable = (data.roles ?? []).filter((role) => role.builtIn || role.pluginId);
+        if (assignable.length > 0) setInviteRoles(assignable);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     fetch("/api/users")
@@ -133,7 +147,7 @@ export default function UsersPage() {
                   value={invite.role}
                   onChange={(e) => setInvite((i) => ({ ...i, role: e.target.value }))}
                 >
-                  {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                  {inviteRoles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
             </div>

@@ -25,7 +25,6 @@ import { localizePublicPath } from "../i18n/locales.js";
 import { getActiveLocaleCodes } from "../i18n/languages-db.js";
 import { getSiteId } from "../themes/themes-db.js";
 import { sanitizeNavUrl } from "./nav-url.js";
-import type { UserRole } from "../auth/rbac.js";
 import type { BlockNode } from "../runtime/types.js";
 
 export type MenuItemType = string;
@@ -189,7 +188,7 @@ export interface MenuItemVisibility {
   /** "any" (default, no gate) | require a signed-out or signed-in visitor. */
   auth?: "any" | "guest" | "authenticated";
   /** Any of these roles may see the item; empty/absent = no role gate. */
-  roles?: UserRole[];
+  roles?: string[];
   /** Any of these locale codes; empty/absent = every locale. */
   locales?: string[];
   /** Presentation-only hint (not server-enforced, see resolveMenuItems). */
@@ -665,7 +664,7 @@ async function isItemVisible(
 
   if (visibility.roles?.length) {
     if (context.authState !== "authenticated" || !context.role) return false;
-    if (!visibility.roles.includes(context.role as UserRole)) return false;
+    if (!visibility.roles.includes(context.role)) return false;
   }
 
   if (visibility.locales?.length && !visibility.locales.includes(locale)) return false;

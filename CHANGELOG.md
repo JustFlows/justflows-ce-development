@@ -9,6 +9,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Shop registers a Customer role.** Activating the Shop plugin adds a `customer` user role with no administration access. It appears in New User Default Role, user invites, and the user editor, and can be the role new registrations receive. Deactivating Shop removes it from those lists.
+
 - **Inline images, footnotes, and math formulas in the paragraph/quote editor.**
   The inline rich-text toolbar gained an image button (upload a file, paste a
   URL, or pick from the media library), strikethrough, and a "More formats"

@@ -7,13 +7,14 @@ import {
   formatPhpDate,
   isValidTimeZone,
 } from "../i18n/datetime-format.js";
-import { isUserRole, USER_ROLE_VALUES, type UserRole } from "../auth/rbac.js";
+import { listAssignableRoles } from "../auth/assignable-roles.js";
+import { USER_ROLE_VALUES } from "../auth/rbac.js";
 import { getSiteId, getSiteSetting } from "./site-settings.js";
 
 export interface GeneralSettings {
   adminEmail: string;
   usersCanRegister: boolean;
-  defaultRole: UserRole;
+  defaultRole: string;
   /** Whether the emailed self-service "forgot password" flow is offered. */
   passwordResetEnabled: boolean;
   /**
@@ -21,7 +22,7 @@ export interface GeneralSettings {
    * default. A non-empty list restricts it (an administrator wanting staff to
    * recover by email while subscribers cannot, or the reverse).
    */
-  passwordResetRoles: UserRole[];
+  passwordResetRoles: string[];
   timezone: string;
   dateFormat: string;
   timeFormat: string;
@@ -99,17 +100,19 @@ export async function getGeneralSettings(siteId?: string | null): Promise<Genera
   const timezone = asString(timezoneRaw, DEFAULT_TIMEZONE);
   const defaultRole = asString(defaultRoleRaw, "subscriber");
   const startOfWeek = asInt(startOfWeekRaw, DEFAULT_START_OF_WEEK);
+  const assignable = new Set((await listAssignableRoles()).map((role) => role.id));
   const passwordResetRoles = Array.isArray(passwordResetRolesRaw)
-    ? passwordResetRolesRaw.filter((r): r is UserRole => isUserRole(String(r)))
+    ? passwordResetRolesRaw.filter((role): role is string => assignable.has(String(role)))
     : [];
+  const coversEveryCoreRole = USER_ROLE_VALUES.every((role) => passwordResetRoles.includes(role));
 
   return {
     adminEmail: asString(storedEmail, "") || (await fallbackAdminEmail()),
     usersCanRegister: asBool(usersCanRegister, false),
-    defaultRole: isUserRole(defaultRole) ? defaultRole : "subscriber",
+    defaultRole: assignable.has(defaultRole) ? defaultRole : "subscriber",
     // Absent setting means "on": recovery is a safety net you have to opt out of.
     passwordResetEnabled: asBool(passwordResetEnabledRaw, true),
-    passwordResetRoles: passwordResetRoles.length === USER_ROLE_VALUES.length ? [] : passwordResetRoles,
+    passwordResetRoles: coversEveryCoreRole ? [] : passwordResetRoles,
     timezone: isValidTimeZone(timezone) ? timezone : DEFAULT_TIMEZONE,
     dateFormat: asString(dateFormat, DEFAULT_DATE_FORMAT),
     timeFormat: asString(timeFormat, DEFAULT_TIME_FORMAT),

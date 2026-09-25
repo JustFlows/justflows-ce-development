@@ -13,6 +13,29 @@ import { useT } from "../../../i18n/I18nProvider";
 
 const ROLE_OPTIONS = ["subscriber", "contributor", "author", "editor", "administrator"] as const;
 
+type AssignableRoleOption = { id: string; label: string };
+
+const CORE_ROLE_OPTIONS: AssignableRoleOption[] = ROLE_OPTIONS.map((id) => ({ id, label: id }));
+
+function rolesFromPayload(data: SettingsPayload | null | undefined): AssignableRoleOption[] {
+  const raw = data?.assignable_roles;
+  if (!Array.isArray(raw)) return CORE_ROLE_OPTIONS;
+  const parsed = raw.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const record = entry as { id?: unknown; label?: unknown };
+    const id = typeof record.id === "string" ? record.id : "";
+    const label = typeof record.label === "string" && record.label ? record.label : id;
+    return id ? [{ id, label }] : [];
+  });
+  return parsed.length > 0 ? parsed : CORE_ROLE_OPTIONS;
+}
+
+function roleOptionLabel(role: AssignableRoleOption, translate: (key: string) => string): string {
+  const key = `settings.membership.roles.${role.id}`;
+  const translated = translate(key);
+  return translated === key ? role.label : translated;
+}
+
 interface MaintenanceState {
   enabled: boolean;
   heading: string;
@@ -106,6 +129,7 @@ type SettingsPayload = Record<string, unknown> & {
   date_format?: string;
   time_format?: string;
   mail_transports?: Array<{ id: string; label: string }>;
+  assignable_roles?: Array<{ id?: unknown; label?: unknown }>;
 };
 
 function generalFromPayload(data: SettingsPayload, fallbackName: string): GeneralState {
@@ -165,6 +189,9 @@ export default function SettingsPage() {
   const prefetched = initialJson<SettingsPayload>("/api/settings");
   const initialGeneral = prefetched ? generalFromPayload(prefetched, t("common.mySite")) : EMPTY;
   const [general, setGeneral] = useState<GeneralState>(initialGeneral);
+  const [roleOptions, setRoleOptions] = useState<AssignableRoleOption[]>(() =>
+    rolesFromPayload(prefetched),
+  );
   const [languages, setLanguages] = useState<LanguageOption[]>(prefetched?.languages ?? []);
   const [timezones, setTimezones] = useState<string[]>(
     prefetched?.timezones?.length ? prefetched.timezones : ["UTC"],
@@ -209,6 +236,7 @@ export default function SettingsPage() {
         const dateFormat = data.date_format ?? "F j, Y";
         const timeFormat = data.time_format ?? "g:i a";
         setGeneral(generalFromPayload(data, t("common.mySite")));
+        setRoleOptions(rolesFromPayload(data));
         setLanguages(data.languages ?? []);
         setTimezones(
           Array.isArray(data.timezones) && data.timezones.length > 0 ? data.timezones : ["UTC"],
@@ -670,9 +698,12 @@ export default function SettingsPage() {
               value={general.defaultRole}
               onChange={(e) => patch({ defaultRole: e.target.value })}
             >
-              {ROLE_OPTIONS.map((role) => (
-                <option key={role} value={role}>
-                  {t(`settings.membership.roles.${role}`)}
+              {(roleOptions.some((role) => role.id === general.defaultRole)
+                ? roleOptions
+                : [{ id: general.defaultRole, label: general.defaultRole }, ...roleOptions]
+              ).map((role) => (
+                <option key={role.id} value={role.id}>
+                  {roleOptionLabel(role, t)}
                 </option>
               ))}
             </select>

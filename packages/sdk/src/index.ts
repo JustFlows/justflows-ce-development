@@ -125,6 +125,8 @@ export type {
   PluginModule,
   PluginCacheApi,
   PluginCapabilitiesApi,
+  PluginRoleDefinition,
+  PluginRolesApi,
   PluginHttpApi,
   PluginHttpMethod,
   PluginHttpRequest,

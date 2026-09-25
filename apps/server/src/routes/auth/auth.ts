@@ -77,18 +77,19 @@ router.get("/me", requireSession, async (req, res) => {
 /**
  * Where the browser should go once authenticated.
  *
- * A subscriber has nothing in the admin app and belongs on the site itself.
+ * A subscriber, or a plugin role such as Shop's customer, has nothing in the
+ * admin app and belongs on the site itself.
  * Everyone else lands on the admin app — at whatever path the administrator
  * moved it to (issue #51). The pre-session `/login` and `/register` pages have
  * no way to know that path on their own, and it should not be handed to anyone
  * who has not signed in, so it is resolved here and returned in the response.
  */
 async function postAuthRedirect(role: string, userId?: string, siteId?: string): Promise<string> {
-  if (role === "subscriber" && userId && siteId) {
+  if (userId && siteId) {
     const { getEffectiveAccess } = await import("../../lib/auth/access-policy.js");
     const access = await getEffectiveAccess(userId, siteId, role);
     if (!access.capabilities.some((capability) => capability !== "content:read")) return "/";
-  } else if (role === "subscriber") return "/";
+  } else if (role === "subscriber" || role === "customer") return "/";
   return (await getAdminPathConfig()).path;
 }
 

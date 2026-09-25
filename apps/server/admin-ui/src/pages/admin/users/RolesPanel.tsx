@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useT } from "../../../i18n/I18nProvider";
 
-type Role = { id: string; name: string; description?: string | null; builtIn: boolean; capabilities: string[] };
+type Role = { id: string; name: string; description?: string | null; builtIn: boolean; pluginId?: string | null; capabilities: string[] };
 type Capability = { id: string; label?: string; group?: string; description?: string; pluginId?: string | null };
 const NEW_ROLE: Role = { id: "new", name: "", description: "", builtIn: false, capabilities: [] };
 const title = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
@@ -77,13 +77,16 @@ export default function RolesPanel() {
       {error && <div className="jf-alert jf-alert--error jf-roles__alert" role="alert">{error}</div>}
       <div className="jf-card__body--flush">
         {loading ? <p className="jf-roles__state">{t("users.roles.loading")}</p> : (
-          <div className="jf-roles__list">{roles.map((role) => (
+          <div className="jf-roles__list">{roles.map((role) => {
+            const locked = role.builtIn || Boolean(role.pluginId);
+            return (
             <div className="jf-roles__item" key={role.id}>
               <div className="jf-roles__identity"><strong>{title(role.name)}</strong>{role.builtIn && <span className="jf-badge">{t("users.roles.builtIn")}</span>}<span className="jf-roles__count">{t("users.roles.capabilitiesCount", { count: role.capabilities.length })}</span></div>
               <p>{role.description || (role.builtIn ? t("users.roles.managedByJustflows") : t("users.roles.customAccessRole"))}</p>
-              {!role.builtIn && <div className="jf-roles__actions"><button className="jf-btn jf-btn--quiet jf-btn--sm" type="button" onClick={() => setEditing({ ...role })}>{t("users.roles.editRole")}</button><button className="jf-btn jf-btn--quiet jf-btn--sm jf-roles__delete" type="button" onClick={() => void remove(role)}>{t("common.delete")}</button></div>}
+              {!locked && <div className="jf-roles__actions"><button className="jf-btn jf-btn--quiet jf-btn--sm" type="button" onClick={() => setEditing({ ...role })}>{t("users.roles.editRole")}</button><button className="jf-btn jf-btn--quiet jf-btn--sm jf-roles__delete" type="button" onClick={() => void remove(role)}>{t("common.delete")}</button></div>}
             </div>
-          ))}</div>
+            );
+          })}</div>
         )}
       </div>
       {editing && (

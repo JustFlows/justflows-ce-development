@@ -39,6 +39,7 @@ describe("MIGRATION_ORDER", () => {
       "0031_comment_spam",
       "0032_comment_trash_repair",
       "0033_spam_term_source",
+      "0034_user_role_text",
     ]);
   });
 
@@ -53,6 +54,7 @@ describe("MIGRATION_ORDER", () => {
     { name: "0016_user_preferences", marker: /CREATE TABLE IF NOT EXISTS user_preferences/i },
     { name: "0017_password_resets", marker: /CREATE TABLE IF NOT EXISTS password_resets/i },
     { name: "0018_access_control", marker: /CREATE TABLE IF NOT EXISTS access_roles/i },
+    { name: "0034_user_role_text", marker: /varchar\(32\)/i },
     { name: "0019_device_sessions", marker: /CREATE TABLE IF NOT EXISTS user_sessions/i },
     { name: "0020_email_delivery", marker: /CREATE TABLE IF NOT EXISTS email_deliveries/i },
     { name: "0022_email_templates", marker: /CREATE TABLE IF NOT EXISTS email_template_versions/i },

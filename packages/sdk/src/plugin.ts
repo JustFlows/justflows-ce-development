@@ -497,6 +497,24 @@ export interface PluginCapabilitiesApi {
   register(definition: UserCapabilityDefinition): void;
 }
 
+/**
+ * A user role this plugin contributes while it is active. The id is stored on
+ * `users.role` (for example Shop's `customer`). It must not replace a core role.
+ */
+export interface PluginRoleDefinition {
+  /** Lowercase id, 2–32 characters: letters, digits, and hyphens. */
+  readonly id: string;
+  readonly label: string;
+  readonly description?: string;
+  /** Capabilities granted to this role. Empty means no administration access. */
+  readonly capabilities?: readonly UserCapability[];
+}
+
+export interface PluginRolesApi {
+  /** Register a user role for as long as this plugin is active. */
+  register(definition: PluginRoleDefinition): void;
+}
+
 /** The signed-in user behind a plugin request, when there is one. */
 export interface PluginHttpSession {
   userId: string;
@@ -963,6 +981,7 @@ export interface PluginContext {
   readonly runtime: JustflowsRuntimeVersions;
   readonly permissions: ReadonlySet<PluginPermission>;
   readonly capabilities: PluginCapabilitiesApi;
+  readonly roles: PluginRolesApi;
   readonly diagnostics: PluginDiagnosticsApi;
 
   /**

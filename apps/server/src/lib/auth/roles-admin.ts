@@ -68,6 +68,15 @@ export async function listRoles(siteId: string): Promise<{ roles: unknown[]; cap
     "SELECT id, name, description, capabilities_json, created_at, updated_at FROM access_roles WHERE site_id = ? ORDER BY name",
     [siteId],
   );
+  const { getPluginLoader } = await import("../plugins/plugin-runtime.js");
+  const pluginRoles = (getPluginLoader()?.roleRegistry.all() ?? []).map((role) => ({
+    id: role.id,
+    name: role.label,
+    description: role.description ?? "Registered by a plugin",
+    builtIn: false,
+    pluginId: role.pluginId,
+    capabilities: [...role.capabilities],
+  }));
   const builtIn = Object.entries(ROLE_CAPABILITIES).map(([id, capabilities]) => ({
     id,
     name: id,
@@ -86,6 +95,7 @@ export async function listRoles(siteId: string): Promise<{ roles: unknown[]; cap
   return {
     roles: [
       ...builtIn,
+      ...pluginRoles,
       ...custom.map((role) => ({
         ...role,
         builtIn: false,

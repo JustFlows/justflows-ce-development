@@ -1,13 +1,5 @@
-import { pgTable, uuid, varchar, text, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, text, timestamp } from "drizzle-orm/pg-core";
 import { sites } from "./sites.js";
-
-export const userRoleEnum = pgEnum("user_role", [
-  "administrator",
-  "editor",
-  "author",
-  "contributor",
-  "subscriber",
-]);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -18,7 +10,7 @@ export const users = pgTable("users", {
   username: varchar("username", { length: 60 }).notNull(),
   displayName: varchar("display_name", { length: 255 }).notNull(),
   passwordHash: text("password_hash").notNull(),
-  role: userRoleEnum("role").notNull().default("subscriber"),
+  role: varchar("role", { length: 32 }).notNull().default("subscriber"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

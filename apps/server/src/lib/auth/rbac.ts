@@ -21,6 +21,9 @@ export function isUserRole(value: string): value is UserRole {
   return (USER_ROLE_VALUES as readonly string[]).includes(value);
 }
 
+/** Id stored on `users.role`: a core role or a plugin-registered role. */
+export const STORED_ROLE_ID = /^[a-z][a-z0-9-]{1,31}$/;
+
 /** Roles that can access the admin content area (read). */
 export const CONTENT_READ_ROLES = [
   ROLES.ADMIN,

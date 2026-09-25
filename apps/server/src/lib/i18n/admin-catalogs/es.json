@@ -2544,7 +2544,8 @@
         "contributor": "Colaborador",
         "author": "Autor",
         "editor": "Editor",
-        "administrator": "Administrador"
+        "administrator": "Administrador",
+        "customer": "Cliente"
       }
     },
     "locale": {
