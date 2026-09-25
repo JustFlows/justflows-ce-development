@@ -167,6 +167,11 @@ export const AdminMenuItemSchema = z.object({
   /** Match the path exactly instead of as a prefix. */
   end: z.boolean().optional(),
   /**
+   * When false, the page stays reachable but is left out of the admin nav.
+   * Use it for a screen opened by a button on another plugin page.
+   */
+  listed: z.boolean().optional(),
+  /**
    * CMS type slug. When set, the generic plugin host lists every content row
    * of that type on this page (for example Shop Products → `product`).
    */
@@ -258,6 +263,34 @@ export const PluginAdminAppSchema = z.object({
     .refine((v) => !v.split("/").includes(".."), "Admin dir must not contain '..'")
     .optional(),
   routes: z.array(PluginAdminRouteSchema).min(1).max(20),
+  /**
+   * Admin UI catalogs, keyed by locale code. Each value is a `.json` file
+   * relative to `dir` (for example `locales/nl.json`). The host serves it at
+   * `/ext/<pluginId>/admin/<path>` and passes those URLs to the frame as
+   * `context.catalogs`.
+   */
+  locales: z
+    .record(
+      z
+        .string()
+        .regex(/^[a-z]{2,8}(?:-[A-Za-z0-9]{2,8}){0,2}$/, "Locale code must look like en or nl-NL"),
+      z
+        .string()
+        .min(1)
+        .max(160)
+        .regex(/^[a-zA-Z0-9][a-zA-Z0-9._/-]*\.json$/, "Locale file must be a relative .json path")
+        .refine((value) => !value.split("/").includes(".."), "Locale file must not contain '..'"),
+    )
+    .refine((value) => Object.keys(value).length <= 20, "At most 20 locale files")
+    .optional(),
+}).superRefine((app, ctx) => {
+  if (!app.locales?.["en"]) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["locales", "en"],
+      message: "An admin app must declare an English catalog at locales.en (for example locales/en.json). It is the fallback for every other locale.",
+    });
+  }
 });
 
 /**

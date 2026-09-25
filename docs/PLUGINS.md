@@ -198,6 +198,10 @@ route, or `if (pluginId === …)` for it.
 ],
 "adminApp": {
   "dir": "admin",                       // default "admin"; relative, may be "dist/admin"
+  "locales": {                          // required; paths are relative to dir
+    "en": "locales/en.json",            // required fallback catalog
+    "nl": "locales/nl.json"             // optional extra languages
+  },
   "routes": [
     { "entry": "index.html", "title": "Forms" }   // no `path` → the namespace root
   ]
@@ -224,7 +228,7 @@ On activation the host:
 | plugin → host | `ready`                                           | frame mounted; host replies with `context`                                      |
 | plugin → host | `resize { height }`                               | host sizes the iframe to fit                                                    |
 | plugin → host | `navigate { path }`                               | host routes to another `/admin/…` page (or opens an `http(s)` URL in a new tab) |
-| host → plugin | `context { locale, adminBase, routePath, theme }` | sent on `ready` and on load                                                     |
+| host → plugin | `context { locale, adminBase, routePath, theme, catalogs }` | sent on `ready` and on load. `catalogs` maps each `adminApp.locales` code to its `/ext/…/admin/…json` URL |
 | host → plugin | `route { routePath }`                             | host URL changed under the plugin's path — follow it in the frame's own router  |
 
 The frame is same-origin, so the plugin reads the CSRF cookie itself and calls
@@ -235,6 +239,15 @@ module, exactly as for any plugin; only the screen moved into the frame.
 Rules: `dir` and `entry` are relative, no `..`; `entry` must be `.html`; each
 `path` is relative to `/admin/plugins/<your plugin id>` (omit it for the root);
 at most 20 routes. Ship the `dir` inside your `.jfpkg`.
+
+**Locales are part of the manifest.** An `adminApp` must declare `locales.en`.
+That English file is the default catalog: the frame uses it whenever the admin
+language has no catalog, and for any string missing from another language. Add
+further codes (`nl`, `de`, `fr`, `es`, …) only when you ship those files. Paths
+are relative to `dir`. Each file is a flat JSON object of string values, for
+example `{ "save": "Save" }`. A minimal English catalog may contain only the
+strings the screen shows. CI rejects a plugin manifest that ships `adminApp`
+without `locales.en`, and rejects a declared path whose JSON file is missing.
 
 ## Ship your own stylesheet
 
@@ -356,23 +369,23 @@ page such as `orders` does not keep the parent tab selected.
 The host loads `GET /ext/{pluginId}/setup` only on the plugin's `setupPath`.
 Other `adminMenu` paths from that plugin get a landing page, not the wizard.
 When more than one menu path could match the URL, the longest path wins.
-Set `contentType` on a menu item to list every CMS entry of that type on the
-page (Shop Products uses `product`). New entries open
-`/admin/content/new?type=…`; existing rows open `/admin/content/{id}`. Shop
-serves product commerce data from `GET`/`PUT /ext/justflows.shop/catalog/{contentId}`
-(`?group=` is the translation group) and the content editor (create and edit)
-shows those fields on type `product`. Creating a `product` content row also
-inserts `shop_products` via `content.created`, keyed by `translationGroupId` so
-every locale shares SKU, prices, and stock. Translating a product empties
-title, excerpt, and SEO fields, copies the tagged layout, and does not insert a
-second commerce row. The Default theme Product detail page-builder layout uses
-`{{price}}`, `{{sku}}`, `{{title}}`, `{{excerpt}}`, `{{attributes}}`, and related
-tags; Shop fills them on `content.blocks` (before HTML render) and
-`content.render`. Shop also registers storefront blocks (`justflows.shop.gallery`,
-buy box, product list, reviews, and the rest) used by the Default theme product
-patterns and the **Ecommerce storefront** homepage pattern.
-The layout is seeded only on the original locale when the
-canvas is empty.
+Set `contentType` on a menu item to list that type on the page, one row per
+translation group in the site's default language. Other languages are edited
+on the content item. New entries open `/admin/content/new?type=…`; existing rows open
+`/admin/content/{id}`. Give a second menu item the same `contentType`,
+`listed: false`, and an `adminApp` route on that path, and the content editor
+embeds that admin app while the row is open. The host passes `contentId` and
+`translationGroupId` on the admin bridge and posts `save` when the editor
+saves. The plugin can `reportSections` so the editor lists those entries in
+its menu (Images, Pricing, Inventory, and the rest) and posts `section` when
+the operator picks one. Without sections, the editor shows one item using the
+menu label. The plugin reads and writes its own HTTP routes. Creating a content row
+fires `content.created`. A plugin that needs a blank translation (empty title,
+excerpt, and fields, shared commerce data) filters `content.translationSeed`.
+A plugin that wants the page builder for its type filters `content.editor` and
+appends the type slug on `content.patternTypes`. Merge-tag previews in the
+builder come from `content.mergeTags`, which the editor loads at
+`GET /api/content/{id}/merge-tags`.
 
 ### Revalidate after a config write
 
@@ -431,7 +444,7 @@ Store passwords with `ctx.secrets` (encrypted, never returned on GET — use
 `has()`). Probe the current Justflows database with `ctx.databases.probeShared()`,
 or a separate database with `ctx.databases.probe(...)`. Remote hosts require
 `network:outbound`. Create plugin-owned tables with `ctx.databases.ensureSchema()`;
-names are prefixed with the plugin slug (`justflows.shop` → `shop_products`) so
+names are prefixed with the plugin slug (`acme.forms` → `forms_entries`) so
 an extension cannot create core tables. Drop them from `deleteData()` with
 `ctx.databases.dropSchema()`. Changing topology after setup is a
 migration, not a later settings toggle.

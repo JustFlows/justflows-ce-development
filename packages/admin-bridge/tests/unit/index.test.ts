@@ -109,6 +109,51 @@ describe("createAdminBridge", () => {
     );
   });
 
+  it("saves when the host posts save", () => {
+    const bridge = createAdminBridge();
+    const onSave = vi.fn();
+    bridge.onSave(onSave);
+    hostSend({ type: "save", requestId: "save-1" });
+    expect(onSave).toHaveBeenCalledWith("save-1");
+    bridge.reportSaved("save-1", false, "nope");
+    expect(parentPost).toHaveBeenCalledWith(
+      { source: "justflows-admin-plugin", type: "saved", requestId: "save-1", ok: false, error: "nope" },
+      origin,
+    );
+    bridge.reportDirty(true);
+    expect(parentPost).toHaveBeenCalledWith(
+      { source: "justflows-admin-plugin", type: "dirty", dirty: true },
+      origin,
+    );
+  });
+
+  it("publishes editor sections and hears the host selection", () => {
+    const bridge = createAdminBridge();
+    const onSection = vi.fn();
+    bridge.onSection(onSection);
+    bridge.reportSections([
+      { id: "images", label: "Images" },
+      { id: "pricing", label: "Pricing" },
+    ]);
+    expect(parentPost).toHaveBeenCalledWith(
+      {
+        source: "justflows-admin-plugin",
+        type: "sections",
+        sections: [
+          { id: "images", label: "Images" },
+          { id: "pricing", label: "Pricing" },
+        ],
+      },
+      origin,
+    );
+    hostSend({ type: "section", sectionId: "pricing" });
+    expect(onSection).toHaveBeenCalledWith("pricing");
+    expect(bridge.context()?.sectionId).toBeUndefined();
+    hostSend({ type: "context", context: { locale: "en", sectionId: "images" } });
+    hostSend({ type: "section", sectionId: "inventory" });
+    expect(bridge.context()?.sectionId).toBe("inventory");
+  });
+
   it("stops listening after destroy", () => {
     const bridge = createAdminBridge();
     const onContext = vi.fn();

@@ -11,7 +11,7 @@ import BlockLayoutPanel from "./BlockLayoutPanel";
 import ReusablePanel, { type ReusableItem } from "./ReusablePanel";
 import { GRID_BLOCK_TYPE } from "./grid";
 import MediaImageField from "../MediaImageField";
-import { PRODUCT_TAG_INSERTS } from "../../lib/product-tags";
+import { useMergeTags } from "../../lib/merge-tags";
 
 const GALLERY_LAYOUTS = ["grid", "masonry", "carousel", "slideshow", "list"] as const;
 type GalleryLayoutValue = (typeof GALLERY_LAYOUTS)[number];
@@ -139,7 +139,6 @@ interface BlockInspectorProps {
   reusable?: ReusableItem[];
   onReloadReusable?: () => void;
   onConvertToReusable?: (ref: string) => void;
-  enableProductTags?: boolean;
 }
 
 export default function BlockInspector({
@@ -152,9 +151,9 @@ export default function BlockInspector({
   reusable = [],
   onReloadReusable,
   onConvertToReusable,
-  enableProductTags = false,
 }: BlockInspectorProps) {
   const { t } = useT();
+  const mergeTags = useMergeTags();
   const p = block.props;
   const set = (key: string, val: unknown) => {
     const next = { ...p, [key]: val };
@@ -170,18 +169,19 @@ export default function BlockInspector({
     set(key, `${current}${spacer}${tag}`);
   };
 
+  const tagKeys = mergeTags ? Object.keys(mergeTags) : [];
   const productTagBar = (key: string) =>
-    enableProductTags ? (
+    tagKeys.length > 0 ? (
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem", margin: "-0.35rem 0 0.75rem" }}>
-        {PRODUCT_TAG_INSERTS.map((item) => (
+        {tagKeys.map((name) => (
           <button
-            key={item.tag}
+            key={name}
             type="button"
             className="jf-btn jf-btn--ghost"
             style={{ fontSize: "0.7rem", padding: "0.15rem 0.4rem" }}
-            onClick={() => insertTag(key, item.tag)}
+            onClick={() => insertTag(key, `{{${name}}}`)}
           >
-            {item.tag}
+            {`{{${name}}}`}
           </button>
         ))}
       </div>
@@ -520,220 +520,59 @@ export default function BlockInspector({
         </p>
       </>;
       break;
-    case "justflows.shop.gallery":
-      fields = <>
-        {select("layout", t("builder.inspector.field.layout"), [
-          { value: "thumbs", label: t("builder.inspector.option.thumbnails") },
-          { value: "featured", label: t("builder.inspector.option.featuredPlusTwo") },
-          { value: "mosaic", label: t("builder.inspector.option.mosaic") },
-          { value: "single", label: t("builder.inspector.option.singleImage") },
-        ])}
-        <label style={fieldLabel}>{t("builder.inspector.field.images")}
-          <textarea
-            rows={6}
-            style={fieldInput}
-            value={linesOf(p.images, ["src", "alt"])}
-            onChange={(e) => set("images", parsePipes(e.target.value, ["src", "alt"]))}
-          />
-          <span style={fieldHint}>{t("builder.inspector.hint.imagePerLineUrlAlt")}</span>
-        </label>
-        <label style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
-          <input type="checkbox" checked={p.lightbox !== false} onChange={(e) => set("lightbox", e.target.checked)} />
-          {t("builder.inspector.field.lightbox")}
-        </label>
-      </>;
-      break;
-    case "justflows.shop.buy-box":
-      fields = <>
-        {textInput("title", t("builder.inspector.field.title"), "{{title}}", true)}
-        {textInput("price", t("builder.inspector.field.price"), "{{price}}", true)}
-        {textInput("comparePrice", t("builder.inspector.field.comparePrice"), "{{comparePrice}}", true)}
-        {textArea("description", t("builder.inspector.field.description"), 3, true)}
-        {textInput("meta", t("builder.inspector.field.meta"), "SKU {{sku}}", true)}
-        {textArea("attributes", t("builder.inspector.field.options"), 3, true)}
-        {textInput("cartLabel", t("builder.inspector.buyBox.addToCartLabel"))}
-        {textInput("cartUrl", t("builder.inspector.buyBox.addToCartUrl"), "/cart")}
-        {textInput("stockNote", t("builder.inspector.buyBox.stockNote"))}
-        {textInput("shipping", t("builder.inspector.buyBox.shippingLine"), "", true)}
-        {textInput("guarantee", t("builder.inspector.buyBox.guarantee"))}
-        <label style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
-          <input type="checkbox" checked={p.showRating === true} onChange={(e) => set("showRating", e.target.checked)} />
-          {t("builder.inspector.field.showRating")}
-        </label>
-        {p.showRating === true ? (
-          <>
-            <label style={fieldLabel}>{t("builder.inspector.field.average05")}
-              <input type="number" style={fieldInput} min={0} max={5} step={0.5} value={Number(p.ratingAverage) || 0} onChange={(e) => set("ratingAverage", Number(e.target.value))} />
-            </label>
-            {textInput("reviewCount", t("builder.inspector.buyBox.reviewCountLabel"))}
-          </>
-        ) : null}
-        <label style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
-          <input type="checkbox" checked={p.showWishlist === true} onChange={(e) => set("showWishlist", e.target.checked)} />
-          {t("builder.inspector.buyBox.showWishlistLink")}
-        </label>
-      </>;
-      break;
-    case "justflows.shop.breadcrumbs":
-      fields = <>
-        {textInput("current", t("builder.inspector.breadcrumbs.currentPage"), "{{title}}", true)}
-        <label style={fieldLabel}>{t("builder.inspector.breadcrumbs.trail")}
-          <textarea
-            rows={3}
-            style={fieldInput}
-            value={linesOf(p.items, ["name", "href"])}
-            onChange={(e) => set("items", parsePipes(e.target.value, ["name", "href"]))}
-          />
-          <span style={fieldHint}>{t("builder.inspector.hint.crumbPerLine")}</span>
-        </label>
-      </>;
-      break;
-    case "justflows.shop.highlights":
-      fields = <>
-        {textInput("heading", t("builder.inspector.field.heading"))}
-        <label style={fieldLabel}>{t("builder.inspector.field.items")}
-          <textarea
-            rows={5}
-            style={fieldInput}
-            value={Array.isArray(p.items) ? (p.items as string[]).join("\n") : String(p.items ?? "")}
-            onChange={(e) => set("items", e.target.value.split("\n").map((line) => line.replace(/^\s*[-*]\s*/, "").trim()).filter(Boolean))}
-          />
-        </label>
-      </>;
-      break;
-    case "justflows.shop.accordion":
-      fields = (
-        <label style={fieldLabel}>{t("builder.inspector.field.sections")}
-          <textarea
-            rows={10}
-            style={fieldInput}
-            value={sectionsToText(p.sections)}
-            onChange={(e) => set("sections", textToSections(e.target.value, t("common.details")))}
-          />
-          <span style={fieldHint}>{t("builder.inspector.hint.headingThenBullets")}</span>
-        </label>
+    default: {
+      const schema = catalogEntry?.schema;
+      const keys = schema ? Object.keys(schema) : [];
+      fields = keys.length === 0 ? (
+        <p style={{ color: "var(--jf-text-3)", fontSize: "0.8rem", margin: 0 }}>{t("builder.inspector.noSettingsForBlock")}</p>
+      ) : (
+        <>
+          {keys.map((key) => {
+            const field = schema?.[key];
+            const kind = field?.type ?? "string";
+            const label = key;
+            if (kind === "boolean") {
+              return (
+                <label key={key} style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
+                  <input type="checkbox" checked={p[key] === true} onChange={(e) => set(key, e.target.checked)} />
+                  {label}
+                </label>
+              );
+            }
+            if (kind === "number") {
+              return (
+                <label key={key} style={fieldLabel}>{label}
+                  <input type="number" style={fieldInput} value={Number(p[key]) || 0} onChange={(e) => set(key, Number(e.target.value))} />
+                </label>
+              );
+            }
+            if (Array.isArray(field?.options) && field.options.length > 0) {
+              return (
+                <label key={key} style={fieldLabel}>{label}
+                  <select style={fieldInput} value={String(p[key] ?? field.options[0])} onChange={(e) => set(key, e.target.value)}>
+                    {field.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </label>
+              );
+            }
+            if (kind === "textarea") {
+              const value = Array.isArray(p[key]) ? JSON.stringify(p[key], null, 2) : String(p[key] ?? "");
+              return (
+                <label key={key} style={fieldLabel}>{label}
+                  <textarea rows={4} style={fieldInput} value={value} onChange={(e) => set(key, e.target.value)} />
+                </label>
+              );
+            }
+            return (
+              <label key={key} style={fieldLabel}>{label}
+                <input style={fieldInput} value={String(p[key] ?? "")} onChange={(e) => set(key, e.target.value)} />
+              </label>
+            );
+          })}
+        </>
       );
       break;
-    case "justflows.shop.policies":
-      fields = (
-        <label style={fieldLabel}>{t("builder.inspector.field.policies")}
-          <textarea
-            rows={6}
-            style={fieldInput}
-            value={linesOf(p.items, ["name", "description", "imageSrc"])}
-            onChange={(e) => set("items", parsePipes(e.target.value, ["name", "description", "imageSrc"]))}
-          />
-          <span style={fieldHint}>{t("builder.inspector.hint.cardPerLineNameDescIcon")}</span>
-        </label>
-      );
-      break;
-    case "justflows.shop.reviews":
-      fields = <>
-        {textInput("heading", t("builder.inspector.field.heading"))}
-        <label style={fieldLabel}>{t("builder.inspector.field.average05")}
-          <input type="number" style={fieldInput} min={0} max={5} step={0.5} value={Number(p.average) || 0} onChange={(e) => set("average", Number(e.target.value))} />
-        </label>
-        <label style={fieldLabel}>{t("builder.inspector.reviews.totalReviews")}
-          <input type="number" style={fieldInput} min={0} value={Number(p.totalCount) || 0} onChange={(e) => set("totalCount", Number(e.target.value))} />
-        </label>
-        <label style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
-          <input type="checkbox" checked={p.showHistogram === true} onChange={(e) => set("showHistogram", e.target.checked)} />
-          {t("builder.inspector.reviews.showRatingBreakdown")}
-        </label>
-        <label style={fieldLabel}>{t("builder.inspector.reviews.breakdown")}
-          <textarea
-            rows={5}
-            style={fieldInput}
-            value={Array.isArray(p.counts) ? (p.counts as Array<{ rating: number; count: number }>).map((row) => `${row.rating}:${row.count}`).join("\n") : String(p.counts ?? "")}
-            onChange={(e) => set("counts", e.target.value.split("\n").map((line) => {
-              const [rating, count] = line.split(/[:|]/);
-              return { rating: Number(rating) || 0, count: Number(count) || 0 };
-            }).filter((row) => row.rating > 0))}
-          />
-          <span style={fieldHint}>{t("builder.inspector.hint.rowPerRating")}</span>
-        </label>
-        <label style={fieldLabel}>{t("builder.inspector.reviews.featuredReviews")}
-          <textarea
-            rows={6}
-            style={fieldInput}
-            value={linesOf(p.items, ["rating", "author", "title", "content", "avatarSrc"])}
-            onChange={(e) => set("items", parsePipes(e.target.value, ["rating", "author", "title", "content", "avatarSrc"]))}
-          />
-          <span style={fieldHint}>{t("builder.inspector.hint.reviewFields")}</span>
-        </label>
-        {textInput("writeLabel", t("builder.inspector.reviews.writeReviewLabel"))}
-        {textInput("writeHref", t("builder.inspector.reviews.writeReviewUrl"))}
-      </>;
-      break;
-    case "justflows.shop.related":
-      fields = <>
-        {textInput("heading", t("builder.inspector.field.heading"))}
-        {select("layout", t("builder.inspector.field.layout"), [
-          { value: "cards", label: t("builder.inspector.option.cards") },
-          { value: "overlay", label: t("builder.inspector.option.overlay") },
-        ])}
-        <label style={fieldLabel}>{t("builder.inspector.field.products")}
-          <textarea
-            rows={6}
-            style={fieldInput}
-            value={linesOf(p.items, ["imageSrc", "name", "price", "href", "color"])}
-            onChange={(e) => set("items", parsePipes(e.target.value, ["imageSrc", "name", "price", "href", "color"]))}
-          />
-          <span style={fieldHint}>{t("builder.inspector.hint.productFieldsShort")}</span>
-        </label>
-      </>;
-      break;
-    case "justflows.shop.product-list":
-      fields = <>
-        {select("layout", t("builder.inspector.field.layout"), [
-          { value: "inline", label: t("builder.inspector.option.inlinePrice") },
-          { value: "cta", label: t("builder.inspector.option.ctaLink") },
-          { value: "swatches", label: t("builder.inspector.option.colorSwatches") },
-          { value: "tall", label: t("builder.inspector.option.tallImages") },
-          { value: "overlay", label: t("builder.inspector.option.overlayPlusAddButton") },
-          { value: "simple", label: t("builder.inspector.option.simple") },
-          { value: "favorites", label: t("builder.inspector.option.tallImagesPlusCta") },
-          { value: "border", label: t("builder.inspector.option.borderGrid") },
-          { value: "supporting", label: t("builder.inspector.option.supportingText") },
-          { value: "hover", label: t("builder.inspector.option.hoverCta") },
-          { value: "cards", label: t("builder.inspector.option.detailCards") },
-        ])}
-        {textInput("heading", t("builder.inspector.field.heading"))}
-        <label style={{ ...fieldLabel, flexDirection: "row", alignItems: "center", gap: "0.5rem" }}>
-          <input type="checkbox" checked={p.headingHidden === true} onChange={(e) => set("headingHidden", e.target.checked)} />
-          {t("builder.inspector.productList.hideHeading")}
-        </label>
-        {textInput("ctaLabel", t("builder.inspector.productList.collectionLinkLabel"))}
-        {textInput("ctaHref", t("builder.inspector.productList.collectionLinkUrl"), "/shop")}
-        {String(p.layout) === "overlay" ? textInput("addLabel", t("builder.inspector.productList.addButtonLabel")) : null}
-        <label style={fieldLabel}>{t("builder.inspector.field.products")}
-          <textarea
-            rows={8}
-            style={fieldInput}
-            value={productListLines(p.items)}
-            onChange={(e) => set("items", parsePipes(e.target.value, ["imageSrc", "name", "price", "href", "color", "description", "rating", "reviewCount", "colors"]))}
-          />
-          <span style={fieldHint}>{t("builder.inspector.hint.productFieldsLong")}</span>
-        </label>
-      </>;
-      break;
-    case "justflows.shop.detail-shots":
-      fields = <>
-        {textInput("heading", t("builder.inspector.field.heading"))}
-        {textArea("intro", t("builder.inspector.field.intro"), 3)}
-        <label style={fieldLabel}>{t("builder.inspector.detailShots.shots")}
-          <textarea
-            rows={5}
-            style={fieldInput}
-            value={linesOf(p.items, ["src", "alt", "text"])}
-            onChange={(e) => set("items", parsePipes(e.target.value, ["src", "alt", "text"]))}
-          />
-          <span style={fieldHint}>{t("builder.inspector.hint.shotFields")}</span>
-        </label>
-      </>;
-      break;
-    default:
-      fields = <p style={{ color: "var(--jf-text-3)", fontSize: "0.8rem", margin: 0 }}>{t("builder.inspector.noSettingsForBlock")}</p>;
+    }
   }
 
   return (

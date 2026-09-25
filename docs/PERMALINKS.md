@@ -33,8 +33,13 @@ publication date, so editing a post does not move a date-based URL.
 
 A per-type base such as `shop/products` gives product URLs like
 `/shop/products/ceramic-mug`. Without a base, pages and custom types retain their
-root-level slug. Type bases override the general post structure when supplied
-through the API. Bases have no leading or trailing slash.
+root-level slug. An active plugin may contribute a default through the
+`permalinks.typeBases` filter; a saved base wins, and deactivating the plugin
+removes the default. The same plugin may register `theme.layoutScopes` so the
+theme customizer can set content width for that prefix and every page under it.
+Core does not ship those targets. Type bases override the general post
+structure when supplied through the API. Bases have no leading or trailing
+slash.
 
 Category and tag bases default to `category` and `tag`. Registered custom
 taxonomies can have their own bases. Archive pages list published content

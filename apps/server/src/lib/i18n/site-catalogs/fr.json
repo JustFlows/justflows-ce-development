@@ -1,6 +1,9 @@
 {
   "nav.home": "Accueil",
   "nav.admin": "Admin",
+  "menus.toggleMenu": "Menu",
+  "menus.toggleSubmenu": "Afficher/masquer le sous-menu",
+  "menus.closeMenu": "Fermer le menu",
   "home.tagline_fallback": "Votre site fonctionne avec Justflows.",
   "home.welcome": "Bienvenue sur",
   "home.description": "Accédez au tableau de bord pour rédiger votre premier article, personnaliser votre thème et faire le site à votre image.",
@@ -38,7 +41,7 @@
   "comments.submit": "Publier le commentaire",
   "comments.reply": "Répondre",
   "comments.replying": "Vous répondez à un commentaire.",
-  "comments.cancel_reply": "Annuler",
+  "comments.cancel_reply": "Annuler la réponse",
   "comments.edited": "modifié",
   "comments.awaiting_moderation": "Merci — votre commentaire est en attente de modération.",
   "comments.posted_ok": "Merci — votre commentaire a été publié.",
@@ -61,11 +64,6 @@
   "search.pagination": "Pages de recherche",
   "search.previous": "Précédent",
   "search.next": "Suivant",
-  "menus": {
-    "toggleMenu": "Menu",
-    "toggleSubmenu": "Basculer le sous-menu",
-    "closeMenu": "Fermer le menu"
-  },
   "construction.title": "Bientôt disponible",
   "construction.badge": "En construction",
   "construction.heading": "Nous préparons quelque chose de formidable",

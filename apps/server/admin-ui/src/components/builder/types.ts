@@ -20,6 +20,7 @@ export interface BlockCatalogEntry {
   category: string;
   supportsChildren: boolean;
   allowedChildTypes?: string[];
+  schema?: Record<string, { type?: string; default?: unknown; options?: string[] }>;
 }
 
 export type BlockPath = number[];

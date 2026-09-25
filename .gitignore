@@ -40,6 +40,7 @@ install-token/
 .updates/
 tmp/
 uploads/
+plugins/
 packages-installed/
 css-providers-installed/
 data/installed.json

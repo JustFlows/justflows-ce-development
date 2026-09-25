@@ -6,6 +6,7 @@ import { navLabel, type PluginMenuItem } from "../../../config/admin-nav";
 import { internalAdminPath, publicAdminPath } from "../../../admin-path";
 import { useT } from "../../../i18n/I18nProvider";
 import PluginSetupWizard from "./PluginSetupWizard";
+import { catalogRowsForDefaultLanguage } from "../../../lib/translation-groups";
 
 /**
  * Host shell for an admin path a plugin contributed (manifest `adminMenu` or
@@ -17,10 +18,12 @@ import PluginSetupWizard from "./PluginSetupWizard";
  * `GET /ext/{id}/setup` is only mounted on that plugin's `setupPath`, and only
  * while first-run setup is incomplete. After that the landing is the overview;
  * store and plugin options stay on `/admin/plugins/{id}/settings`. Nested menu
- * items (for example `/admin/plugins/justflows.shop/products`) never mount the
+ * items (for example `/admin/plugins/acme.forms/entries`) never mount the
  * wizard. When several menu paths could match, the longest path wins so
- * `/admin/plugins/justflows.shop` does not steal `.../shop/products`. A menu
- * item with `contentType` lists every CMS entry of that type from `/api/content`.
+ * `/admin/plugins/acme.forms` does not steal `.../forms/entries`. A menu
+ * item with `contentType` lists CMS entries of that type from `/api/content`,
+ * one row per translation group in the site's default language. Other
+ * languages stay on the content editor.
  */
 export default function PluginHostPage() {
   const { t } = useT();
@@ -77,6 +80,7 @@ export default function PluginHostPage() {
         contentType={item.contentType}
         heading={heading}
         icon={item.icon}
+        importPath={items.find((entry) => entry.path === `${item.path}/import`)?.path}
       />
     );
   }
@@ -141,9 +145,15 @@ function PluginFrame({ item, heading }: { item: PluginMenuItem; heading: string 
     const theme = document.documentElement.dataset.theme ?? "";
     post({
       type: "context",
-      context: { locale, adminBase: internalAdminPath("/admin"), routePath, theme },
+      context: {
+        locale,
+        adminBase: internalAdminPath("/admin"),
+        routePath,
+        theme,
+        ...(item.adminCatalogs ? { catalogs: item.adminCatalogs } : {}),
+      },
     });
-  }, [post, locale, routePath]);
+  }, [post, locale, routePath, item.adminCatalogs]);
 
   useEffect(() => {
     function onMessage(event: MessageEvent) {
@@ -247,10 +257,21 @@ type ContentListItem = {
   title: string;
   slug: string;
   locale: string;
+  translationGroupId: string;
   status: string;
   updatedAt: string;
   hasWorkingRevision?: boolean;
 };
+
+function defaultLocaleFrom(body: unknown): string {
+  const languages = (body as { languages?: Array<{ code?: string; isDefault?: boolean }> } | null)
+    ?.languages;
+  if (!Array.isArray(languages)) return "en-US";
+  const marked = languages.find((lang) => lang.isDefault && typeof lang.code === "string");
+  if (marked?.code) return marked.code;
+  const first = languages.find((lang) => typeof lang.code === "string");
+  return first?.code ?? "en-US";
+}
 
 const CONTENT_PAGE_SIZE = 100;
 
@@ -286,6 +307,10 @@ function asContentListItem(raw: unknown): ContentListItem | null {
     title: item.title,
     slug: typeof item.slug === "string" ? item.slug : "",
     locale: typeof item.locale === "string" ? item.locale : "",
+    translationGroupId:
+      typeof item.translationGroupId === "string" && item.translationGroupId
+        ? item.translationGroupId
+        : item.id,
     status: typeof item.status === "string" ? item.status : "",
     updatedAt: typeof item.updatedAt === "string" ? item.updatedAt : "",
     hasWorkingRevision: item.hasWorkingRevision === true,
@@ -297,30 +322,39 @@ function PluginContentTypeList({
   contentType,
   heading,
   icon,
+  importPath,
 }: {
   pluginId: string;
   contentType: string;
   heading: string;
   icon: string;
+  importPath?: string;
 }) {
   const { t } = useT();
   const [items, setItems] = useState<ContentListItem[]>([]);
   const [typeLabel, setTypeLabel] = useState(contentType);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [reloadKey, setReloadKey] = useState(0);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(false);
+    setSelected(new Set());
     void (async () => {
       try {
-        const [rows, typesRes] = await Promise.all([
+        const [rows, typesRes, langRes] = await Promise.all([
           loadAllContentOfType(contentType),
           fetch("/api/content-types").then((res) => (res.ok ? res.json() : { types: [] })),
+          fetch("/api/languages/active")
+            .then((res) => (res.ok ? res.json() : { languages: [] }))
+            .catch(() => ({ languages: [] })),
         ]);
         if (cancelled) return;
-        setItems(rows);
+        setItems(catalogRowsForDefaultLanguage(rows, defaultLocaleFrom(langRes)));
         const types = Array.isArray((typesRes as { types?: unknown }).types)
           ? ((typesRes as { types: Array<{ slug?: string; label?: string }> }).types)
           : [];
@@ -337,9 +371,40 @@ function PluginContentTypeList({
     return () => {
       cancelled = true;
     };
-  }, [contentType]);
+  }, [contentType, reloadKey]);
 
   const newHref = `/admin/content/new?type=${encodeURIComponent(contentType)}`;
+  const allSelected = items.length > 0 && selected.size === items.length;
+
+  function toggleAll(): void {
+    setSelected(allSelected ? new Set() : new Set(items.map((item) => item.id)));
+  }
+
+  function toggleOne(id: string): void {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function deleteSelected(): Promise<void> {
+    if (selected.size === 0 || deleting) return;
+    if (!window.confirm(t("pluginPage.trashConfirm", { count: selected.size }))) return;
+    setDeleting(true);
+    try {
+      for (const id of selected) {
+        const res = await fetch(`/api/content/${encodeURIComponent(id)}`, { method: "DELETE" });
+        if (!res.ok) throw new Error(`delete ${res.status}`);
+      }
+      setReloadKey((key) => key + 1);
+    } catch {
+      setError(true);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div className="jf-page">
@@ -352,6 +417,16 @@ function PluginContentTypeList({
           <Link className="jf-btn jf-btn--ghost" to={`/admin/plugins/${pluginId}/settings`}>
             {t("pluginPage.settings")}
           </Link>
+          {importPath ? (
+            <Link className="jf-btn jf-btn--ghost" to={importPath}>
+              {t("pluginPage.import")}
+            </Link>
+          ) : null}
+          {selected.size > 0 ? (
+            <button type="button" className="jf-btn jf-btn--danger" disabled={deleting} onClick={() => void deleteSelected()}>
+              {t("pluginPage.deleteSelected", { count: selected.size })}
+            </button>
+          ) : null}
           <Link className="jf-btn jf-btn--primary" to={newHref}>
             {t("pluginPage.newType", { type: typeLabel.toLowerCase() })}
           </Link>
@@ -378,6 +453,14 @@ function PluginContentTypeList({
             <table className="jf-table">
               <thead>
                 <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      aria-label={t("pluginPage.selectAll")}
+                      checked={allSelected}
+                      onChange={toggleAll}
+                    />
+                  </th>
                   <th>{t("content.title")}</th>
                   <th>{t("content.locale")}</th>
                   <th>{t("pluginPage.status")}</th>
@@ -391,6 +474,14 @@ function PluginContentTypeList({
               <tbody>
                 {items.map((item) => (
                   <tr key={item.id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        aria-label={item.title}
+                        checked={selected.has(item.id)}
+                        onChange={() => toggleOne(item.id)}
+                      />
+                    </td>
                     <td className="jf-td--strong">
                       <Link to={`/admin/content/${item.id}`}>{item.title}</Link>
                     </td>
@@ -448,7 +539,7 @@ function PluginOverviewLanding({
 }) {
   const { t } = useT();
   const pages = items.filter(
-    (entry) => entry.pluginId === current.pluginId && entry.path !== current.path,
+    (entry) => entry.pluginId === current.pluginId && entry.path !== current.path && entry.listed !== false,
   );
   if (pages.length === 0) {
     return (

@@ -55,7 +55,7 @@ export async function redirectContext(siteId: string) {
       title: i.title,
       path: homes.has(i.id)
         ? slashPath(localePath(i.locale, "/", defaultLocale), state.settings.trailingSlash)
-        : permalinkPath(i, state.settings, defaultLocale),
+        : permalinkPath(i, state.settings, defaultLocale, state.layoutScopes),
     }));
   const sites = await db.query<{ url: string }>("SELECT url FROM sites WHERE id = ?", [siteId]);
   let origin = "";

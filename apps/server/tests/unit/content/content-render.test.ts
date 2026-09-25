@@ -80,4 +80,10 @@ describe("applyContentBlocks", () => {
       expect.objectContaining({ siteId: "site-1" }),
     );
   });
+
+  it("applies content.blocks even when the document has no tags", async () => {
+    const blocks = [{ type: "acme.catalog.gallery", props: { images: [] } }];
+    await applyContentBlocks(blocks, { ...content, type: "page" });
+    expect(applyFilter).toHaveBeenCalledOnce();
+  });
 });

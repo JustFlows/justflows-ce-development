@@ -3,6 +3,7 @@ import { useT } from "../../../i18n/I18nProvider";
 import { useEffect, useState } from "react";
 import { Link } from "../../../admin-router";
 import { initialJson } from "../../../ssr-data";
+import { catalogRowsForDefaultLanguage, translationGroupKey } from "../../../lib/translation-groups";
 
 interface ContentItem {
   id: string;
@@ -10,6 +11,7 @@ interface ContentItem {
   title: string;
   slug: string;
   locale: string;
+  translationGroupId?: string | null;
   status: string;
   publishOn?: string | null;
   unpublishOn?: string | null;
@@ -117,7 +119,21 @@ export default function ContentPage() {
     return () => { clearTimeout(timer); controller.abort(); };
   }, [query, filter, localeFilter, statusFilter, searchPage, t]);
 
-  const filtered = query.trim() ? searchItems : items.filter(
+  // Translations are managed from the editor, so "All languages" lists each
+  // translation group once (default-language entry first). A specific
+  // language chip still shows every entry in that language.
+  const defaultLocale =
+    languages.find((l) => l.isDefault)?.code ?? languages[0]?.code ?? "en-US";
+  const groupItems = new Map<string, ContentItem[]>();
+  for (const item of items) {
+    const key = translationGroupKey(item);
+    groupItems.set(key, [...(groupItems.get(key) ?? []), item]);
+  }
+  const translationsOf = (item: ContentItem) =>
+    groupItems.get(translationGroupKey(item)) ?? [item];
+  const rows = localeFilter === "all" ? catalogRowsForDefaultLanguage(items, defaultLocale) : items;
+
+  const filtered = query.trim() ? searchItems : rows.filter(
     (i) =>
       (filter === "all" || i.type === filter) &&
       (localeFilter === "all" || i.locale === localeFilter) &&
@@ -245,7 +261,7 @@ export default function ContentPage() {
         <span className="jf-meta" style={{ marginInlineStart: "auto" }}>
           {t("content.list.filteredCount", {
             count: filtered.length,
-            total: query.trim() ? searchTotal : items.length,
+            total: query.trim() ? searchTotal : rows.length,
           })}
         </span>
       </div>
@@ -286,7 +302,7 @@ export default function ContentPage() {
                   <tr key={item.id}>
                     <td className="jf-td--strong">
                       <Link to={`/admin/content/${item.id}`}>{item.title}</Link>
-                      {homePageId === item.id ? (
+                      {translationsOf(item).some((entry) => entry.id === homePageId) ? (
                         <span
                           className="jf-badge jf-badge--published"
                           style={{ marginInlineStart: "0.5rem" }}
@@ -294,7 +310,7 @@ export default function ContentPage() {
                           {t("content.list.homeBadge")}
                         </span>
                       ) : null}
-                      {blogPageId === item.id ? (
+                      {translationsOf(item).some((entry) => entry.id === blogPageId) ? (
                         <span
                           className="jf-badge jf-badge--published"
                           style={{ marginInlineStart: "0.5rem" }}
@@ -304,7 +320,18 @@ export default function ContentPage() {
                       ) : null}
                     </td>
                     <td>{typeLabel(item.type)}</td>
-                    <td className="jf-td--mono">{item.locale ?? "—"}</td>
+                    <td className="jf-td--mono">
+                      {item.locale ?? "—"}
+                      {localeFilter === "all" && !query.trim()
+                        ? translationsOf(item)
+                            .filter((entry) => entry.id !== item.id)
+                            .map((entry) => (
+                              <span key={entry.id} className="jf-td--muted">
+                                {" "}+{entry.locale}
+                              </span>
+                            ))
+                        : null}
+                    </td>
                     <td>
                       <StatusBadge status={item.status} hasWorkingRevision={item.hasWorkingRevision} />
                       {(item.publishOn || item.unpublishOn) && <span className="jf-badge">{t("scheduling.title")}</span>}

@@ -17,24 +17,34 @@ import {
   type PermalinkContent,
   slashPath,
 } from "./permalinks.js";
+import { listLayoutScopes, resolveTypeBases } from "../themes/layout-scopes.js";
+import type { ThemeLayoutScope } from "@justflows/sdk";
 
 export interface PermalinkState {
   settings: PermalinkSettings;
   /** Exact prior paths point at content IDs, so subsequent changes cannot create redirect chains. */
   redirects: Record<string, string>;
   archiveRedirects?: Record<string, string>;
+  /** Layout parents registered by active plugins. Empty when none are active. */
+  layoutScopes: ThemeLayoutScope[];
 }
 export async function getPermalinkState(siteId: string): Promise<PermalinkState> {
   const raw = await getSiteSetting<PermalinkState>(siteId, "permalinks");
   const parsed = PermalinkSettingsSchema.safeParse(raw?.settings);
+  const stored = parsed.success ? parsed.data : DEFAULT_PERMALINK_SETTINGS;
+  const [typeBases, layoutScopes] = await Promise.all([
+    resolveTypeBases(siteId, stored.typeBases),
+    listLayoutScopes(siteId),
+  ]);
   return {
-    settings: parsed.success ? parsed.data : DEFAULT_PERMALINK_SETTINGS,
+    settings: { ...stored, typeBases },
     redirects: raw?.redirects ?? {},
     archiveRedirects: raw?.archiveRedirects ?? {},
+    layoutScopes,
   };
 }
 export async function contentPermalink(content: ContentResponse): Promise<string> {
-  const [{ settings }, defaultLocale, home] = await Promise.all([
+  const [{ settings, layoutScopes }, defaultLocale, home] = await Promise.all([
     getPermalinkState(content.siteId),
     getDefaultLocale(content.siteId),
     getHomeContent(content.siteId, content.locale, false),
@@ -42,7 +52,7 @@ export async function contentPermalink(content: ContentResponse): Promise<string
   if (home?.id === content.id)
     return slashPath(localePath(content.locale, "/", defaultLocale), settings.trailingSlash);
   const enriched = await enrichPermalinkContent([content], content.siteId);
-  return permalinkPath(enriched[0]!, settings, defaultLocale);
+  return permalinkPath(enriched[0]!, settings, defaultLocale, layoutScopes);
 }
 export async function permalinkContent(
   siteId: string,
@@ -105,7 +115,7 @@ export async function savePermalinks(siteId: string, settings: PermalinkSettings
     locales.some(
       (locale) => locale.toLowerCase() === settings.structure.split("/")[1]?.toLowerCase(),
     ) ||
-    (await reservedPermalinkPath(permalinkPath(sample, settings, defaultLocale)))
+    (await reservedPermalinkPath(permalinkPath(sample, settings, defaultLocale, state.layoutScopes)))
   )
     throw new PermalinkConflictError("The structure conflicts with a platform route.");
   const paths = new Map<string, string>();
@@ -116,7 +126,7 @@ export async function savePermalinks(siteId: string, settings: PermalinkSettings
   }
   for (const item of items) {
     if (homes.has(item.id)) continue;
-    const path = permalinkPath(item, settings, defaultLocale);
+    const path = permalinkPath(item, settings, defaultLocale, state.layoutScopes);
     if (await reservedPermalinkPath(path))
       throw new PermalinkConflictError(`Reserved URL for "${item.title}".`);
     const previous = paths.get(path);
@@ -149,14 +159,14 @@ export async function savePermalinks(siteId: string, settings: PermalinkSettings
   const oldCounts = new Map<string, number>();
   for (const item of items) {
     if (item.status !== "published" || homes.has(item.id)) continue;
-    const path = permalinkPath(item, state.settings, defaultLocale);
+    const path = permalinkPath(item, state.settings, defaultLocale, state.layoutScopes);
     oldCounts.set(path, (oldCounts.get(path) ?? 0) + 1);
   }
   let added = 0;
   for (const item of items) {
     if (item.status !== "published" || homes.has(item.id)) continue;
-    const before = permalinkPath(item, state.settings, defaultLocale);
-    const after = permalinkPath(item, settings, defaultLocale);
+    const before = permalinkPath(item, state.settings, defaultLocale, state.layoutScopes);
+    const after = permalinkPath(item, settings, defaultLocale, state.layoutScopes);
     if (before !== after && oldCounts.get(before) === 1) {
       if (paths.has(before) && paths.get(before) !== item.id)
         throw new PermalinkConflictError(`A previous URL would belong to another item: ${before}`);
@@ -258,7 +268,7 @@ export async function uniquePermalinkSlug(content: ContentResponse): Promise<str
   const occupied = new Set(
     items
       .filter((item) => item.id !== content.id)
-      .map((item) => permalinkPath(item, state.settings, defaultLocale)),
+      .map((item) => permalinkPath(item, state.settings, defaultLocale, state.layoutScopes)),
   );
   for (const term of terms)
     for (const locale of locales)
@@ -269,7 +279,7 @@ export async function uniquePermalinkSlug(content: ContentResponse): Promise<str
   for (let suffix = 0; suffix < 10000; suffix++) {
     const slug = suffix ? `${initial.slice(0, 190)}-${suffix + 1}` : initial;
     const candidate = { ...enriched, slug };
-    const path = permalinkPath(candidate, state.settings, defaultLocale);
+    const path = permalinkPath(candidate, state.settings, defaultLocale, state.layoutScopes);
     if (await reservedPermalinkPath(path))
       throw new PermalinkConflictError("This slug produces a reserved platform URL.");
     if (locales.some((locale) => locale.toLowerCase() === slug.toLowerCase()))
@@ -286,7 +296,7 @@ export async function uniquePermalinkSlug(content: ContentResponse): Promise<str
     )
       return slug;
     // An ID-only structure cannot be disambiguated by changing the slug.
-    if (suffix && path === permalinkPath(enriched, state.settings, defaultLocale)) break;
+    if (suffix && path === permalinkPath(enriched, state.settings, defaultLocale, state.layoutScopes)) break;
   }
   throw new PermalinkConflictError(
     "Cannot allocate a unique public URL. Change the permalink structure.",

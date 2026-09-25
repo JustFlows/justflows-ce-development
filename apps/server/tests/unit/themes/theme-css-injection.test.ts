@@ -7,6 +7,7 @@ import {
   isSafeCssFontStack,
   isSafeCssVariableName,
   mergeMods,
+  layoutScopeCss,
   modsToCssVariables,
   modsToDarkCssVariables,
 } from "../../../src/lib/themes/theme-customize.js";
@@ -84,6 +85,16 @@ describe("modsToCssVariables", () => {
 
     expect(modsToCssVariables({}, { layout: { contentWidth: 99999 } })["--max-width"]).toBe("1200px");
     expect(modsToCssVariables({}, { typography: { baseFontSize: -5 } })["--base-font-size"]).toBe("14px");
+  });
+
+  it("scopes a content-type width to that type's pages", () => {
+    const product = layoutScopeCss({ layout: { "contentWidth__product": 960 } }, "product");
+    const shop = layoutScopeCss({ layout: { "contentWidth__product": 960 } }, "shop");
+    const clamped = layoutScopeCss({ layout: { "contentWidth__product": 99999 } }, "product");
+    expect(product).toContain("960px");
+    expect(product.startsWith("body.jf-layout-product{")).toBe(true);
+    expect(shop).toBe("");
+    expect(clamped).toContain("1200px");
   });
 });
 

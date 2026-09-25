@@ -27,7 +27,7 @@ import {
   HEADER_SELECTED_ID,
   type PageHeaderConfig,
 } from "../../lib/page-header";
-import { ProductTagsContext } from "../../lib/product-tags";
+import { MergeTagsContext } from "../../lib/merge-tags";
 
 export type { BlockDocument, BlockNode } from "./types";
 
@@ -42,9 +42,8 @@ interface PageBuilderProps {
   headerOnly?: boolean;
   /** Full standalone page vs. a post/article body. Hides page-only library items (whole-page patterns, site chrome widgets). */
   isPage?: boolean;
-  /** Fill `{{price}}` and other product tags from catalog + content fields. */
+  /** Values for `{{tags}}` supplied by plugins through `content.mergeTags`. */
   mergeTags?: Record<string, string>;
-  enableProductTags?: boolean;
   /** Restrict the block library/inserters to these types (e.g. a mega-menu region's safe subset).
    * Omit for the full catalog. Blocks already in `value` keep rendering even if not in this list —
    * this only narrows what can be *added*, it does not strip existing content. */
@@ -68,7 +67,6 @@ export default function PageBuilder({
   headerOnly = false,
   isPage = false,
   mergeTags,
-  enableProductTags = false,
   allowedBlockTypes,
   enableKeyboardShortcut = true,
   flatCanvas = false,
@@ -361,7 +359,6 @@ export default function PageBuilder({
         reusable={reusable}
         onReloadReusable={reloadReusable}
         onConvertToReusable={convertToReusable}
-        enableProductTags={enableProductTags}
       />
     ) : (
       <PageJsonPanel
@@ -373,7 +370,7 @@ export default function PageBuilder({
     );
 
   return (
-    <ProductTagsContext.Provider value={mergeTags}>
+    <MergeTagsContext.Provider value={mergeTags}>
       <BuilderDragProvider
         blocks={blocks}
         headerBlocks={headerBlocks}
@@ -466,6 +463,6 @@ export default function PageBuilder({
           </div>
         )}
       </BuilderDragProvider>
-    </ProductTagsContext.Provider>
+    </MergeTagsContext.Provider>
   );
 }

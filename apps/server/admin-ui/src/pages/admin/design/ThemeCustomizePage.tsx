@@ -152,6 +152,9 @@ export default function CustomizeThemePage() {
   const navigate = useNavigate();
   const { t } = useT();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const previewPathRef = useRef("/");
+  const [layoutScope, setLayoutScope] = useState("site");
+  const [layoutTargets, setLayoutTargets] = useState<Array<{ slug: string; label: string; base: string }>>([]);
   const stylesSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -296,8 +299,17 @@ export default function CustomizeThemePage() {
   const reloadPreview = useCallback(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
-    iframe.src = `/?preview=1&_=${Date.now()}`;
+    const path = previewPathRef.current || "/";
+    const join = path.includes("?") ? "&" : "?";
+    iframe.src = `${path}${join}preview=1&_=${Date.now()}`;
   }, []);
+
+  function selectLayoutScope(scope: string) {
+    setLayoutScope(scope);
+    const target = layoutTargets.find((item) => item.slug === scope);
+    previewPathRef.current = target ? `/${target.base}` : "/";
+    reloadPreview();
+  }
 
   useEffect(() => {
     fetch("/api/template-parts/footer")
@@ -330,11 +342,19 @@ export default function CustomizeThemePage() {
           homePageId?: string | null;
           blogPageId?: string | null;
           pages?: ThemePageOption[];
+          layoutScopes?: Array<{ id: string; label: string; base: string }>;
         };
         if (!r.ok) throw new Error(data.error ?? t("themeCustomize.loadError"));
         setThemeName(data.theme?.name ?? t("themeCustomize.themeFallbackName"));
         setSchema(data.schema ?? {});
         setMods(data.mods ?? {});
+        setLayoutTargets(
+          (data.layoutScopes ?? []).map((scope) => ({
+            slug: scope.id,
+            label: scope.label,
+            base: scope.base,
+          })),
+        );
         setHomePageId(data.homePageId ?? null);
         setBlogPageId(data.blogPageId ?? null);
         setPages(data.pages ?? []);
@@ -1093,6 +1113,27 @@ export default function CustomizeThemePage() {
                           {t("themeCustomize.colorsDarkHint")}
                         </p>
                       )}
+                      {sectionKey === "layout" && (
+                        <div className="jf-field">
+                          <label className="jf-field__label" htmlFor="layout-scope">
+                            {t("themeCustomize.layoutScope")}
+                          </label>
+                          <select
+                            className="jf-input"
+                            id="layout-scope"
+                            value={layoutScope}
+                            onChange={(e) => selectLayoutScope(e.target.value)}
+                          >
+                            <option value="site">{t("themeCustomize.layoutScopeSite")}</option>
+                            {layoutTargets.map((target) => (
+                              <option key={target.slug} value={target.slug}>
+                                {target.label} (/{target.base})
+                              </option>
+                            ))}
+                          </select>
+                          <p className="jf-field__hint">{t("themeCustomize.layoutScopeHint")}</p>
+                        </div>
+                      )}
                       {sectionKey === "navigation" && (
                         <p className="jf-field__hint">
                           {t("themeCustomize.navigationHintPrefix")}{" "}
@@ -1102,16 +1143,20 @@ export default function CustomizeThemePage() {
                           {t("themeCustomize.navigationHintSuffix")}
                         </p>
                       )}
-                      {Object.entries(section.controls).map(([key, control]) => (
-                        <ControlField
-                          key={key}
-                          controlKey={key}
-                          sectionKey={sectionKey}
-                          control={control}
-                          value={mods[sectionKey]?.[key] ?? control.default}
-                          onChange={(v) => updateMod(sectionKey, key, v)}
-                        />
-                      ))}
+                      {Object.entries(section.controls).map(([key, control]) => {
+                        const storedKey =
+                          sectionKey === "layout" && layoutScope !== "site" ? `${key}__${layoutScope}` : key;
+                        return (
+                          <ControlField
+                            key={`${storedKey}`}
+                            controlKey={key}
+                            sectionKey={sectionKey}
+                            control={control}
+                            value={mods[sectionKey]?.[storedKey] ?? mods[sectionKey]?.[key] ?? control.default}
+                            onChange={(v) => updateMod(sectionKey, storedKey, v)}
+                          />
+                        );
+                      })}
                     </div>
                   )}
                 </div>

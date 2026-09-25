@@ -125,7 +125,7 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
           (state.redirects[fullIncoming] ||
             items.some(
               (item) =>
-                comparable(permalinkPath(item, state.settings, defaultLocale)) ===
+                comparable(permalinkPath(item, state.settings, defaultLocale, state.layoutScopes)) ===
                 comparable(fullIncoming),
             ))
         ) {
@@ -136,7 +136,7 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
         let match: (typeof items)[number] | undefined;
         let target = "";
         for (const item of items) {
-          const path = permalinkPath(item, state.settings, defaultLocale);
+          const path = permalinkPath(item, state.settings, defaultLocale, state.layoutScopes);
           if (comparable(incoming) === comparable(path)) {
             match = item;
             target = path;
@@ -161,7 +161,7 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
             }
             match = legacy[0];
           }
-          if (match) target = permalinkPath(match, state.settings, defaultLocale);
+          if (match) target = permalinkPath(match, state.settings, defaultLocale, state.layoutScopes);
         }
         if (!match) {
           if (identity) {
@@ -203,7 +203,7 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
             name: archive.name,
             items: archiveItems.map((item) => ({
               title: item.title,
-              path: permalinkPath(item, state.settings, defaultLocale),
+              path: permalinkPath(item, state.settings, defaultLocale, state.layoutScopes),
             })),
           });
           return;
@@ -244,7 +244,7 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
           .map((item) => ({
             locale: item.locale,
             slug: item.slug,
-            href: permalinkPath(item, state.settings, defaultLocale),
+            href: permalinkPath(item, state.settings, defaultLocale, state.layoutScopes),
           }));
         await handlers.renderContent(req, res, {
           content: match,

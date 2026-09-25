@@ -3,6 +3,7 @@
 import { sanitizeBlockDocument } from "@justflows/blocks";
 import { loadThemePattern } from "../themes/theme-files.js";
 import { getActiveTheme, getSiteId, themeInstalledPath } from "../themes/themes-db.js";
+import { ensurePluginRuntime, getPluginLoader, getRuntimeHooks } from "../plugins/plugin-runtime.js";
 
 export function isEmptyBlockDocument(value: unknown): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) return true;
@@ -11,20 +12,36 @@ export function isEmptyBlockDocument(value: unknown): boolean {
 }
 
 /**
- * Content types that adopt a same-named theme pattern as the starting canvas for
- * a new row — `product` loads Product detail, `post` loads the theme's demo post
- * body. Kept to an explicit set so an unrelated custom type named after another
- * pattern (`about`, `landing`, …) doesn't silently inherit that pattern's blocks.
+ * Content types that adopt a same-named pattern as the starting canvas.
+ * `post` is the host default. Plugins append their own slugs through
+ * `content.patternTypes`.
  */
-const PATTERN_BACKED_TYPES = new Set(["product", "post"]);
-
-/** Starting blocks for a new content row whose canvas is empty, from the active theme's pattern. */
 export async function defaultBlocksForContentType(type: string): Promise<unknown> {
-  if (!PATTERN_BACKED_TYPES.has(type)) return { version: 1, blocks: [] };
   const siteId = await getSiteId();
+  await ensurePluginRuntime();
+  const contributed = await getRuntimeHooks().applyFilter(
+    "content.patternTypes",
+    ["post"],
+    { siteId: siteId ?? "" },
+    { siteId: siteId ?? "", source: "http" },
+  );
+  const backed = new Set(
+    (Array.isArray(contributed) ? contributed : ["post"]).filter(
+      (slug): slug is string => typeof slug === "string" && /^[a-z][a-z0-9-]{0,59}$/.test(slug),
+    ),
+  );
+  if (!backed.has(type)) return { version: 1, blocks: [] };
   const theme = siteId ? await getActiveTheme(siteId) : null;
   const themeId = theme?.theme_id ?? "justflows.default";
-  const pattern = loadThemePattern(themeId, type, themeInstalledPath(theme));
-  if (!pattern?.blocks.length) return { version: 1, blocks: [] };
-  return sanitizeBlockDocument({ version: 1, blocks: pattern.blocks });
+  const themePattern = loadThemePattern(themeId, type, themeInstalledPath(theme));
+  const blocks = themePattern?.blocks.length
+    ? themePattern.blocks
+    : pluginPatternById(type)?.blocks;
+  if (!blocks?.length) return { version: 1, blocks: [] };
+  return sanitizeBlockDocument({ version: 1, blocks });
+}
+
+/** A plugin pattern whose id matches a content type, used when the theme has none. */
+export function pluginPatternById(id: string) {
+  return getPluginLoader()?.patternRegistry.all().find((pattern) => pattern.id === id);
 }

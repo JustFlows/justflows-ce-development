@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { I18nProvider } from "../../../../src/i18n/I18nProvider";
@@ -226,10 +226,178 @@ describe("PluginHostPage", () => {
     );
     expect(screen.queryByText("Commerce database")).not.toBeInTheDocument();
     expect(screen.queryByText(/Products will appear here/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Import" })).not.toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/setup"))).toBe(false);
     expect(
       fetchMock.mock.calls.some(([input]) => String(input).includes("/api/content?type=product")),
     ).toBe(true);
+  });
+
+  it("lists the default language once when a product has translations", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        withSession((path) => {
+          if (path.includes("/api/plugins/admin-menu")) return jsonResponse({ items: shopMenu });
+          if (path.includes("/api/content-types")) {
+            return jsonResponse({ types: [{ slug: "product", label: "Product" }] });
+          }
+          if (path.includes("/api/languages/active")) {
+            return jsonResponse({
+              languages: [
+                { code: "en-US", isDefault: true },
+                { code: "nl-NL", isDefault: false },
+              ],
+            });
+          }
+          if (path.includes("/api/content?")) {
+            return jsonResponse({
+              items: [
+                {
+                  id: "prod-nl",
+                  type: "product",
+                  title: "",
+                  slug: "kids-raincoat",
+                  locale: "nl-NL",
+                  translationGroupId: "prod-en",
+                  status: "draft",
+                  updatedAt: "2026-09-24T00:00:00.000Z",
+                },
+                {
+                  id: "prod-en",
+                  type: "product",
+                  title: "Kids raincoat",
+                  slug: "kids-raincoat",
+                  locale: "en-US",
+                  translationGroupId: "prod-en",
+                  status: "published",
+                  updatedAt: "2026-09-24T00:00:00.000Z",
+                },
+                {
+                  id: "prod-only-nl",
+                  type: "product",
+                  title: "Alleen Nederlands",
+                  slug: "alleen-nederlands",
+                  locale: "nl-NL",
+                  translationGroupId: "prod-only-nl",
+                  status: "draft",
+                  updatedAt: "2026-09-23T00:00:00.000Z",
+                },
+              ],
+            });
+          }
+          return jsonResponse({});
+        }),
+      ),
+    );
+
+    renderHost("/admin/plugins/justflows.shop/products");
+
+    expect(await screen.findByRole("link", { name: "Kids raincoat" })).toHaveAttribute(
+      "href",
+      "/admin/content/prod-en",
+    );
+    expect(screen.getAllByText("/kids-raincoat")).toHaveLength(1);
+    expect(screen.getAllByText("nl-NL")).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Alleen Nederlands" })).toHaveAttribute(
+      "href",
+      "/admin/content/prod-only-nl",
+    );
+  });
+
+  it("links the product list to a separate import page", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        withSession((path) => {
+          if (path.includes("/api/plugins/admin-menu")) {
+            return jsonResponse({
+              items: [
+                ...shopMenu,
+                {
+                  pluginId: "justflows.shop",
+                  id: "import",
+                  label: "Import",
+                  path: "/admin/plugins/justflows.shop/products/import",
+                  icon: "📥",
+                  domain: "commerce",
+                  listed: false,
+                  adminAppUrl: "/ext/justflows.shop/admin/products.html",
+                },
+              ],
+            });
+          }
+          if (path.includes("/api/content-types")) {
+            return jsonResponse({ types: [{ slug: "product", label: "Product" }] });
+          }
+          if (path.includes("/api/content?")) return jsonResponse({ items: [] });
+          return jsonResponse({});
+        }),
+      ),
+    );
+
+    renderHost("/admin/plugins/justflows.shop/products");
+
+    expect(await screen.findByRole("link", { name: "Import" })).toHaveAttribute(
+      "href",
+      "/admin/plugins/justflows.shop/products/import",
+    );
+    expect(screen.queryByTitle("Import products")).not.toBeInTheDocument();
+    expect(await screen.findByText("No Products yet")).toBeInTheDocument();
+  });
+
+  it("moves the selected products to trash together", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const fetchMock = vi.fn(
+      withSession((path) => {
+        if (path.includes("/api/plugins/admin-menu")) return jsonResponse({ items: shopMenu });
+        if (path.includes("/api/content-types")) {
+          return jsonResponse({ types: [{ slug: "product", label: "Product" }] });
+        }
+        if (path.includes("/api/content/prod-1") || path.includes("/api/content/prod-2")) {
+          return jsonResponse({ ok: true });
+        }
+        if (path.includes("/api/content?")) {
+          return jsonResponse({
+            items: [
+              {
+                id: "prod-1",
+                type: "product",
+                title: "Canvas tote",
+                slug: "canvas-tote",
+                locale: "en-US",
+                status: "published",
+                updatedAt: "2026-08-28T00:00:00.000Z",
+              },
+              {
+                id: "prod-2",
+                type: "product",
+                title: "Draft mug",
+                slug: "draft-mug",
+                locale: "nl-NL",
+                status: "draft",
+                updatedAt: "2026-08-27T00:00:00.000Z",
+              },
+            ],
+          });
+        }
+        return jsonResponse({});
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    renderHost("/admin/plugins/justflows.shop/products");
+
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Select all" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete 2" }));
+
+    expect(confirm).toHaveBeenCalled();
+    await waitFor(() => {
+      const deleted = fetchMock.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method === "DELETE").map(([input]) => String(input));
+      expect(deleted.some((url) => url.includes("/api/content/prod-1"))).toBe(true);
+      expect(deleted.some((url) => url.includes("/api/content/prod-2"))).toBe(true);
+    });
+    confirm.mockRestore();
   });
 
   it("pages through every product until the content cursor is exhausted", async () => {

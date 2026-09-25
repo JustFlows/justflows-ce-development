@@ -30,7 +30,7 @@
                           <script src="/js/site-toast.js"></script>
 </head>
 
-<body>
+<body<% if (typeof bodyClass === 'string' && /^jf-layout-[a-z0-9-]+$/.test(bodyClass)) { %> class="<%= bodyClass %>"<% } %>>
   <%- typeof analyticsBody !=='undefined' ? analyticsBody : '' %>
     <%- typeof pwaBody !=='undefined' ? pwaBody : '' %>
       <%- body %>

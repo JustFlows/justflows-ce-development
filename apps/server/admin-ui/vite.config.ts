@@ -21,10 +21,27 @@ export default defineConfig({
               test: /node_modules[\\/](?:react|react-dom|react-router|react-router-dom)[\\/]/,
               priority: 30,
             },
+            // Keep heavy, rarely-changing libraries out of the builder chunk
+            // so they cache independently across admin releases.
+            {
+              name: "katex-vendor",
+              test: /node_modules[\\/]katex[\\/]/,
+              priority: 25,
+            },
+            {
+              name: "motion-vendor",
+              test: /node_modules[\\/](?:framer-motion|motion-dom|motion-utils)[\\/]/,
+              priority: 25,
+            },
             {
               name: "builder",
               test: /admin-ui[\\/]src[\\/]components[\\/]builder[\\/]/,
               priority: 20,
+            },
+            {
+              name: "admin-settings",
+              test: /admin-ui[\\/]src[\\/]pages[\\/]admin[\\/]settings[\\/]/,
+              priority: 11,
             },
             {
               name: "admin-pages",

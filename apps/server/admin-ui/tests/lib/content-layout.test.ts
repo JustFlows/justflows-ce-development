@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isEmptyBlockDocument, shouldSeedProductLayout, usesPageBuilderChrome } from "../../src/lib/content-layout";
+import { isEmptyBlockDocument, shouldSeedTypePattern, usesBlockEditor } from "../../src/lib/content-layout";
 
 describe("content layout helpers", () => {
-  it("treats product and shop like pages in the builder", () => {
-    expect(usesPageBuilderChrome("page")).toBe(true);
-    expect(usesPageBuilderChrome("product")).toBe(true);
-    expect(usesPageBuilderChrome("shop")).toBe(true);
-    expect(usesPageBuilderChrome("post")).toBe(false);
+  it("uses the block editor for pages and for types a plugin marks as blocks", () => {
+    expect(usesBlockEditor("page", false)).toBe(true);
+    expect(usesBlockEditor("post", false)).toBe(false);
+    expect(usesBlockEditor("post", true)).toBe(true);
   });
 
   it("detects an empty block canvas", () => {
@@ -14,9 +13,8 @@ describe("content layout helpers", () => {
     expect(isEmptyBlockDocument({ version: 1, blocks: [{ type: "core.hero" }] })).toBe(false);
   });
 
-  it("seeds the product layout only on the original locale", () => {
-    expect(shouldSeedProductLayout({ type: "product", id: "en", translationGroupId: "en" })).toBe(true);
-    expect(shouldSeedProductLayout({ type: "product", id: "nl", translationGroupId: "en" })).toBe(false);
-    expect(shouldSeedProductLayout({ type: "page", id: "en", translationGroupId: "en" })).toBe(false);
+  it("seeds a type pattern only on the original locale", () => {
+    expect(shouldSeedTypePattern({ id: "en", translationGroupId: "en" })).toBe(true);
+    expect(shouldSeedTypePattern({ id: "nl", translationGroupId: "en" })).toBe(false);
   });
 });

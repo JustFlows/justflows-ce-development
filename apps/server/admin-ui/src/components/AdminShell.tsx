@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { Navigate, NavLink, useNavigate } from "../admin-router";
+import { Link, Navigate, NavLink, useNavigate } from "../admin-router";
 import { ADMIN_UI_LOCALES, useT, type AdminUiLocale } from "../i18n/I18nProvider";
 import { ADMIN_DASHBOARD, canAccessPath, filterDomainsByRole, findDomainForPath, isDomainActive } from "../config/admin-nav";
 import DomainSubnav from "./DomainSubnav";
@@ -87,12 +87,17 @@ export default function AdminShell() {
           </NavLink>
 
           {domains.map((domain) => (
-            <NavLink key={domain.key} to={domain.items[0].to} className="jf-nav__link">
+            <Link
+              key={domain.key}
+              to={domain.items[0].to}
+              className="jf-nav__link"
+              aria-current={isDomainActive(domain, pathname) ? "page" : undefined}
+            >
               <span className="jf-nav__icon" aria-hidden="true">
                 {domain.icon}
               </span>
               {t(domain.key)}
-            </NavLink>
+            </Link>
           ))}
         </nav>
 

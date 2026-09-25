@@ -28,6 +28,10 @@ vi.mock("../../../src/lib/admin/admin-path.js", () => ({
   getAdminPathConfig: async () => ({ path: "/control-room" }),
 }));
 vi.mock("../../../src/lib/content/home-page.js", () => ({ getHomeContent: async () => null }));
+vi.mock("../../../src/lib/themes/layout-scopes.js", () => ({
+  resolveTypeBases: async (_siteId: string, stored: Record<string, string>) => stored,
+  listLayoutScopes: async () => [],
+}));
 vi.mock("../../../src/lib/cache/jf-cache.js", () => ({
   getJfCache: () => ({
     invalidate,

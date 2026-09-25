@@ -65,7 +65,7 @@ describe("PackageManifestSchema adminApp", () => {
     const parsed = PackageManifestSchema.parse({
       ...base,
       permissions: ["admin:extend"],
-      adminApp: { routes: [{ entry: "index.html", title: "Forms" }] },
+      adminApp: { locales: { en: "locales/en.json" }, routes: [{ entry: "index.html", title: "Forms" }] },
     });
 
     expect(parsed.adminApp?.routes?.[0]?.entry).toBe("index.html");

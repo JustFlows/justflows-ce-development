@@ -77,6 +77,8 @@ export interface PluginAdminRouteInfo {
   /** URL the admin frame loads (`/ext/<pluginId>/admin/<entry>`). */
   entryUrl: string;
   title?: string;
+  /** Locale code → `/ext/<pluginId>/admin/<file>` for `adminApp.locales`. */
+  catalogs?: Record<string, string>;
 }
 
 interface PluginAdminSet {
@@ -112,12 +114,14 @@ export function safeAdminRel(value: unknown): string | null {
  * schema): a relative `dir` and 1–20 `{ path, entry, title? }` routes, each with
  * a `/admin/...` path and a relative `.html` entry, no traversal, deduped.
  */
+const LOCALE_RE = /^[a-z]{2,8}(?:-[A-Za-z0-9]{2,8}){0,2}$/;
+
 export function parseAdminAppSpec(
   raw: unknown,
   pluginId: string,
-): { dir: string; routes: Array<{ path: string; entry: string; title?: string }> } | null {
+): { dir: string; routes: Array<{ path: string; entry: string; title?: string }>; locales?: Record<string, string> } | null {
   if (!raw || typeof raw !== "object") return null;
-  const spec = raw as { dir?: unknown; routes?: unknown };
+  const spec = raw as { dir?: unknown; routes?: unknown; locales?: unknown };
   const dir = typeof spec.dir === "string" && spec.dir ? spec.dir : "admin";
   if (!DIR_RE.test(dir) || dir.split("/").includes("..")) return null;
   if (!Array.isArray(spec.routes) || spec.routes.length === 0) return null;
@@ -140,7 +144,16 @@ export function parseAdminAppSpec(
         typeof r.title === "string" && r.title.trim() ? r.title.trim().slice(0, 100) : undefined,
     });
   }
-  return routes.length ? { dir, routes } : null;
+  const locales: Record<string, string> = {};
+  if (spec.locales && typeof spec.locales === "object" && !Array.isArray(spec.locales)) {
+    for (const [code, file] of Object.entries(spec.locales).slice(0, 20)) {
+      if (!LOCALE_RE.test(code)) continue;
+      const rel = safeAdminRel(file);
+      if (!rel || !rel.endsWith(".json")) continue;
+      locales[code] = rel;
+    }
+  }
+  return routes.length ? { dir, routes, ...(Object.keys(locales).length ? { locales } : {}) } : null;
 }
 
 async function loadPluginAdminSets(): Promise<PluginAdminSet[]> {
@@ -184,18 +197,21 @@ async function loadPluginAdminSets(): Promise<PluginAdminSet[]> {
       "";
     if (!basePath) continue;
 
-    // Prefer the stored row; fall back to the on-disk manifest (matches how the
-    // host refreshes `settingsSchema` / `assets` for plugins packaged before a
-    // pipeline that strips unknown keys).
+    // A developer checkout (`bundledPath`, no uploaded package) is refreshed
+    // from justflows.json so a new admin route shows up without a reinstall.
+    // An installed package keeps the stored manifest and only falls back to
+    // disk when that row has no adminApp.
+    const installed = typeof manifest.installedPath === "string" && manifest.installedPath.length > 0;
     let adminApp = manifest.adminApp;
-    if (!adminApp || typeof adminApp !== "object") {
+    if (!installed || !adminApp || typeof adminApp !== "object") {
       const diskManifest = resolvePathUnderBase(basePath, "justflows.json");
       if (diskManifest && fs.existsSync(diskManifest)) {
         try {
-          adminApp = (JSON.parse(fs.readFileSync(diskManifest, "utf8")) as Record<string, unknown>)
+          const diskApp = (JSON.parse(fs.readFileSync(diskManifest, "utf8")) as Record<string, unknown>)
             .adminApp;
+          if (diskApp && typeof diskApp === "object") adminApp = diskApp;
         } catch {
-          adminApp = undefined;
+          if (!adminApp || typeof adminApp !== "object") adminApp = undefined;
         }
       }
     }
@@ -206,6 +222,12 @@ async function loadPluginAdminSets(): Promise<PluginAdminSet[]> {
     const baseDir = resolvePathUnderBase(basePath, spec.dir);
     if (!baseDir || !fs.existsSync(baseDir) || !fs.statSync(baseDir).isDirectory()) continue;
 
+    const catalogs: Record<string, string> = {};
+    for (const [code, file] of Object.entries(spec.locales ?? {})) {
+      const abs = resolvePathUnderBase(baseDir, file);
+      if (!abs || !fs.existsSync(abs) || !fs.statSync(abs).isFile()) continue;
+      catalogs[code] = `/ext/${pluginId}/admin/${file}`;
+    }
     const routes: PluginAdminRouteInfo[] = [];
     for (const route of spec.routes) {
       const abs = resolvePathUnderBase(baseDir, route.entry);
@@ -215,6 +237,7 @@ async function loadPluginAdminSets(): Promise<PluginAdminSet[]> {
         path: route.path,
         entryUrl: `/ext/${pluginId}/admin/${route.entry}`,
         title: route.title,
+        ...(Object.keys(catalogs).length ? { catalogs } : {}),
       });
     }
     if (routes.length) out.push({ pluginId, baseDir, routes });
