@@ -59,6 +59,9 @@ describe("MIGRATION_ORDER", () => {
     for (const driver of ["mysql", "mariadb"] as const) {
       const baseline = await readMigrationDdl("0036_baseline", driver);
       const locks = await readMigrationDdl("0043_storage_quota_locks", driver);
+      if (baseline === null || locks === null) {
+        throw new Error(`Missing baseline or storage lock migration for ${driver}`);
+      }
       const sites = baseline.match(/CREATE TABLE IF NOT EXISTS sites \([\s\S]*?;/)?.[0];
       const charset = sites?.match(/DEFAULT CHARSET=\w+ COLLATE=\w+/)?.[0];
       expect(charset).toBe("DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
