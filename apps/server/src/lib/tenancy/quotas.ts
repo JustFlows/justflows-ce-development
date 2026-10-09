@@ -39,6 +39,7 @@ defineCore("content.types", "site", "Custom content types", "count");
 defineCore("content.post", "site", "Posts", "count");
 defineCore("content.page", "site", "Pages", "count");
 defineCore("media.files", "site", "Media files", "count");
+defineCore("storage.bytes", "site", "Total storage", "bytes");
 defineCore("media.bytes", "site", "Media library", "bytes");
 defineCore("files.count", "site", "Private files", "count");
 defineCore("files.bytes", "site", "Private file storage", "bytes");
@@ -297,6 +298,10 @@ async function usageFor(meter: QuotaMeterDefinition, scopeId: string): Promise<n
   if (meter.key === "media.files") {
     return querySiteNumber(scopeId, "SELECT COUNT(*) AS total FROM media WHERE site_id = ?", [scopeId]);
   }
+  if (meter.key === "storage.bytes") {
+    try { return (await (await import("../storage/storage-usage.js")).getSiteStorageUsage(scopeId)).totalBytes; }
+    catch { return null; }
+  }
   if (meter.key === "media.bytes") {
     return querySiteNumber(scopeId, "SELECT COALESCE(SUM(size_bytes + derivative_bytes), 0) AS total FROM media WHERE site_id = ?", [scopeId]);
   }
@@ -413,6 +418,7 @@ export async function checkQuota(
   if (!meter) throw new Error(`Unknown quota meter "${key}".`);
   const delta = assertDelta(input.delta ?? 1);
   const limit = await resolveLimit(meter, scopeId);
+  if (key === "storage.bytes" && limit === null) return { ok: true, limit: null, used: 0, remaining: null };
   if (meter.unit === "flag") {
     const off = limit === 0;
     return { ok: !off, limit, used: 0, remaining: off ? 0 : null };
@@ -477,7 +483,7 @@ export async function listQuotaMeters(scope: QuotaScope, scopeId: string): Promi
   const stored = await storedLimits(scope, scopeId);
   const views: QuotaMeterView[] = [];
   for (const meter of listMeterDefinitions(scope)) {
-    const used = meter.unit === "flag" ? null : meter.owner === "core" || meter.count ? await usageFor(meter, scopeId) : null;
+    const used = meter.key === "storage.bytes" ? (await import("../storage/storage-snapshots.js")).storageSnapshot(scopeId).report?.totalBytes ?? null : meter.unit === "flag" ? null : meter.owner === "core" || meter.count ? await usageFor(meter, scopeId) : null;
     views.push(meterView(meter, stored.get(meter.key) ?? null, used));
   }
   if (scope === "site") {
@@ -604,7 +610,8 @@ export async function replaceQuotaLimits(
   if (!(await scopeExists(scope, scopeId))) {
     return { ok: false, status: 404, error: scope === "workspace" ? "That workspace was not found." : "That website was not found." };
   }
-  await writeLimits(scope, scopeId, checked.limits, "replace");
+  if (scope === "site") await (await import("../storage/storage-quota.js")).withSiteStorageLock(scopeId, () => writeLimits(scope, scopeId, checked.limits, "replace"));
+  else await writeLimits(scope, scopeId, checked.limits, "replace");
   await audit(actorId, scopeId, JSON.stringify(checked.limits));
   await emitUpdated(scope, scopeId, await publishedLimits(scope, scopeId));
   return { ok: true, meters: await listQuotaMeters(scope, scopeId) };
@@ -627,7 +634,8 @@ export async function setQuotaLimit(
   const checked = validateAssignment(scope, { [key]: limit });
   if (!checked.ok) throw new Error(checked.error);
   if (!(await scopeExists(scope, scopeId))) throw new Error(scope === "workspace" ? "That workspace was not found." : "That website was not found.");
-  await writeLimits(scope, scopeId, checked.limits, "merge");
+  if (scope === "site") await (await import("../storage/storage-quota.js")).withSiteStorageLock(scopeId, () => writeLimits(scope, scopeId, checked.limits, "merge"));
+  else await writeLimits(scope, scopeId, checked.limits, "merge");
   await audit(actorId, scopeId, JSON.stringify(checked.limits));
   await emitUpdated(scope, scopeId, await publishedLimits(scope, scopeId));
 }

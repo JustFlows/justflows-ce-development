@@ -87,6 +87,8 @@ describe("serving private files", () => {
     expect(isPrivateUploadPath("/.private/site/justflows.shop/a.pdf")).toBe(true);
     expect(isPrivateUploadPath("/%2Eprivate/site/a.pdf")).toBe(true);
     expect(isPrivateUploadPath("/.PRIVATE/a.pdf")).toBe(true);
+    expect(isPrivateUploadPath("/static-export/sites/root/_deployment.json")).toBe(true);
+    expect(isPrivateUploadPath("/%73tatic-export/sites/root/objects/a/index.html")).toBe(true);
     expect(isPrivateUploadPath(`/${SITE}/photo.jpg`)).toBe(false);
   });
 

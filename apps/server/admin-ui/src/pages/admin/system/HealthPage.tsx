@@ -1,7 +1,9 @@
+import StorageUsageCard, { type StorageUsage } from "../../../components/StorageUsageCard";
 import { useEffect, useState } from "react";
 import { useT } from "../../../i18n/I18nProvider";
 
 interface DiagnosticsReport {
+  storage?: StorageUsage;
   generatedAt: string;
   runtime: { justflowsVersion: string; nodeVersion: string; mode: string; uptimeSeconds: number; memory: { rssBytes: number; heapUsedBytes: number; heapTotalBytes: number; systemUsedBytes: number; systemTotalBytes: number }; debug: { enabled: boolean; expiresAt?: string | null }; warnings: string[] };
   database: { driver: string; connected: boolean; latencyMs: number; migrations: { applied: number; current: boolean; pending: string[] } };
@@ -148,6 +150,7 @@ export default function HealthPage() {
       </header>
 
       {error && <div className="jf-alert jf-alert--error" role="alert">{error}</div>}
+      {report && <StorageUsageCard usage={report.storage} refreshKey={report.generatedAt} endpoint="/api/diagnostics/storage" />}
       {report?.runtime.warnings.map((warning) => (
         <div className="jf-banner jf-banner--warn" role="alert" key={warning}>
           <span className="jf-banner__icon" aria-hidden="true">⚠</span>

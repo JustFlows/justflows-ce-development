@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+import { withSiteStorageLock, enforceStorageGrowth } from "../storage/storage-quota.js";
+
 import { randomUUID } from "node:crypto";
 import { getDb } from "../database/db.js";
 import { getUploadStore, readUpload } from "./upload-store.js";
@@ -285,7 +287,11 @@ const uploadLock = createKeyedLock();
  * row records the real size; on failure the generator has removed the files,
  * so the row's variants are cleared. Returns "skipped" when there is no room.
  */
-export async function rebuildVariantsWithinQuota(
+export async function rebuildVariantsWithinQuota(siteId: string, mediaId: string, input: { filename: string; mimeType: string; buffer: Buffer; focal: { x: number; y: number } | null }): Promise<MediaDerivatives | null | "skipped"> {
+  return withSiteStorageLock(siteId, () => rebuildVariantsWithinQuotaLocked(siteId, mediaId, input));
+}
+
+async function rebuildVariantsWithinQuotaLocked(
   siteId: string,
   mediaId: string,
   input: { filename: string; mimeType: string; buffer: Buffer; focal: { x: number; y: number } | null },
@@ -303,6 +309,7 @@ export async function rebuildVariantsWithinQuota(
       const { enforceQuota } = await import("../tenancy/quotas.js");
       if (await enforceQuota("media.bytes", siteId, growth)) return "skipped";
     }
+    await enforceStorageGrowth(siteId, budget);
     try {
       const rebuilt = await generateAndStoreVariants({ siteId, mediaId, ...input, maxBytes: budget });
       if (rebuilt) {
@@ -322,10 +329,20 @@ export async function rebuildVariantsWithinQuota(
   });
 }
 
-export async function storeMediaUpload(
+export async function storeMediaUpload(file: UploadInput, actor: MediaActor): Promise<MediaWriteResult> {
+  try { return await withSiteStorageLock(actor.siteId, () => storeMediaUploadLocked(file, actor)); }
+  catch (err) {
+    const { QuotaRefusalError } = await import("../tenancy/quotas.js");
+    if (err instanceof QuotaRefusalError) return { status: err.status, body: { error: err.message, code: err.code, meter: err.meter } };
+    throw err;
+  }
+}
+
+async function storeMediaUploadLocked(
   file: UploadInput,
   actor: MediaActor,
 ): Promise<MediaWriteResult> {
+  if (file.size !== file.buffer.length) return { status: 400, body: { error: "Upload size does not match its contents" } };
   if (!MEDIA_ALLOWED_TYPES.has(file.mimetype)) {
     return { status: 415, body: { error: `File type not allowed: ${file.mimetype}` } };
   }
@@ -359,11 +376,14 @@ export async function storeMediaUpload(
       };
     }
     const { enforceQuota } = await import("../tenancy/quotas.js");
+    const countLimit = await enforceQuota("media.files", actor.siteId, 1);
+    if (countLimit) return { status: countLimit.status, body: countLimit };
     const configured = await enforceQuota("media.bytes", actor.siteId, reserved);
     if (configured) {
       return { status: configured.status, body: { error: configured.error, code: configured.code, meter: configured.meter } };
     }
 
+    await enforceStorageGrowth(actor.siteId, reserved);
     const storageKey = `${actor.siteId}/${randomUUID()}${ext}`;
     await getUploadStore().put(storageKey, file.buffer, file.mimetype);
 

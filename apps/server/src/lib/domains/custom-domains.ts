@@ -180,8 +180,8 @@ export function dnsInstructions(
   const mode = asMode(row.connect_mode);
   if (row.parent_id || !mode) return [];
   if (mode === "nameservers") {
-    // The TXT record goes in at the DNS provider the domain uses today,
-    // before the nameservers change.
+    // The customer publishes the TXT record at the authoritative DNS provider.
+    // Verification accepts the exact token before or after delegation.
     const verify: DnsInstruction[] =
       row.verification_token && !row.ownership_proven_at
         ? [{ type: "TXT", name: challengeName(row.hostname), value: challengeValue(row.verification_token), purpose: "verify" }]

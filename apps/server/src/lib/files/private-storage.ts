@@ -85,7 +85,9 @@ export interface PrivateObjectStream {
 export interface PrivateBackend {
   /** Stable id of this storage, stored on each file. */
   id: string;
+  inventoryKey?: string;
   source: PrivateStorageSource;
+  measure?: (siteId: string) => Promise<{ bytes: number; files: number } | null>;
   put(objectKey: string, data: Buffer, contentType: string): Promise<void>;
   read(objectKey: string): Promise<Buffer | null>;
   open(objectKey: string, range?: string): Promise<PrivateObjectStream | null>;
@@ -238,6 +240,9 @@ export async function testPrivateStorage(siteId: string, input: SavePrivateStora
 
 /** Save the site's connection. The replaced one is kept until its files are copied. */
 export async function savePrivateStorage(siteId: string, input: SavePrivateStorageInput): Promise<PrivateStorageView> {
+  return (await import("../storage/storage-quota.js")).withSiteStorageLock(siteId, () => savePrivateStorageLocked(siteId, input));
+}
+async function savePrivateStorageLocked(siteId: string, input: SavePrivateStorageInput): Promise<PrivateStorageView> {
   const setting = await readSiteSetting(siteId);
   const next = nextConnection(input, setting.current);
   const previous = setting.current ? [setting.current, ...setting.previous] : setting.previous;
@@ -247,6 +252,9 @@ export async function savePrivateStorage(siteId: string, input: SavePrivateStora
 
 /** Stop using the site's connection; it falls back to the next storage in line. */
 export async function clearPrivateStorage(siteId: string): Promise<void> {
+  return (await import("../storage/storage-quota.js")).withSiteStorageLock(siteId, () => clearPrivateStorageLocked(siteId));
+}
+async function clearPrivateStorageLocked(siteId: string): Promise<void> {
   const setting = await readSiteSetting(siteId);
   if (!setting.current) return;
   await setSiteSetting(siteId, PRIVATE_STORAGE_SETTING, {
@@ -261,8 +269,23 @@ export async function clearPrivateStorage(siteId: string): Promise<void> {
  * connections.
  */
 export async function forgetUnusedConnections(siteId: string, inUse: Set<string>): Promise<void> {
+  return (await import("../storage/storage-quota.js")).withSiteStorageLock(siteId, () => forgetUnusedConnectionsLocked(siteId, inUse));
+}
+async function forgetUnusedConnectionsLocked(siteId: string, inUse: Set<string>): Promise<void> {
   const setting = await readSiteSetting(siteId);
-  const keep = setting.previous.filter((item) => inUse.has(`site:${item.id}`) || inUse.has(`platform:${item.id}`));
+  const rootId = await installationRootSiteId();
+  const ids = rootId === siteId ? (await (await getControlDb()).query<{ id: string }>("SELECT id FROM sites")).map((row) => row.id) : [siteId];
+  const keep = [];
+  for (const item of setting.previous) {
+    if (inUse.has(`site:${item.id}`) || inUse.has(`platform:${item.id}`)) { keep.push(item); continue; }
+    const backend = s3Backend(item, rootId === siteId ? "platform" : "site");
+    let empty = Boolean(backend?.measure);
+    for (const id of ids) {
+      const usage = await backend?.measure?.(id).catch(() => null);
+      if (!usage || usage.bytes > 0 || usage.files > 0) { empty = false; break; }
+    }
+    if (!empty) keep.push(item);
+  }
   if (keep.length === setting.previous.length) return;
   await setSiteSetting(siteId, PRIVATE_STORAGE_SETTING, { current: setting.current, previous: keep } satisfies StoredSetting);
 }
@@ -273,6 +296,7 @@ function s3Store(id: string, source: PrivateStorageSource, adapter: S3StorageAda
   const full = (key: string) => (prefix ? `${prefix}/${key}` : key);
   return {
     id,
+    inventoryKey: adapter.objectUrl(prefix).toString(),
     source,
     put: async (key, data, type) => {
       await adapter.save(full(key), data, type);
@@ -292,6 +316,7 @@ function s3Store(id: string, source: PrivateStorageSource, adapter: S3StorageAda
       };
     },
     delete: (key) => adapter.delete(full(key)),
+    measure: async (siteId) => (await import("../storage/storage-usage.js")).measureS3Prefix(adapter, full(`${siteId}/`)),
   };
 }
 
@@ -333,6 +358,8 @@ export function localPrivateBackend(root: string): PrivateBackend {
   return {
     id: `local:${root}`,
     source: "local",
+    inventoryKey: path.resolve(root),
+    measure: async (siteId) => (await import("../storage/storage-usage.js")).measureLocalDirectory(path.join(root, siteId)),
     put: async (key, data) => {
       const target = resolve(key);
       await fs.mkdir(path.dirname(target), { recursive: true });
@@ -488,7 +515,12 @@ function info(key: string, row: FileRow): PrivateFileInfo {
 }
 
 /** Store a file, within the site's private-file limits. Replacing a file counts only the growth. */
-export async function putPrivateFile(
+export async function putPrivateFile(siteId: string, owner: string, key: string, data: Buffer, contentType: string): Promise<PrivateFileInfo> {
+  const { withSiteStorageLock } = await import("../storage/storage-quota.js");
+  return withSiteStorageLock(siteId, () => putPrivateFileLocked(siteId, owner, key, data, contentType));
+}
+
+async function putPrivateFileLocked(
   siteId: string,
   owner: string,
   key: string,
@@ -503,9 +535,11 @@ export async function putPrivateFile(
     if (block) throw new QuotaRefusalError(block);
   }
   const growth = Math.max(0, data.length - (Number(existing?.size_bytes) || 0));
-  const bytesBlock = await enforceQuota("files.bytes", siteId, growth);
+  const bytesBlock = growth > 0 ? await enforceQuota("files.bytes", siteId, growth) : null;
   if (bytesBlock) throw new QuotaRefusalError(bytesBlock);
   const backend = await activePrivateBackend(siteId);
+  const { enforceStorageGrowth } = await import("../storage/storage-quota.js");
+  await enforceStorageGrowth(siteId, existing?.storage_id === backend.id ? growth : data.length);
   await backend.put(object, data, type);
   const sha256 = createHash("sha256").update(data).digest("hex");
   const db = await getDb();
@@ -589,6 +623,10 @@ export async function listPrivateFiles(siteId: string, owner: string, prefix = "
  * forgotten once nothing is stored on it.
  */
 export async function copyPrivateFiles(siteId: string, limit = 50): Promise<{ copied: number; failed: number; left: number }> {
+  return (await import("../storage/storage-quota.js")).withSiteStorageLock(siteId, () => copyPrivateFilesLocked(siteId, limit));
+}
+
+async function copyPrivateFilesLocked(siteId: string, limit: number): Promise<{ copied: number; failed: number; left: number }> {
   const target = await activePrivateBackend(siteId);
   const db = await getDb();
   const rows = await db.query<{ id: string; owner: string; file_key: string; content_type: string; storage_id: string }>(
@@ -606,6 +644,7 @@ export async function copyPrivateFiles(siteId: string, limit = 50): Promise<{ co
         failed += 1;
         continue;
       }
+      await (await import("../storage/storage-quota.js")).enforceStorageGrowth(siteId, data.length);
       await target.put(object, data, row.content_type);
       await db.run("UPDATE private_files SET storage_id = ? WHERE id = ? AND storage_id = ?", [target.id, row.id, row.storage_id]);
       copied += 1;
@@ -632,4 +671,26 @@ export async function storageIdsInUse(siteId: string): Promise<Set<string>> {
   const db = await getDb();
   const used = await db.query<{ storage_id: string }>("SELECT DISTINCT storage_id FROM private_files WHERE site_id = ?", [siteId]);
   return new Set(used.map((item) => item.storage_id));
+}
+
+/** Physical private storage, including earlier connections awaiting migration cleanup. */
+export async function privateStorageUsage(siteId: string): Promise<{ local: { bytes: number; files: number } | null; external: { bytes: number; files: number } | null }> {
+  const { sumStorageAmounts } = await import("../storage/storage-usage.js");
+  // Reporting must not silently fall back when configured connections cannot be read.
+  const own = await readSiteSetting(siteId);
+  const rootId = await installationRootSiteId();
+  const platform = rootId && rootId !== siteId ? await readRootSetting(rootId) : null;
+  for (const setting of [own, platform]) {
+    for (const connection of [setting?.current, ...(setting?.previous ?? [])]) {
+      if (connection && !s3Backend(connection, "site")) throw new Error("Private storage connection could not be read");
+    }
+  }
+  const stores = [...new Map((await candidates(siteId)).map((backend) => [backend.inventoryKey ?? backend.id, backend])).values()];
+  const local: Array<{ bytes: number; files: number } | null> = []; const external: Array<{ bytes: number; files: number } | null> = [];
+  for (const backend of stores) {
+    let usage = null;
+    try { usage = await backend.measure?.(siteId) ?? null; } catch { /* Unknown stays unknown. */ }
+    (backend.source === "local" ? local : external).push(usage);
+  }
+  return { local: sumStorageAmounts(local), external: sumStorageAmounts(external) };
 }

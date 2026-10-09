@@ -253,6 +253,66 @@ hosts (nginx, S3+CloudFront, …) don't read `_headers`; add the equivalent
 Diff two manifests by `sha256` to build a precise CDN invalidation list instead
 of purging everything.
 
+### Built-in OVH / S3 deployment
+
+In **Tools → Static site export → Configuration**, select **Object storage
+(S3 / OVH)**, or set `STATIC_EXPORT_STORAGE_DRIVER=s3`. The default is `local`.
+This reuses the installation's `STORAGE_S3_BUCKET`, `STORAGE_S3_ENDPOINT`,
+`STORAGE_S3_REGION`, `STORAGE_S3_ACCESS_KEY_ID`, `STORAGE_S3_SECRET_ACCESS_KEY`,
+and optional path-style/session-token settings. Media can still use local
+storage; selecting S3 for exports does not change `STORAGE_DRIVER`.
+The local development `.env` needs these values too if you want to test against
+object storage. No credentials are copied automatically from another install.
+
+The bucket stays private. Exports use a reserved namespace:
+
+```text
+<STORAGE_S3_PREFIX>/static-export/sites/root/           # installation site / CLI
+<STORAGE_S3_PREFIX>/static-export/sites/<site-id>/      # each secondary site
+```
+
+Stable site ids preserve the folder when a site's primary domain changes.
+Uploads and private plugin files are outside this namespace. The existing local
+export folder is still used to build the export and remains available for
+preview. Only HTML routes listed in the export manifest are uploaded;
+`.htaccess`, `_nginx.conf`, `_headers`, and the local manifest stay on disk.
+
+S3 mode does not download or upload images, media, CSS, scripts, fonts, feeds,
+or other non-HTML resources. HTML keeps their existing URLs, served by the live
+app, OVH media storage, or CDN. Local mode still creates a self-contained
+export with assets. On the next successful S3 deployment, old non-HTML objects
+referenced by the previous deployment pointer are removed from the export
+namespace; original uploaded media is never removed. Older unreferenced objects
+are removed with Clear export.
+
+Admin Run actions return immediately and poll a site-scoped background job
+for progress and completion; synchronous CLI/API calls remain supported. Jobs
+are kept in process memory, so a restart during an export requires checking
+Tools and rerunning it if needed.
+
+Objects are stored by content hash. After all uploads succeed, a single private
+`_deployment.json` pointer publishes the new route map. A failed upload leaves
+the previous deployment usable and reports a failure in the export log. The
+pointer removes unpublished/deleted paths from serving; old immutable objects
+remain until **Clear export**, which removes this site's pointer and objects
+as well as its local output. Interrupted uploads are cleaned by Clear too.
+
+Keep Bunny's origin pointed at the app. Before public page rendering, the app
+looks up exported paths in the private deployment pointer and streams the
+matching object with signed S3 requests. Existing asset handlers and plugin
+routes take precedence. Admin, APIs, authenticated visitors, query-string
+requests, and export-crawler requests stay on the live app. Missing objects or
+a storage outage fall back to the live renderer. Turning export off also
+bypasses bucket serving. No public bucket policy or Bunny origin changes are
+needed. Configured CDN caches are purged for the current site's domains after
+publishing or clearing; CDN purge failures are logged without failing a
+completed storage deployment. Normal CDN and browser TTLs still apply.
+
+This mode uses the app as a private origin gateway; it does not enable OVH's
+public website endpoint or remove the app from the request path on cache misses.
+A direct bucket origin would need separate public-access/authentication and URL
+rewrite configuration because the built-in objects use content-hash keys.
+
 ### Automating the push
 
 Register a `staticExport.deploy` action in a plugin. It receives
@@ -644,3 +704,20 @@ hooks when the transition commits, triggering configured automatic rebuilds.
 The application worker must remain running to execute schedules and rebuild
 exports; static files alone cannot run the scheduler. See
 [Scheduled publishing](SCHEDULING.md).
+
+## Verify exported pages are served
+
+For object-storage exports served through the Justflows origin, inspect the
+page's response headers in DevTools → Network or run:
+
+```sh
+curl -sSI https://your-domain.example/
+```
+
+`X-Justflows-Render: static-export` confirms that the origin selected the
+deployed export. `CDN-Cache: HIT` additionally confirms Bunny served its cached
+response. The export marker is absent when this middleware falls back to live
+rendering; it does not identify standalone exports served by another web server.
+After deploying this change, purge existing cached pages or wait for them to
+expire before checking. Test a public page without a login session or query
+string, since those visits bypass exported HTML at the origin.

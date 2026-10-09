@@ -1,3 +1,4 @@
+import { readStaticExportJson, pollStaticExportJob } from "../../../lib/static-export-request";
 import { SearchToolsCard } from "../../../components/SearchToolsCard";
 import { useEffect, useRef, useState } from "react";
 import { manualRestartKey, serviceUnitName } from "../../../lib/restart-notice.js";
@@ -77,6 +78,7 @@ interface StaticExportStatus {
 }
 
 interface StaticExportSettings {
+  storageDriver: "local" | "s3";
   enabled: boolean;
   dir: string;
   baseUrl: string;
@@ -103,6 +105,7 @@ interface StaticExportSettingsResponse {
 }
 
 interface StaticExportRunResponse {
+  jobId?: string;
   ok: boolean;
   error?: string;
   log?: string[];
@@ -339,9 +342,19 @@ export default function ToolsPage() {
       const res = await fetch("/api/static-export/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode }),
+        body: JSON.stringify({ mode, async: true }),
       });
-      const data = (await res.json()) as StaticExportRunResponse;
+      const responseError = t("tools.staticExport.responseUnavailable", { status: res.status });
+      let data = await readStaticExportJson<StaticExportRunResponse>(res, responseError);
+      if (res.status === 202 && data.jobId) {
+        const job = await pollStaticExportJob(data.jobId, async () => {
+          const status = await fetch("/api/static-export/status", { cache: "no-store" });
+          const message = t("tools.staticExport.responseUnavailable", { status: status.status });
+          if (!status.ok) throw new Error(message);
+          return readStaticExportJson(status, message);
+        }, (job) => setSxLog(job.log), t("tools.staticExport.pollingUnavailable"));
+        data = { ok: job.state === "completed", summary: job.summary, error: job.error, log: job.log };
+      }
       setSxLog(data.log ?? []);
       if (!res.ok || !data.ok) {
         setSxError(data.error ?? t("tools.staticExport.exportFinishedWithErrors"));
@@ -1037,10 +1050,12 @@ export default function ToolsPage() {
         </div>
         <div className="jf-card__body jf-stack">
           <p className="jf-prose">
+            {sxSettings?.storageDriver === "s3" ? t("tools.staticExport.descriptionHtmlOnly") : <>
             {t("tools.staticExport.description1")} <code className="jf-code">sitemap.xml</code>
             , <code className="jf-code">robots.txt</code> {t("tools.staticExport.description2")}{" "}
             <code className="jf-code">theme.css</code> {t("tools.staticExport.description3")}{" "}
             <code className="jf-code">docs/STATIC-EXPORT.md</code> {t("tools.staticExport.description4")}
+            </>}
           </p>
 
           <div className="jf-row" style={{ flexWrap: "wrap", gap: "0.5rem" }}>
@@ -1096,6 +1111,28 @@ export default function ToolsPage() {
                   {t("tools.staticExport.enabledCheckboxText2")}
                 </span>
               </label>
+
+              <div className="jf-field">
+                <label className="jf-field__label" htmlFor="jf-sx-storage">
+                  {t("tools.staticExport.storageLabel")}
+                </label>
+                <select
+                  id="jf-sx-storage"
+                  className="jf-input"
+                  value={sxSettings.storageDriver ?? "local"}
+                  onChange={(e) =>
+                    setSxSettings({
+                      ...sxSettings,
+                      storageDriver: e.target.value as "local" | "s3",
+                    })
+                  }
+                  disabled={sxSaving || sxRunning}
+                >
+                  <option value="local">{t("tools.staticExport.storageLocal")}</option>
+                  <option value="s3">{t("tools.staticExport.storageS3")}</option>
+                </select>
+                <p className="jf-field__hint">{t("tools.staticExport.storageHint")}</p>
+              </div>
 
               <div className="jf-field">
                 <label className="jf-field__label" htmlFor="jf-sx-dir">

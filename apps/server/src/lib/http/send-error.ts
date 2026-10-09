@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { QuotaRefusalError } from "../tenancy/quotas.js";
 import type { Response } from "express";
 import { logSafe } from "../security/log-safe.js";
 import { recordDiagnosticError } from "../runtime/diagnostics.js";
@@ -17,6 +18,10 @@ import { recordDiagnosticError } from "../runtime/diagnostics.js";
  * read it and an anonymous caller cannot.
  */
 export function sendServerError(res: Response, context: string, err: unknown): void {
+  if (err instanceof QuotaRefusalError) {
+    if (!res.headersSent) res.status(err.status).json({ error: err.message, code: err.code, meter: err.meter });
+    return;
+  }
   const diagnostic = recordDiagnosticError(context, err);
   console.error(`[justflows] ${logSafe(context)}:`, err);
   if (res.headersSent) return;

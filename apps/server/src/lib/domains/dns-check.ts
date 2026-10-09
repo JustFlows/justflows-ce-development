@@ -131,11 +131,9 @@ export interface NameserverDomainInput {
 }
 
 /**
- * Nameservers mode. Pointing the domain at shared nameservers proves nothing
- * on its own: another customer of the same DNS provider already has that
- * delegation. Ownership is proven with the TXT challenge, read while the
- * domain is still served by its existing DNS — once it is delegated here,
- * TXT answers would come from a zone the requesting site controls.
+ * Nameservers mode: delegation routes the domain but never proves ownership.
+ * The exact TXT challenge proves ownership before or after delegation. The
+ * platform must not publish that challenge or allow unverified DNS edits.
  */
 export async function checkNameserverDomain(
   input: NameserverDomainInput,
@@ -144,17 +142,13 @@ export async function checkNameserverDomain(
   const delegation = await checkNameservers(input.hostname, input.expected, resolver);
   let ownership = input.ownershipProven;
   let provenNow = false;
-  if (!ownership && !delegation.routing && (await hasChallenge(input.hostname, input.token, resolver))) {
+  if (!ownership && (await hasChallenge(input.hostname, input.token, resolver))) {
     ownership = true;
     provenNow = true;
   }
   let problem = "";
   if (!ownership) {
-    problem = delegation.routing
-      ? `${input.hostname} already uses these nameservers, so ownership cannot be proven here. ` +
-        `Add the TXT record ${challengeName(input.hostname)} at the DNS provider the domain used before, ` +
-        "point the nameservers back there until it is verified, or connect it with DNS records."
-      : `The TXT record ${challengeName(input.hostname)} was not found yet. Add it at your current DNS provider before changing nameservers.`;
+    problem = `The TXT record ${challengeName(input.hostname)} with the expected verification value was not found yet. Add it at the domain's authoritative DNS provider.`;
   } else if (!delegation.routing) {
     problem = delegation.problem;
   }

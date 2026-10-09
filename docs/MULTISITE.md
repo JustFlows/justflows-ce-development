@@ -43,7 +43,7 @@ A website can connect a domain it owns under **Settings → Domains**. A platfor
 **Two ways to connect.** The operator chooses which are offered.
 
 - **DNS records.** The customer keeps their DNS host. They add a TXT record `_justflows.<domain>` with the value shown, and point the domain at the CNAME target. A bare domain (`example.com`) needs ALIAS, ANAME, or CNAME flattening at their DNS host, or the A and AAAA addresses the operator lists.
-- **Nameservers** (Bunny DNS only). Justflows creates a DNS zone for the domain at Bunny, with records that serve the website, plus `www.` when that option is on. The customer first adds the TXT record `_justflows.<domain>` at the DNS provider the domain uses today, which proves they own it, and then changes the nameservers at their registrar. A domain that already uses the platform's nameservers cannot be added this way, because the delegation alone does not show who owns it. DNS records can be managed once ownership is proven. The website can then add its own records (MX, TXT, A, AAAA, CNAME, CAA, SRV) under **DNS records**. The records that serve the website cannot be changed. Before switching, the customer should copy their email and other records, because the old DNS host stops answering.
+- **Nameservers** (Bunny DNS only). Justflows creates a DNS zone for the domain at Bunny, with records that serve the website, plus `www.` when that option is on. The customer adds the TXT record `_justflows.<domain>` with the exact verification value at the authoritative DNS provider and changes the nameservers at their registrar. The TXT check works before or after the nameservers switch; if they have already switched, an operator with independent access to Bunny must add the record there. Justflows does not publish this challenge automatically. A domain that already uses the platform's nameservers cannot be added this way, because the delegation alone does not show who owns it. DNS records can be managed once ownership is proven. The website can then add its own records (MX, TXT, A, AAAA, CNAME, CAA, SRV) under **DNS records**. The records that serve the website cannot be changed. Before switching, the customer should copy their email and other records, because the old DNS host stops answering.
 
 **Verification.** A background job checks pending domains every few minutes. **Check now** runs the check at once. Once DNS is right, the hostname is attached to the provider, a certificate is issued, and the domain starts routing. A domain that is never verified is released after the number of days the operator sets, so a name cannot be held by someone who does not own it. A connected domain is checked again every 6 hours. After the operator's number of failures in a row, it stops being served. If it was the primary address, the platform subdomain becomes primary again.
 
@@ -144,3 +144,38 @@ Plugins register their own meters with `ctx.quotas.register` and call `ctx.quota
 ## What Justflows does not operate
 
 DNS for the platform's own domains, TLS certificates outside Bunny.net, subscriptions, and outbound email stay with the operator. A plugin can add paid plans. Justflows provisions the database you configure, and with Bunny.net it attaches custom domains, issues their certificates, and creates DNS zones for them.
+
+## Storage accounting and caps
+
+Root Diagnostics and Platform → Website show physical managed storage split
+between local files and external S3-compatible storage (including OVH), and
+between media, private files, and exports. Measurements include trash,
+derivatives, local staging, immutable export objects, and retained private-file
+copies. Logical media/private-file records are shown separately; they are not
+physical storage bills. External totals cover managed site prefixes rather than
+all unrelated objects in a provider account. Local totals cover the configured
+uploads, private-file, and static-export folders, rather than database files,
+application dependencies, or the whole server disk.
+
+`GET /api/diagnostics/storage` is installation-root administrator only.
+`GET /api/platform/sites/:id/storage` uses the platform operator guard. Both
+return a background measurement state and its latest report, including
+`generatedAt`, local/external byte and file totals, category rows, `totalBytes`,
+and `logicalBytes`. Dashboard snapshots are refreshed after one minute or
+storage writes and survive only for the current process. They are a foundation
+for billing integration, not a persisted billing history or invoice ledger.
+Unknown measurements remain null, never zero.
+
+Set **Total storage (local + external)** in a site's Limits, or in Platform
+Defaults for new sites (`storage.bytes`, bytes in the API and MB in the UI).
+Blank is unlimited. The total physical cap applies alongside media and private
+file caps. Admission uses fresh inventory under a control-database `storage_quota_locks` row
+lock, shared by workers and by media/private/export writers, not the dashboard
+cache. Writes that need more room are refused; if required usage cannot be read,
+a finite cap refuses growth. Existing data is kept if the limit is lowered.
+Temporary staging and retained copies consume space too, so migrations, image
+regeneration, S3 trash/restore moves, and exports need room for their intermediate or retained files.
+Files written directly to disk or a bucket outside Justflows cannot be prevented
+by application quotas; inventories include them when they fall within a managed
+site namespace. Provider credentials need ListObjectsV2 permission for accurate
+external measurements and finite-cap admission.

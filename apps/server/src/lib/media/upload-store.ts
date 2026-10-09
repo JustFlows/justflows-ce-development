@@ -145,7 +145,21 @@ function s3Store(config: S3UploadConfig): S3UploadStore {
     },
     read: async (key) => (await adapter.read(bucketKey(key)))?.body ?? null,
     exists: (key) => adapter.exists(bucketKey(key)),
-    move: (from, to) => adapter.move(bucketKey(from), bucketKey(to)),
+    move: async (from, to) => {
+      const parts = checked(from).split("/");
+      const candidate = parts[0] === ".trash" ? parts[1] : parts[0];
+      const siteId = candidate && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate) ? candidate
+        : (await import("../tenancy/context.js")).getTenantContext()?.siteId ?? await (await import("../tenancy/registry.js")).installationRootSiteId();
+      if (!siteId) throw new Error("Storage move needs an installed site");
+      const { withSiteStorageLock, enforceStorageGrowth } = await import("../storage/storage-quota.js");
+      return withSiteStorageLock(siteId, async () => {
+        const source = bucketKey(from);
+        const inventory = await adapter.listObjects(source);
+        const objects = inventory.filter((object) => from.endsWith("/") ? object.key.startsWith(source) : object.key === source);
+        await enforceStorageGrowth(siteId, objects.reduce((total, object) => total + object.size, 0));
+        return adapter.move(source, bucketKey(to));
+      });
+    },
     delete: (key) => adapter.delete(bucketKey(key)),
     list: async (prefix) => (await adapter.list(bucketKey(prefix))).map(strip),
     deletePrefix: (prefix) => adapter.deletePrefix(bucketKey(prefix)),

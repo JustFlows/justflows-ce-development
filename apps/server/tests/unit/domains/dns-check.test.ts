@@ -140,12 +140,36 @@ describe("nameserver domain ownership", () => {
   const expected = ["kiki.bunny.net", "coco.bunny.net"];
   const challenge = { [challengeName("example.com")]: [[challengeValue("abc123")]] };
 
-  it("never treats an existing delegation to the shared nameservers as ownership", async () => {
+  it("accepts the exact TXT challenge after delegation to the shared nameservers", async () => {
     const result = await checkNameserverDomain(
       { hostname: "example.com", token: "abc123", expected, ownershipProven: false },
       resolver({ ns: { "example.com": expected }, txt: challenge }),
     );
+    expect(result).toEqual({ ownership: true, routing: true, provenNow: true, problem: "" });
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["wrong token", { [challengeName("example.com")]: [[challengeValue("someone-else")]] }],
+    ["wrong hostname", { "example.com": [[challengeValue("abc123")]] }],
+  ])("rejects a %s challenge even when nameservers match", async (_label, txt) => {
+    const result = await checkNameserverDomain(
+      { hostname: "example.com", token: "abc123", expected, ownershipProven: false },
+      resolver({ ns: { "example.com": expected }, txt }),
+    );
     expect(result).toMatchObject({ ownership: false, routing: true, provenNow: false });
+    expect(result.problem).toContain("_justflows.example.com");
+    expect(result.problem).not.toContain("point the nameservers back");
+  });
+
+  it("does not prove ownership with an empty token", async () => {
+    const result = await checkNameserverDomain(
+      { hostname: "example.com", token: "", expected, ownershipProven: false },
+      resolver({ ns: { "example.com": expected }, txt: {
+        [challengeName("example.com")]: [[challengeValue("")]],
+      } }),
+    );
+    expect(result.ownership).toBe(false);
   });
 
   it("proves ownership with the TXT challenge while the domain is still on its own DNS", async () => {

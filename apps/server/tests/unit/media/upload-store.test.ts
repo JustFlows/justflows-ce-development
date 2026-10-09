@@ -11,6 +11,9 @@ import {
   s3UploadConfig,
 } from "../../../src/lib/media/upload-store.js";
 
+const quota = vi.hoisted(() => ({ enforce: vi.fn() }));
+vi.mock("../../../src/lib/storage/storage-quota.js", () => ({ withSiteStorageLock: async (_site: string, work: () => Promise<unknown>) => work(), enforceStorageGrowth: quota.enforce }));
+
 const SITE = "033fcfcc-8948-417d-928f-62f5b7954b67";
 const saved = { ...process.env };
 const realFetch = globalThis.fetch;
@@ -28,7 +31,7 @@ function fakeS3() {
       const prefix = url.searchParams.get("prefix") ?? "";
       const keys = [...objects.keys()].filter((k) => k.startsWith(prefix));
       return new Response(
-        `<ListBucketResult>${keys.map((k) => `<Contents><Key>${k}</Key></Contents>`).join("")}<IsTruncated>false</IsTruncated></ListBucketResult>`,
+        `<ListBucketResult>${keys.map((k) => `<Contents><Key>${k}</Key><Size>${objects.get(k)!.length}</Size></Contents>`).join("")}<IsTruncated>false</IsTruncated></ListBucketResult>`,
       );
     }
     if (method === "PUT" && headers["x-amz-copy-source"]) {
@@ -57,6 +60,7 @@ function fakeS3() {
 
 let bucketSeq = 0;
 beforeEach(() => {
+  quota.enforce.mockReset().mockResolvedValue(undefined);
   process.env.STORAGE_DRIVER = "s3";
   // A fresh endpoint per test so the cached store picks up the stubbed fetch.
   process.env.STORAGE_S3_ENDPOINT = `https://t${++bucketSeq}.s3.test`;
@@ -96,6 +100,15 @@ describe("upload store config", () => {
 });
 
 describe("S3 driver", () => {
+  it("refuses a trash copy before writing when the storage allowance is exhausted", async () => {
+    const s3 = fakeS3(); vi.stubGlobal("fetch", s3.fake);
+    await getUploadStore().put(`${SITE}/a.png`, Buffer.from("png"), "image/png");
+    quota.enforce.mockRejectedValue(new Error("Storage limit exceeded"));
+    await expect(moveMediaStorage(`${SITE}/a.png`, true)).rejects.toThrow("Storage limit exceeded");
+    expect([...s3.objects.keys()]).toEqual([`${SITE}/a.png`]);
+    expect(quota.enforce).toHaveBeenCalledWith(SITE, 3);
+  });
+
   it("trashes and restores media under the site's own prefix", async () => {
     const s3 = fakeS3();
     vi.stubGlobal("fetch", s3.fake);

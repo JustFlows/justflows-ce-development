@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { s3UploadConfig } from "../media/upload-store.js";
 import path from "node:path";
 import { z } from "zod";
 import { parseEnvBool } from "@justflows/core";
@@ -39,6 +40,7 @@ function isSafeRelDir(v: string): boolean {
  */
 export const StaticExportSettingsSchema = z.object({
   enabled: z.boolean(),
+  storageDriver: z.enum(["local", "s3"]).default("local"),
   dir: z
     .string()
     .trim()
@@ -91,6 +93,7 @@ export async function readStaticExportSettings(): Promise<{
 }> {
   const map = await readEnvMap();
   const settings: StaticExportSettings = {
+    storageDriver: envGet(map, "STATIC_EXPORT_STORAGE_DRIVER") === "s3" ? "s3" : "local",
     enabled: parseEnvBool(envGet(map, "STATIC_EXPORT_ENABLED"), true),
     dir: (envGet(map, "STATIC_EXPORT_DIR") ?? "").trim(),
     baseUrl: (envGet(map, "STATIC_EXPORT_BASE_URL") ?? "").trim(),
@@ -120,6 +123,7 @@ export async function readStaticExportSettings(): Promise<{
 
 function toEnvUpdates(body: StaticExportSettings): Record<string, string | null> {
   return {
+    STATIC_EXPORT_STORAGE_DRIVER: body.storageDriver,
     STATIC_EXPORT_ENABLED: body.enabled ? "1" : "0",
     STATIC_EXPORT_DIR: body.dir ? body.dir : null,
     STATIC_EXPORT_BASE_URL: body.baseUrl ? body.baseUrl : null,
@@ -137,6 +141,7 @@ export async function applyStaticExportSettings(
   body: StaticExportSettings,
 ): Promise<Awaited<ReturnType<typeof readStaticExportSettings>>> {
   const parsed = StaticExportSettingsSchema.parse(body);
+  if (parsed.storageDriver === "s3") s3UploadConfig();
   const updates = toEnvUpdates(parsed);
   await updateEnvKeys(updates);
   applyEnvToProcess(updates);
