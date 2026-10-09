@@ -17,6 +17,16 @@ const base = {
 };
 
 describe("StaticExportSettingsSchema", () => {
+  it("defaults to local and accepts only supported storage drivers", () => {
+    expect(StaticExportSettingsSchema.parse(base).storageDriver).toBe("local");
+    expect(StaticExportSettingsSchema.parse({ ...base, storageDriver: "s3" }).storageDriver).toBe(
+      "s3",
+    );
+    expect(StaticExportSettingsSchema.safeParse({ ...base, storageDriver: "swift" }).success).toBe(
+      false,
+    );
+  });
+
   it("accepts blank URLs and a plain relative dir", () => {
     expect(StaticExportSettingsSchema.safeParse({ ...base, dir: "build/site" }).success).toBe(true);
     expect(

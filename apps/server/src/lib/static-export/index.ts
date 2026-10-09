@@ -1,5 +1,11 @@
 // SPDX-License-Identifier: MIT
 
+import {
+  staticExportDriver,
+  deployStaticExport,
+  clearDeployedStaticExport,
+  staticExportObjectStore,
+} from "./object-storage.js";
 import type { CacheRevalidateTrigger } from "@justflows/sdk";
 import { getRuntimeHooks } from "../plugins/plugin-runtime.js";
 import { getJustflowsVersion } from "../runtime/version.js";
@@ -430,6 +436,7 @@ export async function runStaticExport(
     throw new Error("Static export is turned off for this website.");
   }
 
+  if (staticExportDriver() === "s3") staticExportObjectStore();
   const crawlBase = await resolveCrawlOrigin(cfg.baseUrl, log);
   const fetcher = makeFetcher(crawlBase);
   const fetchText = async (path: string) => {
@@ -815,6 +822,19 @@ export async function runStaticExport(
   );
   for (const err of errors.slice(0, 20)) log(`✗ ${err}`);
 
+  if (summary.ok && staticExportDriver() === "s3") {
+    try {
+      await deployStaticExport(cfg.outDir, manifest);
+      log("✓ Static export deployed to object storage");
+    } catch {
+      summary.ok = false;
+      summary.errors.push(
+        "Object storage deployment failed; check the storage connection and retry the export.",
+      );
+      log("✗ Object storage deployment failed; the previous deployment remains available.");
+    }
+  }
+
   // Let a deploy plugin push the directory to object storage / a CDN.
   try {
     const hooks = getRuntimeHooks();
@@ -861,11 +881,12 @@ export async function clearStaticExport(
     };
   }
 
+  const remoteRemoved = staticExportDriver() === "s3" ? await clearDeployedStaticExport() : false;
   let exists = false;
   try {
     exists = (await fsp.stat(outDir)).isDirectory();
   } catch {
-    return { ok: true, removed: false, outDir, reason: "nothing to clear" };
+    return { ok: true, removed: remoteRemoved, outDir, reason: "nothing to clear" };
   }
 
   const manifest = await readManifest(outDir);

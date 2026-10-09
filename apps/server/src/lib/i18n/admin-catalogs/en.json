@@ -3381,7 +3381,11 @@
       "title": "Static site export",
       "useThisSite": "Use this site",
       "clearExportHintSite": "deletes this website's export. Disabling auto-rebuild does not remove any files.",
-      "thisWebsiteExport": "this website's export"
+      "thisWebsiteExport": "this website's export",
+      "storageLabel": "Export storage",
+      "storageLocal": "Local files",
+      "storageS3": "Object storage (S3 / OVH)",
+      "storageHint": "Uses the installation’s existing S3 connection and a separate folder per site. The local folder stages exports before uploading. Clear removes both local and deployed files."
     },
     "status": {
       "disabled": "Disabled",

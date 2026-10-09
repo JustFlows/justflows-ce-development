@@ -69,6 +69,14 @@ function adapter(s3: ReturnType<typeof fakeS3>) {
 }
 
 describe("S3StorageAdapter", () => {
+  it("signs and sends optional object Cache-Control metadata", async () => {
+    const s3 = fakeS3();
+    await adapter(s3).save("index.html", Buffer.from("html"), "text/html", "public, max-age=60");
+    const call = s3.calls[0]!;
+    expect(call.headers["cache-control"]).toBe("public, max-age=60");
+    expect(call.headers["authorization"]).toContain("cache-control");
+  });
+
   it("uses path-style URLs with a custom endpoint and virtual-hosted on AWS", () => {
     const s3 = fakeS3();
     expect(adapter(s3).objectUrl("site/a b.png").toString()).toBe(

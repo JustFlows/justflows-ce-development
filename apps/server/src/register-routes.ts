@@ -670,6 +670,12 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
     }),
     (await import("./middleware/redirects.js")).managedRedirects,
   );
+  app.use(
+    requireInstalled,
+    rateLimit({ windowMs: 60_000, limit: 600, standardHeaders: "draft-8", legacyHeaders: false }),
+    (await import("./lib/static-export/serve-object-storage.js"))
+      .serveStaticExportFromObjectStorage,
+  );
   app.use(requireInstalled, publicSiteRoutes);
 
   // Backstop. Express's default handler prints the stack into the response body

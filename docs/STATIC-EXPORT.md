@@ -253,6 +253,53 @@ hosts (nginx, S3+CloudFront, …) don't read `_headers`; add the equivalent
 Diff two manifests by `sha256` to build a precise CDN invalidation list instead
 of purging everything.
 
+### Built-in OVH / S3 deployment
+
+In **Tools → Static site export → Configuration**, select **Object storage
+(S3 / OVH)**, or set `STATIC_EXPORT_STORAGE_DRIVER=s3`. The default is `local`.
+This reuses the installation's `STORAGE_S3_BUCKET`, `STORAGE_S3_ENDPOINT`,
+`STORAGE_S3_REGION`, `STORAGE_S3_ACCESS_KEY_ID`, `STORAGE_S3_SECRET_ACCESS_KEY`,
+and optional path-style/session-token settings. Media can still use local
+storage; selecting S3 for exports does not change `STORAGE_DRIVER`.
+The local development `.env` needs these values too if you want to test against
+object storage. No credentials are copied automatically from another install.
+
+The bucket stays private. Exports use a reserved namespace:
+
+```text
+<STORAGE_S3_PREFIX>/static-export/sites/root/           # installation site / CLI
+<STORAGE_S3_PREFIX>/static-export/sites/<site-id>/      # each secondary site
+```
+
+Stable site ids preserve the folder when a site's primary domain changes.
+Uploads and private plugin files are outside this namespace. The existing local
+export folder is still used to build the export and remains available for
+preview. Only routes and assets listed in the export manifest are uploaded;
+`.htaccess`, `_nginx.conf`, `_headers`, and the local manifest stay on disk.
+
+Objects are stored by content hash. After all uploads succeed, a single private
+`_deployment.json` pointer publishes the new route map. A failed upload leaves
+the previous deployment usable and reports a failure in the export log. The
+pointer removes unpublished/deleted paths from serving; old immutable objects
+remain until **Clear export**, which removes this site's pointer and objects
+as well as its local output. Interrupted uploads are cleaned by Clear too.
+
+Keep Bunny's origin pointed at the app. Before public page rendering, the app
+looks up exported paths in the private deployment pointer and streams the
+matching object with signed S3 requests. Existing asset handlers and plugin
+routes take precedence. Admin, APIs, authenticated visitors, query-string
+requests, and export-crawler requests stay on the live app. Missing objects or
+a storage outage fall back to the live renderer. Turning export off also
+bypasses bucket serving. No public bucket policy or Bunny origin changes are
+needed. Configured CDN caches are purged for the current site's domains after
+publishing or clearing; CDN purge failures are logged without failing a
+completed storage deployment. Normal CDN and browser TTLs still apply.
+
+This mode uses the app as a private origin gateway; it does not enable OVH's
+public website endpoint or remove the app from the request path on cache misses.
+A direct bucket origin would need separate public-access/authentication and URL
+rewrite configuration because the built-in objects use content-hash keys.
+
 ### Automating the push
 
 Register a `staticExport.deploy` action in a plugin. It receives

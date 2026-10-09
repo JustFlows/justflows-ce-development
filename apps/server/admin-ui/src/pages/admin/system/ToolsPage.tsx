@@ -77,6 +77,7 @@ interface StaticExportStatus {
 }
 
 interface StaticExportSettings {
+  storageDriver: "local" | "s3";
   enabled: boolean;
   dir: string;
   baseUrl: string;
@@ -1096,6 +1097,28 @@ export default function ToolsPage() {
                   {t("tools.staticExport.enabledCheckboxText2")}
                 </span>
               </label>
+
+              <div className="jf-field">
+                <label className="jf-field__label" htmlFor="jf-sx-storage">
+                  {t("tools.staticExport.storageLabel")}
+                </label>
+                <select
+                  id="jf-sx-storage"
+                  className="jf-input"
+                  value={sxSettings.storageDriver ?? "local"}
+                  onChange={(e) =>
+                    setSxSettings({
+                      ...sxSettings,
+                      storageDriver: e.target.value as "local" | "s3",
+                    })
+                  }
+                  disabled={sxSaving || sxRunning}
+                >
+                  <option value="local">{t("tools.staticExport.storageLocal")}</option>
+                  <option value="s3">{t("tools.staticExport.storageS3")}</option>
+                </select>
+                <p className="jf-field__hint">{t("tools.staticExport.storageHint")}</p>
+              </div>
 
               <div className="jf-field">
                 <label className="jf-field__label" htmlFor="jf-sx-dir">

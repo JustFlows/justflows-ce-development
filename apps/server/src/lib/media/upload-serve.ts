@@ -127,7 +127,7 @@ export function isPrivateUploadPath(requestPath: string): boolean {
     return true;
   }
   const first = decoded.split(/[\\/]+/).filter(Boolean)[0] ?? "";
-  return first.toLowerCase() === PRIVATE_UPLOADS_FOLDER;
+  return first.toLowerCase() === PRIVATE_UPLOADS_FOLDER || first.toLowerCase() === "static-export";
 }
 
 export function uploadsHandler(maxAgeMs: number): RequestHandler {
@@ -136,7 +136,7 @@ export function uploadsHandler(maxAgeMs: number): RequestHandler {
     setHeaders: (res, filePath) => forceDownload(res, filePath),
   });
   return (req, res, next) => {
-    // Private files can share the uploads bucket under `.private/`; that folder is never public.
+    // Private files and static-export metadata share the bucket, but cannot be read through /uploads.
     if (isPrivateUploadPath(req.path)) {
       res.status(404).end();
       return;

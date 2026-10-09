@@ -109,10 +109,13 @@ export class S3StorageAdapter implements StorageAdapter {
     );
   }
 
-  async save(key: string, data: Buffer, mimeType: string): Promise<string> {
+  async save(key: string, data: Buffer, mimeType: string, cacheControl?: string): Promise<string> {
     const res = await this.request("PUT", this.objectUrl(key), {
       body: data,
-      headers: { "content-type": mimeType || "application/octet-stream" },
+      headers: {
+        "content-type": mimeType || "application/octet-stream",
+        ...(cacheControl ? { "cache-control": cacheControl } : {}),
+      },
     });
     if (!res.ok) await this.fail("PUT", key, res);
     return this.url(key);
