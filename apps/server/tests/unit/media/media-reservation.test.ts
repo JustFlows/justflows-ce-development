@@ -59,6 +59,11 @@ vi.mock("../../../src/lib/media/media-responsive.js", async (importOriginal) => 
   },
 }));
 
+vi.mock("../../../src/lib/storage/storage-quota.js", async () => {
+  const { createKeyedLock } = await import("../../../src/lib/security/upload-admission.js");
+  return { withSiteStorageLock: createKeyedLock(), enforceStorageGrowth: vi.fn() };
+});
+
 import { storeMediaUpload } from "../../../src/lib/media/media-write.js";
 
 const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(MB - 8)]);

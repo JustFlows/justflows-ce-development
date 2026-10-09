@@ -71,10 +71,25 @@ describe("private object storage origin gateway", () => {
     expect(mocks.open).toHaveBeenCalledWith("site-a/objects/hash/index.html", {
       "if-none-match": '"hash"',
     });
+    expect(res.setHeader).toHaveBeenCalledWith("X-Justflows-Render", "static-export");
     expect(res.setHeader).toHaveBeenCalledWith("Content-Type", "text/html");
     expect(res.setHeader).toHaveBeenCalledWith("Cache-Control", "public, max-age=60");
     expect(res.end).toHaveBeenCalled();
     expect(next).not.toHaveBeenCalled();
+  });
+  it.each([200, 206, 304, 416])("marks exported responses with status %s", async (status) => {
+    mocks.open.mockResolvedValue({ status, body: null, headers: new Headers() });
+    const res = response();
+    await serveStaticExportFromObjectStorage(request(), res as unknown as Response, vi.fn());
+    expect(res.setHeader).toHaveBeenCalledWith("X-Justflows-Render", "static-export");
+  });
+  it("does not mark a failed object fetch as an export", async () => {
+    mocks.open.mockResolvedValue({ status: 404, body: null, headers: new Headers() });
+    const res = response();
+    const next = vi.fn();
+    await serveStaticExportFromObjectStorage(request(), res as unknown as Response, next);
+    expect(next).toHaveBeenCalled();
+    expect(res.setHeader).not.toHaveBeenCalledWith("X-Justflows-Render", "static-export");
   });
   it("keeps dynamic routes, queries, POST and export crawls on the live app", async () => {
     for (const req of [
@@ -87,7 +102,9 @@ describe("private object storage origin gateway", () => {
       request("/about", "GET", { "x-jf-static-export": "1" }),
     ]) {
       const next = vi.fn();
-      await serveStaticExportFromObjectStorage(req, response() as unknown as Response, next);
+      const res = response();
+      await serveStaticExportFromObjectStorage(req, res as unknown as Response, next);
+      expect(res.setHeader).not.toHaveBeenCalledWith("X-Justflows-Render", "static-export");
       expect(next).toHaveBeenCalled();
     }
     expect(mocks.open).not.toHaveBeenCalled();

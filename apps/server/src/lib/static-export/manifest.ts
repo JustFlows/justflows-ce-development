@@ -49,6 +49,8 @@ export interface ManifestAsset {
 }
 
 export interface StaticExportManifest {
+  /** Stable owner for storage accounting after domain changes. */
+  siteId?: string;
   generatedAt: string;
   /** "full" or "incremental" — the run that last touched the manifest. */
   mode: "full" | "incremental";
@@ -484,6 +486,7 @@ function sanitizeAsset(asset: ManifestAsset): ManifestAsset {
  */
 export function sanitizeManifest(manifest: StaticExportManifest): StaticExportManifest {
   return {
+    ...(manifest.siteId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(manifest.siteId) ? { siteId: manifest.siteId } : {}),
     generatedAt: matchOr(manifest.generatedAt, TIMESTAMP_RE, new Date().toISOString()),
     mode: manifest.mode === "incremental" ? "incremental" : "full",
     justflowsVersion: matchOr(manifest.justflowsVersion, VERSION_RE, "0.0.0"),

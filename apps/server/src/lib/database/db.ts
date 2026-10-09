@@ -56,6 +56,14 @@ export interface DbClient {
 let _client: DbClient | null = null;
 
 const requestDatabase = new AsyncLocalStorage<DbClient>();
+const controlDatabase = new AsyncLocalStorage<{ client: DbClient; active: boolean }>();
+
+/** Reuse a held control transaction; delayed work reverts to the normal pool. */
+export async function runWithControlDatabase<T>(client: DbClient, fn: () => Promise<T>): Promise<T> {
+  const context = { client, active: true };
+  try { return await controlDatabase.run(context, fn); }
+  finally { context.active = false; }
+}
 
 /** Run `fn` so `getDb()` returns this connection instead of the installation database. */
 export function runWithDatabase<T>(client: DbClient, fn: () => T): T {
@@ -94,12 +102,15 @@ function instrumentClient(client: DbClient): DbClient {
 
 export async function getDb(): Promise<DbClient> {
   const scoped = requestDatabase.getStore();
-  if (scoped) return scoped;
+  const control = controlDatabase.getStore();
+  if (scoped && scoped !== _client && scoped !== control?.client) return scoped;
   return getControlDb();
 }
 
 /** The installation database. Routing and platform records always live here. */
 export async function getControlDb(): Promise<DbClient> {
+  const scoped = controlDatabase.getStore();
+  if (scoped?.active) return scoped.client;
   if (_client) return _client;
   ensureEnvLoaded();
   const driver = process.env.DB_DRIVER as DbConnectionConfig["driver"] | undefined;

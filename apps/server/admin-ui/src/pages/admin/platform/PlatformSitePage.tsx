@@ -1,3 +1,4 @@
+import StorageUsageCard, { type StorageUsage } from "../../../components/StorageUsageCard";
 import { FormEvent, useEffect, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { Link, useNavigate } from "../../../admin-router";
@@ -6,6 +7,7 @@ import { initialJson } from "../../../ssr-data";
 import QuotaLimitsCard, { type QuotaMeter } from "./QuotaLimitsCard";
 
 interface PlatformSite {
+  storage?: StorageUsage;
   site: {
     id: string;
     tenantId: string;
@@ -99,6 +101,7 @@ export default function PlatformSitePage() {
   const navigate = useNavigate();
   const requestUrl = `/api/platform/sites/${encodeURIComponent(id ?? "")}`;
   const seeded = initialJson<PlatformSite>(requestUrl);
+  const [storageUsage, setStorageUsage] = useState<StorageUsage | null>();
   const [record, setRecord] = useState<PlatformSite | null>(seeded ?? null);
   const [name, setName] = useState(seeded?.site.name ?? "");
   const [description, setDescription] = useState(seeded?.site.description ?? "");
@@ -466,10 +469,12 @@ export default function PlatformSitePage() {
             </section>
           </aside>
         </form>
+        <StorageUsageCard usage={record.storage} onMeasured={setStorageUsage} endpoint={`/api/platform/sites/${encodeURIComponent(id ?? "")}/storage`} />
         <QuotaLimitsCard
           key={id}
           endpoint={`/api/platform/sites/${encodeURIComponent(id ?? "")}/quotas`}
           meters={record.quotas?.meters ?? []}
+          storageUsageBytes={storageUsage === undefined ? undefined : storageUsage?.totalBytes ?? null}
         />
       </div>
     </>

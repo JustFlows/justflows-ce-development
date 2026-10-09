@@ -112,6 +112,8 @@ if [ "${NESTED:-0}" = "1" ]; then
     -x "$NAME/*.zip" \
     -x "$NAME/uploads/*" \
     -x "$NAME/static-export/*" \
+    -x "$NAME/static-export-sites/*" \
+    -x "$NAME/storage/*" \
     -x "$NAME/packages-installed/*" \
     -x "$NAME/css-providers-installed/*" \
     -x "$NAME/data/installed.json" \
@@ -207,6 +209,8 @@ else
     -x "*.zip" \
     -x "uploads/*" \
     -x "static-export/*" \
+    -x "static-export-sites/*" \
+    -x "storage/*" \
     -x "packages-installed/*" \
     -x "css-providers-installed/*" \
     -x "data/installed.json" \

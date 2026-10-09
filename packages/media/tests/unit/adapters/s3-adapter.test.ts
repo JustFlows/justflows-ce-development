@@ -27,7 +27,7 @@ function fakeS3(pageSize = 1000) {
       const page = all.slice(start, start + pageSize);
       const more = start + pageSize < all.length;
       const xml =
-        `<ListBucketResult>${page.map((k) => `<Contents><Key>${k.replace(/&/g, "&amp;")}</Key></Contents>`).join("")}` +
+        `<ListBucketResult>${page.map((k) => `<Contents><Key>${k.replace(/&/g, "&amp;")}</Key><Size>${objects.get(k)!.length}</Size></Contents>`).join("")}` +
         `<IsTruncated>${more}</IsTruncated>${more ? `<NextContinuationToken>${start + pageSize}</NextContinuationToken>` : ""}</ListBucketResult>`;
       return new Response(xml, { status: 200 });
     }
@@ -69,6 +69,11 @@ function adapter(s3: ReturnType<typeof fakeS3>) {
 }
 
 describe("S3StorageAdapter", () => {
+  it("measures sizes across paginated object inventories", async () => {
+    const s3 = fakeS3(1); s3.objects.set("site/a", Buffer.from("abc")); s3.objects.set("site/b", Buffer.from("12345")); s3.objects.set("other/a", Buffer.from("outside"));
+    expect(await adapter(s3).listObjects("site/")).toEqual([{ key: "site/a", size: 3 }, { key: "site/b", size: 5 }]);
+  });
+
   it("signs and sends optional object Cache-Control metadata", async () => {
     const s3 = fakeS3();
     await adapter(s3).save("index.html", Buffer.from("html"), "text/html", "public, max-age=60");

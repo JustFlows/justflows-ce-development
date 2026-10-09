@@ -5,11 +5,35 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
-## [0.3.4]
+## [0.3.5] [UNRELEASED]
 
 ### Added
 
-- **Static exports can use the existing S3 / OVH storage connection.** Tools → Static site export selects local files or object storage. Each site has its own export prefix; uploads complete before switching the deployed routes, and the app serves public exported pages from the private bucket through the existing CDN origin. Clear removes only that site’s exported objects. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
+- **Measure local and external storage for the platform and each website.** Diagnostics and Platform → Website show media, private files, and static exports, with local/external totals and a separate logical record total. Physical usage includes staging, trash, retained exports, and earlier private-storage connections. Measurements run in the background; unreadable storage stays unknown. Adds machine-readable storage snapshots to the root diagnostics and site APIs. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+- **Enforce a combined storage allowance per website.** The `storage.bytes` limit, editable as Total storage in site Limits and Platform Defaults, caps local plus external physical bytes. Media uploads and derivatives, private-file writes and storage copies, S3 trash/restore moves, and local/remote static-export writes check the remaining allowance under a database-backed site lock shared across workers. Existing files stay when limits are lowered; new growth is refused, and a configured cap fails closed when usage cannot be measured. Category limits still apply. Adds migration `0043_storage_quota_locks`. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+
+- **Static exports can use the existing S3 / OVH storage connection.** Tools → Static site export selects local files or object storage (`STATIC_EXPORT_STORAGE_DRIVER=local|s3`). Object storage reuses the installation’s `STORAGE_S3_*` connection without changing media storage. Each site has a separate export prefix based on its stable site id, so changing its domain preserves the exported files. Local output remains available for staging and preview. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
+- **Serve exported pages from a private bucket through the existing CDN origin.** The app signs S3 reads and streams exported public pages with their content type, cache policy, and conditional/range response headers, so Bunny can keep using the app as its origin. Admin, API and plugin routes, authenticated visits, query-string requests, and export crawls stay on the live app. Missing objects or storage failures fall back to live rendering. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
+
+### Changed
+
+- **Publish object-storage exports only after uploads complete.** Content-hash HTML objects are uploaded before a single deployment pointer switches the served routes. Upload failures report an export failure and preserve the previous deployment. Removed routes stop being served from the export; old immutable objects remain until Clear export. Configured CDN caches are purged for the site after deployment. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
+- **Clear export also removes the current site’s deployed objects.** In object-storage mode, Clear removes the deployment pointer, exported objects, and interrupted uploads from that site’s reserved namespace, then clears its local output. Other sites, media uploads, and private plugin files are preserved. See docs/STATIC-EXPORT.md for configuration, storage layout, and origin behavior. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
+
+### Fixed
+
+- **Identify pages served from object-storage static exports.** Exported responses include `X-Justflows-Render: static-export`, so operators can distinguish an exported page from live fallback and check Bunny's `CDN-Cache` header separately. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
+
+- **Verify a domain's TXT challenge after its nameservers have switched.** Nameserver checks accept the exact `_justflows.<domain>` verification token at the authoritative DNS provider without requiring a switch back. Missing or incorrect tokens still fail; Justflows does not publish the challenge or permit DNS edits before ownership is proven. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+
+- **Object-storage exports contain HTML only.** Images, media, styles, scripts, and other non-HTML resources keep their existing URLs instead of being copied into the export bucket. Full and incremental S3 exports stop downloading assets; the next successful deployment removes previously referenced duplicate asset objects from the export namespace without touching the original media. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
+- **Admin exports run in the background and report progress through status polling.** The Run action returns immediately instead of holding a request open throughout the crawl and uploads, avoiding long export requests timing out at a CDN or proxy. Unexpected HTML API responses now show an actionable message instead of a JSON parsing error. Existing synchronous CLI clients remain supported. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
+
+- **Block access to export metadata through shared upload storage.** The `/uploads` handler rejects the reserved `static-export` namespace, including encoded paths, so deployment metadata and stored export objects cannot be fetched through upload URLs. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
+
+## [0.3.4]
+
+### Added
 
 - **Plugins can attach files to emails.** `ctx.mail.send({ attachments: [{ filename, content, contentType }] })` sends up to 5 files (PDF, PNG, JPEG, CSV, plain text, calendar; 10 MB each, 15 MB together) through SMTP, sendmail, or a plugin transport (`message.attachments`). The delivery log keeps only their names, types, and sizes, so a delivery retried from the admin is sent without them. Shop uses this to send invoices and credit notes as PDF. See docs/EMAIL.md.
 - **Private file storage for plugins.** `ctx.files` (permission `files:private`) stores files for one site that are never public, such as products sold as downloads, and a plugin route answers `{ file: { key } }` to have the host stream one, with `Range` support and without revealing the storage address. Settings → Storage sets an S3-compatible connection (AWS, OVH, Cloudflare R2, MinIO, …) on the root site for every site; a site may save its own when its plan allows `feature.ownStorage`; with it off, the Storage page is removed from that site's admin. Without one, private files go to the installation's `STORAGE_DRIVER=s3` bucket under `.private/` (not when `STORAGE_S3_PUBLIC_URL` makes it public; `/uploads` never serves that folder) or to `PRIVATE_STORAGE_PATH` on disk. Each site has its own folder. A changed storage starts a background copy of existing files; downloads keep working meanwhile. New limits `files.count` and `files.bytes` count private files per site. Adds migration `0042_private_files`. See docs/PLUGINS.md and docs/MULTISITE.md.

@@ -274,8 +274,21 @@ The bucket stays private. Exports use a reserved namespace:
 Stable site ids preserve the folder when a site's primary domain changes.
 Uploads and private plugin files are outside this namespace. The existing local
 export folder is still used to build the export and remains available for
-preview. Only routes and assets listed in the export manifest are uploaded;
+preview. Only HTML routes listed in the export manifest are uploaded;
 `.htaccess`, `_nginx.conf`, `_headers`, and the local manifest stay on disk.
+
+S3 mode does not download or upload images, media, CSS, scripts, fonts, feeds,
+or other non-HTML resources. HTML keeps their existing URLs, served by the live
+app, OVH media storage, or CDN. Local mode still creates a self-contained
+export with assets. On the next successful S3 deployment, old non-HTML objects
+referenced by the previous deployment pointer are removed from the export
+namespace; original uploaded media is never removed. Older unreferenced objects
+are removed with Clear export.
+
+Admin Run actions return immediately and poll a site-scoped background job
+for progress and completion; synchronous CLI/API calls remain supported. Jobs
+are kept in process memory, so a restart during an export requires checking
+Tools and rerunning it if needed.
 
 Objects are stored by content hash. After all uploads succeed, a single private
 `_deployment.json` pointer publishes the new route map. A failed upload leaves
@@ -691,3 +704,20 @@ hooks when the transition commits, triggering configured automatic rebuilds.
 The application worker must remain running to execute schedules and rebuild
 exports; static files alone cannot run the scheduler. See
 [Scheduled publishing](SCHEDULING.md).
+
+## Verify exported pages are served
+
+For object-storage exports served through the Justflows origin, inspect the
+page's response headers in DevTools → Network or run:
+
+```sh
+curl -sSI https://your-domain.example/
+```
+
+`X-Justflows-Render: static-export` confirms that the origin selected the
+deployed export. `CDN-Cache: HIT` additionally confirms Bunny served its cached
+response. The export marker is absent when this middleware falls back to live
+rendering; it does not identify standalone exports served by another web server.
+After deploying this change, purge existing cached pages or wait for them to
+expire before checking. Test a public page without a login session or query
+string, since those visits bypass exported HTML at the origin.

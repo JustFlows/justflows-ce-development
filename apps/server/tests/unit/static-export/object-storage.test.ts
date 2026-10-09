@@ -12,6 +12,8 @@ import {
   staticExportObjectPrefix,
 } from "../../../src/lib/static-export/object-storage.js";
 
+vi.mock("../../../src/lib/storage/storage-quota.js", () => ({ enforceStorageGrowth: vi.fn() }));
+vi.mock("../../../src/lib/tenancy/registry.js", () => ({ installationRootSiteId: async () => "root-site" }));
 vi.mock("../../../src/lib/cdn/cdn-purge.js", () => ({ purgeCdnCache: vi.fn() }));
 const objects = new Map<string, { body: Buffer; headers: Headers }>();
 let folder: string;
@@ -125,6 +127,42 @@ describe("static export object storage", () => {
     expect(objects.size).toBe(2);
     const pointer = objects.get("install-a/static-export/sites/root/_deployment.json")!;
     expect(JSON.parse(pointer.body.toString()).entries[0].path).toBe("/");
+  });
+  it("uploads only HTML and removes old exported images without touching original media", async () => {
+    const value = manifest();
+    value.assets.push({
+      path: "/uploads/photo.jpg",
+      file: "uploads/photo.jpg",
+      contentType: "image/jpeg",
+      cacheControl: "public, max-age=3600",
+      sha256: sha256("image"),
+      status: 200,
+      bytes: 5,
+    });
+    value.routes.push({
+      ...value.routes[0]!,
+      path: "/sitemap.xml",
+      file: "sitemap.xml",
+      contentType: "application/xml",
+    });
+    const old = value.assets[0]!;
+    const oldKey = `install-a/static-export/sites/root/objects/${old.sha256}/${old.file}`;
+    objects.set(oldKey, { body: Buffer.from("image"), headers: new Headers() });
+    objects.set("install-a/static-export/sites/root/_deployment.json", {
+      body: Buffer.from(JSON.stringify({ version: 1, entries: [old] })),
+      headers: new Headers(),
+    });
+    objects.set("install-a/uploads/photo.jpg", {
+      body: Buffer.from("image"),
+      headers: new Headers(),
+    });
+    await deployStaticExport(folder, value);
+    expect(objects.has(oldKey)).toBe(false);
+    expect(objects.has("install-a/uploads/photo.jpg")).toBe(true);
+    const pointer = JSON.parse(
+      objects.get("install-a/static-export/sites/root/_deployment.json")!.body.toString(),
+    );
+    expect(pointer.entries.map((entry: { file: string }) => entry.file)).toEqual(["index.html"]);
   });
   it("leaves the previous pointer intact on upload failure", async () => {
     await deployStaticExport(folder, manifest());

@@ -3381,7 +3381,14 @@
       "title": "Экспорт статичной площадки",
       "useThisSite": "Используйте этот сайт",
       "clearExportHintSite": "удаляет экспорт этого сайта. Отключение автоперестройки не удаляет файлы.",
-      "thisWebsiteExport": "экспорт этого сайта"
+      "thisWebsiteExport": "экспорт этого сайта",
+      "storageLabel": "Export storage",
+      "storageLocal": "Local files",
+      "storageS3": "Object storage (S3 / OVH)",
+      "storageHint": "Uses the installation’s existing S3 connection and a separate folder per site. The local folder stages exports before uploading. Clear removes both local and deployed files.",
+      "responseUnavailable": "The export API returned an unexpected response (HTTP {status}). Check export status before retrying; the export may still be running.",
+      "pollingUnavailable": "Export status is no longer available. Refresh Tools to check the result before starting another export.",
+      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log."
     },
     "status": {
       "disabled": "Отключено",
@@ -4140,5 +4147,23 @@
     "removeConfirmRoot": "Удалить подключение хранилища платформы? Сайты без своего хранилища перейдут на S3-бакет установки или диск сервера, и их файлы будут скопированы туда.",
     "removed": "Подключение хранилища удалено.",
     "failed": "Не удалось загрузить или сохранить настройки хранилища."
+  },
+  "storageUsage": {
+    "title": "Storage usage",
+    "unknown": "Unknown — usage could not be read",
+    "description": "Managed site files on local disk and external object storage, measured in bytes.",
+    "category": "Category",
+    "local": "Local files",
+    "external": "External storage (S3 / OVH)",
+    "media": "Media and derivatives",
+    "private": "Private files",
+    "exports": "Static exports and retained copies",
+    "total": "Total",
+    "physical": "Physical storage",
+    "logical": "Media and private-file records",
+    "note": "Physical usage includes staging, trash and retained copies. Database records exclude those extra copies. Unknown usage is not counted as zero. External totals cover managed site namespaces, not the entire provider account.",
+    "measured": "Measured at",
+    "limitLabel": "Total storage (local + external)",
+    "measuring": "Measuring storage…"
   }
 }

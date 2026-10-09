@@ -78,6 +78,7 @@ export class S3StorageAdapter implements StorageAdapter {
       body?: Buffer;
       headers?: Record<string, string>;
       unsigned?: Record<string, string>;
+      signal?: AbortSignal;
     } = {},
   ): Promise<Response> {
     const signed = signV4(
@@ -96,7 +97,7 @@ export class S3StorageAdapter implements StorageAdapter {
     );
     // `host` is set by fetch from the URL; sending it explicitly is refused.
     const { host: _host, ...headers } = signed;
-    const init: RequestInit = { method, headers: { ...headers, ...(opts.unsigned ?? {}) } };
+    const init: RequestInit = { method, headers: { ...headers, ...(opts.unsigned ?? {}) }, ...(opts.signal ? { signal: opts.signal } : {}) };
     if (opts.body) init.body = new Uint8Array(opts.body);
     return this.doFetch(url, init);
   }
@@ -207,6 +208,32 @@ export class S3StorageAdapter implements StorageAdapter {
       token = truncated && next ? decodeXml(next) : undefined;
     } while (token);
     return keys.sort();
+  }
+
+  /** Object sizes from ListObjectsV2, including pagination; no downloads needed. */
+  async listObjects(prefix: string): Promise<Array<{ key: string; size: number }>> {
+    const objects: Array<{ key: string; size: number }> = [];
+    let token: string | undefined;
+    do {
+      const query: Record<string, string> = { "list-type": "2", prefix };
+      if (token) query["continuation-token"] = token;
+      const res = await this.request("GET", this.objectUrl("", query), { signal: AbortSignal.timeout(15_000) });
+      if (!res.ok) await this.fail("LIST", prefix, res);
+      const xml = await res.text();
+      if (!/<ListBucketResult(?:\s[^>]*)?>/.test(xml) || !xml.includes("</ListBucketResult>")) throw new Error("Invalid S3 object inventory response");
+      for (const match of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
+        const key = /<Key>([^<]*)<\/Key>/.exec(match[1]!)?.[1];
+        const rawSize = /<Size>(\d+)<\/Size>/.exec(match[1]!)?.[1];
+        const size = rawSize === undefined ? NaN : Number(rawSize);
+        if (key === undefined || !Number.isSafeInteger(size) || size < 0) throw new Error("Invalid S3 object inventory");
+        objects.push({ key: decodeXml(key), size });
+      }
+      const truncated = /<IsTruncated>true<\/IsTruncated>/.test(xml);
+      const next = /<NextContinuationToken>([^<]*)<\/NextContinuationToken>/.exec(xml)?.[1];
+      if (truncated && (!next || decodeXml(next) === token)) throw new Error("Incomplete S3 object inventory");
+      token = truncated ? decodeXml(next!) : undefined;
+    } while (token);
+    return objects;
   }
 
   async deletePrefix(prefix: string): Promise<void> {

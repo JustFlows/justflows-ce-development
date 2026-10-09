@@ -68,6 +68,7 @@ export async function serveStaticExportFromObjectStorage(
       const value = upstream.headers.get(name);
       if (value) res.setHeader(name, value);
     }
+    res.setHeader("X-Justflows-Render", "static-export");
     res.setHeader("Content-Type", entry.contentType);
     res.setHeader("Cache-Control", entry.cacheControl);
     if (req.method === "HEAD" || !upstream.body || upstream.status === 304) {

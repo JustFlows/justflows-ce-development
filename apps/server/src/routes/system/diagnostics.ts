@@ -237,6 +237,7 @@ async function buildReport(siteId: string) {
   const hooks = getRuntimeHooks().inspect();
   const debug = debugMode();
   return {
+    storage: (await import("../../lib/storage/storage-snapshots.js")).storageSnapshot().report,
     generatedAt: new Date().toISOString(),
     runtime: {
       justflowsVersion: getJustflowsVersion(),
@@ -392,3 +393,7 @@ router.post("/bundle", async (req, res) => {
 });
 
 export default router;
+
+router.get("/storage", async (_req, res) => {
+  res.json((await import("../../lib/storage/storage-snapshots.js")).storageSnapshot());
+});

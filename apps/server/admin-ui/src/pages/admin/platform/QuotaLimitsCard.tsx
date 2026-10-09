@@ -1,3 +1,4 @@
+import { formatStorageBytes } from "../../../components/StorageUsageCard";
 import { FormEvent, useId, useState } from "react";
 import { useT } from "../../../i18n/I18nProvider";
 
@@ -10,6 +11,7 @@ export interface QuotaMeter {
   used: number | null;
 }
 
+const STORAGE_METER = "storage" + ".bytes";
 const MEDIA_METER = "media" + ".bytes";
 
 function meterLabel(key: string, fallback: string, t: (key: string) => string): string {
@@ -20,6 +22,7 @@ function meterLabel(key: string, fallback: string, t: (key: string) => string): 
   if (key === "content" + ".post") return t("platform.meterPosts");
   if (key === "content" + ".page") return t("platform.meterPages");
   if (key === "media" + ".files") return t("platform.meterMediaFiles");
+  if (key === STORAGE_METER) return t("storageUsage.limitLabel");
   if (key === MEDIA_METER) return t("platform.meterMedia");
   if (key === "plugins") return t("platform.meterPlugins");
   if (key === "roles") return t("platform.meterRoles");
@@ -60,6 +63,7 @@ function toField(meter: QuotaMeter): string {
 
 function formatUsed(meter: QuotaMeter, unknown: string): string {
   if (meter.used === null) return unknown;
+  if (meter.key === STORAGE_METER) return formatStorageBytes(meter.used);
   if (meter.unit === "bytes") return `${Math.round(meter.used / (1024 * 1024))} MB`;
   return String(meter.used);
 }
@@ -70,12 +74,14 @@ export default function QuotaLimitsCard({
   title,
   intro,
   showUsage = true,
+  storageUsageBytes,
 }: {
   endpoint: string;
   meters: QuotaMeter[];
   title?: string;
   intro?: string;
   showUsage?: boolean;
+  storageUsageBytes?: number | null;
 }) {
   const { t } = useT();
   const idBase = useId();
@@ -168,7 +174,7 @@ export default function QuotaLimitsCard({
                 {limitInput(meter)}
                 {showUsage || meter.unit === "bytes" ? (
                   <span className="jf-field__hint">
-                    {showUsage ? `${t("platform.limitsUsed")}: ${formatUsed(meter, t("platform.limitsUsageUnknown"))}` : ""}
+                    {showUsage ? `${t("platform.limitsUsed")}: ${formatUsed(meter.key === STORAGE_METER && storageUsageBytes !== undefined ? { ...meter, used: storageUsageBytes } : meter, t("platform.limitsUsageUnknown"))}` : ""}
                     {showUsage && meter.unit === "bytes" ? ". " : ""}
                     {meter.unit === "bytes" ? t("platform.limitsMediaHint") : ""}
                   </span>

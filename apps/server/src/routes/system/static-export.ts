@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: MIT
 
+import { QuotaRefusalError } from "../../lib/tenancy/quotas.js";
+import { randomUUID } from "node:crypto";
+import { getTenantContext } from "../../lib/tenancy/context.js";
+import type { StaticExportSummary } from "../../lib/static-export/index.js";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { requireInstallationRoot, requireRole } from "../../middleware/auth.js";
@@ -16,7 +20,11 @@ import {
   readStaticExportSettings,
   StaticExportSettingsSchema,
 } from "../../lib/static-export/settings.js";
-import { assertExportOrigin, noteListenerPort, siteLoopbackOrigin } from "../../lib/static-export/config.js";
+import {
+  assertExportOrigin,
+  noteListenerPort,
+  siteLoopbackOrigin,
+} from "../../lib/static-export/config.js";
 import { setCurrentSiteStaticExportEnabled } from "../../lib/static-export/site-enabled.js";
 
 const router = Router();
@@ -44,7 +52,10 @@ function hideInstallPaths<T>(value: T): T {
   const walk = (item: unknown): unknown => {
     if (typeof item === "string") {
       if (!item.includes(root) && !item.includes("static-export-sites")) return item;
-      return item.split(root).join("").replace(/\/?static-export-sites\/\S+/g, "this website's export");
+      return item
+        .split(root)
+        .join("")
+        .replace(/\/?static-export-sites\/\S+/g, "this website's export");
     }
     if (Array.isArray(item)) return item.map(walk);
     if (item && typeof item === "object") {
@@ -74,11 +85,26 @@ router.use(requireRole("administrator"), (_req, res, next) => {
 
 /** One export runs at a time per process — the crawl is I/O heavy. */
 let inProgress: Promise<unknown> | null = null;
+interface ExportJob {
+  id: string;
+  state: "running" | "completed" | "failed";
+  log: string[];
+  summary?: StaticExportSummary;
+  error?: string;
+}
+const jobs = new Map<string, ExportJob>();
+const currentJobSite = () => getTenantContext()?.siteId ?? "root";
 
 router.get("/status", async (_req, res) => {
   try {
     const status = await getStaticExportStatus();
-    res.json(hideInstallPaths({ ...status, running: inProgress != null }));
+    res.json(
+      hideInstallPaths({
+        ...status,
+        running: inProgress != null,
+        job: jobs.get(currentJobSite()) ?? null,
+      }),
+    );
   } catch (err) {
     sendServerError(res, "static-export", err);
   }
@@ -90,7 +116,12 @@ router.post("/run", runLimit, async (req, res) => {
     return;
   }
 
-  const body = (req.body ?? {}) as { mode?: unknown; baseUrl?: unknown; publicUrl?: unknown };
+  const body = (req.body ?? {}) as {
+    mode?: unknown;
+    baseUrl?: unknown;
+    publicUrl?: unknown;
+    async?: unknown;
+  };
   const mode = body.mode === "incremental" ? "incremental" : "full";
   const baseUrlRaw =
     typeof body.baseUrl === "string" && body.baseUrl.trim() ? body.baseUrl.trim() : "";
@@ -123,32 +154,54 @@ router.post("/run", runLimit, async (req, res) => {
   const localPort = req.socket.localPort;
   // With more than one site, a bare 127.0.0.1 matches no site, so address this
   // site by its own hostname on that port.
-  const resolvedBase = baseUrl ?? (!isProd && localPort ? siteLoopbackOrigin(localPort) : undefined);
+  const resolvedBase =
+    baseUrl ?? (!isProd && localPort ? siteLoopbackOrigin(localPort) : undefined);
 
-  const log: string[] = [];
-  try {
-    const run = runStaticExport({
-      mode,
-      baseUrl: resolvedBase,
-      publicUrl,
-      reason: "admin",
-      log: (line) => log.push(line),
-    });
-    inProgress = run;
-    const summary = await run;
-    res.json(hideInstallPaths({ ok: summary.ok, summary, log }));
-  } catch (err) {
-    log.push(`✗ ${err instanceof Error ? err.message : String(err)}`);
-    res.status(500).json(
-      hideInstallPaths({
-        ok: false,
-        error: err instanceof Error ? err.message : String(err),
-        log,
-      }),
-    );
-  } finally {
-    inProgress = null;
+  const job: ExportJob = { id: randomUUID(), state: "running", log: [] };
+  const site = currentJobSite();
+  // Keep the latest result per site without allowing unbounded process memory.
+  if (!jobs.has(site) && jobs.size >= 100) jobs.delete(jobs.keys().next().value!);
+  jobs.set(site, job);
+  const run = (async () => {
+    try {
+      job.summary = await runStaticExport({
+        mode,
+        baseUrl: resolvedBase,
+        publicUrl,
+        reason: "admin",
+        log: (line) => {
+          if (job.log.length < 1000) job.log.push(line);
+        },
+      });
+      job.state = job.summary.ok ? "completed" : "failed";
+    } catch (err) {
+      console.error(
+        "[static-export] run failed:",
+        JSON.stringify(String(err).replace(/\n/g, "").replace(/\r/g, "")),
+      );
+      job.state = "failed";
+      job.error = err instanceof QuotaRefusalError ? err.message : "Static export failed. Check the server logs and storage connection, then retry.";
+      job.log.push("✗ Static export failed.");
+    }
+  })();
+  inProgress = run;
+  void run.finally(() => {
+    if (inProgress === run) inProgress = null;
+  });
+  if (body.async === true) {
+    res.status(202).json({ ok: true, jobId: job.id });
+    return;
   }
+  // Preserve the synchronous contract used by existing CLI/API clients.
+  await run;
+  res.status(job.error ? 500 : 200).json(
+    hideInstallPaths({
+      ok: job.state === "completed",
+      summary: job.summary,
+      error: job.error,
+      log: job.log,
+    }),
+  );
 });
 
 /** Delete the whole export directory. */

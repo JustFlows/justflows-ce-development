@@ -12,6 +12,7 @@ const control = {
 
 vi.mock("../../../src/lib/database/db.js", () => ({
   getControlDb: async () => control,
+  runWithControlDatabase: async (_client: unknown, work: () => Promise<unknown>) => work(),
   getDb: async () => control,
   runWithDatabase: async (_client: unknown, fn: () => Promise<unknown>) => fn(),
 }));
@@ -85,6 +86,7 @@ describe("enforceQuota", () => {
     expect(wrongScope).toMatchObject({ ok: false, status: 400 });
     control.query.mockImplementation(async (sql: string) => {
       if (sql.includes("FROM sites WHERE id")) return [{ id: SITE }];
+      if (sql.includes("storage_quota_locks")) return [{ site_id: SITE }];
       if (sql.includes("quota_limits")) return [];
       if (sql.includes("user_mode")) return [{ user_mode: "isolated" }];
       if (sql.includes("COUNT(*)") || sql.includes("SUM(size_bytes)")) return [{ total: 0 }];

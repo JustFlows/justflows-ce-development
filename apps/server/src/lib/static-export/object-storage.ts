@@ -45,6 +45,10 @@ const deploymentSchema = z.object({
   entries: z.array(entrySchema).max(200_000),
 });
 export type DeployedEntry = z.infer<typeof entrySchema>;
+
+export function isHtmlExportEntry(entry: { contentType: string }): boolean {
+  return entry.contentType.split(";")[0]?.trim().toLowerCase() === "text/html";
+}
 const POINTER = "_deployment.json";
 
 export function deployedObjectKey(prefix: string, entry: DeployedEntry): string {
@@ -83,24 +87,43 @@ export async function deployStaticExport(
   const known = new Set((previous ?? []).map((entry) => deployedObjectKey(prefix, entry)));
   const entries = deploymentSchema.parse({
     version: 1,
-    entries: [...manifest.routes, ...manifest.assets],
+    entries: manifest.routes.filter(isHtmlExportEntry),
   }).entries;
+  const pointer = Buffer.from(JSON.stringify({ version: 1, entries }));
+  const existingPointer = await adapter.read(`${prefix}${POINTER}`);
+  const growth = entries.filter((entry) => !known.has(deployedObjectKey(prefix, entry))).reduce((total, entry) => total + (manifest.routes.find((route) => route.file === entry.file)?.bytes ?? 0), 0) + Math.max(0, pointer.length - (existingPointer?.body.length ?? 0));
+  const siteId = getTenantContext()?.siteId ?? await (await import("../tenancy/registry.js")).installationRootSiteId();
+  if (!siteId) throw new Error("Export storage needs an installed site");
+  await (await import("../storage/storage-quota.js")).enforceStorageGrowth(siteId, growth);
   for (const entry of entries) {
     const key = deployedObjectKey(prefix, entry);
     if (known.has(key)) continue;
     const file = resolvePathUnderBase(outDir, entry.file);
     if (!file) throw new Error("Unsafe static export file");
     const body = await fs.readFile(file);
-    if (sha256(body) !== entry.sha256)
+    if (body.length !== manifest.routes.find((route) => route.file === entry.file)?.bytes || sha256(body) !== entry.sha256)
       throw new Error("Static export file changed during deployment");
     await adapter.save(key, body, entry.contentType, entry.cacheControl);
   }
   await adapter.save(
     `${prefix}${POINTER}`,
-    Buffer.from(JSON.stringify({ version: 1, entries })),
+    pointer,
     "application/json",
     "no-store",
   );
+  // Retire duplicated assets from exports made before HTML-only S3 mode.
+  // Original media objects are outside this site's reserved namespace.
+  for (const entry of previous ?? []) {
+    if (!isHtmlExportEntry(entry)) {
+      try {
+        await adapter.delete(deployedObjectKey(prefix, entry));
+      } catch {
+        console.error(
+          "[static-export] could not remove an old exported asset; use Clear export to retry cleanup",
+        );
+      }
+    }
+  }
   await purgeStaticExportCdn(manifest.publicUrl);
   // Keep old immutable objects until Clear: concurrent readers may still be
   // streaming the previous pointer. Removed routes are no longer addressable.

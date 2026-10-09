@@ -115,14 +115,21 @@ const CreateTenant = z.object({
   database: DatabaseSchema.optional(),
 });
 
-router.get("/sites/:id", async (req, res) => {
+router.get("/sites/:id/storage", rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: "draft-8", legacyHeaders: false }), async (req, res) => {
+  const site = await loadPlatformSite(String(req.params.id));
+  if (!site) { res.status(404).json({ error: "That website was not found." }); return; }
+  res.json((await import("../../lib/storage/storage-snapshots.js")).storageSnapshot(String(req.params.id)));
+});
+
+router.get("/sites/:id", rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: "draft-8", legacyHeaders: false }), async (req, res) => {
   const site = await loadPlatformSite(String(req.params.id));
   if (!site) {
     res.status(404).json({ error: "That website was not found." });
     return;
   }
   const { listQuotaMeters } = await import("../../lib/tenancy/quotas.js");
-  res.json({ ...site, quotas: { meters: await listQuotaMeters("site", String(req.params.id)) } });
+  const storage = (await import("../../lib/storage/storage-snapshots.js")).storageSnapshot(String(req.params.id)).report;
+  res.json({ ...site, storage, quotas: { meters: await listQuotaMeters("site", String(req.params.id)) } });
 });
 
 const SiteDomainEdit = z.object({
