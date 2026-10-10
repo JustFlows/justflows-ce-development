@@ -7,6 +7,18 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 
 let stored: Record<string, unknown> = {};
 
+// This route suite exercises worker generation, not live database discovery.
+vi.mock("../../../../src/lib/database/db.js", () => ({
+  getDb: async () => { throw new Error("PWA route tests must not access a real database"); },
+}));
+vi.mock("../../../../src/lib/account/pages.js", () => ({
+  accountPageExclusions: async () => [{ path: "/members", match: "exact" }, { path: "/members/page", match: "prefix" }],
+}));
+vi.mock("../../../../src/lib/cache/content-type-cache.js", async importOriginal => ({
+  ...await importOriginal<typeof import("../../../../src/lib/cache/content-type-cache.js")>(),
+  contentCacheRules: async () => [{ id: "private-post", paths: ["/private-post"], header: "private, no-store", shared: false, ttl: 0 }],
+}));
+
 // Site feature switches live in the control database; keep the feature on here.
 vi.mock("../../../../src/lib/tenancy/site-features.js", () => ({ siteFeatureEnabled: async () => true }));
 vi.mock("../../../../src/lib/settings/site-settings.js", () => ({
@@ -61,9 +73,15 @@ describe("GET /sw.js", () => {
 
   it("serves the real worker when enabled", async () => {
     stored = { enabled: true, appName: "My Site", icon512Url: "/uploads/icon-512.png" };
-    const text = await (await fetch(`${base}/sw.js`)).text();
+    const res = await fetch(`${base}/sw.js`);
+    expect(res.status).toBe(200);
+    const text = await res.text();
     expect(text).toContain("staleWhileRevalidate");
     expect(text).not.toContain("self.registration.unregister()");
+    const exclusions = JSON.parse(/const PRIVATE_PATHS = (.*);/.exec(text)![1]!);
+    expect(exclusions).toContainEqual({ path: "/members", match: "exact" });
+    expect(exclusions).toContainEqual({ path: "/private-post", match: "exact" });
+    expect(exclusions).toContainEqual({ path: "/private-post/page", match: "prefix" });
   });
 
   it("is always reachable regardless of enabled state (retirement URL guarantee)", async () => {
