@@ -1985,6 +1985,7 @@
     "subBlog": "Choose which page lists your blog posts",
     "subHeader": "Named headers, one shown on every page — with per-language overrides",
     "subFooter": "Blocks shown at the bottom of every page",
+    "subWidgets": "Sidebars and other widget areas next to your content",
     "subTemplates": "Page structure per content type — the WordPress-style template hierarchy",
     "subStyles": "Colors, fonts, spacing, headings & layout",
     "unsavedSuffix": " · unsaved changes",
@@ -1998,6 +1999,7 @@
     "tabStyles": "Styles",
     "tabHeader": "Header",
     "tabFooter": "Footer",
+    "tabWidgets": "Widgets",
     "tabTemplates": "Templates",
     "tabErrorPages": "Error pages",
     "homePageLabel": "Home page",
@@ -2071,6 +2073,32 @@
     "slotErrorHint": "Shared fallback for 403, 410, and 429 when no specific template exists",
     "slotIndexLabel": "Catch-all (index)",
     "slotIndexHint": "Used only when no more specific template exists"
+  },
+  "widgets": {
+    "loading": "Loading widgets…",
+    "loadError": "Could not load widget areas.",
+    "saveError": "Could not save.",
+    "areaLabel": "Widget area",
+    "noAreas": "No widget areas yet.",
+    "draftSuffix": "(draft)",
+    "fromDefaultHint": "These are the default widgets from your theme or plugin. Publish to keep them as your own.",
+    "language": "Language",
+    "allLanguages": "All languages",
+    "overriddenHint": "This language has its own widgets.",
+    "inheritedHint": "Uses the widgets for all languages. Edit them to give this language its own.",
+    "resetToBase": "Use the widgets for all languages",
+    "layoutHeading": "Layout",
+    "layoutHint": "Choose which widget area each content type shows, and where.",
+    "defaultArea": "Default ({area}, {position})",
+    "defaultNone": "Default (none)",
+    "noArea": "None",
+    "positionLabel": "Position for {type}",
+    "position": {
+      "left": "Left",
+      "right": "Right",
+      "top": "Above"
+    },
+    "saveLayout": "Save layout"
   },
   "themes": {
     "catalogUnavailable": "Theme catalog unavailable",
@@ -2490,6 +2518,7 @@
       "content": "Content",
       "media": "Media",
       "commerce": "Commerce",
+      "widgets": "Widgets",
       "site": "Site"
     },
     "blockJson": {

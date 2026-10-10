@@ -1776,6 +1776,7 @@
     "subBlog": "Kies welke pagina je blogberichten toont",
     "subHeader": "Headers met een naam, waarvan er één op elke pagina wordt getoond — met aanpassingen per taal",
     "subFooter": "Blokken onderaan elke pagina",
+    "subWidgets": "Zijbalken en andere widgetgebieden naast je content",
     "subTemplates": "Paginastructuur per inhoudstype — de sjabloonhiërarchie zoals in WordPress",
     "subStyles": "Kleuren, lettertypen, witruimte, koppen en lay-out",
     "unsavedSuffix": " · niet-opgeslagen wijzigingen",
@@ -1788,6 +1789,7 @@
     "tabStyles": "Stijlen",
     "tabHeader": "Header",
     "tabFooter": "Footer",
+    "tabWidgets": "Widgets",
     "tabTemplates": "Sjablonen",
     "tabErrorPages": "Foutpagina's",
     "homePageLabel": "Startpagina",
@@ -1863,6 +1865,32 @@
     "slotErrorHint": "Gedeelde reserve voor 403, 410 en 429 als er geen specifiek sjabloon is",
     "slotIndexLabel": "Algemeen (index)",
     "slotIndexHint": "Wordt alleen gebruikt als er geen specifieker sjabloon is"
+  },
+  "widgets": {
+    "loading": "Widgets laden…",
+    "loadError": "Kan widgetgebieden niet laden.",
+    "saveError": "Opslaan mislukt.",
+    "areaLabel": "Widgetgebied",
+    "noAreas": "Nog geen widgetgebieden.",
+    "draftSuffix": "(concept)",
+    "fromDefaultHint": "Dit zijn de standaardwidgets van je thema of plugin. Publiceer om ze als je eigen versie te bewaren.",
+    "language": "Taal",
+    "allLanguages": "Alle talen",
+    "overriddenHint": "Deze taal heeft eigen widgets.",
+    "inheritedHint": "Gebruikt de widgets van alle talen. Bewerk ze om deze taal eigen widgets te geven.",
+    "resetToBase": "Widgets van alle talen gebruiken",
+    "layoutHeading": "Indeling",
+    "layoutHint": "Kies per contenttype welk widgetgebied wordt getoond, en waar.",
+    "defaultArea": "Standaard ({area}, {position})",
+    "defaultNone": "Standaard (geen)",
+    "noArea": "Geen",
+    "positionLabel": "Positie voor {type}",
+    "position": {
+      "left": "Links",
+      "right": "Rechts",
+      "top": "Boven"
+    },
+    "saveLayout": "Indeling opslaan"
   },
   "themes": {
     "catalogUnavailable": "Themacatalogus niet beschikbaar",
@@ -3574,6 +3602,7 @@
       "content": "Inhoud",
       "media": "Media",
       "commerce": "Winkel",
+      "widgets": "Widgets",
       "site": "Site"
     },
     "blockJson": {

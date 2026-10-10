@@ -142,7 +142,7 @@ export default function BlockLibrary({
           </div>
         )}
 
-        {CATEGORY_ORDER.map((cat) => {
+        {[...grouped.keys()].map((cat) => {
           const items = grouped.get(cat) ?? [];
           if (!items.length) return null;
           const isOpen = openCat === cat || query.trim().length > 0;

@@ -62,6 +62,11 @@ The footer is template part \`footer\`. \`template_parts_get\` / \`template_part
 read and replace its blocks. Page templates (\`templates_list\`) and theme
 colours (\`themes_customize_get\`) are separate from page content.
 
+Sidebars are widget areas. \`widget_areas_list\` shows the areas and which one
+each content type shows; \`widget_areas_update\` replaces an area's blocks (base
+\`blocks\` for every language, \`locales\` for per-language replacements), and
+\`widget_layout_update\` assigns areas to content types.
+
 ## Translations
 Create the translated entry with the same \`translationGroupId\` as the source
 entry and the target \`locale\`. Translate the title, excerpt, text props and

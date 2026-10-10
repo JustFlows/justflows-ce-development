@@ -56,6 +56,16 @@ import {
   publishTemplatePart,
   saveTemplatePart,
 } from "../../lib/rendering/template-parts.js";
+import {
+  clearWidgetAreaDraft,
+  getWidgetLayout,
+  readWidgetAreaForEditor,
+  saveWidgetAreaDoc,
+  saveWidgetLayout,
+  summarizeWidgetAreas,
+  widgetAreaExists,
+  WIDGET_AREA_POSITIONS,
+} from "../../lib/rendering/widget-areas.js";
 import { listLayoutScopes } from "../../lib/themes/layout-scopes.js";
 import { loadThemeDemoFooter, listThemePatterns, loadThemePattern, loadThemeTemplate } from "../../lib/themes/theme-files.js";
 import {
@@ -308,6 +318,109 @@ router.put("/template-parts/:part", async (req, res) => {
     res.json({ blocks });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : "Could not save" });
+  }
+});
+
+/* ------------------------------ widget areas ----------------------------- */
+
+const WidgetBlocksSchema = z.array(z.record(z.string(), z.unknown()));
+
+const WidgetAreaSaveSchema = z.object({
+  blocks: WidgetBlocksSchema,
+  locales: z.record(z.string().max(35), WidgetBlocksSchema).default({}),
+  draft: z.boolean().default(false),
+});
+
+const WidgetLayoutSchema = z.object({
+  layout: z.record(
+    z.string().max(60),
+    z.object({
+      area: z.string().max(32).nullable(),
+      position: z.enum(WIDGET_AREA_POSITIONS as [string, ...string[]]),
+    }),
+  ),
+});
+
+router.get("/widgets", fileLimit, async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "content:read"))) return;
+  try {
+    const id = siteId(req);
+    const [areas, layout, types] = await Promise.all([
+      summarizeWidgetAreas(id),
+      getWidgetLayout(id),
+      listContentTypes(id),
+    ]);
+    sendJson(req, res, {
+      areas,
+      layout,
+      contentTypes: types.map((type) => ({ slug: type.slug, label: type.label })),
+      positions: WIDGET_AREA_POSITIONS,
+    });
+  } catch (err) {
+    sendServerError(res, "manage.widgets", err);
+  }
+});
+
+router.put("/widgets/layout", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  const body = WidgetLayoutSchema.safeParse(req.body);
+  if (!body.success) return badRequest(res, body.error.issues[0]?.message ?? "Invalid widget layout");
+  try {
+    const layout = await saveWidgetLayout(siteId(req), body.data.layout);
+    await revalidateOnUpdate("theme");
+    res.json({ layout });
+  } catch (err) {
+    sendServerError(res, "manage.widgets.layout", err);
+  }
+});
+
+router.get("/widgets/areas/:key", fileLimit, async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "content:read"))) return;
+  try {
+    const found = await readWidgetAreaForEditor(siteId(req), param(req.params.key));
+    if (!found) {
+      res.status(404).json({ error: "Unknown widget area" });
+      return;
+    }
+    sendJson(req, res, found);
+  } catch (err) {
+    sendServerError(res, "manage.widgets.area", err);
+  }
+});
+
+router.put("/widgets/areas/:key", fileLimit, async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  const body = WidgetAreaSaveSchema.safeParse(req.body);
+  if (!body.success) return badRequest(res, body.error.issues[0]?.message ?? "Invalid widget area");
+  try {
+    const id = siteId(req);
+    const key = param(req.params.key);
+    if (!(await widgetAreaExists(id, key))) {
+      res.status(404).json({ error: "Unknown widget area" });
+      return;
+    }
+    const { draft, ...doc } = body.data;
+    const saved = await saveWidgetAreaDoc(id, key, doc, draft ? "draft" : "publish");
+    if (!draft) await revalidateOnUpdate("theme");
+    res.json({ doc: saved });
+  } catch (err) {
+    sendServerError(res, "manage.widgets.area", err);
+  }
+});
+
+router.post("/widgets/areas/:key/discard-draft", fileLimit, async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  try {
+    const id = siteId(req);
+    const key = param(req.params.key);
+    if (!(await widgetAreaExists(id, key))) {
+      res.status(404).json({ error: "Unknown widget area" });
+      return;
+    }
+    await clearWidgetAreaDraft(id, key);
+    res.json({ ok: true });
+  } catch (err) {
+    sendServerError(res, "manage.widgets.area", err);
   }
 });
 
