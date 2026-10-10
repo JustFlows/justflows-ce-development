@@ -1776,6 +1776,7 @@
     "subBlog": "Elige qué página muestra las entradas de tu blog",
     "subHeader": "Cabeceras con nombre, una de ellas mostrada en cada página — con variantes por idioma",
     "subFooter": "Bloques mostrados en la parte inferior de cada página",
+    "subWidgets": "Barras laterales y otras áreas de widgets junto a tu contenido",
     "subTemplates": "Estructura de página por tipo de contenido — la jerarquía de plantillas al estilo de WordPress",
     "subStyles": "Colores, fuentes, espaciado, títulos y diseño",
     "unsavedSuffix": " · cambios sin guardar",
@@ -1788,6 +1789,7 @@
     "tabStyles": "Estilos",
     "tabHeader": "Cabecera",
     "tabFooter": "Pie de página",
+    "tabWidgets": "Widgets",
     "tabTemplates": "Plantillas",
     "tabErrorPages": "Páginas de error",
     "homePageLabel": "Página de inicio",
@@ -1863,6 +1865,32 @@
     "slotErrorHint": "Plantilla de respaldo común para 403, 410 y 429 cuando no existe una plantilla específica",
     "slotIndexLabel": "Plantilla general (index)",
     "slotIndexHint": "Solo se usa cuando no existe una plantilla más específica"
+  },
+  "widgets": {
+    "loading": "Cargando widgets…",
+    "loadError": "No se pudieron cargar las áreas de widgets.",
+    "saveError": "No se pudo guardar.",
+    "areaLabel": "Área de widgets",
+    "noAreas": "Aún no hay áreas de widgets.",
+    "draftSuffix": "(borrador)",
+    "fromDefaultHint": "Estos son los widgets predeterminados de tu tema o plugin. Publícalos para conservarlos como tuyos.",
+    "language": "Idioma",
+    "allLanguages": "Todos los idiomas",
+    "overriddenHint": "Este idioma tiene sus propios widgets.",
+    "inheritedHint": "Usa los widgets de todos los idiomas. Edítalos para que este idioma tenga los suyos.",
+    "resetToBase": "Usar los widgets de todos los idiomas",
+    "layoutHeading": "Diseño",
+    "layoutHint": "Elige qué área de widgets muestra cada tipo de contenido y dónde.",
+    "defaultArea": "Predeterminado ({area}, {position})",
+    "defaultNone": "Predeterminado (ninguna)",
+    "noArea": "Ninguna",
+    "positionLabel": "Posición para {type}",
+    "position": {
+      "left": "Izquierda",
+      "right": "Derecha",
+      "top": "Arriba"
+    },
+    "saveLayout": "Guardar diseño"
   },
   "themes": {
     "catalogUnavailable": "El catálogo de temas no está disponible",
@@ -3574,6 +3602,7 @@
       "content": "Contenido",
       "media": "Medios",
       "commerce": "Tienda",
+      "widgets": "Widgets",
       "site": "Sitio"
     },
     "blockJson": {

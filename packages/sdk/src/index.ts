@@ -42,6 +42,8 @@ export type {
   GateHandlerFor,
   FilterHandlerFor,
   ThemeLayoutScope,
+  WidgetAreaDefinition,
+  WidgetAreaPosition,
   WorkspaceEvent,
   WorkspaceStatusEvent,
   TenancyWorkspaceCreatedEvent,

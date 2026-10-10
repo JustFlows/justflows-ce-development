@@ -229,6 +229,7 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
   app.use("/api/menus", requireInstalled, menusRoutes);
   app.use("/api/reusable-blocks", requireInstalled, reusableBlocksRoutes);
   app.use("/api/template-parts", requireInstalled, templatePartsRouter);
+  app.use("/api/widgets", requireInstalled, (await import("./routes/design/widgets.js")).default);
   app.use("/api/templates", requireInstalled, templatesRoutes);
   app.use("/api/error-pages", requireInstalled, errorPagesRoutes);
   app.use("/api/patterns", requireInstalled, patternsRoutes);

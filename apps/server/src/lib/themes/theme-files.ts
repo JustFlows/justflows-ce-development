@@ -399,7 +399,7 @@ const TEMPLATE_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,80}$/;
 
 function themeSubdir(
   themeId: string,
-  subdir: "templates" | "parts",
+  subdir: "templates" | "parts" | "widgets",
   installedPath?: string | null,
 ): string | null {
   const dir = resolveThemeDir(themeId, installedPath);
@@ -490,6 +490,50 @@ export function loadThemeTemplatePart(
   }
   if (slug === "footer") return loadThemeDemoFooter(themeId, installedPath);
   return null;
+}
+
+/** A widget area the theme declares in `justflows-theme.json` → `widgetAreas`. */
+export interface ThemeWidgetArea {
+  key: string;
+  label: string;
+  description?: string;
+}
+
+const WIDGET_AREA_KEY_RE = /^[a-z][a-z0-9-]{0,31}$/;
+
+/**
+ * The theme's widget areas, in manifest order:
+ * `"widgetAreas": { "sidebar": { "label": "Sidebar", "description": "…" } }`.
+ * Default blocks for an area live in `widgets/<key>.json`.
+ */
+export function loadThemeWidgetAreas(themeId: string, installedPath?: string | null): ThemeWidgetArea[] {
+  const dir = resolveThemeDir(themeId, installedPath);
+  if (!dir) return [];
+  const manifest = readJsonFile<Record<string, unknown>>(dir, "justflows-theme.json");
+  const raw = plainObject(manifest?.widgetAreas);
+  if (!raw) return [];
+  const areas: ThemeWidgetArea[] = [];
+  for (const [key, value] of Object.entries(raw)) {
+    const row = plainObject(value);
+    if (!WIDGET_AREA_KEY_RE.test(key) || !row) continue;
+    const label = typeof row.label === "string" ? row.label.trim().slice(0, 80) : "";
+    if (!label) continue;
+    const description =
+      typeof row.description === "string" ? row.description.trim().slice(0, 300) : "";
+    areas.push(description ? { key, label, description } : { key, label });
+  }
+  return areas;
+}
+
+/** The theme's default blocks for one widget area (`widgets/<key>.json`), or `null`. */
+export function loadThemeWidgetDefault(
+  themeId: string,
+  key: string,
+  installedPath?: string | null,
+): BlockNode[] | null {
+  if (!WIDGET_AREA_KEY_RE.test(key)) return null;
+  const dir = themeSubdir(themeId, "widgets", installedPath);
+  return dir ? readBlockDocFile(dir, `${key}.json`) : null;
 }
 
 export function loadThemeDemoHome(

@@ -11,6 +11,7 @@ import {
   POST_TITLE_BLOCK_TYPE,
   TEMPLATE_BLOCK_TYPES,
   TEMPLATE_PART_BLOCK_TYPE,
+  WIDGET_AREA_BLOCK_TYPE,
   registerTemplateBlocks,
   renderTemplateBlockHtml,
   type TemplateBlockContext,
@@ -31,6 +32,7 @@ function ctx(overrides: Partial<TemplateBlockContext> = {}): TemplateBlockContex
     formattedDate: "January 2, 2026",
     contentBodyHtml: "<p>body</p>",
     renderPart: async (slug) => `<!--part:${slug}-->`,
+    renderWidgetArea: async (key) => `<!--area:${key}-->`,
     ...overrides,
   };
 }
@@ -126,5 +128,25 @@ describe("registerTemplateBlocks", () => {
       registerTemplateBlocks();
       registerTemplateBlocks();
     }).not.toThrow();
+  });
+});
+
+describe("widget area block", () => {
+  it("renders the named area through the template context", async () => {
+    expect(await renderTemplateBlockHtml(WIDGET_AREA_BLOCK_TYPE, { area: "sidebar" }, ctx())).toBe(
+      "<!--area:sidebar-->",
+    );
+  });
+
+  it("ignores a key that is not a widget area key", async () => {
+    const renderWidgetArea = vi.fn(async () => "x");
+    expect(
+      await renderTemplateBlockHtml(WIDGET_AREA_BLOCK_TYPE, { area: "../etc" }, ctx({ renderWidgetArea })),
+    ).toBe("");
+    expect(renderWidgetArea).not.toHaveBeenCalled();
+  });
+
+  it("is a template block", () => {
+    expect(TEMPLATE_BLOCK_TYPES.has(WIDGET_AREA_BLOCK_TYPE)).toBe(true);
   });
 });

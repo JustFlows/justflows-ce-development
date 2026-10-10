@@ -9,6 +9,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Widget areas: sidebars that plugins and themes can fill.** Appearance → Customize → Widgets edits each area as blocks, with draft and publish, and lets each language replace the blocks shown in every language. Choose per content type which area shows and where: left, right, or above the content. Core ships a `sidebar` area; themes declare more in `justflows-theme.json` (`widgetAreas`, defaults in `widgets/<key>.json`) or place one with the `core.widget-area` template block, and plugins add areas with default blocks and content types through the `widgets.areas` filter. Also available through the management API and MCP tools (`widget_areas_*`, `widget_layout_update`). The `widgets` plugin API namespace is now reserved for core.
+
 - **Set Cache-Control per content type or individual post.** Inherit site settings, disable caching, or configure a validated header. Per-post overrides live under Advanced and follow drafts and revisions. Mandatory private types have no override control. Policies govern live pages, shared page caches and static exports. Adds migration `0046_content_type_cache_control`. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
 
 - **Customize frontend account pages in the page builder.** The core `account` content type seeds a default page with editable headings, layout and account-section blocks. Personal data stays request-scoped. Authentication and exclusions from caches, public APIs/search, sitemaps and static exports follow the content type, including renamed URLs and pagination. Adds migration `0045_account_pages` for existing sites. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))

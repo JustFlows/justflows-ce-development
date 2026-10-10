@@ -993,6 +993,16 @@ export interface FilterValueMap {
    */
   "theme.layoutScopes": [ThemeLayoutScope[], { siteId: string }];
   /**
+   * Widget areas a site owner can fill from Appearance → Customize → Widgets.
+   * Seeded with the core `sidebar` area plus the areas the active theme
+   * declares. Append `{ key, label, ... }` to add an area of your own, with
+   * optional `defaultBlocks` (shown until the owner saves the area) and
+   * `defaultLayout` (content types that show the area until the owner assigns
+   * them). Deactivating the plugin removes the area from the public site; the
+   * owner's saved blocks are kept.
+   */
+  "widgets.areas": [WidgetAreaDefinition[], { siteId: string }];
+  /**
    * Default permalink bases keyed by content type. Seeded with the stored
    * bases. A plugin fills bases for its own types; stored values already in
    * the seed win. Deactivating the plugin drops the defaults.
@@ -1057,6 +1067,25 @@ export interface ThemeLayoutScope {
   base: string;
   /** CMS row published at `/{base}` — the parent of entries under that prefix. */
   index?: { type: string; slug: string };
+}
+
+/** Where a widget area sits next to the page content. */
+export type WidgetAreaPosition = "left" | "right" | "top";
+
+/** One widget area: a named slot of blocks the site owner fills. */
+export interface WidgetAreaDefinition {
+  /** Stable key, such as `sidebar` or `shop-sidebar`: lowercase letters, digits, and dashes, at most 32 characters. */
+  key: string;
+  label: string;
+  description?: string;
+  /**
+   * Blocks shown while the owner has never saved this area. Any registered
+   * block type may be used; give widget-style blocks `category: "widgets"` so
+   * they are grouped in the block library.
+   */
+  defaultBlocks?: unknown[];
+  /** Content types that show this area until the owner assigns a layout for them. */
+  defaultLayout?: { contentTypes: string[]; position: WidgetAreaPosition };
 }
 
 /** Filters applied on synchronous render paths — handlers must not be async. */

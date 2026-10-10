@@ -10,6 +10,7 @@ import { getActiveTheme, themeInstalledPath } from "./themes-db.js";
 import { sanitizeCustomCss } from "../rendering/safe-css.js";
 import { sanitizeFaviconUrl } from "../media/favicon.js";
 import { blockAnimationCss, blockVisibilityCss } from "@justflows/blocks";
+import { widgetLayoutCss } from "../rendering/widget-layout-css.js";
 
 export type CustomizeControlType =
   "color" | "font" | "text" | "image" | "range" | "code" | "select";
@@ -883,6 +884,7 @@ export function assembleThemeCss(
   pluginCss = "",
 ): string {
   const parts = [
+    `/* Widget areas */\n${widgetLayoutCss()}`,
     themeStyles ? `/* Theme styles */\n${themeStyles}` : "",
     tokens,
     `/* Block animations */\n${blockAnimationCss()}`,

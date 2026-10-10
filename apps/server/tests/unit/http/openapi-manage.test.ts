@@ -49,6 +49,8 @@ describe("MANAGE_API_OPENAPI", () => {
       "/themes/{id}/activate",
       "/headers",
       "/template-parts/{part}",
+      "/widgets",
+      "/widgets/areas/{key}",
       "/themes/customize",
       "/permalinks",
       "/email-templates",

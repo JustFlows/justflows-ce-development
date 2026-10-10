@@ -87,6 +87,7 @@ describe("tool generation from the management API", () => {
       "content_types_create", "content_types_update", "content_types_delete",
       "headers_get", "headers_update", "headers_options", "template_parts_get", "template_parts_update",
       "content_set_header", "templates_list", "themes_customize_get", "themes_customize_update",
+      "widget_areas_list", "widget_areas_get", "widget_areas_update", "widget_layout_update",
     ]) {
       expect(names.has(name), name).toBe(true);
     }

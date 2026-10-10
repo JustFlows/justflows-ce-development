@@ -19,6 +19,7 @@ import { renderMediaImage } from "../media/responsive-media.js";
 import { renderPlaceholder } from "../media/placeholders.js";
 import type { TemplatePartSlot } from "./template-hierarchy.js";
 import { TEMPLATE_PART_SLOTS } from "./template-hierarchy.js";
+import { WIDGET_AREA_BLOCK_TYPE, WIDGET_AREA_KEY_RE } from "./widget-areas.js";
 
 export const POST_TITLE_BLOCK_TYPE = "core.post-title";
 export const POST_CONTENT_BLOCK_TYPE = "core.post-content";
@@ -26,6 +27,7 @@ export const POST_META_BLOCK_TYPE = "core.post-meta";
 export const POST_EXCERPT_BLOCK_TYPE = "core.post-excerpt";
 export const FEATURED_IMAGE_BLOCK_TYPE = "core.featured-image";
 export const TEMPLATE_PART_BLOCK_TYPE = "core.template-part";
+export { WIDGET_AREA_BLOCK_TYPE };
 
 export const TEMPLATE_BLOCK_TYPES = new Set<string>([
   POST_TITLE_BLOCK_TYPE,
@@ -34,6 +36,7 @@ export const TEMPLATE_BLOCK_TYPES = new Set<string>([
   POST_EXCERPT_BLOCK_TYPE,
   FEATURED_IMAGE_BLOCK_TYPE,
   TEMPLATE_PART_BLOCK_TYPE,
+  WIDGET_AREA_BLOCK_TYPE,
 ]);
 
 /** The subset of a content row a context block needs, plus render helpers. */
@@ -53,6 +56,8 @@ export interface TemplateBlockContext {
   contentBodyHtml: string;
   /** Render a template part (`parts/<slug>.json`); "" when the theme ships none. */
   renderPart: (slug: TemplatePartSlot) => Promise<string>;
+  /** Render a widget area (`<aside>` markup); "" when it is unknown or empty. */
+  renderWidgetArea: (key: string) => Promise<string>;
 }
 
 function str(raw: unknown): string {
@@ -129,6 +134,11 @@ export async function renderTemplateBlockHtml(
       return slug ? await ctx.renderPart(slug) : "";
     }
 
+    case WIDGET_AREA_BLOCK_TYPE: {
+      const key = str(props.area);
+      return WIDGET_AREA_KEY_RE.test(key) ? await ctx.renderWidgetArea(key) : "";
+    }
+
     default:
       return "";
   }
@@ -200,6 +210,15 @@ export function registerTemplateBlocks(): void {
       icon: "▤",
       schema: {
         slug: { type: "select" as const, options: [...TEMPLATE_PART_SLOTS], default: "header" },
+      },
+    },
+    {
+      type: WIDGET_AREA_BLOCK_TYPE,
+      title: "Widget Area",
+      description: "Shows a widget area (such as the sidebar). For use in a theme template.",
+      icon: "▥",
+      schema: {
+        area: { type: "text" as const, default: "sidebar", label: "Area key" },
       },
     },
   ];

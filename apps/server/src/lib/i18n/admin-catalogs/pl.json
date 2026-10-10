@@ -1985,6 +1985,7 @@
     "subBlog": "Wybierz stronę zawierającą listę Twoich postów na blogu",
     "subHeader": "Nazwane nagłówki, po jednym na każdej stronie — z nadpisaniami dla poszczególnych języków",
     "subFooter": "Bloki pokazane na dole każdej strony",
+    "subWidgets": "Paski boczne i inne obszary widżetów obok treści",
     "subTemplates": "Struktura strony według typu zawartości — hierarchia szablonów w stylu WordPress",
     "subStyles": "Kolory, czcionki, odstępy, nagłówki i układ",
     "unsavedSuffix": "· niezapisane zmiany",
@@ -1998,6 +1999,7 @@
     "tabStyles": "Style",
     "tabHeader": "Nagłówek",
     "tabFooter": "Stopka",
+    "tabWidgets": "Widżety",
     "tabTemplates": "Szablony",
     "tabErrorPages": "Strony błędów",
     "homePageLabel": "Strona główna",
@@ -2071,6 +2073,32 @@
     "slotErrorHint": "Udostępniona rezerwa dla 403, 410 i 429, gdy nie istnieje żaden konkretny szablon",
     "slotIndexLabel": "Catch-all (indeks)",
     "slotIndexHint": "Używane tylko wtedy, gdy nie istnieje żaden bardziej szczegółowy szablon"
+  },
+  "widgets": {
+    "loading": "Wczytywanie widżetów…",
+    "loadError": "Nie udało się wczytać obszarów widżetów.",
+    "saveError": "Nie udało się zapisać.",
+    "areaLabel": "Obszar widżetów",
+    "noAreas": "Brak obszarów widżetów.",
+    "draftSuffix": "(szkic)",
+    "fromDefaultHint": "To domyślne widżety motywu lub wtyczki. Opublikuj je, aby zachować je jako własne.",
+    "language": "Język",
+    "allLanguages": "Wszystkie języki",
+    "overriddenHint": "Ten język ma własne widżety.",
+    "inheritedHint": "Używa widżetów wspólnych dla wszystkich języków. Edytuj je, aby nadać temu językowi własne.",
+    "resetToBase": "Użyj widżetów dla wszystkich języków",
+    "layoutHeading": "Układ",
+    "layoutHint": "Wybierz, który obszar widżetów wyświetla każdy typ treści i gdzie.",
+    "defaultArea": "Domyślnie ({area}, {position})",
+    "defaultNone": "Domyślnie (brak)",
+    "noArea": "Brak",
+    "positionLabel": "Pozycja dla: {type}",
+    "position": {
+      "left": "Po lewej",
+      "right": "Po prawej",
+      "top": "Nad treścią"
+    },
+    "saveLayout": "Zapisz układ"
   },
   "themes": {
     "catalogUnavailable": "Katalog motywów niedostępny",
@@ -2490,6 +2518,7 @@
       "content": "Treść",
       "media": "Media",
       "commerce": "Handel",
+      "widgets": "Widżety",
       "site": "Witryna"
     },
     "blockJson": {

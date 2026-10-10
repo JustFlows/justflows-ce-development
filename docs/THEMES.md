@@ -56,6 +56,7 @@ without a re-upload. See
 | `styles/blocks.css`     | Same                                                     |
 | `templates/*.json`      | Template hierarchy — page structure per request (below)  |
 | `parts/*.json`          | Template parts (`header`, `footer`) shared by templates  |
+| `widgets/<key>.json`    | Default blocks for a widget area the site never saved    |
 | `patterns/*.json`       | Page-builder patterns                                    |
 | `patterns/<type>.json`  | Starting canvas for a new `product` / `post` content row |
 | `demo/home.json`        | Default home blocks when no home page is selected        |
@@ -169,7 +170,7 @@ Slugs are sanitised (`[a-z0-9-]`, lowercased) before they touch a filename.
 
 ### Context blocks
 
-A template is a normal block document, but six blocks resolve the _current
+A template is a normal block document, but seven blocks resolve the _current
 request's_ content when they render inside one (`template-blocks.ts`):
 
 | Block                 | Renders                                                                                                                                  |
@@ -180,6 +181,7 @@ request's_ content when they render inside one (`template-blocks.ts`):
 | `core.post-excerpt`   | `<p class="post-excerpt">`                                                                                                               |
 | `core.featured-image` | `<figure class="post-featured-image">` from `fields.seoImage`                                                                            |
 | `core.template-part`  | embeds `parts/<slug>.json` — `slug` prop, `header` or `footer`                                                                           |
+| `core.widget-area`    | a widget area as `<aside class="jf-widget-area">` — `area` prop (the area key); nothing when the area is unknown or empty                |
 
 Dropped on an ordinary page (no template context) they degrade to an HTML
 comment. They render through the `template` view, which supplies the `<main>`
@@ -528,6 +530,50 @@ resolved header before render. See [HOOKS.md](HOOKS.md#contributing-a-header-des
 
 Presentation defaults (site title, tagline, colors) live in Customizer mods.
 Behavior belongs in plugins via hooks.
+
+## Widget areas
+
+A widget area is a named slot of blocks shown next to the page content: the
+sidebar, a shop filter column, a column above the content. Site owners fill
+areas under Theme builder → **Widgets** and choose which area each content type
+shows.
+
+- **Which areas exist** is site-global: the core `sidebar`, the areas the active
+  theme declares, and the areas active plugins add through the `widgets.areas`
+  filter ([HOOKS.md](HOOKS.md)). A theme declares areas in
+  `justflows-theme.json` and may ship default blocks in `widgets/<key>.json`:
+
+  ```json
+  "widgetAreas": {
+    "sidebar": { "label": "Blog sidebar" },
+    "footer-1": { "label": "Footer column", "description": "Left footer column" }
+  }
+  ```
+
+  Keys are lowercase letters, digits, and dashes, at most 32 characters.
+  Declaring `sidebar` relabels the core sidebar.
+- **What an area shows** is stored in `template_parts` as `widgets:<key>`, with
+  the same draft/publish pair as the footer. The document holds base `blocks`
+  shown in every language plus sparse per-locale replacements in `locales`. An
+  area the owner never saved shows its theme or plugin default; a saved empty
+  area shows nothing.
+- **Where it shows**: the widget layout (`template_parts` row `widget-layout`)
+  maps a content type to `{ area, position }`, with `position` `left`, `right`,
+  or `top`. A type without a saved rule uses the first area whose
+  `defaultLayout` lists it. On a singular page the host wraps the template
+  output in `<div class="jf-widget-layout jf-widget-layout--{position}">` with
+  the content first and the `<aside>` after it; CSS places the area. A template
+  that places `core.widget-area` itself owns the layout and is not wrapped.
+
+The structural CSS (`widget-layout-css.ts`) sits at the top of `/theme.css`
+with every selector in `:where()`, so any theme rule wins. Tune it with
+`--jf-sidebar-width` (default `18rem`) and `--jf-widget-gap`.
+
+Admin: `GET /api/widgets` (areas, layout, content types), `GET/PUT
+/api/widgets/areas/:key` (`{ blocks, locales, draft }`),
+`DELETE /api/widgets/areas/:key/draft`, `PUT /api/widgets/layout`
+(`{ layout }`). The management API and MCP tools mirror them
+(`widget_areas_list/get/update/discard_draft`, `widget_layout_update`).
 
 ### Search results
 

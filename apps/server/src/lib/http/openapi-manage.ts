@@ -229,6 +229,13 @@ export const MANAGE_API_OPENAPI = {
       get: op("Read a template part (footer) including its draft", "content:read"),
       put: op("Save or publish a template part", "settings:manage"),
     },
+    "/widgets": { get: op("List widget areas, the per-content-type widget layout, and content types", "content:read") },
+    "/widgets/layout": { put: op("Save which widget area each content type shows, and where", "settings:manage") },
+    "/widgets/areas/{key}": {
+      get: op("Read one widget area: base blocks, per-locale overrides, and draft", "content:read"),
+      put: op("Save or publish a widget area", "settings:manage"),
+    },
+    "/widgets/areas/{key}/discard-draft": { post: op("Discard a widget area draft", "settings:manage") },
     "/templates": { get: op("List page templates for the active theme", "content:read") },
     "/templates/{slug}": {
       get: op("Read one page template", "content:read"),

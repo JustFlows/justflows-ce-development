@@ -1776,6 +1776,7 @@
     "subBlog": "Choisissez la page qui liste vos articles de blog",
     "subHeader": "En-têtes nommés, dont un affiché sur chaque page — avec des variantes par langue",
     "subFooter": "Blocs affichés en bas de chaque page",
+    "subWidgets": "Barres latérales et autres zones de widgets à côté de votre contenu",
     "subTemplates": "Structure des pages par type de contenu — la hiérarchie de modèles façon WordPress",
     "subStyles": "Couleurs, polices, espacements, titres et mise en page",
     "unsavedSuffix": " · modifications non enregistrées",
@@ -1788,6 +1789,7 @@
     "tabStyles": "Styles",
     "tabHeader": "En-tête",
     "tabFooter": "Pied de page",
+    "tabWidgets": "Widgets",
     "tabTemplates": "Modèles",
     "tabErrorPages": "Pages d'erreur",
     "homePageLabel": "Page d'accueil",
@@ -1863,6 +1865,32 @@
     "slotErrorHint": "Modèle de secours commun aux erreurs 403, 410 et 429 lorsqu’aucun modèle spécifique n’existe",
     "slotIndexLabel": "Modèle général (index)",
     "slotIndexHint": "Utilisé uniquement lorsqu’aucun modèle plus spécifique n’existe"
+  },
+  "widgets": {
+    "loading": "Chargement des widgets…",
+    "loadError": "Impossible de charger les zones de widgets.",
+    "saveError": "Échec de l’enregistrement.",
+    "areaLabel": "Zone de widgets",
+    "noAreas": "Aucune zone de widgets pour l’instant.",
+    "draftSuffix": "(brouillon)",
+    "fromDefaultHint": "Voici les widgets par défaut de votre thème ou extension. Publiez-les pour les conserver comme les vôtres.",
+    "language": "Langue",
+    "allLanguages": "Toutes les langues",
+    "overriddenHint": "Cette langue a ses propres widgets.",
+    "inheritedHint": "Utilise les widgets de toutes les langues. Modifiez-les pour donner à cette langue ses propres widgets.",
+    "resetToBase": "Utiliser les widgets de toutes les langues",
+    "layoutHeading": "Mise en page",
+    "layoutHint": "Choisissez la zone de widgets affichée pour chaque type de contenu, et son emplacement.",
+    "defaultArea": "Par défaut ({area}, {position})",
+    "defaultNone": "Par défaut (aucune)",
+    "noArea": "Aucune",
+    "positionLabel": "Position pour {type}",
+    "position": {
+      "left": "À gauche",
+      "right": "À droite",
+      "top": "Au-dessus"
+    },
+    "saveLayout": "Enregistrer la mise en page"
   },
   "themes": {
     "catalogUnavailable": "Catalogue de thèmes indisponible",
@@ -3574,6 +3602,7 @@
       "content": "Contenu",
       "media": "Médias",
       "commerce": "Boutique",
+      "widgets": "Widgets",
       "site": "Site"
     },
     "blockJson": {

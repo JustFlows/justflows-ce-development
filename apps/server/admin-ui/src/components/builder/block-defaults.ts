@@ -136,7 +136,8 @@ export const CATEGORY_LABEL_KEYS: Record<string, string> = {
   content: "ui.blockCategories.content",
   media: "ui.blockCategories.media",
   commerce: "ui.blockCategories.commerce",
+  widgets: "ui.blockCategories.widgets",
   site: "ui.blockCategories.site",
 };
 
-export const CATEGORY_ORDER = ["sections", "layout", "content", "media", "commerce", "site"];
+export const CATEGORY_ORDER = ["sections", "layout", "content", "media", "commerce", "widgets", "site"];

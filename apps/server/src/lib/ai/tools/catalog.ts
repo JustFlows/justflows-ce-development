@@ -286,6 +286,17 @@ async function templatePartsUpdate(args: Record<string, unknown>, ctx: ToolCallC
   return callManage(ctx, "PUT", "/template-parts/{part}", args);
 }
 
+async function widgetAreasUpdate(args: Record<string, unknown>, ctx: ToolCallContext): Promise<ToolOutcome> {
+  const problem = await rejectBlocks(args.blocks);
+  if (problem) return { ok: false, error: problem };
+  const locales = args.locales && typeof args.locales === "object" ? Object.values(args.locales) : [];
+  for (const blocks of locales) {
+    const localeProblem = await rejectBlocks(blocks);
+    if (localeProblem) return { ok: false, error: localeProblem };
+  }
+  return callManage(ctx, "PUT", "/widgets/areas/{key}", args);
+}
+
 async function templatesUpdate(args: Record<string, unknown>, ctx: ToolCallContext): Promise<ToolOutcome> {
   const problem = await rejectBlocks(args.blocks);
   if (problem) return { ok: false, error: problem };
@@ -1093,6 +1104,90 @@ export const CORE_TOOLS: AgentTool[] = [
     operation: { method: "PUT", path: "/template-parts/{part}" },
     targetArg: "part",
     run: templatePartsUpdate,
+  }),
+  manageTool({
+    name: "widget_areas_list",
+    title: "List widget areas",
+    description:
+      "Widget areas (sidebars and other block slots next to page content), which area each content type shows and where (left, right, or top), and the site's content types. An area with saved false still shows its theme or plugin default.",
+    method: "GET",
+    path: "/widgets",
+    annotations: READ,
+    group: "design",
+  }),
+  manageTool({
+    name: "widget_areas_get",
+    title: "Read a widget area",
+    description:
+      "One widget area. doc.blocks is shown in every language; doc.locales holds per-locale replacements keyed by locale code. draft is the unpublished copy. fromDefault means nothing has been saved yet.",
+    method: "GET",
+    path: "/widgets/areas/{key}",
+    input: object({ key: str("Widget area key, such as sidebar.") }, ["key"]),
+    annotations: READ,
+    group: "design",
+    targetArg: "key",
+  }),
+  custom({
+    name: "widget_areas_update",
+    title: "Save a widget area",
+    description:
+      "Replace a widget area's blocks. blocks is shown in every language; locales maps a locale code to the blocks that replace them in that language (omit a locale to show the base blocks). draft true saves without publishing.",
+    inputSchema: object(
+      {
+        key: str("Widget area key, such as sidebar."),
+        blocks: { type: "array", items: { type: "object" }, description: "The complete base block list." },
+        locales: {
+          type: "object",
+          additionalProperties: { type: "array", items: { type: "object" } },
+          description: "Per-locale block lists, keyed by locale code.",
+        },
+        draft: bool("Save a draft instead of publishing."),
+      },
+      ["key", "blocks"],
+    ),
+    annotations: IDEMPOTENT_WRITE,
+    group: "design",
+    operation: { method: "PUT", path: "/widgets/areas/{key}" },
+    targetArg: "key",
+    run: widgetAreasUpdate,
+  }),
+  manageTool({
+    name: "widget_areas_discard_draft",
+    title: "Discard a widget area draft",
+    description: "Drop the unpublished draft of a widget area and keep what is published.",
+    method: "POST",
+    path: "/widgets/areas/{key}/discard-draft",
+    input: object({ key: str("Widget area key, such as sidebar.") }, ["key"]),
+    annotations: IDEMPOTENT_WRITE,
+    group: "design",
+    targetArg: "key",
+  }),
+  manageTool({
+    name: "widget_layout_update",
+    title: "Assign widget areas to content types",
+    description:
+      'Set which widget area each content type shows and where. layout maps a content type slug to { area, position }; area null shows none, position is "left", "right", or "top". The map replaces every saved rule; a type left out falls back to its plugin or theme default.',
+    method: "PUT",
+    path: "/widgets/layout",
+    input: object(
+      {
+        layout: {
+          type: "object",
+          additionalProperties: {
+            type: "object",
+            properties: {
+              area: { type: ["string", "null"] },
+              position: { type: "string", enum: ["left", "right", "top"] },
+            },
+            required: ["area", "position"],
+          },
+          description: "Rules keyed by content type slug.",
+        },
+      },
+      ["layout"],
+    ),
+    annotations: IDEMPOTENT_WRITE,
+    group: "design",
   }),
   manageTool({
     name: "templates_list",

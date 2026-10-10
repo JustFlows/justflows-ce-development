@@ -1776,6 +1776,7 @@
     "subBlog": "Wählen Sie, welche Seite Ihre Blogbeiträge auflistet",
     "subHeader": "Benannte Header, von denen einer auf jeder Seite angezeigt wird – mit Anpassungen je Sprache",
     "subFooter": "Blöcke, die unten auf jeder Seite angezeigt werden",
+    "subWidgets": "Seitenleisten und andere Widget-Bereiche neben deinen Inhalten",
     "subTemplates": "Seitenstruktur je Inhaltstyp – die Vorlagenhierarchie im WordPress-Stil",
     "subStyles": "Farben, Schriften, Abstände, Überschriften und Layout",
     "unsavedSuffix": " · ungespeicherte Änderungen",
@@ -1788,6 +1789,7 @@
     "tabStyles": "Stile",
     "tabHeader": "Header",
     "tabFooter": "Footer",
+    "tabWidgets": "Widgets",
     "tabTemplates": "Vorlagen",
     "tabErrorPages": "Fehlerseiten",
     "homePageLabel": "Startseite",
@@ -1863,6 +1865,32 @@
     "slotErrorHint": "Gemeinsamer Fallback für 403, 410 und 429, wenn keine spezifische Vorlage existiert",
     "slotIndexLabel": "Auffangvorlage (index)",
     "slotIndexHint": "Wird nur verwendet, wenn keine spezifischere Vorlage existiert"
+  },
+  "widgets": {
+    "loading": "Widgets werden geladen…",
+    "loadError": "Widget-Bereiche konnten nicht geladen werden.",
+    "saveError": "Speichern fehlgeschlagen.",
+    "areaLabel": "Widget-Bereich",
+    "noAreas": "Noch keine Widget-Bereiche.",
+    "draftSuffix": "(Entwurf)",
+    "fromDefaultHint": "Das sind die Standard-Widgets deines Themes oder Plugins. Veröffentliche sie, um sie als eigene zu behalten.",
+    "language": "Sprache",
+    "allLanguages": "Alle Sprachen",
+    "overriddenHint": "Diese Sprache hat eigene Widgets.",
+    "inheritedHint": "Verwendet die Widgets für alle Sprachen. Bearbeite sie, um dieser Sprache eigene zu geben.",
+    "resetToBase": "Widgets für alle Sprachen verwenden",
+    "layoutHeading": "Layout",
+    "layoutHint": "Lege fest, welchen Widget-Bereich jeder Inhaltstyp zeigt und wo.",
+    "defaultArea": "Standard ({area}, {position})",
+    "defaultNone": "Standard (keiner)",
+    "noArea": "Keiner",
+    "positionLabel": "Position für {type}",
+    "position": {
+      "left": "Links",
+      "right": "Rechts",
+      "top": "Oben"
+    },
+    "saveLayout": "Layout speichern"
   },
   "themes": {
     "catalogUnavailable": "Theme-Katalog nicht verfügbar",
@@ -3574,6 +3602,7 @@
       "content": "Inhalt",
       "media": "Medien",
       "commerce": "Shop",
+      "widgets": "Widgets",
       "site": "Website"
     },
     "blockJson": {

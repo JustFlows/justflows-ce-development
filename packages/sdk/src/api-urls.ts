@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 /** Core owns these API namespaces; plugins cannot shadow them. */
-const RESERVED = new Set("account ai analytics api-keys audit auth blocks cache cdn comment-rules comment-spam-terms comments content content-types cookies css-providers db diagnostics domains emails error-pages headers health healthz i18n import install languages manage marketplace mcp media menus oauth patterns performance platform platform-account plugins preferences redirects reusable-blocks roles search security settings signup site static-export storage template-parts templates themes trash updates users v1 webhooks".split(" "));
+const RESERVED = new Set("account ai analytics api-keys audit auth blocks cache cdn comment-rules comment-spam-terms comments content content-types cookies css-providers db diagnostics domains emails error-pages headers health healthz i18n import install languages manage marketplace mcp media menus oauth patterns performance platform platform-account plugins preferences redirects reusable-blocks roles search security settings signup site static-export storage template-parts templates themes trash updates users v1 webhooks widgets".split(" "));
 
 export function isValidPluginApiNamespace(namespace: string): boolean {
   return /^[a-z][a-z0-9-]{0,39}$/.test(namespace) && !RESERVED.has(namespace);
