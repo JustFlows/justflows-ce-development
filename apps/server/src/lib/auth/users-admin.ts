@@ -76,7 +76,8 @@ function audit(
   void auditLog({
     siteId: actor.siteId,
     action,
-    actorId: actor.userId,
+    // Empty when a visitor creates their own account through a plugin (Shop checkout): no actor.
+    actorId: actor.userId || null,
     actorRole: actor.role,
     ip: actor.ip ?? null,
     userAgent: actor.userAgent ?? null,
@@ -564,6 +565,50 @@ export async function addAdditionalRole(
       displayName: String(row.display_name),
       role: String(row.role),
       roles: [String(row.role), ...held.filter((entry) => entry !== row.role)],
+    },
+  };
+}
+
+/**
+ * Take back one additional role, behind `ctx.users.removeRole()`: Shop uses it
+ * when a membership subscription ends. The primary role is never changed. The
+ * plugin loader has already checked the plugin owns the role. Capabilities are
+ * resolved on every request, so the user loses the role's access at once.
+ */
+export async function removeAdditionalRole(
+  siteId: string,
+  target: AdditionalRoleTarget,
+  role: string,
+  actor: Pick<UserAdminActor, "userId" | "role">,
+): Promise<AddRoleResult> {
+  const db = await getDb();
+  const [column, value] = "userId" in target
+    ? (["id", target.userId] as const)
+    : (["email", target.email.toLowerCase()] as const);
+  const row = (
+    await db.query<Record<string, unknown>>(
+      `SELECT id, email, username, display_name, role FROM users WHERE ${column} = ? AND site_id = ? LIMIT 1`,
+      [value, siteId],
+    )
+  )[0];
+  if (!row) return { ok: false, status: 404, error: "User not found" };
+  const userId = String(row.id);
+  const held = await listAdditionalRoles(userId, siteId, db);
+  if (held.includes(role)) {
+    await db.run("DELETE FROM user_additional_roles WHERE user_id = ? AND site_id = ? AND role = ?", [userId, siteId, role]);
+    audit({ siteId, ...actor }, "user.access_changed", userId, `additional-=${role}`);
+    await emitUserEvent("user.updated", userId, siteId);
+  }
+  const remaining = held.filter((entry) => entry !== role && entry !== row.role);
+  return {
+    ok: true,
+    user: {
+      id: userId,
+      email: String(row.email),
+      username: String(row.username),
+      displayName: String(row.display_name),
+      role: String(row.role),
+      roles: [String(row.role), ...remaining],
     },
   };
 }

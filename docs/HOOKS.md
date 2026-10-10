@@ -280,6 +280,7 @@ Most hooks are open to any plugin. A few require a declared permission:
 | -------------- | ---------------------------- |
 | `auth.*`       | `auth:hook`                  |
 | `user.*`       | `users:read`                 |
+| `account.*`    | `users:read`                 |
 | `search.*`     | `content:read`               |
 
 ```json
@@ -614,6 +615,7 @@ makes both correctness and performance attributable to a specific extension.
 | `auth.login` / `auth.logout`                                                    | `{ userId, email }`                                                                                                                                                                                                                         |
 | `auth.loginFailed`                                                              | `{ email, reason }`                                                                                                                                                                                                                         |
 | `workspace.created`                                                             | `{ tenantId, siteId, hostname, userMode, databaseMode }` — after a workspace and its first site are usable. No database password.                                                                                                           |
+| `tenancy.workspaceCreated`                                                             | `{ tenantId, siteId, hostname, userMode, databaseMode, adminEmail }` — the same moment as `workspace.created`, plus the first administrator's email. Listening requires `platform:tenancy`.                                                                                                           |
 | `workspace.suspended` / `reactivated`                                           | `{ tenantId }`                                                                                                                                                                                                                              |
 | `workspace.deleted`                                                             | `{ tenantId, dropDatabase }`                                                                                                                                                                                                                |
 | `site.created`                                                                  | `{ tenantId, siteId, hostname, databaseChoice }`                                                                                                                                                                                            |
@@ -667,6 +669,7 @@ makes both correctness and performance attributable to a specific extension.
 | `html.head`                | `string` (extra `<head>` HTML)          | `{ siteId, path, locale, title, contentId? }` — `locale` is the page's content locale (`""` outside a localized render). **Synchronous.**                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `analytics.head`           | `string` (analytics `<head>` markup)    | `{ siteId, path }` — the Google Tag markup the host is about to emit (or `""`). **Synchronous.** A consent plugin rewrites it — e.g. to `type="text/plain" data-jf-consent="analytics"` — so the tag does not run until the visitor grants the analytics category. Return it unchanged for a no-op.                                                                                                                                                                                                                                                    |
 | `theme.css`                | `string` (CSS appended to `/theme.css`) | `{ siteId, preview }` — seeded with `""`; append your plugin's stylesheet. Lands after the theme and Customizer tokens, before the site owner's Additional CSS. Runs once per stylesheet build (cached, not per page), so handlers **may be async** — read a file and minify once, then memoise. Deactivating the plugin drops the handler and the next build omits the CSS. `preview` is true while the Customizer previews an unpublished draft.                                                                                                     |
+| `account.sections` | `AccountSection[]` | `AccountSectionContext` — server-rendered sections for the authenticated site user; requires `users:read`. See [Frontend user account](#frontend-user-account). |
 | `theme.layoutScopes`       | `ThemeLayoutScope[]`                    | `{ siteId }` — seeded with `[]`. Append `{ id, label, base, index? }` so the customizer can set content width for that public prefix and every page under it. `index` is the CMS row published at `/{base}`. Core ships none. Deactivating the plugin removes the target. |
 | `permalinks.typeBases`     | `Record<string, string>`                | `{ siteId }` — seeded with the stored bases. Fill a missing base for a type your plugin owns. Stored keys win. Deactivating the plugin drops the default. |
 | `seo.sitemapPaths`         | `string[]` (URL paths)                  | `{ siteId }`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -834,3 +837,69 @@ commit, with context `source: "job"` and stable `eventId` / `scheduleEventId`
 fields. Durable event replay is at least once; deduplicate external side effects
 by `eventId`. Existing action failure isolation still applies. See
 [Scheduled publishing](SCHEDULING.md).
+
+
+## Frontend user account
+
+`/account` is the default signed-in account page on each site. Its layout is an editable
+core `account` content record; see [Frontend account pages](ACCOUNT.md). Core profile details
+and root-site workspace management are its initial sections. `/platform-account`
+redirects to `/account`; the old workspace API remains a compatibility alias.
+Workspace owners and users without administration capabilities land on `/account`;
+other administrators keep their administration landing page.
+
+The async **`account.sections`** filter receives `AccountSection[]` and
+`AccountSectionContext` (`siteId`, `userId`, `email`, `role`, `installationRoot`).
+Listening requires the plugin's `users:read` permission. The hook context also
+contains the authenticated actor and current site, so only plugins active for
+that site run. Core and plugins use the same filter pipeline; preserve existing
+sections when appending contributions. The `workspaces` ID is the core workspace
+renderer and is displayed only when the signed-in root user owns workspaces.
+
+```ts
+ctx.hooks.filter("account.sections", async (sections, account) => {
+  const records = await loadOwnOrders(account.siteId, account.userId);
+  return [...sections, {
+    id: "example.shop.orders",
+    title: "Your orders",
+    cards: records.map(order => ({
+      title: order.number,
+      fields: [{ label: "Total", value: order.formattedTotal }],
+      links: [{ label: "View order", href: `/orders/${order.id}` }],
+    })),
+  }];
+});
+```
+
+The host server-renders escaped text, bounded cards/fields, safe links and optional
+POST actions. Actions provide `label`, `endpoint`, and optional `confirm`; their
+endpoint must be under `/api/account/…`, `/api/<namespace>/account/…`, or the legacy `/ext/<plugin-id>/account/…`. The browser
+sends the session cookie and CSRF header, then reloads the account after success.
+Each endpoint must independently validate authentication, ownership and allowed
+state transitions. Never authorize by an unverified email, request query, or
+previously rendered card. Other forms and detailed plugin screens can be linked
+from a card. See `registerAccountExample` in `plugins/hello-world/src/index.ts` and Shop's
+`src/customers/account.ts` for working examples.
+
+Account data is request-scoped and **must never enter a shared cache**. Hook
+handlers should use bounded local reads and avoid slow external provider calls.
+The host dispatches this filter afresh for each page/API request. It validates
+contributions and uses the existing hook error isolation for failed handlers.
+
+### Cache exclusions
+
+`/account`, `/account/…`, `/api/account`, `/api/account/…`, legacy
+`/platform-account` and `/api/platform-account` paths, and every plugin's
+`/api/<namespace>/account` and legacy `/ext/<id>/account` namespaces receive `Cache-Control: private, no-store`,
+`CDN-Cache-Control: no-store`, and `Surrogate-Control: no-store` before authentication,
+including redirects, errors and writes. The same content-type policy applies after changing a page’s slug, including prior
+URLs and pagination. Account pages bypass the public page
+cache, export discovery/crawling and asset copying, generated static hosting
+fallbacks, and PWA navigation caching. The shipped nginx example bypasses
+inherited proxy caches for these paths. Account API routes remain live.
+
+External CDNs/proxies configured to override origin cache headers must also
+exclude these paths; Justflows cannot enforce policy inside an independently
+configured external cache. Never configure a cache-everything override for an
+account namespace. If a private page was cached before these exclusions, purge
+that existing entry when deploying the change.

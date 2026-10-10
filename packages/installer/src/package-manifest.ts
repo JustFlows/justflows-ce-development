@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  isValidPluginApiNamespace,
   AdminMenuItemSchema,
   gplLicenseValidationMessage,
   isGplCompatibleLicense,
@@ -29,6 +30,7 @@ export const PackageManifestSchema = z
     id: z
       .string()
       .regex(PLUGIN_ID_RE, "ID must be justflows.<name> (lowercase, e.g. justflows.seo)"),
+    apiNamespace: z.string().refine(isValidPluginApiNamespace, "Invalid or reserved plugin API namespace").optional(),
     name: z.string().min(1).max(100),
     /**
      * Anchored at both ends. `.regex()` runs RegExp.test(), which only honours

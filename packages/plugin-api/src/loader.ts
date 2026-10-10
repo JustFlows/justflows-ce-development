@@ -449,6 +449,7 @@ export class PluginLoader {
     }
 
     try {
+      if (entry.manifest.apiNamespace) this.httpRouter.setApiNamespace(pluginId, entry.manifest.apiNamespace);
       await entry.module.activate(ctx);
       entry.state = "active";
       this.app.logger.info("Plugin activated", { pluginId, version: entry.manifest.version });
@@ -674,6 +675,26 @@ export class PluginLoader {
           }
           return users.addRole(target, role, actor);
         },
+        removeRole: async (target, role, actor) => {
+          if (!permissions.has("users:manage")) {
+            throw new Error(
+              `Plugin "${pluginId}" cannot change user roles without the "users:manage" permission`,
+            );
+          }
+          const registered = this.roleRegistry.get(String(role ?? ""));
+          if (!registered || registered.pluginId !== pluginId) {
+            return {
+              ok: false,
+              status: 400,
+              error: "Plugins can only remove a role they registered.",
+            };
+          }
+          const users = this.usersFactory(pluginId, siteId, permissions);
+          if (!users.removeRole) {
+            return { ok: false, status: 501, error: "Removing roles is not available in this runtime." };
+          }
+          return users.removeRole(target, role, actor);
+        },
         get: async (userId) => {
           if (!permissions.has("users:manage")) {
             throw new Error(`Plugin "${pluginId}" cannot read users without the "users:manage" permission`);
@@ -716,6 +737,7 @@ export class PluginLoader {
         delete: (key) => settings.delete?.(siteId, pluginId, key) ?? Promise.resolve(),
       },
       http: {
+        url: (path = "") => this.httpRouter.url(pluginId, path),
         get: (path, handler, options) => this.httpRouter.register(pluginId, "GET", path, handler, options),
         post: (path, handler, options) => this.httpRouter.register(pluginId, "POST", path, handler, options),
         put: (path, handler, options) => this.httpRouter.register(pluginId, "PUT", path, handler, options),

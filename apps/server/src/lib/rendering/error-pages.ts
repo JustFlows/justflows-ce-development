@@ -135,12 +135,17 @@ export async function setErrorPageConfig(
 
 /** Reset any error-page entry pointing at this page back to the theme default — called on hard delete. */
 export async function clearErrorPageIfMatches(siteId: string, contentId: string): Promise<void> {
+  await clearErrorPagesIfMatch(siteId, new Set([contentId]));
+}
+
+export async function clearErrorPagesIfMatch(siteId: string, contentIds: ReadonlySet<string>): Promise<void> {
+  if (!contentIds.size) return;
   const current = await getErrorPageConfig(siteId);
   let changed = false;
   const next: ErrorPageConfig = { ...current };
   for (const errorClass of PICKER_ERROR_CLASSES) {
     const entry = next[errorClass];
-    if (entry?.source === "page" && entry.pageId === contentId) {
+    if (entry?.source === "page" && entry.pageId && contentIds.has(entry.pageId)) {
       next[errorClass] = DEFAULT_PICKER_ENTRY;
       changed = true;
     }

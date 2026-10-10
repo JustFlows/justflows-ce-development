@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { seedAccountPage } from "@justflows/content";
 import { randomUUID } from "node:crypto";
 import { createDbClient, getControlDb, runWithDatabase, type DbClient } from "../database/db.js";
 import { runAllMigrations } from "../database/run-migrations.js";
@@ -16,6 +17,7 @@ import {
 import type { DatabaseChoice, DatabaseMode, UserMode } from "./context.js";
 import { hostnameFromUrl, isValidHostname, normalizeHostname, siteDomainKind, slugify } from "./host.js";
 import { platformBaseDomain } from "./saas-settings.js";
+import { ensureWorkspaceOwnerAccount } from "./workspace-owner.js";
 
 type Sql = Pick<DbClient, "run" | "query">;
 
@@ -224,6 +226,17 @@ export async function createWorkspace(input: CreateWorkspaceInput): Promise<Prov
         await db.run("INSERT INTO platform_operators (user_id, created_at) VALUES (?, ?)", [owners[0].id, stamp]);
       }
     }
+    const rootOwner = await ensureWorkspaceOwnerAccount(db, {
+      email: input.admin.email,
+      username: input.admin.username,
+      displayName: input.admin.displayName,
+      passwordHash: await hashPassword(input.admin.password),
+    }, stamp);
+    await db.run("UPDATE tenants SET owner_user_id = ? WHERE id = ?", [rootOwner.userId, tenantId]);
+    if (rootOwner.created) {
+      const { emitUserEvent } = await import("../auth/users-admin.js");
+      await runWithDatabase(db, () => emitUserEvent("user.created", rootOwner.userId, rootOwner.siteId));
+    }
     await copyQuotaDefaults("workspace", tenantId);
     await copyQuotaDefaults("site", siteId);
     await audit(input.actorId, "tenant.created", tenantId, `database=${input.databaseMode};users=${input.userMode}`);
@@ -233,6 +246,15 @@ export async function createWorkspace(input: CreateWorkspaceInput): Promise<Prov
       hostname,
       userMode: input.userMode,
       databaseMode: input.databaseMode,
+    });
+    // Same event with the administrator's email, for platform plugins only (`platform:tenancy`).
+    await workspaceAction("tenancy.workspaceCreated", {
+      tenantId,
+      siteId,
+      hostname,
+      userMode: input.userMode,
+      databaseMode: input.databaseMode,
+      adminEmail: input.admin?.email ? String(input.admin.email).toLowerCase() : "",
     });
     return { ok: true, tenantId, siteId, hostname };
   } catch (err) {
@@ -294,6 +316,7 @@ async function seedSiteContents(
      VALUES (?, ?, 'en', 'English', 'English', ?, ?, 0, ?, ?)`,
     [randomUUID(), input.siteId, true, true, input.stamp, input.stamp],
   );
+  await seedAccountPage(db, input.siteId, "en");
 }
 
 /** Check the login and the named database. Does not create a database. */

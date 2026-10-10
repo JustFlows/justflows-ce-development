@@ -1,0 +1,10 @@
+    <% for (const section of sections) { %>
+      <% if (section.id === "workspaces") { if (workspaces.length) { %><section id="workspaces"><h2>Your workspaces</h2><%- include("account-workspaces") %></section><% } } else { %>
+      <section id="<%= section.id %>" class="panel"><div class="section-head"><div><h2><%= section.title %></h2><% if (section.description) { %><p class="muted"><%= section.description %></p><% } %></div></div>
+        <div class="account-grid"><% for (const card of section.cards) { %><article class="account-card"><h3><%= card.title %></h3><dl><% for (const field of card.fields ?? []) { %><dt><%= field.label %></dt><dd><%= field.value %></dd><% } %></dl>
+          <% for (const link of card.links ?? []) { %><a class="text-link" href="<%= link.href %>" rel="noopener noreferrer"><%= link.label %></a> <% } %>
+          <div class="account-actions"><% for (const action of card.actions ?? []) { %><button type="button" class="secondary" data-account-action="<%= action.endpoint %>" data-confirm="<%= action.confirm ?? '' %>"><%= action.label %></button><% } %></div>
+        </article><% } %></div>
+      </section>
+      <% } %>
+    <% } %>

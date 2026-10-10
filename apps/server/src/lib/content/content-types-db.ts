@@ -2,6 +2,10 @@
 
 import { randomUUID } from "node:crypto";
 import {
+  ContentTypeCacheControlSchema,
+  NEVER_CACHE_CONTROL,
+  contentTypePolicy,
+  seedAccountPage,
   BUILTIN_CONTENT_TYPES,
   ContentTypeFieldsSchema,
   isBuiltinContentTypeSlug,
@@ -19,6 +23,8 @@ export interface ContentTypeDefinition {
   description: string;
   builtin: boolean;
   fields: ContentFieldDefinition[];
+  cacheControl: string | null;
+  cacheControlEditable: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +37,7 @@ interface ContentTypeRow {
   description: string;
   is_builtin: boolean | number | string;
   fields: unknown;
+  cache_control?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -74,6 +81,8 @@ function serialize(row: ContentTypeRow): ContentTypeDefinition {
     description: String(row.description ?? ""),
     builtin: toBool(row.is_builtin),
     fields: parseFields(row.fields),
+    cacheControl: contentTypePolicy(row.slug).cacheable ? row.cache_control ?? null : NEVER_CACHE_CONTROL,
+    cacheControlEditable: contentTypePolicy(row.slug).cacheable,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
@@ -119,6 +128,8 @@ export async function ensureBuiltinContentTypes(siteId?: string): Promise<void> 
       ],
     );
   }
+  const { getDefaultLocale } = await import("../i18n/languages-db.js");
+  await seedAccountPage(db, sid, await getDefaultLocale(sid));
 }
 
 export async function listContentTypes(siteId?: string): Promise<ContentTypeDefinition[]> {
@@ -152,7 +163,7 @@ export async function getContentTypeBySlug(
 
 export async function createContentType(
   siteId: string,
-  input: { slug: string; label: string; description?: string; fields?: ContentFieldDefinition[] },
+  input: { slug: string; label: string; description?: string; fields?: ContentFieldDefinition[]; cacheControl?: string | null },
 ): Promise<ContentTypeDefinition> {
   if (isBuiltinContentTypeSlug(input.slug)) {
     throw new Error("Cannot recreate a built-in content type");
@@ -162,10 +173,11 @@ export async function createContentType(
   const id = randomUUID();
   const timestamp = now();
   const fields = ContentTypeFieldsSchema.parse(input.fields ?? []);
+  const cacheControl = ContentTypeCacheControlSchema.parse(input.cacheControl ?? null);
 
   await db.run(
-    `INSERT INTO content_types (id, site_id, slug, label, description, is_builtin, fields, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO content_types (id, site_id, slug, label, description, is_builtin, fields, cache_control, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       siteId,
@@ -174,6 +186,7 @@ export async function createContentType(
       input.description ?? "",
       process.env.DB_DRIVER === "postgres" ? false : 0,
       JSON.stringify(fields),
+      cacheControl,
       timestamp,
       timestamp,
     ],
@@ -187,7 +200,7 @@ export async function createContentType(
 export async function updateContentType(
   siteId: string,
   slug: string,
-  patch: { label?: string; description?: string; fields?: ContentFieldDefinition[] },
+  patch: { label?: string; description?: string; fields?: ContentFieldDefinition[]; cacheControl?: string | null },
 ): Promise<ContentTypeDefinition> {
   const existing = await getContentTypeBySlug(slug, siteId);
   if (!existing) throw new Error("Content type not found");
@@ -209,6 +222,12 @@ export async function updateContentType(
     values.push(JSON.stringify(ContentTypeFieldsSchema.parse(patch.fields)));
   }
 
+  if (patch.cacheControl !== undefined) {
+    if (!existing.cacheControlEditable) throw new Error("This content type must never be cached; Cache-Control is locked");
+    fields.push("cache_control = ?");
+    values.push(ContentTypeCacheControlSchema.parse(patch.cacheControl));
+  }
+
   if (fields.length === 0) return existing;
 
   fields.push("updated_at = ?");
@@ -217,6 +236,13 @@ export async function updateContentType(
     `UPDATE content_types SET ${fields.join(", ")} WHERE site_id = ? AND slug = ?`,
     values,
   );
+
+  if (patch.cacheControl !== undefined && patch.cacheControl !== existing.cacheControl) {
+    const { revalidateSelected } = await import("../cache/cache-revalidate.js");
+    await revalidateSelected(["pages", "content"]);
+    const { purgeCdnCache } = await import("../cdn/cdn-purge.js");
+    await purgeCdnCache({ siteId }).catch(() => undefined);
+  }
 
   const updated = await getContentTypeBySlug(slug, siteId);
   if (!updated) throw new Error("Content type not found");

@@ -24,6 +24,8 @@ export interface ExportExclusion {
 export const CORE_DYNAMIC_PREFIXES = [
   "api",
   "login",
+  "account",
+  "platform-account",
   "register",
   "install",
   "forgot-password",
@@ -62,20 +64,20 @@ function within(path: string, base: string): boolean {
  * itself (that would un-export the whole site), paths under the core dynamic
  * prefixes or the admin path (already routed to the app), and duplicates.
  */
-export function sanitizeExclusions(raw: unknown, adminPath = "/admin"): ExportExclusion[] {
+export function sanitizeExclusions(raw: unknown, adminPath = "/admin", mandatory = false): ExportExclusion[] {
   if (!Array.isArray(raw)) return [];
   const admin = normalizeUrlPath(adminPath);
   const core = [admin, ...CORE_DYNAMIC_PREFIXES.map((p) => `/${p}`)];
   const out: ExportExclusion[] = [];
   const seen = new Set<string>();
   for (const item of raw) {
-    if (out.length >= MAX_EXCLUSIONS) break;
+    if (!mandatory && out.length >= MAX_EXCLUSIONS) break;
     const row = asRecord(item);
     if (!row || typeof row["path"] !== "string") continue;
     const rawPath = row["path"].trim();
     if (!rawPath.startsWith("/") || rawPath.startsWith("//") || /[?#]/.test(rawPath)) continue;
     const path = normalizeUrlPath(rawPath);
-    if (path === "/" || path.length > MAX_PATH_LENGTH || !SAFE_PATH_RE.test(path)) continue;
+    if ((!mandatory && path === "/") || path.length > (mandatory ? 2048 : MAX_PATH_LENGTH) || (path !== "/" && !SAFE_PATH_RE.test(path))) continue;
     if (path.split("/").some((segment) => segment === "." || segment === "..")) continue;
     if (core.some((base) => within(path, base)) || CONFIG_OWNED_PATHS.has(path)) continue;
     const match = row["match"] === "exact" ? "exact" : "prefix";
@@ -128,6 +130,7 @@ export function nginxExclusionLocations(exclusions: readonly ExportExclusion[]):
   const lines = new Set<string>();
   for (const rule of exclusions) {
     lines.add(`location = ${rule.path}  { try_files /_pass @fallback; }`);
+    if (rule.path === "/") continue;
     lines.add(
       rule.match === "exact"
         ? `location = ${rule.path}/ { try_files /_pass @fallback; }`

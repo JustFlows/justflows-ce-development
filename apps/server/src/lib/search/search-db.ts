@@ -1,3 +1,4 @@
+import { contentTypePolicy, publicContentTypeSql } from "@justflows/content";
 // SPDX-License-Identifier: MIT
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -8,7 +9,7 @@ import { getDb } from "../database/db.js";
 import { getRuntimeHooks } from "../plugins/plugin-runtime.js";
 import { getSiteSetting, setSiteSetting } from "../settings/site-settings.js";
 import { serializeContentRow } from "../content/content-api.js";
-import { contentPermalink } from "../navigation/permalinks-db.js";
+import { contentPermalinks } from "../navigation/permalinks-db.js";
 
 export const SearchSettingsSchema = z.object({
   publicTypes: z
@@ -167,6 +168,7 @@ export async function indexSearchContent(
       try {
         const settings = await getSearchSettings(siteId);
         if (
+          contentTypePolicy(doc.type).publiclyDiscoverable &&
           row.status === "published" &&
           !row.trashed_at &&
           settings.publicTypes.includes(doc.type) &&
@@ -305,6 +307,7 @@ export async function searchContent(siteId: string, query: SearchQuery, access: 
     params.push(...values);
   };
   if (!access.admin) {
+    where += ` AND ${publicContentTypeSql("c.type")}`;
     where +=
       " AND c.status = 'published' AND (c.published_at IS NULL OR c.published_at <= CURRENT_TIMESTAMP)";
     inList("c.type", settings.publicTypes);
@@ -374,33 +377,33 @@ export async function searchContent(siteId: string, query: SearchQuery, access: 
     `SELECT c.*, d.summary AS search_summary, d.body AS search_body, ${rank} AS search_rank ${from} ORDER BY search_rank DESC, c.id ASC LIMIT ? OFFSET ?`,
     [...rankParams, ...params, String(query.limit), String((query.page - 1) * query.limit)],
   );
-  const items = await Promise.all(
-    rows.map(async (row) => {
-      const content = serializeContentRow(row);
-      const source = String(row.search_summary || row.search_body || "");
-      const first = Math.min(
-        ...tokens.map((t) => source.toLowerCase().indexOf(t)).filter((n) => n >= 0),
-      );
-      const start = Number.isFinite(first) ? Math.max(0, first - 60) : 0;
-      const excerpt = `${start ? "…" : ""}${source.slice(start, start + 240)}${source.length > start + 240 ? "…" : ""}`;
-      return {
-        id: content.id,
-        type: content.type,
-        locale: content.locale,
-        title: content.title,
-        slug: content.slug,
-        status: content.status,
-        updatedAt: content.updatedAt,
-        publishedAt: content.publishedAt,
-        url: await contentPermalink(content),
-        excerpt,
-        highlights: {
-          title: searchHighlight(content.title, query.q),
-          excerpt: searchHighlight(excerpt, query.q),
-        },
-      };
-    }),
-  );
+  const contents = rows.map(serializeContentRow);
+  const urls = await contentPermalinks(contents);
+  const items = rows.map((row, index) => {
+    const content = contents[index]!;
+    const source = String(row.search_summary || row.search_body || "");
+    const first = Math.min(
+      ...tokens.map((t) => source.toLowerCase().indexOf(t)).filter((n) => n >= 0),
+    );
+    const start = Number.isFinite(first) ? Math.max(0, first - 60) : 0;
+    const excerpt = `${start ? "…" : ""}${source.slice(start, start + 240)}${source.length > start + 240 ? "…" : ""}`;
+    return {
+      id: content.id,
+      type: content.type,
+      locale: content.locale,
+      title: content.title,
+      slug: content.slug,
+      status: content.status,
+      updatedAt: content.updatedAt,
+      publishedAt: content.publishedAt,
+      url: urls[index]!,
+      excerpt,
+      highlights: {
+        title: searchHighlight(content.title, query.q),
+        excerpt: searchHighlight(excerpt, query.q),
+      },
+    };
+  });
   if (!access.admin && settings.queryLogging) {
     await db.run(
       "INSERT INTO search_metrics (id, site_id, token_count, result_count, duration_ms) VALUES (?, ?, ?, ?, ?)",

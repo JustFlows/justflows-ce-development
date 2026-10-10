@@ -514,13 +514,12 @@ export async function pruneHistoricalForContent(
     limit,
   );
   if (drop.length === 0) return 0;
-  for (const id of drop.slice(0, REVISION_PRUNE_BATCH)) {
-    await db.run(
-      `DELETE FROM revisions WHERE id = ? AND site_id = ? AND ${kindCol()} = 'historical'`,
-      [id, siteId],
-    );
-  }
-  return Math.min(drop.length, REVISION_PRUNE_BATCH);
+  const batch = drop.slice(0, REVISION_PRUNE_BATCH);
+  await db.run(
+    `DELETE FROM revisions WHERE site_id = ? AND ${kindCol()} = 'historical' AND id IN (${batch.map(() => "?").join(", ")})`,
+    [siteId, ...batch],
+  );
+  return batch.length;
 }
 
 export async function pruneHistoricalBatch(): Promise<number> {
@@ -530,8 +529,15 @@ export async function pruneHistoricalBatch(): Promise<number> {
     [REVISION_PRUNE_BATCH],
   );
   let removed = 0;
+  const limits = new Map<string, number>();
   for (const row of contents) {
-    removed += await pruneHistoricalForContent(String(row.id), String(row.site_id));
+    const siteId = String(row.site_id);
+    let limit = limits.get(siteId);
+    if (limit === undefined) {
+      limit = await maxHistoryForSite(siteId);
+      limits.set(siteId, limit);
+    }
+    removed += await pruneHistoricalForContent(String(row.id), siteId, limit);
   }
   return removed;
 }

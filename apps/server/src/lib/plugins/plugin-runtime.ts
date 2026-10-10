@@ -333,6 +333,10 @@ export async function ensurePluginRuntime(): Promise<void> {
             const { addAdditionalRole } = await import("../auth/users-admin.js");
             return addAdditionalRole(siteId, target, role, actor);
           },
+          removeRole: async (target, role, actor) => {
+            const { removeAdditionalRole } = await import("../auth/users-admin.js");
+            return removeAdditionalRole(siteId, target, role, actor);
+          },
           get: async (userId) => {
             const { getUserRoles } = await import("../auth/users-admin.js");
             return getUserRoles(siteId, userId);

@@ -14,12 +14,11 @@ vi.mock("../../../src/lib/settings/site-settings.js", () => ({
   getSiteSetting: async () => state,
   setSiteSetting: (...args: [string, string, unknown]) => set(...args),
 }));
-vi.mock("../../../src/lib/database/db.js", () => ({
-  getDb: async () => ({
-    query: async (sql: string) =>
-      sql.includes("FROM content WHERE") ? rows : sql.includes("FROM terms t") ? termRows : [],
-  }),
-}));
+const query = vi.fn(async (sql: string) =>
+  sql.includes("FROM content WHERE") ? rows : sql.includes("FROM terms t") ? termRows : [],
+);
+const home = vi.fn(async (_siteId: string, _locale: string): Promise<ReturnType<typeof serializeContentRow> | null> => null);
+vi.mock("../../../src/lib/database/db.js", () => ({ getDb: async () => ({ query }) }));
 vi.mock("../../../src/lib/i18n/languages-db.js", () => ({
   getDefaultLocale: async () => "en-US",
   getActiveLocaleCodes: async () => ["en-US", "nl-NL"],
@@ -27,7 +26,7 @@ vi.mock("../../../src/lib/i18n/languages-db.js", () => ({
 vi.mock("../../../src/lib/admin/admin-path.js", () => ({
   getAdminPathConfig: async () => ({ path: "/control-room" }),
 }));
-vi.mock("../../../src/lib/content/home-page.js", () => ({ getHomeContent: async () => null }));
+vi.mock("../../../src/lib/content/home-page.js", () => ({ getHomeContent: (...args: [string, string]) => home(...args) }));
 vi.mock("../../../src/lib/themes/layout-scopes.js", () => ({
   resolveTypeBases: async (_siteId: string, stored: Record<string, string>) => stored,
   listLayoutScopes: async () => [],
@@ -38,7 +37,7 @@ vi.mock("../../../src/lib/cache/jf-cache.js", () => ({
     remember: async (_key: string, _ttl: number, load: () => Promise<unknown>) => load(),
   }),
 }));
-const { savePermalinks, getPermalinkState, uniquePermalinkSlug, contentPermalink } =
+const { savePermalinks, getPermalinkState, uniquePermalinkSlug, contentPermalink, contentPermalinks, createContentPermalinkResolver } =
   await import("../../../src/lib/navigation/permalinks-db.js");
 const row = {
   id: "p1",
@@ -56,6 +55,7 @@ beforeEach(() => {
   rows = [{ ...row }];
   termRows = [];
   vi.clearAllMocks();
+  home.mockReset().mockResolvedValue(null);
 });
 describe("permalink persistence and collision protection", () => {
   it("records known prior URLs by ID across repeated changes and clears active redirects", async () => {
@@ -120,5 +120,39 @@ describe("permalink persistence and collision protection", () => {
     state = { settings: defaults, redirects: { "/hello": "deleted-id" } };
     await expect(savePermalinks("s1", defaults)).rejects.toThrow("historical");
     expect(set).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("batch permalink resolution", () => {
+  it("shares relationships and locale homes across a large list, preserving category priority", async () => {
+    state = { settings: { ...defaults, structure: "/%category%/%postname%/" } };
+    termRows = [
+      { id: "a", slug: "first", name: "First", taxonomy: "category", content_id: "p1" },
+      { id: "b", slug: "second", name: "Second", taxonomy: "category", content_id: "p1" },
+    ];
+    const items = Array.from({ length: 100 }, (_, i) => serializeContentRow({ ...row, id: i === 0 ? "p1" : `p${i + 1}`, slug: `post-${i}`, locale: i % 2 ? "nl-NL" : "en-US" }));
+    home.mockImplementation(async (_site, locale) => locale === "nl-NL" ? items[1]! : null);
+    const urls = await contentPermalinks(items);
+    expect(urls[0]).toBe("/first/post-0");
+    expect(urls[1]).toBe("/nl-NL");
+    expect(urls[2]).toBe("/uncategorized/post-2");
+    expect(query).toHaveBeenCalledOnce();
+    expect(home).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps sites separate and preserves input ordering", async () => {
+    const items = [serializeContentRow(row), serializeContentRow({ ...row, site_id: "s2", slug: "other" }), serializeContentRow({ ...row, slug: "last" })];
+    expect(await contentPermalinks(items)).toEqual(["/hello", "/other", "/last"]);
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(home.mock.calls).toEqual([["s1", "en-US", false], ["s2", "en-US", false]]);
+    const resolver = await createContentPermalinkResolver("s1");
+    await expect(resolver(items[1]!)).rejects.toThrow("another site");
+  });
+
+  it("does not perform reads for an empty content list", async () => {
+    expect(await contentPermalinks([])).toEqual([]);
+    expect(query).not.toHaveBeenCalled();
+    expect(home).not.toHaveBeenCalled();
   });
 });

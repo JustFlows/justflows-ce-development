@@ -6,6 +6,7 @@ let dispose: (() => void) | undefined;
 const helloWorld: PluginModule = {
   manifest: {
     id: "justflows.hello-world",
+    apiNamespace: "hello-world",
     name: "Hello World",
     version: "1.0.0",
     description: "The official example plugin that demonstrates the Justflows plugin lifecycle.",
@@ -33,6 +34,13 @@ const helloWorld: PluginModule = {
     ctx.logger.info("Hello World plugin activating");
 
     await registerHelloWorldStyles(ctx);
+    // Relative routes also resolve through the neutral API namespace. The legacy
+    // /ext/justflows.hello-world/status alias remains supported.
+    ctx.http.get("status", async () => ({ body: { ok: true } }));
+    // Use ctx.http.url("status") when emitting links; browser bundles can use
+    // pluginApiUrl("hello-world", "status") from the SDK.
+    // Optional account integration: call registerAccountExample(ctx) below after
+    // adding users:read to the manifest.
     // Optional external search integration: see search-backend-example.ts and
     // docs/SEARCH.md. It is not enabled by this zero-permission example.
 
@@ -111,3 +119,14 @@ const helloWorld: PluginModule = {
 };
 
 export default helloWorld;
+
+
+/** Optional account contribution example; requires users:read in the manifest. */
+export function registerAccountExample(ctx: PluginContext): void {
+  ctx.hooks.filter("account.sections", (sections, account) => [...sections, {
+    id: "justflows.hello-world.account", title: "Hello World", cards: [{
+      title: "Your plugin account", fields: [{ label: "Email", value: account.email }],
+      links: [{ label: "Return to the site", href: "/" }],
+    }],
+  }]);
+}

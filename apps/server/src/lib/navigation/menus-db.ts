@@ -1,4 +1,4 @@
-import { contentPermalink } from "./permalinks-db.js";
+import { createContentPermalinkResolver } from "./permalinks-db.js";
 import { serializeContentRow, type ContentResponse } from "../content/content-api.js";
 /**
  * Data-access helpers for the menus table.
@@ -712,6 +712,7 @@ export async function resolveMenuItems(
   );
   const activeLocales = await getActiveLocaleCodes();
 
+  const permalinkResolvers = new Map<string, ReturnType<typeof createContentPermalinkResolver>>();
   async function resolveContentUrl(content: MenuContentRef): Promise<string> {
     const translated =
       content.locale === locale
@@ -719,7 +720,13 @@ export async function resolveMenuItems(
         : content.translationGroupId
           ? translationMap.get(content.translationGroupId)
           : undefined;
-    return contentPermalink(translated ?? content);
+    const target = translated ?? content;
+    let resolver = permalinkResolvers.get(target.siteId);
+    if (!resolver) {
+      resolver = createContentPermalinkResolver(target.siteId);
+      permalinkResolvers.set(target.siteId, resolver);
+    }
+    return (await resolver)(target);
   }
 
   async function resolveList(list: MenuItem[]): Promise<ResolvedNavItem[]> {

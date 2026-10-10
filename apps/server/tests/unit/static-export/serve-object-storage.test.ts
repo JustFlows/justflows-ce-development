@@ -50,6 +50,7 @@ function request(path = "/about/", method = "HEAD", headers: Record<string, stri
 }
 function response() {
   const res = {
+    locals: {} as Record<string, unknown>,
     status: vi.fn(),
     setHeader: vi.fn(),
     end: vi.fn(),
@@ -60,6 +61,14 @@ function response() {
   return res;
 }
 describe("private object storage origin gateway", () => {
+  it("bypasses previously exported pages after a content-type policy override", async () => {
+    const res = response();
+    res.locals.jfBypassStatic = true;
+    const next = vi.fn();
+    await serveStaticExportFromObjectStorage(request("/about/"), res as unknown as Response, next);
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.setHeader).not.toHaveBeenCalled();
+  });
   it("resolves directory routes and relays conditional headers and cache metadata", async () => {
     const res = response();
     const next = vi.fn();
@@ -97,6 +106,9 @@ describe("private object storage origin gateway", () => {
       request("/secret-admin"),
       request("/admin"),
       request("/login"),
+      request("/account"),
+      request("/account/details"),
+      request("/ext/justflows.shop/account"),
       request("/about?preview=1"),
       request("/about", "POST"),
       request("/about", "GET", { "x-jf-static-export": "1" }),

@@ -1,5 +1,5 @@
 export function usesBlockEditor(type: string, editorIsBlocks: boolean): boolean {
-  return type === "page" || editorIsBlocks;
+  return type === "page" || type === "account" || editorIsBlocks;
 }
 
 export function isEmptyBlockDocument(blocks: { blocks?: unknown } | null | undefined): boolean {

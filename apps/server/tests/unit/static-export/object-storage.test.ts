@@ -11,6 +11,7 @@ import {
   staticExportDriver,
   staticExportObjectPrefix,
 } from "../../../src/lib/static-export/object-storage.js";
+import { enforceStorageGrowth } from "../../../src/lib/storage/storage-quota.js";
 
 vi.mock("../../../src/lib/storage/storage-quota.js", () => ({ enforceStorageGrowth: vi.fn() }));
 vi.mock("../../../src/lib/tenancy/registry.js", () => ({ installationRootSiteId: async () => "root-site" }));
@@ -104,6 +105,17 @@ afterEach(async () => {
 });
 
 describe("static export object storage", () => {
+  it("reads the deployment pointer once and reuses its size for quota growth", async () => {
+    await deployStaticExport(folder, manifest());
+    vi.mocked(fetch).mockClear();
+    vi.mocked(enforceStorageGrowth).mockClear();
+    await deployStaticExport(folder, manifest());
+    const pointerReads = vi.mocked(fetch).mock.calls.filter(([input, init]) =>
+      new URL(input as string).pathname.endsWith("/_deployment.json") && (init?.method ?? "GET") === "GET",
+    );
+    expect(pointerReads).toHaveLength(1);
+    expect(enforceStorageGrowth).toHaveBeenCalledExactlyOnceWith("root-site", 0);
+  });
   it("uses separate stable site prefixes and the same folder across domain changes", () => {
     expect(staticExportObjectPrefix()).toBe("install-a/static-export/sites/root/");
     expect(runWithTenant(tenant("site-a"), staticExportObjectPrefix)).toBe(

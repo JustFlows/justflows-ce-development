@@ -242,6 +242,7 @@
     "activateFailed": "Das Plugin konnte nicht eingeschaltet werden."
   },
   "content": {
+    "accountNotice": "Kontoseiten erfordern eine Anmeldung. Justflows schließt sie von Caches, Exporten, öffentlichen Suchergebnissen und Sitemaps aus.",
     "newPost": "Neuer Beitrag",
     "newPage": "Neue Seite",
     "editPost": "Beitrag bearbeiten",
@@ -1658,6 +1659,15 @@
     "tabTrash": "Papierkorb"
   },
   "contentTypes": {
+    "cacheControlPlaceholder": "public, max-age=300",
+    "cacheInheritType": "Standard des Inhaltstyps übernehmen",
+    "cachePostHint": "Überschreibt nach der Veröffentlichung die Cache-Richtlinie des Inhaltstyps für diesen Beitrag. Private und No-Cache-Richtlinien umgehen gemeinsame Caches und statische Exporte.",
+    "cacheControlLabel": "Cache-Control",
+    "cacheInherit": "Website-Standard übernehmen",
+    "cacheNever": "Nie zwischenspeichern",
+    "cacheCustom": "Eigener Header",
+    "cacheControlValue": "Cache-Control-Wert",
+    "cacheHint": "Überschreibt die Cache-Richtlinie für Seiten dieses Typs. Private und No-Cache-Richtlinien umgehen gemeinsame Caches und statische Exporte.",
     "loadFailed": "Inhaltstypen konnten nicht geladen werden",
     "saveFailed": "Speichern fehlgeschlagen",
     "createFailed": "Erstellen fehlgeschlagen",
@@ -3937,6 +3947,7 @@
     "slugPrimary": "Der Plattform-Arbeitsbereich behält den Slug primary.",
     "workspaceIntro": "Ändern Sie Namen und Slug dieses Arbeitsbereichs. Die Adresse dieser Seite enthält die Arbeitsbereich-ID.",
     "workspaceId": "Arbeitsbereich-ID",
+    "workspaceOwner": "Eigentümer auf der Hauptwebsite",
     "workspaceNotFound": "Dieser Arbeitsbereich wurde nicht gefunden.",
     "workspaceLoadFailed": "Dieser Arbeitsbereich konnte nicht geladen werden.",
     "workspaceSaveFailed": "Dieser Arbeitsbereich konnte nicht gespeichert werden.",

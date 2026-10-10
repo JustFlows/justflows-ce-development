@@ -15,7 +15,7 @@ export const CONTENT_TYPE_FIELD_KINDS = [
 
 export type ContentFieldKind = (typeof CONTENT_TYPE_FIELD_KINDS)[number];
 
-export const BUILTIN_CONTENT_TYPE_SLUGS = ["post", "page"] as const;
+export const BUILTIN_CONTENT_TYPE_SLUGS = ["post", "page", "account"] as const;
 export type BuiltinContentTypeSlug = (typeof BUILTIN_CONTENT_TYPE_SLUGS)[number];
 
 export const BUILTIN_CONTENT_TYPES: ReadonlyArray<{
@@ -25,10 +25,12 @@ export const BUILTIN_CONTENT_TYPES: ReadonlyArray<{
 }> = [
   { slug: "post", label: "Post", description: "Blog post" },
   { slug: "page", label: "Page", description: "Static page" },
+  { slug: "account", label: "Account", description: "Private, customizable user account page" },
 ];
 
-/** Fields reserved for core SEO — custom types cannot reuse these keys. */
+/** Fields reserved for core metadata — custom types cannot reuse these keys. */
 export const RESERVED_FIELD_KEYS = [
+  "cacheControl",
   "seoTitle",
   "seoDescription",
   "seoCanonical",
@@ -64,7 +66,7 @@ export const ContentTypeFieldsSchema = z
         ctx.addIssue({
           code: "custom",
           path: [i, "key"],
-          message: `Field key "${key}" is reserved for SEO`,
+          message: `Field key "${key}" is reserved for ${key === "cacheControl" ? "core cache policy" : "SEO"}`,
         });
       }
       if (seen.has(key)) {
@@ -91,4 +93,18 @@ export function isBuiltinContentTypeSlug(slug: string): slug is BuiltinContentTy
 
 export function normalizeContentTypeSlug(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+
+/** Core privacy policies cannot be weakened by content fields or plugin settings. */
+export function contentTypePolicy(type: string) {
+  const privatePage = type === "account";
+  return { requiresAuthentication: privatePage, cacheable: !privatePage,
+    publiclyDiscoverable: !privatePage, exportable: !privatePage } as const;
+}
+
+/** Trusted column names only; used at public SQL boundaries, including preview APIs. */
+export function publicContentTypeSql(column: "type" | "c.type" = "type"): string {
+  if (column !== "type" && column !== "c.type") throw new Error("Unknown content type column");
+  return `${column} <> 'account'`;
 }

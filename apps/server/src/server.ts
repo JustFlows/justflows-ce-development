@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+import { contentTypeCacheMiddleware } from "./middleware/content-type-cache.js";
+import { accountPagesRouter } from "./routes/public/account-pages.js";
 import express from "express";
 import cookieParser from "cookie-parser";
 import path from "node:path";
@@ -11,7 +13,7 @@ import { uploadsHandler } from "./lib/media/upload-serve.js";
 import { isInstalled } from "./middleware/install-guard.js";
 import { installToken, installTokenRequired } from "./lib/installation/install-token.js";
 import { serveAdminI18n } from "./lib/i18n/admin-catalog.js";
-import { csrfProtection } from "./middleware/csrf.js";
+import { pluginApiCsrf } from "./middleware/plugin-api-csrf.js";
 import { setCsrfCookie } from "./lib/auth/session.js";
 import { securityHeaders } from "./middleware/security-headers.js";
 import { cacheTraceMiddleware } from "./middleware/cache-trace.js";
@@ -78,7 +80,7 @@ export function createApp(): express.Application {
   app.use((req, res, next) => {
     if (req.method !== "POST" && req.method !== "PUT" && req.method !== "PATCH") return next();
     const url = req.url?.split("?")[0] ?? "";
-    if (!url.startsWith("/ext/")) return next();
+    if (!url.startsWith("/ext/") && !getPluginLoader()?.httpRouter.isPublicApiPath(url)) return next();
     const binary = getPluginLoader()?.httpRouter.match(req.method, url)?.route.binaryBody;
     if (!binary) return next();
     express.raw({ type: () => true, limit: binary.maxBytes })(req, res, next);
@@ -100,7 +102,7 @@ export function createApp(): express.Application {
       }
       // Passenger can parse the body before plugin routes exist. Keep a small
       // copy; dispatch forwards it only when the matched route asked for it.
-      if (!loader && buf.length <= 65_536 && url.startsWith("/ext/")) {
+      if (!loader && buf.length <= 65_536 && (url.startsWith("/ext/") || url.startsWith("/api/"))) {
         Object.assign(req, { rawBody: buf.toString("utf8") });
       }
     },
@@ -136,13 +138,14 @@ export function createApp(): express.Application {
   app.use(rejectForeignSiteId);
   app.use(securityHeaders);
 
-  app.use("/api", csrfProtection);
+  app.use((req, res, next) => { if (!isInstalled()) { next(); return; } accountPagesRouter(req, res, next); });
+  app.use((req, res, next) => { if (!isInstalled()) { next(); return; } void contentTypeCacheMiddleware(req, res, next); });
+  app.use("/api", pluginApiCsrf);
 
   const staticMaxAge = staticMaxAgeMs();
   // Local folder or S3 bucket, per STORAGE_DRIVER (see lib/media/upload-serve.ts).
   app.use("/uploads", uploadsSiteGuard, uploadsHandler(staticMaxAge));
-  app.use(
-    express.static(path.join(getJfRoot(), "public"), {
+  const servePublicFiles = express.static(path.join(getJfRoot(), "public"), {
       maxAge: staticMaxAge,
       setHeaders: (res, filePath) => {
         // Every script under `public/js` is compiled from
@@ -160,8 +163,11 @@ export function createApp(): express.Application {
           res.setHeader("Cache-Control", "no-cache");
         }
       },
-    }),
-  );
+    });
+  app.use((req, res, next) => {
+    if (res.locals.jfBypassStatic) { next(); return; }
+    servePublicFiles(req, res, next);
+  });
 
   app.set("view engine", "ejs");
   app.set("views", viewsDir());

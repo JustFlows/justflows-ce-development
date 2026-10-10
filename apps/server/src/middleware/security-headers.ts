@@ -20,7 +20,7 @@ function killSwitchEngaged(): boolean {
 }
 
 /** Everything the site owner does not theme is treated as the admin surface. */
-const ADMIN_PATH_RE = /^\/(admin|api|login|register|install|assets)(\/|$)/;
+const ADMIN_PATH_RE = /^\/(admin|api|login|register|install|assets|account|platform-account)(\/|$)/;
 
 export function requestArea(path: string): RequestArea {
   return ADMIN_PATH_RE.test(path) ? "admin" : "public";
@@ -43,7 +43,7 @@ export function securityHeaders(req: Request, res: Response, next: NextFunction)
   ])
     .then(async ([adminPath, config]) => {
       const internalPath = toInternalAdminPath(req.path, adminPath.path) ?? req.path;
-      const ctx = { area: requestArea(internalPath), secure: isSecureRequest(req) };
+      const ctx = { area: res.locals.jfPrivateContent ? "admin" as const : requestArea(internalPath), secure: isSecureRequest(req) };
       apply(res, config, ctx);
       if (config.removeServerHeader) res.removeHeader("Server");
       if (ctx.area === "public") {

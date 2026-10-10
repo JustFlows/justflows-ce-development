@@ -427,3 +427,16 @@ describe("plugin hook context", () => {
     ]);
   });
 });
+
+
+it("exposes neutral URLs through the host context and removes aliases on deactivation", async () => {
+  let url = "";
+  const plugin = makePlugin({ apiNamespace: "shop" }, ctx => {
+    url = ctx.http.url("checkout"); ctx.http.get("checkout", async () => ({ body: {} }));
+  });
+  const { loader } = await activate(plugin);
+  expect(url).toBe("/api/shop/checkout");
+  expect(loader.httpRouter.match("GET", url)?.route.pluginId).toBe(plugin.manifest.id);
+  await loader.deactivate(plugin.manifest.id, "site-1");
+  expect(loader.httpRouter.match("GET", url)).toBeUndefined();
+});

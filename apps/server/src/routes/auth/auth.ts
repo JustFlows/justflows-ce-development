@@ -90,7 +90,7 @@ router.get("/me", requireSession, async (req, res) => {
  * Where the browser should go once authenticated.
  *
  * A subscriber, or a plugin role such as Shop's customer, has nothing in the
- * admin app and belongs on the site itself.
+ * admin app and lands on the site's frontend account page.
  * Everyone else lands on the admin app — at whatever path the administrator
  * moved it to (issue #51). The pre-session `/login` and `/register` pages have
  * no way to know that path on their own, and it should not be handed to anyone
@@ -98,10 +98,16 @@ router.get("/me", requireSession, async (req, res) => {
  */
 async function postAuthRedirect(role: string, userId?: string, siteId?: string): Promise<string> {
   if (userId && siteId) {
+    const { installationRootSiteId } = await import("../../lib/tenancy/registry.js");
+    if (await installationRootSiteId() === siteId) {
+      const { getControlDb } = await import("../../lib/database/db.js");
+      const owners = await (await getControlDb()).query("SELECT id FROM tenants WHERE owner_user_id = ? AND status <> 'deleted' LIMIT 1", [userId]);
+      if (owners.length) return (await import("../../lib/account/pages.js")).accountHomeUrl(siteId);
+    }
     const { getEffectiveAccess } = await import("../../lib/auth/access-policy.js");
     const access = await getEffectiveAccess(userId, siteId, role);
-    if (!access.capabilities.some((capability) => capability !== "content:read")) return "/";
-  } else if (role === "subscriber" || role === "customer") return "/";
+    if (!access.capabilities.some((capability) => capability !== "content:read")) return (await import("../../lib/account/pages.js")).accountHomeUrl(siteId);
+  } else if (role === "subscriber" || role === "customer") return "/account";
   return (await getAdminPathConfig()).path;
 }
 

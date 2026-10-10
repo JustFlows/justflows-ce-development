@@ -1,6 +1,6 @@
 <%- include('partials/header') %>
 
-<% if (content.type === 'page') { %>
+<% if (content.type === 'page' || content.type === 'account') { %>
 <main class="site-main site-main--page">
   <div class="block-content block-content--page">
     <%- bodyHtml %>

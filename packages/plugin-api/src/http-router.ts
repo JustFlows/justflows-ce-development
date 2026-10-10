@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { pluginApiUrl } from "@justflows/sdk";
 import type {
   PluginHttpHandler,
   PluginHttpMethod,
@@ -104,6 +105,31 @@ export function matchPathParams(pattern: string, path: string): Record<string, s
 
 export class PluginHttpRouter {
   private readonly routes: RegisteredPluginRoute[] = [];
+  private readonly namespaces = new Map<string, string>();
+  private readonly namespaceByPlugin = new Map<string, string>();
+
+  setApiNamespace(pluginId: string, namespace: string): void {
+    const base = pluginApiUrl(namespace);
+    const existing = this.namespaceByPlugin.get(pluginId);
+    if (existing && existing !== namespace) throw new Error(`Plugin "${pluginId}" already has API namespace "${existing}"`);
+    const owner = this.namespaces.get(namespace);
+    if (owner && owner !== pluginId) throw new Error(`API namespace "${namespace}" is already claimed by "${owner}"`);
+    if (this.routes.some(route => route.pluginId !== pluginId && (route.path === base || route.path.startsWith(`${base}/`) || route.path === `/ext/${pluginId}` || route.path.startsWith(`/ext/${pluginId}/`)))) {
+      throw new Error(`API namespace "${namespace}" conflicts with an existing route`);
+    }
+    this.namespaces.set(namespace, pluginId);
+    this.namespaceByPlugin.set(pluginId, namespace);
+  }
+
+  isPublicApiPath(path: string): boolean {
+    const namespace = /^\/api\/([^/]+)(?:\/|$)/.exec(path)?.[1];
+    return !!namespace && this.namespaces.has(namespace);
+  }
+
+  url(pluginId: string, path = ""): string {
+    const namespace = this.namespaceByPlugin.get(pluginId);
+    return namespace ? pluginApiUrl(namespace, path) : `/ext/${pluginId}${path ? `/${path}` : ""}`;
+  }
 
   register(
     pluginId: string,
@@ -112,10 +138,14 @@ export class PluginHttpRouter {
     handler: PluginHttpHandler,
     options?: PluginHttpRouteOptions,
   ): void {
-    const path = rawPath.startsWith("/")
+    let path = rawPath.startsWith("/")
       ? normalizePath(rawPath)
       : normalizePath(`/ext/${pluginId}/${rawPath}`);
 
+    const namespace = /^\/api\/([^/]+)(?:\/|$)/.exec(path)?.[1];
+    const owner = namespace ? this.namespaces.get(namespace) : undefined;
+    if (owner && owner !== pluginId) throw new Error(`API namespace "${namespace}" is already claimed by "${owner}"`);
+    if (owner === pluginId && namespace) path = `/ext/${pluginId}${path.slice(`/api/${namespace}`.length)}`;
     const conflict = this.routes.find((route) => route.method === method && route.path === path);
     if (conflict) {
       throw new Error(
@@ -133,6 +163,9 @@ export class PluginHttpRouter {
   }
 
   removePlugin(pluginId: string): void {
+    const namespace = this.namespaceByPlugin.get(pluginId);
+    if (namespace) this.namespaces.delete(namespace);
+    this.namespaceByPlugin.delete(pluginId);
     for (let i = this.routes.length - 1; i >= 0; i--) {
       if (this.routes[i]?.pluginId === pluginId) this.routes.splice(i, 1);
     }
@@ -142,8 +175,11 @@ export class PluginHttpRouter {
     method: string,
     path: string,
   ): { route: RegisteredPluginRoute; params: Record<string, string> } | undefined {
-    const normalized = normalizePath(path);
-    const candidates = this.routes.filter((route) => route.method === method);
+    let normalized = normalizePath(path);
+    const namespace = /^\/api\/([^/]+)(?:\/|$)/.exec(normalized)?.[1];
+    const owner = namespace ? this.namespaces.get(namespace) : undefined;
+    if (owner && namespace) normalized = `/ext/${owner}${normalized.slice(`/api/${namespace}`.length)}`;
+    const candidates = this.routes.filter((route) => route.method === method && (!owner || route.pluginId === owner));
     const exact = candidates.find((route) => route.path === normalized);
     if (exact) return { route: exact, params: {} };
 

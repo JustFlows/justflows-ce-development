@@ -164,5 +164,40 @@ describe("plugin user creation", () => {
     await expect(shop!.users.get!("u1")).resolves.toEqual(user);
     await expect(plain!.users.get!("u1")).rejects.toThrow(/users:manage/);
   });
-});
 
+  it("removes only a role the plugin registered, and only with users:manage", async () => {
+    const removeRole = vi.fn(async () => ({
+      ok: true as const,
+      user: { id: "u1", email: "ada@example.com", username: "ada", displayName: "Ada", role: "subscriber", roles: ["subscriber"] },
+    }));
+    const app = new App(CONFIG);
+    const loader = new PluginLoader(app, {
+      usersFactory: () => ({ create: vi.fn(), removeRole }),
+    });
+    let shop: PluginContext | undefined;
+    let other: PluginContext | undefined;
+    let unprivileged: PluginContext | undefined;
+    loader.register(
+      plugin("justflows.shop", ["users:manage"], (ctx) => {
+        shop = ctx;
+        ctx.roles.register({ id: "member", label: "Member", capabilities: [] });
+      }),
+    );
+    loader.register(plugin("justflows.other", ["users:manage"], (ctx) => { other = ctx; }));
+    loader.register(plugin("justflows.plain", [], (ctx) => { unprivileged = ctx; }));
+    await loader.activate("justflows.shop", "site-1");
+    await loader.activate("justflows.other", "site-1");
+    await loader.activate("justflows.plain", "site-1");
+    const actor = { userId: "", role: "member" };
+    await expect(shop!.users.removeRole!({ userId: "u1" }, "member", actor)).resolves.toMatchObject({ ok: true });
+    expect(removeRole).toHaveBeenCalledWith({ userId: "u1" }, "member", actor);
+    await expect(other!.users.removeRole!({ userId: "u1" }, "member", actor)).resolves.toEqual({
+      ok: false,
+      status: 400,
+      error: "Plugins can only remove a role they registered.",
+    });
+    await expect(shop!.users.removeRole!({ userId: "u1" }, "editor", actor)).resolves.toMatchObject({ ok: false, status: 400 });
+    await expect(unprivileged!.users.removeRole!({ userId: "u1" }, "member", actor)).rejects.toThrow(/users:manage/);
+    expect(removeRole).toHaveBeenCalledTimes(1);
+  });
+});

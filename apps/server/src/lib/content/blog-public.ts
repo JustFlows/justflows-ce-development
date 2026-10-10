@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-import { contentPermalink } from "../navigation/permalinks-db.js";
+import { contentPermalinks } from "../navigation/permalinks-db.js";
 import { esc, renderResponsiveImage, safeMediaSrc } from "@justflows/blocks";
 import { getRuntimeBlockRegistry } from "../rendering/runtime-blocks.js";
 import { listPublishedPostsPage } from "./content-public.js";
@@ -175,7 +175,7 @@ export async function renderBlogPostListBlockHtml(
     ),
   );
 
-  const hrefs = await Promise.all(items.map(contentPermalink));
+  const hrefs = await contentPermalinks(items);
   const responsive = props.showFeaturedImage
     ? await loadResponsiveProps(items.map(featuredImageRawOf).filter(Boolean), ctx.siteId)
     : undefined;

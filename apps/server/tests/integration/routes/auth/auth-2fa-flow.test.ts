@@ -78,6 +78,7 @@ const fakeDb = {
 
 vi.mock("../../../../src/lib/database/db.js", () => ({
   getDb: async () => fakeDb,
+  getControlDb: async () => fakeDb,
   resetDb: () => {},
 }));
 vi.mock("../../../../src/lib/email/mail.js", () => ({

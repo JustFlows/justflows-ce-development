@@ -52,8 +52,13 @@ export async function setBlogPageId(siteId: string, contentId: string | null): P
 }
 
 export async function clearBlogPageIfMatches(siteId: string, contentId: string): Promise<void> {
+  await clearBlogPagesIfMatch(siteId, new Set([contentId]));
+}
+
+export async function clearBlogPagesIfMatch(siteId: string, contentIds: ReadonlySet<string>): Promise<void> {
+  if (!contentIds.size) return;
   const current = await getBlogPageId(siteId);
-  if (current === contentId) {
+  if (current && contentIds.has(current)) {
     await deleteSiteSetting(siteId, BLOG_PAGE_SETTING_KEY);
     await revalidateOnUpdate("settings");
   }

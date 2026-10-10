@@ -47,8 +47,13 @@ export async function setHomePageId(siteId: string, contentId: string | null): P
 }
 
 export async function clearHomePageIfMatches(siteId: string, contentId: string): Promise<void> {
+  await clearHomePagesIfMatch(siteId, new Set([contentId]));
+}
+
+export async function clearHomePagesIfMatch(siteId: string, contentIds: ReadonlySet<string>): Promise<void> {
+  if (!contentIds.size) return;
   const current = await getHomePageId(siteId);
-  if (current === contentId) {
+  if (current && contentIds.has(current)) {
     await deleteSiteSetting(siteId, HOME_PAGE_SETTING_KEY);
     await revalidateOnUpdate("settings");
   }
@@ -85,7 +90,12 @@ export async function getHomeContent(
   if (!homeId) return null;
 
   const row = await loadContentRow(siteId, homeId);
-  if (!row) return null;
+  if (!row || row.type === "account") return null;
+
+  if (String(row.locale ?? "") === locale && isUsable(row, preview)) {
+    const overlaid = preview ? await overlayWorkingOnRow(row, true) : row;
+    return serializeContentRow(overlaid);
+  }
 
   const groupId = row.translation_group_id == null ? null : String(row.translation_group_id);
   const db = await getDb();
@@ -100,11 +110,6 @@ export async function getHomeContent(
       const overlaid = preview ? await overlayWorkingOnRow(localized[0], true) : localized[0];
       return serializeContentRow(overlaid);
     }
-  }
-
-  if (String(row.locale ?? "") === locale && isUsable(row, preview)) {
-    const overlaid = preview ? await overlayWorkingOnRow(row, true) : row;
-    return serializeContentRow(overlaid);
   }
 
   if (isUsable(row, preview)) {

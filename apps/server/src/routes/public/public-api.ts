@@ -1,3 +1,4 @@
+import { contentTypePolicy, publicContentTypeSql } from "@justflows/content";
 import { rateLimit } from "express-rate-limit";
 import { SearchQuerySchema } from "@justflows/content";
 import { searchContent } from "../../lib/search/search-db.js";
@@ -102,7 +103,7 @@ router.get("/content-types", async (req, res) => {
   try {
     const types = await listContentTypes();
     res.json({
-      types: types.map((type) => ({
+      types: types.filter(type => contentTypePolicy(type.slug).publiclyDiscoverable).map((type) => ({
         slug: type.slug,
         label: type.label,
         description: type.description,
@@ -221,6 +222,7 @@ router.get("/content", async (req, res) => {
 
     let sql =
       "SELECT id, site_id, type, title, slug, locale, excerpt, status, fields, author_id, created_at, published_at, updated_at FROM content WHERE site_id = ? AND locale = ? AND trashed_at IS NULL";
+    sql += ` AND ${publicContentTypeSql()}`;
     const params: (string | number | boolean | null)[] = [siteId, locale];
 
     if (!preview) {
@@ -274,7 +276,7 @@ router.get("/content/:slug", async (req, res) => {
       ? "SELECT * FROM content WHERE site_id = ? AND slug = ? AND locale = ? AND trashed_at IS NULL LIMIT 1"
       : "SELECT * FROM content WHERE site_id = ? AND slug = ? AND locale = ? AND status = 'published' AND trashed_at IS NULL LIMIT 1";
 
-    const rows = await db.query<Record<string, unknown>>(sql, [siteId, req.params.slug, locale]);
+    const rows = await db.query<Record<string, unknown>>(sql.replace(" LIMIT 1", ` AND ${publicContentTypeSql()} LIMIT 1`), [siteId, req.params.slug, locale]);
     if (!rows[0]) {
       res.status(404).json({ error: "Not found" });
       return;

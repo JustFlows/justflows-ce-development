@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+import { contentCacheRules, contentCacheExclusions, matchContentCacheRule, type ContentCacheRule } from "../cache/content-type-cache.js";
+import { accountPageExclusions } from "../account/pages.js";
 import {
   staticExportDriver,
   deployStaticExport,
@@ -367,16 +369,14 @@ function rewriteActions(html: string, rewrites: Map<string, string>): string {
  * Paths plugins leave to the live app (`staticExport.exclude`), validated. A
  * broken filter must not abort the export, so it counts as no exclusions.
  */
-async function resolveExclusions(siteId: string, adminPath: string): Promise<ExportExclusion[]> {
+async function resolveExclusions(siteId: string, adminPath: string, rules: ContentCacheRule[]): Promise<ExportExclusion[]> {
   const hooks = getRuntimeHooks();
-  if (!hooks.has("staticExport.exclude")) return [];
+  const core = sanitizeExclusions([...await accountPageExclusions(siteId), ...contentCacheExclusions(rules)], adminPath, true);
+  if (!hooks.has("staticExport.exclude")) return core;
   try {
-    return sanitizeExclusions(
-      await hooks.applyFilter("staticExport.exclude", [], { siteId }),
-      adminPath,
-    );
+    return sanitizeExclusions([...core, ...sanitizeExclusions(await hooks.applyFilter("staticExport.exclude", [], { siteId }), adminPath)], adminPath, true);
   } catch {
-    return [];
+    return core;
   }
 }
 
@@ -458,7 +458,8 @@ async function runStaticExportLocked(
   const adminPath = await getAdminPathConfig()
     .then((config) => config.path)
     .catch(() => "/admin");
-  const exclusions = await resolveExclusions(siteId, adminPath);
+  const cacheRules = await contentCacheRules(siteId);
+  const exclusions = await resolveExclusions(siteId, adminPath, cacheRules);
   const excluded = (path: string) => isExcludedPath(path, exclusions);
   if (exclusions.length > 0) {
     log(
@@ -618,7 +619,7 @@ async function runStaticExportLocked(
         pathToContentIds.get(page.path) ?? [],
         pathToGroupIds.get(page.path) ?? [],
       ),
-      cacheControl: suggestCacheControl(page.path, page.contentType || "text/html", browserCache),
+      cacheControl: matchContentCacheRule(cacheRules, page.path)?.header ?? suggestCacheControl(page.path, page.contentType || "text/html", browserCache),
     });
   }
 
@@ -639,7 +640,7 @@ async function runStaticExportLocked(
       bytes: body.length,
       sha256: sha256(body),
       deps: { content: [], translationGroups: [], dynamicList: false },
-      cacheControl: suggestCacheControl(from, "text/html", browserCache),
+      cacheControl: matchContentCacheRule(cacheRules, from)?.header ?? suggestCacheControl(from, "text/html", browserCache),
     });
   }
 

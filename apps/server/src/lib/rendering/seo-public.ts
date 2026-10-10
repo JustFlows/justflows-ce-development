@@ -1,10 +1,12 @@
+import { isExcludedPath } from "../static-export/exclusions.js";
+import { accountPageExclusions } from "../account/pages.js";
 // SPDX-License-Identifier: MIT
 
 import { getTenantContext } from "../tenancy/context.js";
 import { slashPath } from "../navigation/permalinks.js";
-import { contentPermalink, getPermalinkState, listPermalinkTerms, taxonomyPermalink } from "../navigation/permalinks-db.js";
+import { createContentPermalinkResolver, getPermalinkState, listPermalinkTerms, taxonomyPermalink } from "../navigation/permalinks-db.js";
 import { getPlugin } from "../plugins/plugins-db.js";
-import { getPluginSetting } from "../plugins/plugin-kv.js";
+import { getPluginSettings } from "../plugins/plugin-kv.js";
 import { getHomeContent } from "../content/home-page.js";
 import { listPublishedContent } from "../content/content-public.js";
 import { getDefaultLocale } from "../i18n/languages-db.js";
@@ -113,20 +115,18 @@ export function localizedString(
   return first ?? fallback;
 }
 
-async function setting<T>(siteId: string, key: string, fallback: T): Promise<T> {
-  const value = await getPluginSetting<T>(SEO_PLUGIN_ID, siteId, key);
-  return value ?? fallback;
-}
-
 export async function getSeoSettings(siteId: string, locale?: string): Promise<SeoSettings> {
-  const defaultLocale = await getDefaultLocale();
+  const [defaultLocale, values] = await Promise.all([
+    getDefaultLocale(siteId),
+    getPluginSettings(SEO_PLUGIN_ID, siteId, ["extraSitemapPaths", "siteTitle", "titleTemplate", "defaultDescription", "twitterHandle"]),
+  ]);
   const lang = locale || defaultLocale;
-  const extra = String((await setting(siteId, "extraSitemapPaths", "")) ?? "");
+  const extra = String(values.extraSitemapPaths ?? "");
   return {
-    siteTitle: localizedString(await setting(siteId, "siteTitle", ""), lang, defaultLocale),
-    titleTemplate: localizedString(await setting(siteId, "titleTemplate", "%s"), lang, defaultLocale, "%s") || "%s",
-    defaultDescription: localizedString(await setting(siteId, "defaultDescription", ""), lang, defaultLocale),
-    twitterHandle: String((await setting(siteId, "twitterHandle", "")) ?? ""),
+    siteTitle: localizedString(values.siteTitle ?? "", lang, defaultLocale),
+    titleTemplate: localizedString(values.titleTemplate ?? "%s", lang, defaultLocale, "%s") || "%s",
+    defaultDescription: localizedString(values.defaultDescription ?? "", lang, defaultLocale),
+    twitterHandle: String(values.twitterHandle ?? ""),
     extraSitemapPaths: extra.split("\n").map((line) => line.trim()).filter(Boolean),
   };
 }
@@ -193,10 +193,15 @@ export function buildSeoHeadHtml(
 export async function buildSitemapXml(siteId: string): Promise<string> {
   const settings = await getSeoSettings(siteId);
   const origin = siteOrigin();
-  const defaultLocale = await getDefaultLocale();
+  const defaultLocale = await getDefaultLocale(siteId);
   const published = await listPublishedContent(siteId);
   const home = await getHomeContent(siteId, defaultLocale, false);
-  const { settings: permalinks } = await getPermalinkState(siteId);
+  const state = await getPermalinkState(siteId);
+  const permalinks = state.settings;
+  const terms = await listPermalinkTerms(siteId);
+  const resolvePermalink = await createContentPermalinkResolver(siteId, {
+    state, defaultLocale, terms, homes: new Map([[defaultLocale, home]]),
+  });
   const paths = new Set<string>(["/", ...settings.extraSitemapPaths]);
 
   for (const item of published) {
@@ -205,12 +210,20 @@ export async function buildSitemapXml(siteId: string): Promise<string> {
       (item.id === home.id ||
         (item.translationGroupId && item.translationGroupId === home.translationGroupId));
     const pagePath = isHome || item.slug === "home" || item.slug === "" ? "/" : `/${item.slug}`;
-    paths.add(isHome || pagePath === "/" ? slashPath(localePath(item.locale, "/", defaultLocale), permalinks.trailingSlash) : await contentPermalink(item));
+    paths.add(isHome || pagePath === "/" ? slashPath(localePath(item.locale, "/", defaultLocale), permalinks.trailingSlash) : await resolvePermalink(item));
   }
 
-  for (const term of await listPermalinkTerms(siteId)) {
-    const locales = new Set(published.filter((item) => term.contentIds.includes(item.id)).map((item) => item.locale));
-    for (const locale of locales) paths.add(taxonomyPermalink(term, locale, permalinks, defaultLocale));
+  const localeByContent = new Map(published.map((item) => [item.id, item.locale]));
+  const publishedLocales = new Set(published.map((item) => item.locale));
+  for (const term of terms) {
+    const locales = new Set<string>();
+    for (const id of term.contentIds) {
+      const locale = localeByContent.get(id);
+      if (locale) locales.add(locale);
+    }
+    for (const locale of publishedLocales) {
+      if (locales.has(locale)) paths.add(taxonomyPermalink(term, locale, permalinks, defaultLocale));
+    }
   }
   const { getRuntimeHooks } = await import("../plugins/plugin-runtime.js");
   const hooks = getRuntimeHooks();
@@ -219,6 +232,8 @@ export async function buildSitemapXml(siteId: string): Promise<string> {
     pathList = await hooks.applyFilter("seo.sitemapPaths", pathList, { siteId });
   }
 
+  const privateRules = await accountPageExclusions(siteId);
+  pathList = pathList.filter(p => !isExcludedPath(p, privateRules));
   const urls = pathList.map((p) => {
     const loc = origin ? `${origin}${p}` : p;
     return `  <url><loc>${esc(loc)}</loc></url>`;

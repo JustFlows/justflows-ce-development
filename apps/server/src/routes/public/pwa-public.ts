@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+import { contentCacheRules, contentCacheExclusions } from "../../lib/cache/content-type-cache.js";
+import { accountPageExclusions } from "../../lib/account/pages.js";
 import { Router, type Request, type Response } from "express";
 import { getSiteId } from "../../lib/settings/site-settings.js";
 import { getPwaSettings } from "../../lib/pwa/pwa-settings.js";
@@ -70,7 +72,7 @@ router.get("/sw.js", async (req, res) => {
     const allowed = siteId ? await siteFeatureEnabled("feature.pwa", siteId) : false;
     const script =
       settings && settings.enabled && allowed
-        ? buildServiceWorkerScript(settings)
+        ? buildServiceWorkerScript(settings, siteId ? [...await accountPageExclusions(siteId), ...contentCacheExclusions(await contentCacheRules(siteId))] : [])
         : buildRetirementServiceWorkerScript();
     // A service worker byte stream must always be revalidated — browsers
     // already special-case SW update checks, and `immutable`/long max-age

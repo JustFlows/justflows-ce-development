@@ -1,3 +1,4 @@
+import CacheControlField from "../../../components/CacheControlField";
 import ContentSchedule from "../../../components/ContentSchedule";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import EditorAiActions, { type EditorAiChanges } from "../../../components/ai/EditorAiActions";
@@ -127,6 +128,7 @@ export default function EditContentPage() {
   const [languages, setLanguages] = useState<SiteLanguage[]>([]);
   const [translations, setTranslations] = useState<TranslationSummary[]>([]);
   const [defaultLocale, setDefaultLocale] = useState("en-US");
+  const [cacheControlEditable, setCacheControlEditable] = useState(false);
   const [typeFields, setTypeFields] = useState<ContentTypeField[]>([]);
   const [typeLabel, setTypeLabel] = useState("");
   const [homePageId, setHomePageId] = useState<string | null>(null);
@@ -225,12 +227,14 @@ export default function EditContentPage() {
             );
           }
         }
+        setCacheControlEditable(false);
         const groupId = data.translationGroupId ?? data.id;
         fetch(`/api/content-types/${encodeURIComponent(data.type)}`)
           .then((tr) => tr.json())
-          .then((body: { type?: { label?: string; fields?: ContentTypeField[]; editor?: string } }) => {
+          .then((body: { type?: { label?: string; fields?: ContentTypeField[]; editor?: string; cacheControlEditable?: boolean } }) => {
             setTypeLabel(body.type?.label ?? data.type);
             setTypeFields(body.type?.fields ?? []);
+            setCacheControlEditable(body.type?.cacheControlEditable === true && data.type !== "account");
             setBlockEditor(body.type?.editor === "blocks" || data.type === "page");
           })
           .catch(() => {
@@ -656,6 +660,7 @@ export default function EditContentPage() {
       </Topbar>
 
       <div className="jf-page">
+        {item.type === "account" && <div className="jf-alert" role="note">{t("content.accountNotice")}</div>}
         {error && (
           <div className="jf-alert jf-alert--error" role="alert">
             {error}
@@ -1078,6 +1083,17 @@ export default function EditContentPage() {
 
                 {section === "advanced" && (
                   <>
+                    {cacheControlEditable && <div className="jf-card">
+                      <div className="jf-card__body">
+                        <CacheControlField id="jf-content-cache-control"
+                          value={typeof item.fields?.cacheControl === "string" ? item.fields.cacheControl : null}
+                          disabled={saving || autosaving}
+                          inheritLabelKey="contentTypes.cacheInheritType"
+                          hintKey="contentTypes.cachePostHint"
+                          onChange={value => patchField("cacheControl", value)} />
+                      </div>
+                    </div>}
+
                     <div className="jf-card">
                       <div className="jf-card__head">
                         <h2 className="jf-card__title">{t("content.detailsHeading")}</h2>

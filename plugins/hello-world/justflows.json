@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "type": "plugin",
   "id": "justflows.hello-world",
+  "apiNamespace": "hello-world",
   "name": "Hello World",
   "version": "1.0.0",
   "publisher": "Justflows",

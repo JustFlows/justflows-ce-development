@@ -45,6 +45,7 @@ export async function getCachedPageHtml(
   pageKey: string,
   preview: boolean,
   render: () => Promise<string>,
+  ttlLimit?: number,
 ): Promise<string> {
   const cache = getJfCache();
   if (preview || !cache.enabled) {
@@ -52,7 +53,7 @@ export async function getCachedPageHtml(
   }
   const { getTenantContext } = await import("../tenancy/context.js");
   const siteId = getTenantContext()?.siteId ?? "site";
-  return cache.remember(`${PAGE_CACHE_PREFIX}${siteId}:${pageKey}`, await publicCacheTtl(), render);
+  return cache.remember(`${PAGE_CACHE_PREFIX}${siteId}:${pageKey}`, Math.min(await publicCacheTtl(), ttlLimit ?? Infinity), render);
 }
 
 /** Generic remember helper for public-site data. */

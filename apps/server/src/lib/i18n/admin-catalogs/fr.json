@@ -242,6 +242,7 @@
     "activateFailed": "L’extension n’a pas pu être activée."
   },
   "content": {
+    "accountNotice": "Les pages de compte nécessitent une connexion. Justflows les exclut des caches, des exports, de la recherche publique et des plans du site.",
     "newPost": "Nouvel article",
     "newPage": "Nouvelle page",
     "editPost": "Modifier l'article",
@@ -1658,6 +1659,15 @@
     "tabTrash": "corbeille"
   },
   "contentTypes": {
+    "cacheControlPlaceholder": "public, max-age=300",
+    "cacheInheritType": "Utiliser la valeur du type de contenu",
+    "cachePostHint": "Remplace après publication la politique de cache du type de contenu pour cet article. Les politiques privées et sans cache contournent les caches partagés et les exports statiques.",
+    "cacheControlLabel": "Cache-Control",
+    "cacheInherit": "Utiliser la valeur du site",
+    "cacheNever": "Ne jamais mettre en cache",
+    "cacheCustom": "En-tête personnalisé",
+    "cacheControlValue": "Valeur Cache-Control",
+    "cacheHint": "Remplace la politique de cache pour les pages de ce type. Les politiques privées et sans cache contournent les caches partagés et les exports statiques.",
     "loadFailed": "Impossible de charger les types de contenu",
     "saveFailed": "Échec de l'enregistrement",
     "createFailed": "Échec de la création",
@@ -3937,6 +3947,7 @@
     "slugPrimary": "L'espace de travail de la plateforme conserve le slug primary.",
     "workspaceIntro": "Modifiez le nom et le slug de cet espace de travail. L'adresse de cette page contient l'identifiant de l'espace de travail.",
     "workspaceId": "Identifiant de l'espace de travail",
+    "workspaceOwner": "Propriétaire sur le site principal",
     "workspaceNotFound": "Cet espace de travail est introuvable.",
     "workspaceLoadFailed": "Impossible de charger cet espace de travail.",
     "workspaceSaveFailed": "Impossible d'enregistrer cet espace de travail.",

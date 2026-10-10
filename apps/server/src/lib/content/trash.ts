@@ -53,26 +53,33 @@ export async function trashRetentionDays(siteId: string): Promise<number> {
   return Number.isInteger(days) && days >= 1 && days <= 3650 ? days : DEFAULT_TRASH_RETENTION_DAYS;
 }
 
-async function mediaIsReferenced(
-  siteId: string,
-  url: string,
-  storageKey: string,
-): Promise<boolean> {
+/** Load and serialize each reference document once per operation. */
+async function mediaReferenceDocuments(siteId: string): Promise<string[]> {
   const db = await getDb();
-  const needles = [url, storageKey].filter(Boolean);
-  if (!needles.length) return false;
-  // JSON casting differs between PostgreSQL and MySQL. Inspect the portable
-  // driver values so the check has identical semantics on every database.
+  // Inspect portable driver values: JSON casting differs between databases.
   const [content, menus] = await Promise.all([
     db.query<{ blocks: unknown; fields: unknown }>(
-      "SELECT blocks, fields FROM content WHERE site_id = ?",
-      [siteId],
+      "SELECT blocks, fields FROM content WHERE site_id = ?", [siteId],
     ),
     db.query<{ items: unknown }>("SELECT items FROM menus WHERE site_id = ?", [siteId]),
   ]);
-  return [...content.flatMap((row) => [row.blocks, row.fields]), ...menus.map((row) => row.items)]
-    .map((value) => (typeof value === "string" ? value : (JSON.stringify(value) ?? "")))
-    .some((document) => needles.some((needle) => document.includes(needle)));
+  const documents: string[] = [];
+  const append = (value: unknown) => documents.push(
+    typeof value === "string" ? value : (JSON.stringify(value) ?? ""),
+  );
+  for (const row of content) { append(row.blocks); append(row.fields); }
+  for (const row of menus) append(row.items);
+  return documents;
+}
+
+function referencesMedia(documents: string[], url: string, storageKey: string): boolean {
+  const needles = [url, storageKey].filter(Boolean);
+  return documents.some((document) => needles.some((needle) => document.includes(needle)));
+}
+
+async function mediaIsReferenced(siteId: string, url: string, storageKey: string): Promise<boolean> {
+  if (!url && !storageKey) return false;
+  return referencesMedia(await mediaReferenceDocuments(siteId), url, storageKey);
 }
 
 export async function listTrash(siteId: string): Promise<TrashItem[]> {
@@ -95,16 +102,15 @@ export async function listTrash(siteId: string): Promise<TrashItem[]> {
       [siteId],
     ),
   ]);
-  const mediaItems = await Promise.all(
-    media.map(async (row) => ({
-      id: String(row.id),
-      type: "media" as const,
-      label: String(row.filename),
-      detail: String(row.mime_type),
-      trashedAt: row.trashed_at,
-      referenced: await mediaIsReferenced(siteId, String(row.url), String(row.storage_key)),
-    })),
-  );
+  const documents = media.length ? await mediaReferenceDocuments(siteId) : [];
+  const mediaItems = media.map((row) => ({
+    id: String(row.id),
+    type: "media" as const,
+    label: String(row.filename),
+    detail: String(row.mime_type),
+    trashedAt: row.trashed_at,
+    referenced: referencesMedia(documents, String(row.url), String(row.storage_key)),
+  }));
   return [
     ...content.map((row) => ({
       id: String(row.id),

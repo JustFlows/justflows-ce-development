@@ -18,6 +18,10 @@ export {
   MEGA_MENU_SAFE_BLOCK_KINDS,
 } from "./hooks.js";
 export type {
+  AccountSection,
+  AccountCard,
+  AccountAction,
+  AccountSectionContext,
   HookContext,
   HookActor,
   HookSource,
@@ -40,6 +44,7 @@ export type {
   ThemeLayoutScope,
   WorkspaceEvent,
   WorkspaceStatusEvent,
+  TenancyWorkspaceCreatedEvent,
   WorkspaceDeleteEvent,
   WorkspaceCreateGateEvent,
   SiteCreateEvent,
@@ -179,6 +184,8 @@ export type {
   PluginRowValue,
   PluginTenancyApi,
   PluginQuotasApi,
+  PluginQuotaMeterInfo,
+  PluginQuotaTarget,
   QuotaMeterRegistration,
   QuotaDecision,
   QuotaMeterView,
@@ -312,3 +319,5 @@ export type {
 
 export type { SearchBackend, SearchDocument } from "./search.js";
 export type { SpamCheckBackend, SpamCheckInput, SpamCheckResult } from "./spam.js";
+
+export { pluginApiUrl, isValidPluginApiNamespace } from "./api-urls.js";

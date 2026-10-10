@@ -242,6 +242,7 @@
     "activateFailed": "The plugin could not be turned on."
   },
   "content": {
+    "accountNotice": "Account pages require sign-in. Justflows excludes them from caches, exports, public search and sitemaps.",
     "newPost": "New Post",
     "newPage": "New Page",
     "editPost": "Edit Post",
@@ -1815,6 +1816,15 @@
     "couldNotSendTest": "Could not send test"
   },
   "contentTypes": {
+    "cacheControlPlaceholder": "public, max-age=300",
+    "cacheInheritType": "Inherit content type default",
+    "cachePostHint": "Overrides this post’s content type cache policy after publication. Private and no-cache policies bypass shared caches and static exports.",
+    "cacheControlLabel": "Cache-Control",
+    "cacheInherit": "Inherit site default",
+    "cacheNever": "Never cache",
+    "cacheCustom": "Custom header",
+    "cacheControlValue": "Cache-Control value",
+    "cacheHint": "Overrides the site cache policy for pages of this type. Private and no-cache policies bypass shared caches and static exports.",
     "loadFailed": "Failed to load content types",
     "saveFailed": "Failed to save",
     "createFailed": "Failed to create",
@@ -3935,6 +3945,7 @@
     "slugPrimary": "The platform workspace keeps the slug primary.",
     "workspaceIntro": "Change this workspace's name and slug. The address of this page includes the workspace id.",
     "workspaceId": "Workspace id",
+    "workspaceOwner": "Root owner",
     "workspaceNotFound": "That workspace was not found.",
     "workspaceLoadFailed": "Could not load this workspace.",
     "workspaceSaveFailed": "Could not save this workspace.",

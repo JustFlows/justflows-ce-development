@@ -40,6 +40,24 @@ export async function getSiteSetting<T>(siteId: string, key: string): Promise<T 
   return parseSettingValue<T>(rows.length > 0, rows[0]?.value);
 }
 
+/** Read a bounded group of related settings in one site-scoped query. */
+export async function getSiteSettings(siteId: string, keys: string[]): Promise<Record<string, unknown>> {
+  const uniqueKeys = [...new Set(keys)];
+  if (!uniqueKeys.length) return {};
+  const db = await getDb();
+  const column = settingsKeyColumn();
+  const values: Array<[string, unknown]> = [];
+  for (let offset = 0; offset < uniqueKeys.length; offset += 200) {
+    const batch = uniqueKeys.slice(offset, offset + 200);
+    const rows = await db.query<{ setting_key: string; value: unknown }>(
+      `SELECT ${column} AS setting_key, value FROM site_settings WHERE site_id = ? AND ${column} IN (${batch.map(() => "?").join(", ")})`,
+      [siteId, ...batch],
+    );
+    for (const row of rows) values.push([row.setting_key, parseSettingValue(true, row.value)]);
+  }
+  return Object.fromEntries(values);
+}
+
 /**
  * Decode one stored settings value. A row that exists but holds JSON `false`,
  * `0` or `""` is still a real, deliberate value — only a missing row (or a SQL

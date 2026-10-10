@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { accountCacheMiddleware } from "../../middleware/account-cache.js";
 import type { Request, Response, NextFunction } from "express";
 import type { PluginHttpMethod, PluginHttpRateLimit } from "@justflows/sdk";
 import { isProtectedHeaderName, SECURITY_HEADER_DEFS } from "../security/security-headers.js";
@@ -249,6 +250,8 @@ export async function dispatchPluginHttp(
         res.setHeader(key, value);
       }
     }
+    // A plugin cannot override the host’s private account cache policy.
+    accountCacheMiddleware(req, res, () => undefined);
     if (result.type) res.type(result.type);
 
     if (result.file && typeof result.file.key === "string") {

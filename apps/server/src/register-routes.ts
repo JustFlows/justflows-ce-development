@@ -202,6 +202,14 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
   app.use("/api/platform/custom-domains", requireInstalled, (await import("./routes/platform/custom-domains.js")).default);
   app.use("/api/platform", requireInstalled, (await import("./routes/platform/tenants.js")).default);
   app.use("/api/signup", requireInstalled, (await import("./routes/public/signup.js")).default);
+  const account = await import("./routes/public/account.js");
+  app.use("/api/account", requireInstalled, account.apiRouter);
+  app.use("/api/platform-account", requireInstalled, account.apiRouter);
+  app.use("/account", requireInstalled, account.pageRouter);
+  app.use("/platform-account", requireInstalled, (_req, res) => {
+    res.set({ "Cache-Control": "private, no-store", "CDN-Cache-Control": "no-store" });
+    res.redirect(302, "/account");
+  });
   app.use("/api/settings", requireInstalled, settingsRoutes);
   app.use("/api/emails", requireInstalled, requireSiteFeature("feature.emails"), emailsRoutes);
   app.use("/api/security", requireInstalled, securityRoutes);

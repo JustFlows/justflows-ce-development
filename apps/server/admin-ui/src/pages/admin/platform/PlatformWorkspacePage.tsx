@@ -15,6 +15,7 @@ interface PlatformWorkspace {
     databaseMode: string;
     createdAt: string;
     updatedAt: string;
+    owner?: { id: string; name: string; email: string } | null;
   };
   sites: Array<{
     id: string;
@@ -286,6 +287,17 @@ export default function PlatformWorkspacePage() {
               <div className="jf-card__body">
                 <dl>
                   <MetaRow label={t("platform.workspaceId")} value={<code>{record.workspace.id}</code>} />
+                  <MetaRow label={t("platform.workspaceOwner")} value={record.workspace.owner ? (
+                    <div className="jf-stack">
+                      <Link to={`/admin/users/${encodeURIComponent(record.workspace.owner.id)}`}>
+                        {record.workspace.owner.name}
+                      </Link>
+                      <span>{record.workspace.owner.email}</span>
+                      <Link to={`/admin/users/${encodeURIComponent(record.workspace.owner.id)}`}>
+                        <code style={{ overflowWrap: "anywhere" }}>{record.workspace.owner.id}</code>
+                      </Link>
+                    </div>
+                  ) : "—"} />
                   <MetaRow label={t("platform.userMode")} value={record.workspace.userMode === "shared" ? t("platform.shared") : t("platform.isolated")} />
                   <MetaRow label={t("platform.database")} value={record.workspace.databaseMode === "separate" ? t("platform.separate") : t("platform.current")} />
                   <MetaRow label={t("platform.created")} value={formatDate(record.workspace.createdAt)} />

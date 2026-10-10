@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { isAccountPath } from "../../middleware/account-cache.js";
 import { assetPathsFromHtml, originHost } from "./assets.js";
 import { normalizeUrlPath } from "./paths.js";
 
@@ -36,6 +37,8 @@ const RESERVED_PREFIXES = [
   "/api",
   "/ext",
   "/login",
+  "/account",
+  "/platform-account",
   "/register",
   "/install",
   "/uploads",
@@ -111,7 +114,7 @@ export async function crawlPages(
   const seen = new Set<string>();
   const enqueue = (path: string) => {
     const norm = normalizeUrlPath(path);
-    if (seen.has(norm) || opts.exclude?.(norm)) return;
+    if (isAccountPath(norm) || seen.has(norm) || opts.exclude?.(norm)) return;
     seen.add(norm);
     queue.push(norm);
   };
