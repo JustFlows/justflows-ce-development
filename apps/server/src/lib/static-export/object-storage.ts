@@ -65,13 +65,19 @@ export function staticExportObjectStore(): { adapter: S3StorageAdapter; prefix: 
   };
 }
 
-export async function readDeployedEntries(
-  adapter: S3StorageAdapter,
-  prefix: string,
-): Promise<DeployedEntry[] | null> {
+async function readDeployment(adapter: S3StorageAdapter, prefix: string): Promise<{
+  entries: DeployedEntry[]; bytes: number;
+} | null> {
   const object = await adapter.read(`${prefix}${POINTER}`);
   if (!object) return null;
-  return deploymentSchema.parse(JSON.parse(object.body.toString("utf8"))).entries;
+  return { entries: deploymentSchema.parse(JSON.parse(object.body.toString("utf8"))).entries,
+    bytes: object.body.length };
+}
+
+export async function readDeployedEntries(
+  adapter: S3StorageAdapter, prefix: string,
+): Promise<DeployedEntry[] | null> {
+  return (await readDeployment(adapter, prefix))?.entries ?? null;
 }
 
 /** Upload immutable objects first, then publish the routing pointer in one PUT.
@@ -83,15 +89,19 @@ export async function deployStaticExport(
   manifest: StaticExportManifest,
 ): Promise<void> {
   const { adapter, prefix } = staticExportObjectStore();
-  const previous = await readDeployedEntries(adapter, prefix);
+  const deployment = await readDeployment(adapter, prefix);
+  const previous = deployment?.entries;
+  const routesByFile = new Map<string, StaticExportManifest["routes"][number]>();
+  for (const route of manifest.routes) {
+    if (!routesByFile.has(route.file)) routesByFile.set(route.file, route);
+  }
   const known = new Set((previous ?? []).map((entry) => deployedObjectKey(prefix, entry)));
   const entries = deploymentSchema.parse({
     version: 1,
     entries: manifest.routes.filter(isHtmlExportEntry),
   }).entries;
   const pointer = Buffer.from(JSON.stringify({ version: 1, entries }));
-  const existingPointer = await adapter.read(`${prefix}${POINTER}`);
-  const growth = entries.filter((entry) => !known.has(deployedObjectKey(prefix, entry))).reduce((total, entry) => total + (manifest.routes.find((route) => route.file === entry.file)?.bytes ?? 0), 0) + Math.max(0, pointer.length - (existingPointer?.body.length ?? 0));
+  const growth = entries.filter((entry) => !known.has(deployedObjectKey(prefix, entry))).reduce((total, entry) => total + (routesByFile.get(entry.file)?.bytes ?? 0), 0) + Math.max(0, pointer.length - (deployment?.bytes ?? 0));
   const siteId = getTenantContext()?.siteId ?? await (await import("../tenancy/registry.js")).installationRootSiteId();
   if (!siteId) throw new Error("Export storage needs an installed site");
   await (await import("../storage/storage-quota.js")).enforceStorageGrowth(siteId, growth);
@@ -101,7 +111,7 @@ export async function deployStaticExport(
     const file = resolvePathUnderBase(outDir, entry.file);
     if (!file) throw new Error("Unsafe static export file");
     const body = await fs.readFile(file);
-    if (body.length !== manifest.routes.find((route) => route.file === entry.file)?.bytes || sha256(body) !== entry.sha256)
+    if (body.length !== routesByFile.get(entry.file)?.bytes || sha256(body) !== entry.sha256)
       throw new Error("Static export file changed during deployment");
     await adapter.save(key, body, entry.contentType, entry.cacheControl);
   }

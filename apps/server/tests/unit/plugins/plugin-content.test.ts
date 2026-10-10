@@ -19,15 +19,15 @@ vi.mock("../../../src/lib/i18n/languages-db.js", () => ({
 }));
 
 vi.mock("../../../src/lib/content/home-page.js", () => ({
-  clearHomePageIfMatches: vi.fn(),
+  clearHomePagesIfMatch: vi.fn(),
 }));
 
 vi.mock("../../../src/lib/content/blog-page.js", () => ({
-  clearBlogPageIfMatches: vi.fn(),
+  clearBlogPagesIfMatch: vi.fn(),
 }));
 
 vi.mock("../../../src/lib/rendering/error-pages.js", () => ({
-  clearErrorPageIfMatches: vi.fn(),
+  clearErrorPagesIfMatch: vi.fn(),
 }));
 
 vi.mock("../../../src/lib/content/content-public.js", () => ({
@@ -41,9 +41,9 @@ vi.mock("../../../src/lib/plugins/plugin-kv.js", () => ({
 }));
 
 import { getContentTypeBySlug } from "../../../src/lib/content/content-types-db.js";
-import { clearHomePageIfMatches } from "../../../src/lib/content/home-page.js";
-import { clearBlogPageIfMatches } from "../../../src/lib/content/blog-page.js";
-import { clearErrorPageIfMatches } from "../../../src/lib/rendering/error-pages.js";
+import { clearHomePagesIfMatch } from "../../../src/lib/content/home-page.js";
+import { clearBlogPagesIfMatch } from "../../../src/lib/content/blog-page.js";
+import { clearErrorPagesIfMatch } from "../../../src/lib/rendering/error-pages.js";
 import { invalidateContentCache } from "../../../src/lib/content/content-public.js";
 import { contentTypeSlugsFromManifest, createPluginContentApi } from "../../../src/lib/plugins/plugin-content.js";
 
@@ -52,9 +52,9 @@ describe("createPluginContentApi.deleteType", () => {
     query.mockReset();
     run.mockReset();
     vi.mocked(getContentTypeBySlug).mockReset();
-    vi.mocked(clearHomePageIfMatches).mockReset();
-    vi.mocked(clearBlogPageIfMatches).mockReset();
-    vi.mocked(clearErrorPageIfMatches).mockReset();
+    vi.mocked(clearHomePagesIfMatch).mockReset();
+    vi.mocked(clearBlogPagesIfMatch).mockReset();
+    vi.mocked(clearErrorPagesIfMatch).mockReset();
     vi.mocked(invalidateContentCache).mockReset();
   });
 
@@ -74,15 +74,16 @@ describe("createPluginContentApi.deleteType", () => {
       description: "",
       builtin: false,
       fields: [],
+      cacheControl: null,
+      cacheControlEditable: true,
       createdAt: "",
       updatedAt: "",
     });
     const api = createPluginContentApi("justflows.shop", "site-1");
     await expect(api.deleteType("shop")).resolves.toEqual({ pages: 2, typeDeleted: true });
-    expect(clearHomePageIfMatches).toHaveBeenCalledWith("site-1", "c1");
-    expect(clearBlogPageIfMatches).toHaveBeenCalledWith("site-1", "c2");
-    expect(clearErrorPageIfMatches).toHaveBeenCalledWith("site-1", "c1");
-    expect(clearErrorPageIfMatches).toHaveBeenCalledWith("site-1", "c2");
+    expect(clearHomePagesIfMatch).toHaveBeenCalledWith("site-1", new Set(["c1", "c2"]));
+    expect(clearBlogPagesIfMatch).toHaveBeenCalledWith("site-1", new Set(["c1", "c2"]));
+    expect(clearErrorPagesIfMatch).toHaveBeenCalledWith("site-1", new Set(["c1", "c2"]));
     expect(run).toHaveBeenCalledWith(
       "DELETE FROM revisions WHERE site_id = ? AND content_id IN (?, ?)",
       ["site-1", "c1", "c2"],
@@ -115,6 +116,8 @@ describe("createPluginContentApi.ensurePage", () => {
     description: "",
     builtin: false,
     fields: [],
+      cacheControl: null,
+      cacheControlEditable: true,
     createdAt: "",
     updatedAt: "",
   };

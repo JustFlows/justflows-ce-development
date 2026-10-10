@@ -242,6 +242,7 @@
     "activateFailed": "Nie udało się włączyć wtyczki."
   },
   "content": {
+    "accountNotice": "Strony konta wymagają logowania. Justflows wyklucza je z pamięci podręcznej, eksportów, wyszukiwania publicznego i map witryny.",
     "newPost": "Nowy post",
     "newPage": "Nowa strona",
     "editPost": "Edytuj post",
@@ -1815,6 +1816,15 @@
     "couldNotSendTest": "Nie można wysłać testu"
   },
   "contentTypes": {
+    "cacheControlPlaceholder": "public, max-age=300",
+    "cacheInheritType": "Domyślne ustawienia typu treści",
+    "cachePostHint": "Po publikacji zastępuje zasady buforowania typu treści dla tego wpisu. Zasady prywatne i no-cache pomijają współdzielone pamięci podręczne oraz eksporty statyczne.",
+    "cacheControlLabel": "Cache-Control",
+    "cacheInherit": "Domyślne ustawienia witryny",
+    "cacheNever": "Nigdy nie zapisuj w pamięci podręcznej",
+    "cacheCustom": "Własny nagłówek",
+    "cacheControlValue": "Wartość Cache-Control",
+    "cacheHint": "Zastępuje zasady buforowania stron tego typu. Zasady prywatne i no-cache pomijają współdzielone pamięci podręczne oraz eksporty statyczne.",
     "loadFailed": "Nie udało się załadować typów treści",
     "saveFailed": "Nie udało się zapisać",
     "createFailed": "Nie udało się utworzyć",
@@ -3935,6 +3945,7 @@
     "slugPrimary": "Przestrzeń robocza platformy zachowuje slug primary.",
     "workspaceIntro": "Zmień nazwę i slug tej przestrzeni roboczej. Adres tej strony zawiera identyfikator przestrzeni roboczej.",
     "workspaceId": "Identyfikator przestrzeni roboczej",
+    "workspaceOwner": "Właściciel na stronie głównej",
     "workspaceNotFound": "Nie znaleziono tej przestrzeni roboczej.",
     "workspaceLoadFailed": "Nie udało się wczytać tej przestrzeni roboczej.",
     "workspaceSaveFailed": "Nie udało się zapisać tej przestrzeni roboczej.",

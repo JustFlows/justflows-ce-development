@@ -109,3 +109,8 @@ describe("assetPathsFromCss", () => {
     ]);
   });
 });
+
+
+it("never downloads account data disguised as a static subresource", () => {
+  expect(assetPathsFromHtml('<img src="/account/avatar.png"><script src="/ext/example/account/data.js"></script><link rel="preload" href="/api/account/profile">')).toEqual([]);
+});

@@ -27,7 +27,7 @@ describe("content type slugs", () => {
     expect(isBuiltinContentTypeSlug("post")).toBe(true);
     expect(isBuiltinContentTypeSlug("page")).toBe(true);
     expect(isBuiltinContentTypeSlug("product")).toBe(false);
-    expect(BUILTIN_CONTENT_TYPES.map((t) => t.slug)).toEqual(["post", "page"]);
+    expect(BUILTIN_CONTENT_TYPES.map((t) => t.slug)).toEqual(["post", "page", "account"]);
   });
 });
 

@@ -4,6 +4,7 @@ import { isEmptyBlockDocument, shouldSeedTypePattern, usesBlockEditor } from "..
 describe("content layout helpers", () => {
   it("uses the block editor for pages and for types a plugin marks as blocks", () => {
     expect(usesBlockEditor("page", false)).toBe(true);
+    expect(usesBlockEditor("account", false)).toBe(true);
     expect(usesBlockEditor("post", false)).toBe(false);
     expect(usesBlockEditor("post", true)).toBe(true);
   });

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { isAccountPath } from "../../middleware/account-cache.js";
 import { normalizeUrlPath } from "./paths.js";
 
 /**
@@ -12,6 +13,8 @@ const DENY_PREFIXES = [
   "/admin",
   "/api",
   "/login",
+  "/account",
+  "/platform-account",
   "/register",
   "/install",
   "/forgot-password",
@@ -71,6 +74,7 @@ export function sameOriginPath(ref: string, publicHost = ""): string | null {
   }
   const normalized = normalizeUrlPath(path);
   if (normalized === "/") return null;
+  if (isAccountPath(normalized)) return null;
   if (DENY_PREFIXES.some((p) => normalized === p || normalized.startsWith(`${p}/`))) return null;
   return normalized;
 }

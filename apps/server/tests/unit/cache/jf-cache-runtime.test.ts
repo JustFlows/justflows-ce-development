@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { getJfCache, resetJfCache } from "../../../src/lib/cache/jf-cache.js";
+import { getJfCache, resetJfCache, withoutSharedCache } from "../../../src/lib/cache/jf-cache.js";
 
 describe("getJfCache follows CACHE_ENABLED", () => {
   afterEach(() => {
@@ -54,4 +54,27 @@ describe("getJfCache follows CACHE_ENABLED", () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+});
+
+
+it("bypasses retained cache facades only inside private requests and preserves invalidation", async () => {
+  const previousDriver = process.env.CACHE_DRIVER;
+  process.env.CACHE_DRIVER = "memory"; process.env.CACHE_ENABLED = "1"; resetJfCache();
+  try {
+    const retained = getJfCache(); await retained.set("account-test-key", "public");
+    await withoutSharedCache(async () => {
+      expect(retained.enabled).toBe(false); expect(await retained.get("account-test-key")).toBeUndefined();
+      await retained.set("account-test-key", "private");
+      expect(await retained.remember("private-key", 60, async () => "private data")).toBe("private data");
+    });
+    const personal = await Promise.all([
+      withoutSharedCache(() => retained.remember("same-personal-key", 60, async () => "user-a")),
+      withoutSharedCache(() => retained.remember("same-personal-key", 60, async () => "user-b")),
+    ]);
+    expect(personal).toEqual(["user-a", "user-b"]);
+    expect(retained.enabled).toBe(true); expect(await retained.get("account-test-key")).toBe("public");
+    expect(await retained.get("private-key")).toBeUndefined();
+    await withoutSharedCache(() => retained.delete("account-test-key"));
+    expect(await retained.get("account-test-key")).toBeUndefined();
+  } finally { if (previousDriver === undefined) delete process.env.CACHE_DRIVER; else process.env.CACHE_DRIVER = previousDriver; delete process.env.CACHE_ENABLED; resetJfCache(); }
 });

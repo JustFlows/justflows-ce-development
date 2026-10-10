@@ -1,6 +1,8 @@
+import { isExcludedPath } from "./exclusions.js";
+import { accountPageExclusions } from "../account/pages.js";
 // SPDX-License-Identifier: MIT
 
-import { contentPermalink, getPermalinkState } from "../navigation/permalinks-db.js";
+import { createContentPermalinkResolver, getPermalinkState } from "../navigation/permalinks-db.js";
 import { getSiteId } from "../themes/themes-db.js";
 import { listPublishedContent } from "../content/content-public.js";
 import { getHomeContent } from "../content/home-page.js";
@@ -42,8 +44,9 @@ function extractSitemapLocs(xml: string): string[] {
 export async function discoverRoutes(
   fetchText: (path: string) => Promise<{ ok: boolean; body: string }>,
 ): Promise<DiscoveredRoutes> {
-  const permalinkSiteId = await getSiteId();
-  if (permalinkSiteId && (await getPermalinkState(permalinkSiteId)).settings.structure.startsWith("/?")) {
+  const siteId = await getSiteId();
+  const state = siteId ? await getPermalinkState(siteId) : undefined;
+  if (state?.settings.structure.startsWith("/?")) {
     throw new Error("Static export requires path-based permalinks. Choose a preset other than Plain in Settings → Permalinks.");
   }
   const paths = new Set<string>(["/"]);
@@ -61,7 +64,6 @@ export async function discoverRoutes(
     // fall back to the database pass below
   }
 
-  const siteId = await getSiteId();
   if (siteId) {
     // The service-worker registration is an inline <script>, invisible to link
     // discovery below, so the manifest/worker/offline page are seeded
@@ -85,13 +87,17 @@ export async function discoverRoutes(
       paths.add(normalizeUrlPath(localePath(locale, "/", defaultLocale)));
     }
 
+    const resolvePermalink = await createContentPermalinkResolver(siteId, {
+      state, defaultLocale, homes: new Map([[defaultLocale, home]]),
+    });
+
     for (const item of published) {
       const isHome =
         home != null &&
         (item.id === home.id ||
           (item.translationGroupId != null && item.translationGroupId === home.translationGroupId));
       const slugPath = isHome || item.slug === "home" || item.slug === "" ? "/" : `/${item.slug}`;
-      const urlPath = normalizeUrlPath(isHome || slugPath === "/" ? localePath(item.locale, "/", defaultLocale) : await contentPermalink(item));
+      const urlPath = normalizeUrlPath(isHome || slugPath === "/" ? localePath(item.locale, "/", defaultLocale) : await resolvePermalink(item));
       paths.add(urlPath);
       const list = contentPaths.get(item.id) ?? [];
       if (!list.includes(urlPath)) list.push(urlPath);
@@ -119,5 +125,7 @@ export async function discoverRoutes(
     }
   }
 
+  const privateRules = siteId ? await accountPageExclusions(siteId) : [];
+  list = list.filter(route => !isExcludedPath(route, privateRules));
   return { paths: [...new Set(list)], contentPaths, translationGroups };
 }

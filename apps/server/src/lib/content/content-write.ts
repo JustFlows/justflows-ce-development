@@ -8,7 +8,7 @@ import {
   uniquePermalinkSlug,
 } from "../navigation/permalinks-db.js";
 import { getDb } from "../database/db.js";
-import { serializeContentRow } from "./content-api.js";
+import { normalizeFields, serializeContentRow } from "./content-api.js";
 import {
   applySnapshotToContent,
   archiveThenDeleteWorking,
@@ -31,7 +31,7 @@ import { sanitizeBlockDocument } from "@justflows/blocks";
 import { defaultBlocksForContentType, isEmptyBlockDocument } from "./default-content-blocks.js";
 import { getContentTypeBySlug } from "./content-types-db.js";
 import { auditLog } from "../security/audit-log.js";
-import { ContentTypeSlugSchema } from "@justflows/content";
+import { ContentCacheFieldsSchema, validateContentCacheFields, ContentTypeSlugSchema } from "@justflows/content";
 
 /**
  * Shared content write logic — the single implementation behind both the
@@ -49,7 +49,7 @@ export const CreateContentSchema = z.object({
   locale: z.string().optional(),
   translationGroupId: z.string().uuid().optional(),
   blocks: z.object({ version: z.literal(1), blocks: z.array(z.unknown()) }).optional(),
-  fields: z.record(z.string(), z.unknown()).optional(),
+  fields: ContentCacheFieldsSchema.optional(),
 });
 export type CreateContentInput = z.infer<typeof CreateContentSchema>;
 
@@ -59,7 +59,7 @@ export const PatchContentSchema = z
     slug: z.string().optional(),
     excerpt: z.string().nullable().optional(),
     blocks: z.unknown().optional(),
-    fields: z.record(z.string(), z.unknown()).optional(),
+    fields: ContentCacheFieldsSchema.optional(),
     status: z.enum(["draft", "published", "archived"]).optional(),
     expectedVersion: z.number().int().positive().optional(),
     source: z.enum(["manual", "autosave", "import", "api"]).optional(),
@@ -165,6 +165,7 @@ export async function saveWorkingRow(
   const working = await getWorkingRevision(id, actor.siteId);
   const base = working ? revisionToSnapshot(working) : rowToSnapshot(row);
   let proposed = mergeSnapshot(base, patch);
+  if (!validateCacheFieldsForWrite(String(row.type), proposed.fields, res)) return;
   const hooks = getRuntimeHooks();
   const ctx = hookCtx(actor);
   proposed = await hooks.applyFilter(
@@ -187,6 +188,7 @@ export async function saveWorkingRow(
     throw err;
   }
 
+  if (!validateCacheFieldsForWrite(String(row.type), proposed.fields, res)) return;
   let saved;
   try { saved = await upsertWorkingRevision(row, {
     snapshot: proposed,
@@ -244,6 +246,7 @@ export async function publishRow(
 
   const base = working ? revisionToSnapshot(working) : rowToSnapshot(row);
   const proposed = mergeSnapshot(base, patch);
+  if (!validateCacheFieldsForWrite(String(row.type), proposed.fields, res)) return;
   const hooks = getRuntimeHooks();
   const ctx = hookCtx(actor);
   const contentRef = {
@@ -264,6 +267,7 @@ export async function publishRow(
     throw err;
   }
 
+  if (!validateCacheFieldsForWrite(String(row.type), proposed.fields, res)) return;
   const publishedAt = serializeContentRow(row).publishedAt ?? now();
   const nextContent = { ...serializeContentRow(row), ...proposed, status: "published", publishedAt };
   try {
@@ -302,7 +306,12 @@ export async function publishRow(
   await auditScheduleOverride(row, actor, true);
   await rememberContentPermalink(serializeContentRow(row), nextContent);
   await pruneHistoricalForContent(id, siteId);
-  await invalidateContentCache();
+  const cacheChanged = normalizeFields(row.fields).cacheControl !== proposed.fields.cacheControl;
+  await invalidateContentCache(cacheChanged, siteId);
+  if (cacheChanged) {
+    const { purgeCdnCache } = await import("../cdn/cdn-purge.js");
+    await purgeCdnCache({ siteId }).catch(() => undefined);
+  }
   await hooks.dispatchAction("content.updated", { contentId: id, siteId, type: String(row.type) }, ctx);
   await hooks.dispatchAction("content.published", { contentId: id, siteId, type: String(row.type) }, ctx);
   void auditLog({
@@ -337,6 +346,7 @@ export async function unpublishRow(
   const working = await getWorkingRevision(id, actor.siteId);
   const base = working ? revisionToSnapshot(working) : rowToSnapshot(row);
   const proposed = mergeSnapshot(base, patch);
+  if (!validateCacheFieldsForWrite(String(row.type), proposed.fields, res)) return;
   const applied = await applySnapshotToContent(id, actor.siteId, proposed, {
     status: "draft",
     expectedVersion: Number(row.version ?? 1) || 1,
@@ -373,6 +383,7 @@ export async function applyDraftUpdate(
   const contentRef = { contentId: id, siteId: actor.siteId, type: String(row.type) };
   const hooks = getRuntimeHooks();
   const proposed = mergeSnapshot(rowToSnapshot(row), patch);
+  if (!validateCacheFieldsForWrite(String(row.type), proposed.fields, res)) return;
   try {
     await hooks.dispatchGate("content.beforeUpdate", { ...contentRef, revision: proposed }, ctx);
   } catch (err) {
@@ -383,6 +394,7 @@ export async function applyDraftUpdate(
     throw err;
   }
 
+  if (!validateCacheFieldsForWrite(String(row.type), proposed.fields, res)) return;
   if (!snapshotsEqual(rowToSnapshot(row), proposed)) {
     await insertHistoricalIfChanged(row, actor.userId);
   }
@@ -407,7 +419,7 @@ export async function applyDraftUpdate(
   }
   if (patch.fields !== undefined) {
     fields.push("fields = ?");
-    values.push(JSON.stringify(patch.fields));
+    values.push(JSON.stringify(proposed.fields));
   }
   if (patch.status !== undefined) {
     fields.push("status = ?");
@@ -425,6 +437,11 @@ export async function applyDraftUpdate(
   if (changed !== 1) { res.status(409).json({ error: "Content changed; reload before saving" }); return; }
 
   if (patch.status !== undefined) await auditScheduleOverride(row, actor);
+  if (normalizeFields(row.fields).cacheControl !== proposed.fields.cacheControl) {
+    await invalidateContentCache(true, actor.siteId);
+    const { purgeCdnCache } = await import("../cdn/cdn-purge.js");
+    await purgeCdnCache({ siteId: actor.siteId }).catch(() => undefined);
+  }
   const rows = await db.query<Record<string, unknown>>(
     "SELECT * FROM content WHERE id = ? AND site_id = ? LIMIT 1",
     [id, actor.siteId],
@@ -442,7 +459,10 @@ export async function createContentEntry(
   input: CreateContentInput,
   actor: ContentActor,
 ): Promise<CreateContentResult> {
-  const { type, title, excerpt, blocks, fields } = input;
+  const { type, title, excerpt, blocks } = input;
+  let fields: Record<string, unknown>;
+  try { fields = validateContentCacheFields(type, input.fields ?? {}); }
+  catch (error) { return { status: 400, body: { error: (error as Error).message } }; }
   const registered = await getContentTypeBySlug(type, actor.siteId);
   if (!registered) {
     return { status: 400, body: { error: `Unknown content type "${type}"` } };
@@ -499,6 +519,7 @@ export async function createContentEntry(
   const typed = await enforceQuota(`content.${type}`, actor.siteId, 1);
   if (typed) return { status: typed.status, body: { error: typed.error, code: typed.code, meter: typed.meter } };
 
+  fields = validateContentCacheFields(type, fields);
   const db = await getDb();
   const blockDoc = isEmptyBlockDocument(blocks) ? await defaultBlocksForContentType(type) : blocks;
 
@@ -579,4 +600,10 @@ export async function trashContentEntry(
     detail: `type=content; contentType=${row.type}`,
   });
   return { status: 200, body: { ok: true } };
+}
+
+
+function validateCacheFieldsForWrite(type: string, fields: Record<string, unknown>, res: WriteResponse): boolean {
+  try { Object.assign(fields, validateContentCacheFields(type, fields)); return true; }
+  catch (error) { res.status(400).json({ error: (error as Error).message }); return false; }
 }

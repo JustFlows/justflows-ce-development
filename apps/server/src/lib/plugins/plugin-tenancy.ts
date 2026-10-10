@@ -58,12 +58,14 @@ export function createPluginTenancyApi(
         status: PluginWorkspace["status"];
         user_mode: PluginWorkspace["userMode"];
         database_mode: PluginWorkspace["databaseMode"];
+        owner_user_id: string | null;
       }>(
-        `SELECT id, name, slug, status, user_mode, database_mode FROM tenants
+        `SELECT id, name, slug, status, user_mode, database_mode, owner_user_id FROM tenants
          WHERE status <> 'deleted' ORDER BY created_at ASC`,
       );
       return rows.map((row) => ({
         id: String(row.id),
+        ownerUserId: row.owner_user_id ? String(row.owner_user_id) : null,
         name: String(row.name),
         slug: String(row.slug),
         status: row.status,

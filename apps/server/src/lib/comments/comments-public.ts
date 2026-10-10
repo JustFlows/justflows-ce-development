@@ -1,3 +1,4 @@
+import { contentTypePolicy } from "@justflows/content";
 // SPDX-License-Identifier: MIT
 
 import { randomUUID } from "node:crypto";
@@ -655,7 +656,7 @@ export async function acceptCommentSubmission(
     [contentId, siteId],
   );
   const content = contentRows[0];
-  if (!content || content.status !== "published") {
+  if (!content || !contentTypePolicy(content.type).publiclyDiscoverable || content.status !== "published") {
     return fail(404, "Post not found");
   }
 

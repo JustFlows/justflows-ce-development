@@ -42,6 +42,17 @@ User-visible work must cite the matching [Public Roadmap](https://github.com/org
 - `migrations`: the consolidated schema baseline and later tracked SQL migrations for all database dialects.
 - `docker`, `scripts`, and `server.js`: distribution, hosting, startup, and releases.
 
+## Performance and data-access rules
+
+Read [docs/PERFORMANCE.md](docs/PERFORMANCE.md) before changing list rendering, bulk operations, background jobs, or database-backed helpers.
+
+- Trace helper calls inside loops: database access can be hidden behind settings, URL, permission, or reference-resolution functions.
+- Batch related reads and writes with parameterized, bounded queries. `Promise.all(items.map(query))` is still N queries; do not use it as a substitute for batching.
+- Load shared settings and reference data once per operation. Keep reused data scoped to the correct database, site, locale, preview mode, and authorization context; avoid process-global mutable snapshots.
+- Use `Map`/`Set` indexes for repeated array searches and membership tests. Preserve ordering and duplicate/first-match behavior; multiple linear passes are acceptable when clearer.
+- Preserve tenant predicates, transaction/lock boundaries, validation, per-item hooks/audits, cache invalidation, and failure behavior when optimizing.
+- For performance fixes, add regression coverage that verifies both results and query growth for multi-item inputs. Run focused checks and report any unavailable real-database checks.
+
 ## Folder and test placement
 
 Follow `docs/CONVENTIONS.md` for the complete layout. Server helpers and routes

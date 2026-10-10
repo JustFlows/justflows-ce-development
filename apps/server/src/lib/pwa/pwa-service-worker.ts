@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { isAccountPath } from "../../middleware/account-cache.js";
 import type { PwaSettings } from "./pwa-settings.js";
 
 export const PWA_OFFLINE_URL = "/pwa-offline.html";
@@ -28,10 +29,10 @@ function cacheName(cacheVersion: number): string {
  *   never intercepted at all; the browser handles it exactly as it would
  *   with no service worker installed.
  */
-export function buildServiceWorkerScript(settings: PwaSettings): string {
+export function buildServiceWorkerScript(settings: PwaSettings, privatePaths: readonly { path: string; match: "exact" | "prefix" }[] = []): string {
   const CACHE = cacheName(settings.cacheVersion);
   const precache: string[] = [PWA_OFFLINE_URL];
-  if (settings.offline.imageUrl) precache.push(settings.offline.imageUrl);
+  if (settings.offline.imageUrl && !isAccountPath(settings.offline.imageUrl) && !privatePaths.some(rule => settings.offline.imageUrl === rule.path || (rule.match === "prefix" && settings.offline.imageUrl.startsWith(`${rule.path}/`)))) precache.push(settings.offline.imageUrl);
 
   const assetCacheEnabled = settings.assetCache.enabled;
   const maxEntries = settings.assetCache.maxEntries;
@@ -46,7 +47,8 @@ const ASSET_CACHE_ENABLED = ${JSON.stringify(assetCacheEnabled)};
 const ASSET_MAX_ENTRIES = ${JSON.stringify(maxEntries)};
 const ASSET_MAX_AGE_SECONDS = ${JSON.stringify(maxAgeSeconds)};
 const ASSET_ALLOWLIST = [/^\\/uploads\\//, /^\\/theme\\.css$/, /^\\/assets\\//, /^\\/css-providers\\//, /^\\/public\\//];
-const NAV_BYPASS = /^\\/(admin|api|login|install)(\\/|$)/;
+const PRIVATE_PATHS = ${JSON.stringify(privatePaths)};
+const NAV_BYPASS = /^\\/(admin|api|login|install|account|platform-account|ext)(\\/|$)/;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -150,7 +152,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === "navigate") {
-    if (NAV_BYPASS.test(url.pathname)) return;
+    if (NAV_BYPASS.test(url.pathname) || PRIVATE_PATHS.some(rule => url.pathname.replace(/\\/$/, "") === rule.path || (rule.match === "prefix" && url.pathname.startsWith(rule.path + "/")))) return;
     event.respondWith(
       fetch(request).catch(() => caches.match(OFFLINE_URL).then((r) => r || Response.error())),
     );

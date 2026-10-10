@@ -48,6 +48,40 @@ export interface HookRegisterOptions {
   id?: string;
 }
 
+/** An authenticated account view. Identity comes from the verified site session. */
+export interface AccountSectionContext {
+  readonly siteId: string;
+  readonly userId: string;
+  readonly email: string;
+  readonly role: string;
+  readonly installationRoot: boolean;
+}
+
+/** A POST action. The endpoint must enforce its own ownership and CSRF checks. */
+export interface AccountAction {
+  label: string;
+  /** Same-origin /api/account/… or /ext/<plugin-id>/account/… endpoint. */
+  endpoint: string;
+  confirm?: string;
+}
+
+/** Text is escaped by the host; links accept same-origin paths or HTTPS URLs. */
+export interface AccountCard {
+  title: string;
+  fields?: Array<{ label: string; value: string }>;
+  links?: Array<{ label: string; href: string }>;
+  actions?: AccountAction[];
+}
+
+/** Server-rendered, request-scoped contributions to the default /account page. */
+export interface AccountSection {
+  /** Stable anchor, preferably namespaced: justflows.shop.subscriptions. */
+  id: string;
+  title: string;
+  description?: string;
+  cards: AccountCard[];
+}
+
 // ─── Payload shapes ────────────────────────────────────────────────────────
 
 export interface AppEvent {
@@ -606,6 +640,15 @@ export interface WorkspaceEvent {
   databaseMode: "current" | "separate";
 }
 
+/**
+ * `workspace.created` plus who administers the new workspace. Listening requires
+ * `platform:tenancy`, because it carries an email address.
+ */
+export interface TenancyWorkspaceCreatedEvent extends WorkspaceEvent {
+  /** Sign-in email of the workspace's first administrator. Empty when unknown. */
+  adminEmail: string;
+}
+
 export interface WorkspaceStatusEvent {
   tenantId: string;
 }
@@ -725,6 +768,7 @@ export interface ActionEventMap {
   "webhook.delivered": WebhookDeliveryEvent;
 
   "workspace.created": WorkspaceEvent;
+  "tenancy.workspaceCreated": TenancyWorkspaceCreatedEvent;
   "workspace.suspended": WorkspaceStatusEvent;
   "workspace.reactivated": WorkspaceStatusEvent;
   "workspace.deleted": WorkspaceDeleteEvent;
@@ -798,6 +842,8 @@ export interface GateEventMap {
  * next value; returning nothing keeps the previous value and logs a warning.
  */
 export interface FilterValueMap {
+  /** Signed-in account sections. Requires users:read; never share-cache returned data. */
+  "account.sections": [AccountSection[], AccountSectionContext];
   /** Supply an external candidate engine; host authorization is never delegated. */
   "search.backend": [import("./search.js").SearchBackend | null, { siteId: string }];
   /**
@@ -1067,9 +1113,11 @@ export const HOOK_PERMISSION_PREFIXES: ReadonlyArray<{
   { prefix: "comments.spamBackend", permission: "network:outbound" },
   { prefix: "auth.", permission: "auth:hook" },
   { prefix: "user.", permission: "users:read" },
+  { prefix: "account.", permission: "users:read" },
   { prefix: "admin.", permission: "admin:extend" },
   { prefix: "email.", permission: "mail:hook" },
   { prefix: "quota.", permission: "platform:tenancy" },
+  { prefix: "tenancy.", permission: "platform:tenancy" },
   { prefix: "domain.", permission: "platform:tenancy" },
 ];
 

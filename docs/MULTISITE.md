@@ -19,10 +19,22 @@ Creating the database uses the account you enter. That account needs permission 
 
 ## Users
 
+### Owner account
+
+The core `account` content type provides an editable frontend `/account` page for signed-in users on each site, separate from administration. Core profile details and active plugins contribute server-rendered sections through `account.sections` (see [HOOKS.md](HOOKS.md#frontend-user-account)). On the root site, workspace owners also see only workspaces linked through `owner_user_id`, their sites, and resource usage and limits. Shop contributes subscriptions and customer data when active. `/platform-account` redirects to `/account`. Owners can rename their workspaces and sites, create additional sites under the configured platform domain within their site allowance, and open a site's sign-in. Separate site sessions and roles still apply. Workspace owners and users without administration capabilities land on this page after signing in; other administrators keep their administration landing page. Account pages and APIs are always private and excluded from caching. The page layout is edited through the normal builder; see [ACCOUNT.md](ACCOUNT.md).
+
+Site creation inherits the workspace database choice. Owners cannot provide database credentials, choose another administrator's identity, change resource limits, or manage another owner's workspaces through this account. Only active workspaces can add sites. Subscription changes use Shop's existing customer controls, including its cancellation and pause settings.
+
+### Site accounts
+
 - **Isolated users.** Each site has its own accounts. The same email can exist on another site and is a different person.
 - **Shared users.** One account in the workspace, with a role on each site. Signing in on a site uses that site's role. The session cookie is for that host only. Opening another site does not reuse it.
 
 The first administrator created by the installer is a **platform operator**. Platform operators manage workspaces, suspension, and database placement. A person who signs up for a site is only an administrator of that site.
+
+Creating a workspace also creates its first administrator's account on the installation's root site with the **Subscriber** role, for billing. This applies to isolated users and separate databases too. An existing root account with the same email is reused; its password and permissions stay unchanged. New root accounts start with the workspace administrator's password. Root and workspace accounts retain their own roles, sessions, and password changes.
+
+The workspace stores that root account as `owner_user_id`. Platform plugins receive `ownerUserId` from `ctx.tenancy.listWorkspaces()`. Shop can automatically link a plan to a customer's single owned workspace; when the customer owns several, choose the workspace explicitly. Older workspaces without an owner link need that association recorded before automatic linking can work.
 
 Updates, diagnostics, and the server cache live on the installation's first site. A site created later does not show those pages, and its API calls for them are refused. Platform stays with the platform operator. Content, media, themes, plugins, users, and the site's own settings stay on every site.
 
@@ -118,7 +130,7 @@ A plugin reads the workspace for the current request with `ctx.tenancy.current()
 
 Creating, listing, suspending, reactivating, and deleting workspaces requires the `platform:tenancy` manifest permission. The same operations are on the management API at `/api/manage/v1/tenants` for an API key whose user is a platform operator.
 
-Gates `workspace.beforeCreate`, `site.beforeCreate`, `workspace.beforeSuspend`, `workspace.beforeReactivate`, and `workspace.beforeDelete` run before the change. Cancel to refuse it. Actions `workspace.created`, `site.created`, `workspace.suspended`, `workspace.reactivated`, and `workspace.deleted` run after it succeeds. See [Hooks](HOOKS.md).
+Gates `workspace.beforeCreate`, `site.beforeCreate`, `workspace.beforeSuspend`, `workspace.beforeReactivate`, and `workspace.beforeDelete` run before the change. Cancel to refuse it. Actions `workspace.created`, `site.created`, `workspace.suspended`, `workspace.reactivated`, and `workspace.deleted` run after it succeeds. `tenancy.workspaceCreated` runs with `workspace.created` and adds the first administrator's email; only plugins with `platform:tenancy` may listen (Shop uses it to give a new workspace its default plan). See [Hooks](HOOKS.md).
 
 ## Limits
 
@@ -139,7 +151,7 @@ A platform operator sets ceilings on the workspace page and on each website page
 | Website | `files.bytes` | Bytes of those private files |
 | Website | `feature.ownStorage` | Whether the website may save its own private-file storage. Off removes Settings → Storage from that website (menu and page) and it uses the root site's storage. The root site always keeps the page |
 
-Plugins register their own meters with `ctx.quotas.register` and call `ctx.quotas.check` before they insert a row. The host does not count plugin tables, so the plugin passes `used`. `ctx.quotas.set` writes the same limits the operator edits and requires `platform:tenancy`. A subscription plugin uses that to apply a plan. The filter `quota.effectiveLimit` may lower a stored limit. It cannot raise one. The action `quota.updated` runs after a save. Both require `platform:tenancy` to listen. The same reads and writes are on `/api/manage/v1/tenants/:id/quotas` and `/api/manage/v1/sites/:id/quotas`.
+Plugins register their own meters with `ctx.quotas.register` and call `ctx.quotas.check` before they insert a row. The host does not count plugin tables, so the plugin passes `used`. `ctx.quotas.set` writes the same limits the operator edits and requires `platform:tenancy`. A subscription plugin uses that to apply a plan. Without a target it writes the plugin's own workspace or site; `ctx.quotas.set(key, limit, { siteId })` or `{ tenantId }` (and `ctx.quotas.get(key, target)`) reach another one, but only from the installation's root site, so a plugin on a hosted site cannot raise its own workspace's limits. `{ tenantId }` works for workspace meters; `{ siteId }` reaches a site meter on that site and a workspace meter through the site's workspace. `ctx.quotas.meters()` lists every meter with its owner. Shop's subscription plans use these to give a workspace its limits while the subscription runs. The filter `quota.effectiveLimit` may lower a stored limit. It cannot raise one. The action `quota.updated` runs after a save. Both require `platform:tenancy` to listen. The same reads and writes are on `/api/manage/v1/tenants/:id/quotas` and `/api/manage/v1/sites/:id/quotas`.
 
 ## What Justflows does not operate
 

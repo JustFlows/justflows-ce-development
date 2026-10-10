@@ -66,3 +66,33 @@ describe("PluginHttpRouter", () => {
     ).toThrow(/rate-limit key/);
   });
 });
+
+
+describe("neutral plugin API namespaces", () => {
+  it("shares handlers, parameters and policies with legacy aliases", () => {
+    const router = new PluginHttpRouter(); router.setApiNamespace("justflows.shop", "shop");
+    const handler = async () => ({ body: "ok" });
+    router.register("justflows.shop", "POST", "checkout/:id", handler, { csrf: false, rawBody: true, rateLimit: { limit: 20, windowMs: 60000 } });
+    const alias = router.match("POST", "/api/shop/checkout/123");
+    const legacy = router.match("POST", "/ext/justflows.shop/checkout/123");
+    expect(alias).toEqual(legacy); expect(alias?.route.handler).toBe(handler);
+    expect(router.url("justflows.shop", "checkout")).toBe("/api/shop/checkout");
+    expect(alias?.route.rawBody).toBe(true); expect(alias?.route.csrf).toBe(false);
+    router.removePlugin("justflows.shop"); expect(router.match("POST", "/api/shop/checkout/123")).toBeUndefined();
+    router.setApiNamespace("justflows.other", "shop");
+  });
+  it("rejects reserved namespaces, duplicate owners and overlapping explicit routes", () => {
+    const router = new PluginHttpRouter();
+    expect(() => router.setApiNamespace("justflows.shop", "users")).toThrow(/reserved/);
+    router.setApiNamespace("justflows.shop", "shop");
+    expect(() => router.setApiNamespace("justflows.other", "shop")).toThrow(/claimed/);
+    expect(() => router.register("justflows.other", "GET", "/api/shop/checkout", async () => ({}))).toThrow(/claimed/);
+    router.register("justflows.shop", "GET", "checkout", async () => ({}));
+    expect(() => router.register("justflows.shop", "GET", "/api/shop/checkout", async () => ({}))).toThrow(/claimed/);
+  });
+  it("preserves legacy defaults for plugins without a namespace", () => {
+    const router = new PluginHttpRouter();
+    expect(router.url("justflows.example", "read")).toBe("/ext/justflows.example/read");
+    expect(router.isPublicApiPath("/api/users")).toBe(false);
+  });
+});

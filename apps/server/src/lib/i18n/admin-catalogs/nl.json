@@ -242,6 +242,7 @@
     "activateFailed": "De plugin kon niet worden aangezet."
   },
   "content": {
+    "accountNotice": "Accountpagina’s vereisen aanmelden. Justflows sluit ze uit van caches, exports, openbare zoekresultaten en sitemaps.",
     "newPost": "Nieuw bericht",
     "newPage": "Nieuwe pagina",
     "editPost": "Bericht bewerken",
@@ -1658,6 +1659,15 @@
     "tabTrash": "prullenbak"
   },
   "contentTypes": {
+    "cacheControlPlaceholder": "public, max-age=300",
+    "cacheInheritType": "Standaard van het contenttype overnemen",
+    "cachePostHint": "Overschrijft na publicatie het cachebeleid van het contenttype voor dit bericht. Privé- en no-cachebeleid omzeilen gedeelde caches en statische exports.",
+    "cacheControlLabel": "Cache-Control",
+    "cacheInherit": "Standaard van de site overnemen",
+    "cacheNever": "Nooit cachen",
+    "cacheCustom": "Aangepaste header",
+    "cacheControlValue": "Cache-Control-waarde",
+    "cacheHint": "Overschrijft het cachebeleid van de site voor pagina’s van dit type. Privé- en no-cachebeleid omzeilen gedeelde caches en statische exports.",
     "loadFailed": "Inhoudstypen konden niet worden geladen",
     "saveFailed": "Opslaan is mislukt",
     "createFailed": "Aanmaken mislukt",
@@ -3937,6 +3947,7 @@
     "slugPrimary": "De platformwerkruimte houdt de slug primary.",
     "workspaceIntro": "Wijzig de naam en slug van deze werkruimte. Het adres van deze pagina bevat het werkruimte-id.",
     "workspaceId": "Werkruimte-id",
+    "workspaceOwner": "Eigenaar op de hoofdsite",
     "workspaceNotFound": "Die werkruimte is niet gevonden.",
     "workspaceLoadFailed": "Kan deze werkruimte niet laden.",
     "workspaceSaveFailed": "Kan deze werkruimte niet opslaan.",

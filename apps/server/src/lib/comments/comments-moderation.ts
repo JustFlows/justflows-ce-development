@@ -112,28 +112,34 @@ export async function setCommentStatuses(
 ): Promise<ModerationResult> {
   const newStatus = STATUS_MAP[action];
   const db = await getDb();
-  const placeholders = ids.map(() => "?").join(", ");
-  const priorRows = ids.length
-    ? await db.query<{ id: string; status: string }>(
-        `SELECT id, status FROM comments WHERE site_id = ? AND id IN (${placeholders})`,
-        [actor.siteId, ...ids],
-      )
-    : [];
-  const priorStatus = new Map(priorRows.map((row) => [row.id, row.status]));
-  for (const id of ids) {
+  const batches: string[][] = [];
+  for (let offset = 0; offset < ids.length; offset += 200) batches.push(ids.slice(offset, offset + 200));
+  const priorStatus = new Map<string, string>();
+  for (const batch of batches) {
+    const rows = await db.query<{ id: string; status: string }>(
+      `SELECT id, status FROM comments WHERE site_id = ? AND id IN (${batch.map(() => "?").join(", ")})`,
+      [actor.siteId, ...batch],
+    );
+    for (const row of rows) priorStatus.set(row.id, row.status);
+  }
+  const timestamp = now();
+  for (const batch of batches) {
+    const placeholders = batch.map(() => "?").join(", ");
     if (newStatus === "trash") {
       await db.run(
-        "UPDATE comments SET original_status = status, status = ?, trashed_at = ?, trashed_by = ?, updated_at = ? WHERE id = ? AND site_id = ? AND status != 'trash'",
-        [newStatus, now(), actor.userId, now(), id, actor.siteId],
+        `UPDATE comments SET original_status = status, status = ?, trashed_at = ?, trashed_by = ?, updated_at = ? WHERE site_id = ? AND id IN (${placeholders}) AND status != 'trash'`,
+        [newStatus, timestamp, actor.userId, timestamp, actor.siteId, ...batch],
       );
-      auditTrash(actor, "trash.trashed", id);
+      for (const id of batch) auditTrash(actor, "trash.trashed", id);
     } else {
       await db.run(
-        "UPDATE comments SET status = ?, trashed_at = NULL, trashed_by = NULL, updated_at = ? WHERE id = ? AND site_id = ?",
-        [newStatus, now(), id, actor.siteId],
+        `UPDATE comments SET status = ?, trashed_at = NULL, trashed_by = NULL, updated_at = ? WHERE site_id = ? AND id IN (${placeholders})`,
+        [newStatus, timestamp, actor.siteId, ...batch],
       );
-      const prior = priorStatus.get(id);
-      if (prior) trainFromTransition(actor.siteId, id, prior, newStatus);
+      for (const id of batch) {
+        const prior = priorStatus.get(id);
+        if (prior) trainFromTransition(actor.siteId, id, prior, newStatus);
+      }
     }
   }
   if (newStatus === "approved") void notifyOnApproval(actor.siteId, ids).catch(() => undefined);
@@ -228,15 +234,13 @@ export async function purgeTrashedComments(
   ids: string[],
 ): Promise<ModerationResult> {
   const db = await getDb();
-  let deleted = 0;
-  for (const id of ids) {
-    await db.run("DELETE FROM comments WHERE id = ? AND site_id = ? AND status = 'trash'", [
-      id,
-      actor.siteId,
-    ]);
-    auditTrash(actor, "trash.purged", id);
-    deleted++;
+  for (let offset = 0; offset < ids.length; offset += 200) {
+    const batch = ids.slice(offset, offset + 200);
+    const placeholders = batch.map(() => "?").join(", ");
+    await db.run(`DELETE FROM comments WHERE site_id = ? AND id IN (${placeholders}) AND status = 'trash'`,
+      [actor.siteId, ...batch]);
+    for (const id of batch) auditTrash(actor, "trash.purged", id);
   }
   await bustCommentCache();
-  return { status: 200, body: { ok: true, deleted } };
+  return { status: 200, body: { ok: true, deleted: ids.length } };
 }

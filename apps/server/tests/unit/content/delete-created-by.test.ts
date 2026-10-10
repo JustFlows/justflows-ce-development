@@ -11,15 +11,15 @@ vi.mock("../../../src/lib/database/db.js", () => ({
 }));
 
 vi.mock("../../../src/lib/content/home-page.js", () => ({
-  clearHomePageIfMatches: vi.fn(),
+  clearHomePagesIfMatch: vi.fn(),
 }));
 
 vi.mock("../../../src/lib/content/blog-page.js", () => ({
-  clearBlogPageIfMatches: vi.fn(),
+  clearBlogPagesIfMatch: vi.fn(),
 }));
 
 vi.mock("../../../src/lib/rendering/error-pages.js", () => ({
-  clearErrorPageIfMatches: vi.fn(),
+  clearErrorPagesIfMatch: vi.fn(),
 }));
 
 vi.mock("../../../src/lib/content/content-public.js", () => ({
@@ -46,7 +46,7 @@ vi.mock("../../../src/lib/plugins/plugin-runtime.js", () => ({
   getRuntimeHooks: () => ({ dispatchAction }),
 }));
 
-import { clearHomePageIfMatches } from "../../../src/lib/content/home-page.js";
+import { clearHomePagesIfMatch } from "../../../src/lib/content/home-page.js";
 import { deleteRecordsCreatedBy } from "../../../src/lib/content/delete-created-by.js";
 
 function sqlOf(call: unknown[]): string {
@@ -58,7 +58,7 @@ describe("deleteRecordsCreatedBy", () => {
     query.mockReset();
     run.mockReset();
     dispatchAction.mockReset();
-    vi.mocked(clearHomePageIfMatches).mockReset();
+    vi.mocked(clearHomePagesIfMatch).mockReset();
   });
 
   it("refuses an administrator before deleting anything", async () => {
@@ -103,7 +103,7 @@ describe("deleteRecordsCreatedBy", () => {
       "site-1",
       "demo-1",
     ]);
-    expect(clearHomePageIfMatches).toHaveBeenCalledWith("site-1", "post-1");
+    expect(clearHomePagesIfMatch).toHaveBeenCalledWith("site-1", new Set(["post-1"]));
     expect(dispatchAction).toHaveBeenCalledWith(
       "content.deleted",
       { contentId: "post-1", siteId: "site-1", type: "post" },

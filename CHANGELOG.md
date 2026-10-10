@@ -9,6 +9,18 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- **Set Cache-Control per content type or individual post.** Inherit site settings, disable caching, or configure a validated header. Per-post overrides live under Advanced and follow drafts and revisions. Mandatory private types have no override control. Policies govern live pages, shared page caches and static exports. Adds migration `0046_content_type_cache_control`. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+
+- **Customize frontend account pages in the page builder.** The core `account` content type seeds a default page with editable headings, layout and account-section blocks. Personal data stays request-scoped. Authentication and exclusions from caches, public APIs/search, sitemaps and static exports follow the content type, including renamed URLs and pagination. Adds migration `0045_account_pages` for existing sites. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+
+- **Workspace owners have a frontend account.** `/account` on the root site lists only the signed-in owner's workspaces, sites, subscriptions and resource limits. Owners can rename workspaces and sites, create sites within their plan's allowance and access each site's sign-in. Root owners land here after login; no root admin access is required. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+
+- **Show the workspace's root owner.** Workspace details display the owner's name, email and user ID with links to their user page. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+
+- **Plugins can set limits for another workspace or site.** `ctx.quotas.set(key, limit, { tenantId } | { siteId })` and `ctx.quotas.get(key, target)` reach a given workspace or site, with `platform:tenancy` and only from the installation's root site; `ctx.quotas.meters()` lists every meter. Calls without a target behave as before. Shop's subscription plans use this to apply platform limits to a subscriber's workspace.
+- **New workspaces name their administrator to platform plugins.** The `tenancy.workspaceCreated` action carries `workspace.created`'s fields plus the first administrator's email; listening requires `platform:tenancy`, so `workspace.created` stays free of personal data. Shop uses it to give new workspaces a default plan.
+- **Plugins can take back a role they gave.** `ctx.users.removeRole(target, role, actor)` removes one of the plugin's own additional roles, never the primary role (`users:manage`). Shop uses it when a membership subscription ends.
+
 - **Measure local and external storage for the platform and each website.** Diagnostics and Platform → Website show media, private files, and static exports, with local/external totals and a separate logical record total. Physical usage includes staging, trash, retained exports, and earlier private-storage connections. Measurements run in the background; unreadable storage stays unknown. Adds machine-readable storage snapshots to the root diagnostics and site APIs. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
 - **Enforce a combined storage allowance per website.** The `storage.bytes` limit, editable as Total storage in site Limits and Platform Defaults, caps local plus external physical bytes. Media uploads and derivatives, private-file writes and storage copies, S3 trash/restore moves, and local/remote static-export writes check the remaining allowance under a database-backed site lock shared across workers. Existing files stay when limits are lowered; new growth is refused, and a configured cap fails closed when usage cannot be measured. Category limits still apply. Adds migration `0043_storage_quota_locks`. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
 
@@ -17,10 +29,29 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **Give plugin APIs neutral public URLs.** Plugins declare `apiNamespace` and use `ctx.http.url()` or the SDK’s `pluginApiUrl()` helper to expose `/api/<namespace>/…` URLs. The host preserves legacy aliases and the same site, authorization, CSRF, rate-limit and request-body policies. Shop’s frontend uses `/api/shop/…`, including checkout and private account actions. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+
+- **Provide a default frontend user account at `/account`.** Every signed-in user sees core profile details and server-rendered sections from active plugins through the typed `account.sections` hook; root workspace owners also see their workspaces and initial limits. The former `/platform-account` URL redirects here. Account pages and APIs bypass browser, page, static-export, service-worker and proxy caching and send private/no-store headers. Shop contributes customer details, orders and subscription actions. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+
 - **Publish object-storage exports only after uploads complete.** Content-hash HTML objects are uploaded before a single deployment pointer switches the served routes. Upload failures report an export failure and preserve the previous deployment. Removed routes stop being served from the export; old immutable objects remain until Clear export. Configured CDN caches are purged for the site after deployment. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
 - **Clear export also removes the current site’s deployed objects.** In object-storage mode, Clear removes the deployment pointer, exported objects, and interrupted uploads from that site’s reserved namespace, then clears its local output. Other sites, media uploads, and private plugin files are preserved. See docs/STATIC-EXPORT.md for configuration, storage layout, and origin behavior. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
 
 ### Fixed
+
+- **Link workspace subscriptions to their root-site owner.** Workspaces retain their root billing user; Shop links a customer's single owned workspace when assigning or activating a plan and retries previously unapplied limits. Adds migration `0044_workspace_owner`. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+
+- **Workspace administrators also receive a root-site account.** Workspace creation creates a Subscriber account on the installation's root site for billing, including workspaces with isolated users or a separate database. Existing root accounts are reused without changing their password or permissions. ([#23](https://github.com/JustFlows/justflows-ce/issues/23))
+
+- **Check trashed media references without reloading every page and menu per file.** Trash listings load and serialize reference documents once per site operation. ([#108](https://github.com/JustFlows/justflows-ce/issues/108))
+- **Batch permalink generation for lists, navigation, search, sitemaps, and exports.** Share permalink settings, category relationships, and locale-specific home resolution instead of querying for every link. ([#96](https://github.com/JustFlows/justflows-ce/issues/96))
+- **Reuse SEO settings between page identity and metadata rendering.** Read related plugin settings together while retaining legacy values and locale fallback. ([#9](https://github.com/JustFlows/justflows-ce/issues/9))
+- **Batch comment moderation and trash deletion writes.** Preserve per-comment audits, spam training, approval notifications, and cache invalidation. ([#50](https://github.com/JustFlows/justflows-ce/issues/50))
+- **Batch historical revision pruning and reuse each site's retention setting.** Keep historical-only deletion guards and the existing prune limit. ([#65](https://github.com/JustFlows/justflows-ce/issues/65))
+- **Avoid repeated content scans when building redirect history and legacy aliases.** Index identities and count alias sources once while retaining ambiguity checks. ([#100](https://github.com/JustFlows/justflows-ce/issues/100))
+- **Avoid repeated manifest scans and deployment-pointer reads during object-storage exports.** Reuse indexed file metadata and one validated pointer read. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
+- **Read home, blog, and error-page selections once when deleting a content batch.** Home resolution also reuses an already loaded page when its locale and status match. ([#72](https://github.com/JustFlows/justflows-ce/issues/72))
+
+- **Audit entries for accounts visitors create themselves.** A plugin creating a user without a signed-in actor (Shop's account creation at checkout) now records the audit entry with no actor; on PostgreSQL the empty actor id made the audit insert fail silently.
 
 - **Identify pages served from object-storage static exports.** Exported responses include `X-Justflows-Render: static-export`, so operators can distinguish an exported page from live fallback and check Bunny's `CDN-Cache` header separately. ([#24](https://github.com/JustFlows/justflows-ce/issues/24))
 

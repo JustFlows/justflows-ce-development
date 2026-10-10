@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { isAccountPath } from "../../middleware/account-cache.js";
 import { Readable } from "node:stream";
 import type { Request, Response, NextFunction } from "express";
 import { getSession } from "../auth/session.js";
@@ -24,6 +25,8 @@ export async function serveStaticExportFromObjectStorage(
 ): Promise<void> {
   if (
     !["GET", "HEAD"].includes(req.method) ||
+    isAccountPath(req.path) ||
+    res.locals.jfBypassStatic ||
     req.get(STATIC_EXPORT_HEADER) ||
     req.originalUrl.includes("?") ||
     getSession(req) ||

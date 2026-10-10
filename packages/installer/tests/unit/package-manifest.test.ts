@@ -245,3 +245,9 @@ describe("PackageManifestSchema select settings", () => {
     }
   });
 });
+
+
+it("retains neutral API namespaces when installing a plugin", () => {
+  expect(PackageManifestSchema.parse({ ...base, apiNamespace: "shop" }).apiNamespace).toBe("shop");
+  expect(PackageManifestSchema.safeParse({ ...base, apiNamespace: "users" }).success).toBe(false);
+});

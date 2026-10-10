@@ -1,3 +1,4 @@
+import CacheControlField from "../../../components/CacheControlField";
 import { useEffect, useState } from "react";
 import { initialJson } from "../../../ssr-data";
 import { useSessionRole } from "@components/SessionProvider";
@@ -17,6 +18,8 @@ interface ContentType {
   description: string;
   builtin: boolean;
   fields: FieldDef[];
+  cacheControl: string | null;
+  cacheControlEditable: boolean;
 }
 
 const FIELD_TYPES = [
@@ -29,6 +32,7 @@ const FIELD_TYPES = [
   "date",
   "select",
 ] as const;
+
 
 function emptyField(label: string): FieldDef {
   return { key: `field_${Date.now()}`, label, type: "text", required: false };
@@ -43,10 +47,11 @@ export default function ContentTypesPage() {
   const [types, setTypes] = useState<ContentType[]>(prefetched?.types ?? []);
   const [editing, setEditing] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [newType, setNewType] = useState<{ slug: string; label: string; description: string }>({
+  const [newType, setNewType] = useState<{ slug: string; label: string; description: string; cacheControl: string | null }>({
     slug: "",
     label: "",
     description: "",
+    cacheControl: null,
   });
   const [loading, setLoading] = useState(!prefetched);
   const [saving, setSaving] = useState(false);
@@ -80,6 +85,7 @@ export default function ContentTypesPage() {
           label: type.label,
           description: type.description,
           fields: type.fields,
+          ...(type.cacheControlEditable ? { cacheControl: type.cacheControl } : {}),
         }),
       });
       const data = (await res.json()) as { type?: ContentType; error?: string };
@@ -106,7 +112,7 @@ export default function ContentTypesPage() {
       if (!res.ok) throw new Error(data.error ?? t("contentTypes.createFailed"));
       if (data.type) setTypes((prev) => [...prev, data.type!]);
       setCreating(false);
-      setNewType({ slug: "", label: "", description: "" });
+      setNewType({ slug: "", label: "", description: "", cacheControl: null });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -216,6 +222,7 @@ export default function ContentTypesPage() {
                 onChange={(e) => setNewType({ ...newType, description: e.target.value })}
               />
             </div>
+            <CacheControlField id="jf-ct-new-cache" value={newType.cacheControl} disabled={saving} onChange={cacheControl => setNewType({ ...newType, cacheControl })} />
             <div className="jf-row">
               <button
                 className="jf-btn jf-btn--primary"
@@ -263,6 +270,7 @@ export default function ContentTypesPage() {
 
               {isEditing && (
                 <div className="jf-card__body jf-stack">
+                  {type.cacheControlEditable && <CacheControlField id={`jf-ct-cache-${type.slug}`} value={type.cacheControl ?? null} disabled={!canManage || saving} onChange={cacheControl => updateLocal(type.slug, { ...type, cacheControl })} />}
                   <h3 className="jf-card__title">{t("contentTypes.fieldsHeading", { count: type.fields.length })}</h3>
 
                   {type.fields.length === 0 && (

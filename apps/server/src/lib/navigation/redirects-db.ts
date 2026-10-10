@@ -64,9 +64,11 @@ export async function redirectContext(siteId: string) {
   } catch {
     /* Installation may not have an origin yet. */
   }
+  const contentById = new Map(content.map((item) => [item.id, item]));
+  const termsById = new Map(terms.map((term) => [term.id, term]));
   const history: RedirectRule[] = [];
   for (const [source, id] of Object.entries(state.redirects)) {
-    const item = content.find((c) => c.id === id);
+    const item = contentById.get(id);
     if (item && source !== item.path)
       history.push({
         id: `history:${source}`,
@@ -80,7 +82,7 @@ export async function redirectContext(siteId: string) {
   }
   for (const [source, identity] of Object.entries(state.archiveRedirects ?? {})) {
     const [locale, id] = identity.split(":");
-    const term = terms.find((t) => t.id === id);
+    const term = id ? termsById.get(id) : undefined;
     if (term && locale && locales.includes(locale)) {
       const target = taxonomyPermalink(term, locale, state.settings, defaultLocale);
       if (source !== target)
@@ -108,12 +110,12 @@ export async function redirectContext(siteId: string) {
     .filter((item) => locales.includes(item.locale))
     .map((item) => ({
       source: localePath(item.locale, `/${item.slug}`, defaultLocale),
-      target: content.find((c) => c.id === item.id)!.path,
+      target: contentById.get(item.id)!.path,
     }));
-  const legacy = legacyCandidates.filter(
-    (candidate) =>
-      legacyCandidates.filter((other) => other.source === candidate.source).length === 1,
-  );
+  const sourceCounts = new Map<string, number>();
+  for (const candidate of legacyCandidates)
+    sourceCounts.set(candidate.source, (sourceCounts.get(candidate.source) ?? 0) + 1);
+  const legacy = legacyCandidates.filter((candidate) => sourceCounts.get(candidate.source) === 1);
   return {
     content,
     history,

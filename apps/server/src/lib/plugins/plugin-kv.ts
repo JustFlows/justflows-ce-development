@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { createPluginDataApi } from "./plugin-data.js";
-import { deleteSiteSetting, getSiteSetting } from "../settings/site-settings.js";
+import { deleteSiteSetting, getSiteSetting, getSiteSettings } from "../settings/site-settings.js";
 
 /** Plugin key-value rows (`ctx.settings`, Admin → Plugins → Settings). */
 export const PLUGIN_SETTINGS_COLLECTION = "settings";
@@ -34,6 +34,20 @@ export async function getPluginSetting<T = unknown>(
   if (row) return row.data;
   const legacy = await getSiteSetting<T>(siteId, legacySettingKey(pluginId, key));
   return legacy === null || legacy === undefined ? undefined : legacy;
+}
+
+/** Batch a plugin's settings, retaining per-key legacy fallback (including false/zero). */
+export async function getPluginSettings(
+  pluginId: string, siteId: string, keys: string[],
+): Promise<Record<string, unknown>> {
+  if (!keys.length) return {};
+  const rows = await createPluginDataApi(pluginId, siteId).list(PLUGIN_SETTINGS_COLLECTION);
+  const values = new Map(rows.map((row) => [row.id, row.data]));
+  const missing = keys.filter((key) => !values.has(key));
+  const legacy = await getSiteSettings(siteId, missing.map((key) => legacySettingKey(pluginId, key)));
+  return Object.fromEntries(keys.map((key) => [key,
+    values.has(key) ? values.get(key) : (legacy[legacySettingKey(pluginId, key)] ?? undefined),
+  ]));
 }
 
 export async function setPluginSetting<T = unknown>(

@@ -9,7 +9,7 @@ vi.mock("../../../src/lib/plugins/plugin-runtime.js", () => ({
   getRuntimeHooks: () => ({ applyFilter: async () => engine }),
 }));
 vi.mock("../../../src/lib/navigation/permalinks-db.js", () => ({
-  contentPermalink: async (row: { slug: string }) => `/${row.slug}`,
+  contentPermalinks: async (rows: Array<{ slug: string }>) => rows.map((row) => `/${row.slug}`),
 }));
 import { getDb } from "../../../src/lib/database/db.js";
 import { runAllMigrations, type DbDriver } from "../../../src/lib/database/run-migrations.js";

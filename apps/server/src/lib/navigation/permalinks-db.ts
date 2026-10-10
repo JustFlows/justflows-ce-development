@@ -1,3 +1,4 @@
+import { contentTypePolicy, publicContentTypeSql } from "@justflows/content";
 // SPDX-License-Identifier: MIT
 
 import { getDb } from "../database/db.js";
@@ -43,16 +44,50 @@ export async function getPermalinkState(siteId: string): Promise<PermalinkState>
     layoutScopes,
   };
 }
-export async function contentPermalink(content: ContentResponse): Promise<string> {
-  const [{ settings, layoutScopes }, defaultLocale, home] = await Promise.all([
-    getPermalinkState(content.siteId),
-    getDefaultLocale(content.siteId),
-    getHomeContent(content.siteId, content.locale, false),
+/** An operation-scoped resolver; never shares mutable settings across requests or sites. */
+export async function createContentPermalinkResolver(
+  siteId: string,
+  options: { state?: PermalinkState; defaultLocale?: string; terms?: PermalinkTerm[];
+    homes?: ReadonlyMap<string, ContentResponse | null> } = {},
+): Promise<(content: ContentResponse) => Promise<string>> {
+  const [state, defaultLocale, terms] = await Promise.all([
+    options.state ?? getPermalinkState(siteId),
+    options.defaultLocale ?? getDefaultLocale(siteId),
+    options.terms ?? listPermalinkTerms(siteId),
   ]);
-  if (home?.id === content.id)
-    return slashPath(localePath(content.locale, "/", defaultLocale), settings.trailingSlash);
-  const enriched = await enrichPermalinkContent([content], content.siteId);
-  return permalinkPath(enriched[0]!, settings, defaultLocale, layoutScopes);
+  const categories = categorySlugsByContent(terms);
+  const homes = new Map<string, Promise<ContentResponse | null>>();
+  for (const [locale, home] of options.homes ?? []) homes.set(locale, Promise.resolve(home));
+  return async (content) => {
+    if (content.siteId !== siteId) throw new Error("Permalink resolver belongs to another site");
+    if (contentTypePolicy(content.type).requiresAuthentication) return permalinkPath(content, state.settings, defaultLocale, state.layoutScopes);
+    let home = homes.get(content.locale);
+    if (!home) {
+      home = getHomeContent(siteId, content.locale, false);
+      homes.set(content.locale, home);
+    }
+    if ((await home)?.id === content.id)
+      return slashPath(localePath(content.locale, "/", defaultLocale), state.settings.trailingSlash);
+    return permalinkPath({ ...content, permalinkCategory: categories.get(content.id) },
+      state.settings, defaultLocale, state.layoutScopes);
+  };
+}
+
+/** Batch links by site while preserving input order and locale-specific home URLs. */
+export async function contentPermalinks(items: ContentResponse[]): Promise<string[]> {
+  const resolvers = new Map<string, ReturnType<typeof createContentPermalinkResolver>>();
+  return Promise.all(items.map(async (item) => {
+    let resolver = resolvers.get(item.siteId);
+    if (!resolver) {
+      resolver = createContentPermalinkResolver(item.siteId);
+      resolvers.set(item.siteId, resolver);
+    }
+    return (await resolver)(item);
+  }));
+}
+
+export async function contentPermalink(content: ContentResponse): Promise<string> {
+  return (await contentPermalinks([content]))[0]!;
 }
 export async function permalinkContent(
   siteId: string,
@@ -61,12 +96,13 @@ export async function permalinkContent(
   const load = async () => {
     const db = await getDb();
     const rows = await db.query<Record<string, unknown>>(
-      `SELECT id, site_id, type, title, slug, locale, translation_group_id, status, author_id, published_at, created_at, updated_at FROM content WHERE site_id = ? AND trashed_at IS NULL${publishedOnly ? " AND status = 'published'" : ""} ORDER BY id`,
+      `SELECT id, site_id, type, title, slug, locale, translation_group_id, status, author_id, published_at, created_at, updated_at FROM content WHERE site_id = ? AND trashed_at IS NULL AND ${publicContentTypeSql()}${publishedOnly ? " AND status = 'published'" : ""} ORDER BY id`,
       [siteId],
     );
     return enrichPermalinkContent(rows.map(serializeContentRow), siteId);
   };
-  return publishedOnly ? getJfCache().remember(`content:permalink:${siteId}`, 300, load) : load();
+  const items = await (publishedOnly ? getJfCache().remember(`content:permalink:${siteId}`, 300, load) : load());
+  return items.filter(item => contentTypePolicy(item.type).publiclyDiscoverable);
 }
 export async function reservedPermalinkPath(path: string): Promise<boolean> {
   const pathname = path.split("?")[0]!;
@@ -221,18 +257,20 @@ export async function listPermalinkTerms(siteId: string): Promise<PermalinkTerm[
   }
   return [...terms.values()];
 }
+function categorySlugsByContent(terms: PermalinkTerm[]): Map<string, string> {
+  const categories = new Map<string, string>();
+  for (const term of terms) {
+    if (term.taxonomy !== "category") continue;
+    for (const id of term.contentIds) if (!categories.has(id)) categories.set(id, term.slug);
+  }
+  return categories;
+}
 async function enrichPermalinkContent<T extends PermalinkContent>(
-  items: T[],
-  siteId: string,
+  items: T[], siteId: string,
 ): Promise<Array<T & { permalinkCategory?: string }>> {
   if (!items.length) return [];
-  const terms = await listPermalinkTerms(siteId);
-  return items.map((item) => ({
-    ...item,
-    permalinkCategory: terms.find(
-      (term) => term.taxonomy === "category" && term.contentIds.includes(item.id),
-    )?.slug,
-  }));
+  const categories = categorySlugsByContent(await listPermalinkTerms(siteId));
+  return items.map((item) => ({ ...item, permalinkCategory: categories.get(item.id) }));
 }
 export function taxonomyPermalink(
   term: PermalinkTerm,

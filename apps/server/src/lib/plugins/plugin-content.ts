@@ -14,9 +14,9 @@ import { pluginCallSiteId } from "./request-site.js";
 import { serializeContentRow } from "../content/content-api.js";
 import { createContentType, getContentTypeBySlug } from "../content/content-types-db.js";
 import { getDefaultLocale } from "../i18n/languages-db.js";
-import { clearHomePageIfMatches } from "../content/home-page.js";
-import { clearBlogPageIfMatches } from "../content/blog-page.js";
-import { clearErrorPageIfMatches } from "../rendering/error-pages.js";
+import { clearHomePagesIfMatch } from "../content/home-page.js";
+import { clearBlogPagesIfMatch } from "../content/blog-page.js";
+import { clearErrorPagesIfMatch } from "../rendering/error-pages.js";
 import { invalidateContentCache } from "../content/content-public.js";
 import { deleteRecordsCreatedBy } from "../content/delete-created-by.js";
 import {
@@ -392,11 +392,10 @@ export async function deletePluginOwnedContentType(
     "SELECT id FROM content WHERE site_id = ? AND type = ?",
     [siteId, slug],
   );
-  for (const row of rows) {
-    await clearHomePageIfMatches(siteId, row.id);
-    await clearBlogPageIfMatches(siteId, row.id);
-    await clearErrorPageIfMatches(siteId, row.id);
-  }
+  const contentIds = new Set(rows.map((row) => row.id));
+  await clearHomePagesIfMatch(siteId, contentIds);
+  await clearBlogPagesIfMatch(siteId, contentIds);
+  await clearErrorPagesIfMatch(siteId, contentIds);
   if (rows.length > 0) {
     const placeholders = rows.map(() => "?").join(", ");
     await db.run(

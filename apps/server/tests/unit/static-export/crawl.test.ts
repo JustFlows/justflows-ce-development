@@ -147,3 +147,12 @@ describe("crawlPages", () => {
     expect(out.pages.map((p) => p.path)).toEqual(["/new"]);
   });
 });
+
+
+it("never fetches account pages even when seeded or linked", async () => {
+  const fetched: string[] = [];
+  const out = await crawlPages(["/", "/account", "/account/details"], async (path) => {
+    fetched.push(path); return { ...html('<a href="/account">Account</a><a href="/account/orders">Orders</a>'), path };
+  }, { maxPages: 20, concurrency: 1, publicUrl: "", discoverLinks: true });
+  expect(fetched).toEqual(["/"]); expect(out.pages.map(page => page.path)).toEqual(["/"]);
+});

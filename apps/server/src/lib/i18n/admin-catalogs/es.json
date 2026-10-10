@@ -242,6 +242,7 @@
     "activateFailed": "No se pudo activar el plugin."
   },
   "content": {
+    "accountNotice": "Las páginas de cuenta requieren iniciar sesión. Justflows las excluye de las cachés, exportaciones, búsquedas públicas y mapas del sitio.",
     "newPost": "Nueva entrada",
     "newPage": "Nueva página",
     "editPost": "Editar entrada",
@@ -1658,6 +1659,15 @@
     "tabTrash": "papelera"
   },
   "contentTypes": {
+    "cacheControlPlaceholder": "public, max-age=300",
+    "cacheInheritType": "Heredar la configuración del tipo de contenido",
+    "cachePostHint": "Tras publicar, sustituye la política de caché del tipo de contenido para esta entrada. Las políticas privadas y sin caché omiten las cachés compartidas y las exportaciones estáticas.",
+    "cacheControlLabel": "Cache-Control",
+    "cacheInherit": "Heredar la configuración del sitio",
+    "cacheNever": "Nunca almacenar en caché",
+    "cacheCustom": "Cabecera personalizada",
+    "cacheControlValue": "Valor de Cache-Control",
+    "cacheHint": "Sustituye la política de caché para páginas de este tipo. Las políticas privadas y sin caché omiten las cachés compartidas y las exportaciones estáticas.",
     "loadFailed": "No se pudieron cargar los tipos de contenido",
     "saveFailed": "No se pudo guardar",
     "createFailed": "No se pudo crear",
@@ -3937,6 +3947,7 @@
     "slugPrimary": "El espacio de trabajo de la plataforma conserva el slug primary.",
     "workspaceIntro": "Cambia el nombre y el slug de este espacio de trabajo. La dirección de esta página incluye el ID del espacio de trabajo.",
     "workspaceId": "ID del espacio de trabajo",
+    "workspaceOwner": "Propietario en el sitio principal",
     "workspaceNotFound": "No se encontró ese espacio de trabajo.",
     "workspaceLoadFailed": "No se pudo cargar este espacio de trabajo.",
     "workspaceSaveFailed": "No se pudo guardar este espacio de trabajo.",

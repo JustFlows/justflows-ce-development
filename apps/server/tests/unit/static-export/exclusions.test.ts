@@ -9,17 +9,26 @@ import {
 } from "../../../src/lib/static-export/exclusions.js";
 
 describe("sanitizeExclusions", () => {
+  it("preserves mandatory home-page and large type exclusions beyond the plugin limit", () => {
+    const rules = [{ path: "/", match: "exact" }, ...Array.from({ length: 250 }, (_, i) => ({ path: `/private-${i}`, match: "exact" }))];
+    const safe = sanitizeExclusions(rules, "/admin", true);
+    expect(safe).toHaveLength(251);
+    expect(isExcludedPath("/", safe)).toBe(true);
+    expect(isExcludedPath("/private-249", safe)).toBe(true);
+    expect(nginxExclusionLocations(safe)).toContain("location = /  { try_files /_pass @fallback; }");
+    expect(nginxExclusionLocations(safe).some(line => line.includes("location = //"))).toBe(false);
+  });
   it("keeps safe paths, defaults to prefix, and normalizes", () => {
     expect(
       sanitizeExclusions([
         { path: "/shop/checkout" },
         { path: "/shop/cart/", match: "exact" },
-        { path: "/account", match: "prefix" },
+        { path: "/member-area", match: "prefix" },
       ]),
     ).toEqual([
       { path: "/shop/checkout", match: "prefix" },
       { path: "/shop/cart", match: "exact" },
-      { path: "/account", match: "prefix" },
+      { path: "/member-area", match: "prefix" },
     ]);
   });
 
@@ -67,7 +76,7 @@ describe("sanitizeExclusions", () => {
 });
 
 describe("isExcludedPath", () => {
-  const rules = sanitizeExclusions([{ path: "/shop/cart" }, { path: "/account", match: "exact" }]);
+  const rules = sanitizeExclusions([{ path: "/shop/cart" }, { path: "/member-area", match: "exact" }]);
 
   it("matches a prefix on a segment boundary only", () => {
     expect(isExcludedPath("/shop/cart", rules)).toBe(true);
@@ -78,8 +87,8 @@ describe("isExcludedPath", () => {
   });
 
   it("matches an exact path and nothing below it", () => {
-    expect(isExcludedPath("/account#top", rules)).toBe(true);
-    expect(isExcludedPath("/account/orders", rules)).toBe(false);
+    expect(isExcludedPath("/member-area#top", rules)).toBe(true);
+    expect(isExcludedPath("/member-area/orders", rules)).toBe(false);
   });
 });
 

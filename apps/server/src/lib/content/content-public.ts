@@ -1,3 +1,4 @@
+import { contentTypePolicy, publicContentTypeSql } from "@justflows/content";
 import { getDb } from "../database/db.js";
 import { getSiteId } from "../settings/site-settings.js";
 import { serializeContentRow, type ContentResponse } from "./content-api.js";
@@ -44,7 +45,7 @@ async function loadPublishedRow(
     ? "AND status IN ('published', 'draft', 'scheduled')"
     : "AND status = 'published'";
   const rows = await db.query<Record<string, unknown>>(
-    `SELECT * FROM content WHERE site_id = ? AND slug = ? AND locale = ? ${statusClause} LIMIT 1`,
+    `SELECT * FROM content WHERE site_id = ? AND slug = ? AND locale = ? AND ${publicContentTypeSql()} ${statusClause} LIMIT 1`,
     [siteId, slug, locale],
   );
   return rows[0] ?? null;
@@ -61,7 +62,7 @@ async function loadPublishedTranslation(
     ? "AND status IN ('published', 'draft', 'scheduled')"
     : "AND status = 'published'";
   const rows = await db.query<Record<string, unknown>>(
-    `SELECT * FROM content WHERE site_id = ? AND translation_group_id = ? AND locale = ? ${statusClause} LIMIT 1`,
+    `SELECT * FROM content WHERE site_id = ? AND translation_group_id = ? AND locale = ? AND ${publicContentTypeSql()} ${statusClause} LIMIT 1`,
     [siteId, translationGroupId, locale],
   );
   return rows[0] ?? null;
@@ -114,9 +115,10 @@ export async function getPublishedContentBySlug(
 
   const cacheKey = `${CONTENT_CACHE_PREFIX}published:${cacheSiteId()}:${slug}:${requestedLocale ?? ""}`;
 
-  return getJfCache().remember(cacheKey, await contentCacheTtl(), () =>
+  const content = await getJfCache().remember(cacheKey, await contentCacheTtl(), () =>
     fetchPublishedContentBySlug(slug, requestedLocale, false),
   );
+  return content && contentTypePolicy(content.type).publiclyDiscoverable ? content : null;
 }
 
 /**
@@ -166,14 +168,15 @@ export async function getTranslationAlternates(
 
 export async function listPublishedContent(siteId: string): Promise<ContentResponse[]> {
   const cacheKey = `${CONTENT_CACHE_PREFIX}published-list:${siteId}`;
-  return getJfCache().remember(cacheKey, await contentCacheTtl(), async () => {
+  const items = await getJfCache().remember(cacheKey, await contentCacheTtl(), async () => {
     const db = await getDb();
     const rows = await db.query<Record<string, unknown>>(
-      "SELECT * FROM content WHERE site_id = ? AND status = 'published' ORDER BY updated_at DESC",
+      `SELECT * FROM content WHERE site_id = ? AND status = 'published' AND ${publicContentTypeSql()} ORDER BY updated_at DESC`,
       [siteId],
     );
     return rows.map((row) => serializeContentRow(row));
   });
+  return items.filter(item => contentTypePolicy(item.type).publiclyDiscoverable);
 }
 
 export interface PublishedPostsPage {

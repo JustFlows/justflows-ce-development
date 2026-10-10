@@ -169,7 +169,7 @@ describe("renderHtaccess", () => {
 
   it("substitutes a renamed admin path into the dynamic group", () => {
     const out = renderHtaccess({ adminPath: "/control-room" });
-    expect(out).toContain("^(control-room|api|login|register|");
+    expect(out).toContain("^(control-room|api|login|account|platform-account|register|");
     expect(out).not.toMatch(/\(admin\|api/);
   });
 });

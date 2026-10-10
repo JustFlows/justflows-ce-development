@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-import { describe, expect, it } from "vitest";
+import { runInNewContext } from "node:vm";
+import { describe, expect, it, vi } from "vitest";
 import {
   buildRetirementServiceWorkerScript,
   buildServiceWorkerScript,
@@ -21,7 +22,7 @@ describe("buildServiceWorkerScript", () => {
 
   it("never intercepts admin, api, login, or install navigations", () => {
     const script = buildServiceWorkerScript(settings);
-    expect(script).toContain("/^\\/(admin|api|login|install)(\\/|$)/");
+    expect(script).toContain("/^\\/(admin|api|login|install|account|platform-account|ext)(\\/|$)/");
   });
 
   it("only calls skipWaiting on an explicit message, never on install", () => {
@@ -51,4 +52,30 @@ describe("buildRetirementServiceWorkerScript", () => {
     expect(script).toContain("caches.delete");
     expect(script).toContain("self.registration.unregister()");
   });
+});
+
+
+it("does not intercept account navigations or plugin account data", () => {
+  const handlers = new Map<string, (event: unknown) => void>();
+  runInNewContext(buildServiceWorkerScript(settings), { self: {
+    location: { origin: "https://site.example" },
+    addEventListener: (name: string, handler: (event: unknown) => void) => handlers.set(name, handler),
+  }, URL });
+  for (const path of ["/account", "/account/details", "/platform-account", "/ext/example/account"]) {
+    const respondWith = vi.fn();
+    handlers.get("fetch")!({ request: { method: "GET", mode: "navigate", url: `https://site.example${path}`, headers: new Headers() }, respondWith });
+    expect(respondWith).not.toHaveBeenCalled();
+  }
+});
+
+
+it("bypasses renamed account pages and pagination based on type-derived exclusions", () => {
+  const handlers = new Map<string, (event: unknown) => void>();
+  runInNewContext(buildServiceWorkerScript(settings, [{ path: "/members", match: "exact" }, { path: "/members/page", match: "prefix" }]), { self: {
+    location: { origin: "https://site.example" }, addEventListener: (name: string, handler: (event: unknown) => void) => handlers.set(name, handler),
+  }, URL });
+  for (const path of ["/members", "/members/", "/members/page/2"]) {
+    const respondWith = vi.fn(); handlers.get("fetch")!({ request: { method: "GET", mode: "navigate", url: `https://site.example${path}`, headers: new Headers() }, respondWith });
+    expect(respondWith).not.toHaveBeenCalled();
+  }
 });

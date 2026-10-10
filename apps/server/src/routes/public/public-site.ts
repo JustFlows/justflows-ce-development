@@ -1,3 +1,4 @@
+import { isAccountPath } from "../../middleware/account-cache.js";
 import { verifyContentPreview } from "../../lib/content/content-preview.js";
 import { serializeContentRow } from "../../lib/content/content-api.js";
 import { rateLimit } from "express-rate-limit";
@@ -189,6 +190,8 @@ const RESERVED = new Set([
   "api",
   "install",
   "login",
+  "account",
+  "platform-account",
   "register",
   "uploads",
   "assets",
@@ -250,7 +253,8 @@ async function loadThemeMods(preview = false): Promise<ReturnType<typeof mergeMo
 async function loadIdentity(
   preview = false,
   locale?: string,
-): Promise<{ siteTitle: string; tagline: string; logoUrl: string; faviconUrl: string }> {
+): Promise<{ siteTitle: string; tagline: string; logoUrl: string; faviconUrl: string;
+  seo?: { siteId: string; locale: string; settings: import("../../lib/rendering/seo-public.js").SeoSettings } }> {
   const mods = await loadThemeMods(preview);
   const identity = await getSiteIdentity(mods, { preview });
   const siteId = await getSiteId();
@@ -262,6 +266,7 @@ async function loadIdentity(
     tagline: seo.defaultDescription || identity.tagline,
     logoUrl: identity.logoUrl,
     faviconUrl: identity.faviconUrl,
+    seo: { siteId, locale: locale ?? "", settings: seo },
   };
 }
 
@@ -529,6 +534,7 @@ async function buildCommentContext(
 
 /** True when this request must skip the shared page cache for comment state. */
 function pageCacheBypassReason(req: Request, preview: boolean): string | null {
+  if (isAccountPath(req.path)) return "private account";
   if (preview) return "preview";
   if (isFormConfirmation(req)) return "form confirmation";
   if (getSession(req)) return "authenticated session";
@@ -807,13 +813,14 @@ async function sendPublicHtml(
   const hooksBefore = getRuntimeHooks().inspect();
   const hookRunsBefore = hooksBefore.reduce((sum, hook) => sum + hook.runs, 0);
   const hookErrorsBefore = hooksBefore.reduce((sum, hook) => sum + hook.errors, 0);
-  const bypassReason = pageCacheBypassReason(req, preview);
+  const bypassReason = res.locals.jfContentCacheBypass ? "content-type" : pageCacheBypassReason(req, preview);
   const bypass = bypassReason !== null;
   if (bypass || !getJfCache().enabled) {
     res.locals.jfPageCache = "BYPASS";
   }
   let html = await getCachedPageHtml(pageKey, bypass, async () =>
     localizePageLinks(req.path, await render()),
+    res.locals.jfContentCacheTtl,
   );
   if (debugMode().enabled) {
     const session = await resolveSession(req, res);
@@ -1073,9 +1080,12 @@ async function renderPage(view: string, data: Record<string, unknown>): Promise<
   const pageDescription = seoFromContent.description || String(data.seoDescription ?? "");
   let headExtra = "";
   let documentTitle = pageTitle;
-  const identity = data.identity as { faviconUrl?: string; logoUrl?: string } | undefined;
+  const identity = data.identity as Awaited<ReturnType<typeof loadIdentity>> | undefined;
   if (siteId) {
-    const settings = await getSeoSettings(siteId, String(data.locale ?? ""));
+    const locale = String(data.locale ?? "");
+    const settings = identity?.seo?.siteId === siteId && identity.seo.locale === locale
+      ? identity.seo.settings
+      : await getSeoSettings(siteId, locale);
     const page = {
       title: pageTitle,
       description: pageDescription,
@@ -1147,7 +1157,7 @@ async function renderPage(view: string, data: Record<string, unknown>): Promise<
   const body = await ejs.renderFile(path.join(templateDir, `${view}.ejs`), pageData);
   let analyticsHead = "";
   let analyticsBody = "";
-  if (!data.preview && siteId) {
+  if (!data.preview && !data.privateAccount && siteId) {
     const { getConfiguredGoogleTagId } = await import("../../lib/rendering/analytics-public.js");
     const { buildGoogleTagHead, buildGoogleTagBody } = await import("../../lib/rendering/google-tag.js");
     const googleTagId = await getConfiguredGoogleTagId();
@@ -1156,7 +1166,7 @@ async function renderPage(view: string, data: Record<string, unknown>): Promise<
       analyticsBody = buildGoogleTagBody(googleTagId);
     }
   }
-  if (hooks.has("analytics.head")) {
+  if (!data.privateAccount && hooks.has("analytics.head")) {
     // A consent plugin can rewrite the analytics markup (e.g. defer it behind a
     // consent category) before it reaches the page. Sync — this is a render path.
     analyticsHead = hooks.applyFilterSync(
@@ -1496,7 +1506,8 @@ async function buildPageContext(req: Request, res: Response, reqPath: string, pr
     t,
     title: identity.siteTitle,
     preview,
-    discourageSearchEngines,
+    discourageSearchEngines: res.locals.jfPrivateContent === true || discourageSearchEngines,
+    privateAccount: res.locals.jfPrivateContent === true,
     cssProviderStylesheets: cssProviderAssets.stylesheets,
     header,
     headerBrand: headerBrandFlags(header, identity.logoUrl),
@@ -1821,7 +1832,7 @@ router.get("/", async (req, res, next) => {
  * block embedded in the page's own blocks (not just a theme-provided "blog
  * page") can page through posts no matter which page it lives on.
  */
-async function renderSinglePageHtml(
+export async function renderSinglePageHtml(
   req: Request,
   res: Response,
   reqPath: string,
@@ -1893,7 +1904,7 @@ async function renderSinglePageHtml(
     { id: String(pageContent.id), type: String(pageContent.type) },
   );
   const blogCtx = await buildBlogRenderContext(pageCtx.locale, pageNumber, basePath);
-  const commentCtx = await buildCommentContext(
+  const commentCtx = pageContent.type === "account" ? undefined : await buildCommentContext(
     req,
     {
       id: String(pageContent.id),
@@ -1906,7 +1917,7 @@ async function renderSinglePageHtml(
     pageCtx,
     reqPath,
   );
-  const bodyHtml = withSiteWidgets(
+  let bodyHtml = withSiteWidgets(
     applyFootnotes(
       await applyContentRender(
         await renderBlocksHtml(
@@ -1920,6 +1931,13 @@ async function renderSinglePageHtml(
     ),
     withHeader,
   );
+  if (pageContent.type === "account") {
+    if (!req.session) throw new Error("Account rendering requires an authenticated session");
+    const { renderAccountBlocks } = await import("../../lib/account/render.js");
+    bodyHtml = await renderAccountBlocks(bodyHtml, req.session);
+    withHeader.discourageSearchEngines = true;
+    Object.assign(withHeader, { privateAccount: true });
+  }
   const formattedDate = pageContent.publishedAt
     ? await formatContentDate(pageContent.publishedAt)
     : null;
@@ -1959,7 +1977,7 @@ async function renderSinglePageHtml(
       alternates,
       formattedDate,
       title: pageContent.title,
-      mainClass: String(pageContent.type) === "page" ? "site-main site-main--page" : "site-main",
+      mainClass: ["page", "account"].includes(String(pageContent.type)) ? "site-main site-main--page" : "site-main",
     },
     templateOpts,
   );

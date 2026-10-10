@@ -25,6 +25,7 @@ export interface PlatformWorkspaceView {
     databaseMode: string;
     createdAt: string;
     updatedAt: string;
+    owner: { id: string; name: string; email: string } | null;
   };
   sites: Array<{
     id: string;
@@ -86,6 +87,9 @@ interface WorkspaceRow {
   database_mode: string;
   created_at: string;
   updated_at: string;
+  owner_user_id: string | null;
+  owner_name: string | null;
+  owner_email: string | null;
 }
 
 interface SiteRow {
@@ -111,9 +115,11 @@ interface DatabaseRow {
 export async function loadPlatformWorkspace(tenantId: string): Promise<PlatformWorkspaceView | null> {
   const db = await getControlDb();
   const rows = await db.query<WorkspaceRow>(
-    `SELECT id, name, slug, status, user_mode, database_mode, created_at, updated_at
-     FROM tenants
-     WHERE id = ?
+    `SELECT t.id, t.name, t.slug, t.status, t.user_mode, t.database_mode, t.created_at, t.updated_at,
+            u.id AS owner_user_id, u.display_name AS owner_name, u.email AS owner_email
+     FROM tenants t
+     LEFT JOIN users u ON u.id = t.owner_user_id
+     WHERE t.id = ?
      LIMIT 1`,
     [tenantId],
   );
@@ -145,6 +151,11 @@ export async function loadPlatformWorkspace(tenantId: string): Promise<PlatformW
       databaseMode: String(tenant.database_mode),
       createdAt: String(tenant.created_at),
       updatedAt: String(tenant.updated_at),
+      owner: tenant.owner_user_id ? {
+        id: String(tenant.owner_user_id),
+        name: String(tenant.owner_name || tenant.owner_email || tenant.owner_user_id),
+        email: String(tenant.owner_email || ""),
+      } : null,
     },
     sites: sites.map((site) => ({
       id: String(site.id),

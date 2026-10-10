@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
@@ -8,6 +9,9 @@ import { getJfRoot } from "../runtime/jf-root.js";
 import { logCacheEventIfDebug, recordCacheEvent } from "./cache-trace.js";
 import { resolvePathUnderBase } from "../security/safe-path.js";
 
+const privateScope = new AsyncLocalStorage<boolean>();
+let scopedInstance: JfCache | null = null;
+export function withoutSharedCache<T>(fn: () => T): T { return privateScope.run(true, fn); }
 let instance: JfCache | null = null;
 let instanceEnabled: boolean | null = null;
 
@@ -78,14 +82,25 @@ export function getJfCache(): JfCache {
     instance = attachObserver(createJfCache(opts));
     instance.setKeyScope(scopeCacheKey);
     instanceEnabled = opts.enabled;
+    const base = instance;
+    // A cached plugin context may retain this facade. Evaluate privacy at call time.
+    scopedInstance = new Proxy(base, { get(target, property) {
+      if (property === "enabled") return !privateScope.getStore() && target.enabled;
+      if (property === "get") return (key: string) => privateScope.getStore() ? Promise.resolve(undefined) : target.get(key);
+      if (property === "set") return (key: string, value: unknown, ttl?: number) => privateScope.getStore() ? Promise.resolve() : target.set(key, value, ttl);
+      if (property === "remember") return (key: string, ttl: number, fn: () => Promise<unknown>) => privateScope.getStore() ? fn() : target.remember(key, ttl, fn);
+      const value = Reflect.get(target, property, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    } });
     if (!opts.enabled) wipeCacheStorageSync();
   }
-  return instance;
+  return scopedInstance!;
 }
 
 /** Drop the singleton so the next getJfCache() picks up fresh config. */
 export function resetJfCache(): void {
   instance = null;
+  scopedInstance = null;
   instanceEnabled = null;
 }
 

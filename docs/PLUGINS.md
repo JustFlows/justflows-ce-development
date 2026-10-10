@@ -904,3 +904,50 @@ listing without mixing it into site settings:
 - `free` — set `false` and add `price`: `{ "amount": 49, "currency": "EUR", "interval": "year" }` for a paid listing.
 
 Paid, coming-soon, or unlisted catalogue rows cannot be installed from the in-app Marketplace, and neither can beta rows unless the site allows them; paid listings send the administrator to justflows.com.
+
+
+## Neutral API namespaces
+
+Declare `apiNamespace` in both the exported plugin manifest and `justflows.json`
+to expose relative HTTP routes without `/ext/<plugin-id>/` in frontend API URLs:
+
+```ts
+manifest: {
+  id: "justflows.shop",
+  apiNamespace: "shop",
+  // ...the other manifest fields
+}
+
+// In activate(ctx):
+ctx.http.get("checkout", async (request) => {
+  // Apply your usual session/ownership checks here.
+  return { body: await ownCheckout(request.session) };
+});
+const checkoutUrl = ctx.http.url("checkout"); // /api/shop/checkout
+```
+
+Browser bundles can import `pluginApiUrl("shop", "checkout")` from the SDK.
+A plain browser script may use the same stable `/api/shop` base. Paths passed to
+the helper are relative; query strings are preserved and traversal is refused.
+The namespace is a lowercase slug of at most 40 characters. Core API namespaces
+are reserved, and two plugins cannot claim the same namespace. Keep it stable
+across upgrades; it is part of your plugin's public URL contract.
+
+The host maps the neutral URL directly to the registered handler. It does not
+redirect to `/ext/…` or make a second HTTP request. Legacy `/ext/<id>/…` routes
+remain aliases, and a plugin without `apiNamespace` keeps its previous behavior.
+Absolute well-known routes and plugin static assets keep their existing routing.
+Frontend code must use the neutral URL; adding a manifest field alone cannot
+change a URL hardcoded in an already installed browser script.
+
+Both aliases preserve plugin activation/site allowlists, handler authorization,
+CSRF policy, rate-limit counters, raw signed webhook bytes, and binary upload
+limits. Ordinary mutations remain CSRF protected; registered `csrf: false`
+webhooks keep their explicit exemption. Neutral plugin account routes at
+`/api/<namespace>/account` and below also receive the host's mandatory private,
+no-store policy. Sensitive handlers must still validate ownership on every call.
+
+Shop demonstrates the migration in `plugins/ecommerce`; Hello World's `status`
+route is available at `/api/hello-world/status`. Updating source requires building
+and installing the updated plugin package before an installed site uses its
+new manifest and browser assets.

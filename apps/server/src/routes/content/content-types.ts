@@ -3,6 +3,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import {
+  ContentTypeCacheControlSchema,
   ContentTypeFieldsSchema,
   ContentTypeSlugSchema,
   normalizeContentTypeSlug,
@@ -28,12 +29,14 @@ const CreateSchema = z.object({
   label: z.string().trim().min(1).max(255),
   description: z.string().max(2000).optional(),
   fields: ContentTypeFieldsSchema.optional(),
+  cacheControl: ContentTypeCacheControlSchema.optional(),
 });
 
 const PatchSchema = z.object({
   label: z.string().trim().min(1).max(255).optional(),
   description: z.string().max(2000).optional(),
   fields: ContentTypeFieldsSchema.optional(),
+  cacheControl: ContentTypeCacheControlSchema.optional(),
 });
 
 router.get("/", requireRole(...CONTENT_READ_ROLES), async (_req, res) => {

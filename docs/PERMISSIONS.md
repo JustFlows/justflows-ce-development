@@ -139,7 +139,9 @@ or another plugin's registration.
 `ctx.users.create` needs the `users:manage` manifest permission. It can only
 assign a role that same plugin registered, so Shop can create a `customer`
 and cannot create an administrator. The host still enforces password policy,
-uniqueness, and the audit log. The `actor` is the signed-in staff member.
+uniqueness, and the audit log. The `actor` is the signed-in staff member; for
+an account a visitor creates for themselves (Shop checkout) it has an empty
+`userId`, and the audit log records no actor.
 
 `ctx.users.addRole(target, role, actor)` gives an existing user, found by
 `{ userId }` or `{ email }`, one of the plugin's own roles as an additional
@@ -150,6 +152,12 @@ is no such user. Shop uses it when a customer is added under an email that
 already signs in, and when a signed-in user places their first order. The
 method is optional on the SDK type, so check `ctx.users.addRole` before calling
 it on older hosts.
+
+`ctx.users.removeRole(target, role, actor)` takes one of the plugin's own
+additional roles away again, with the same permission and ownership rule. The
+primary role is never changed, and a user who does not hold the role is a
+success. The user loses the role's capabilities on their next request. Shop
+uses it when a membership subscription ends. Optional on older hosts.
 
 `ctx.users.get(userId)` returns one user with all their roles (`roles`, main
 role first), or `null`. It needs `users:manage` and is optional on older

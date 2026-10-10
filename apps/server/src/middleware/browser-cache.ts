@@ -1,3 +1,4 @@
+import { accountCacheMiddleware, isAccountPath } from "./account-cache.js";
 import type { NextFunction, Request, Response } from "express";
 import { getPerformanceConfig } from "../lib/cache/performance-settings.js";
 
@@ -46,6 +47,7 @@ function edgeCacheForUncachedHtml(pathname: string): boolean {
 
 /** Set Cache-Control early — must not patch res.end (breaks GZIP compression). */
 export function browserCacheMiddleware(req: Request, res: Response, next: NextFunction): void {
+  if (isAccountPath(req.path)) { accountCacheMiddleware(req, res, next); return; }
   if (req.method === "GET") {
     const value = cacheControlForPath(req.path);
     if (value) {

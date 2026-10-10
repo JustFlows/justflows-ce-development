@@ -2,10 +2,10 @@
 
 import type { PluginDeleteCreatedByResult } from "@justflows/sdk";
 import { getDb } from "../database/db.js";
-import { clearBlogPageIfMatches } from "./blog-page.js";
-import { clearHomePageIfMatches } from "./home-page.js";
+import { clearBlogPagesIfMatch } from "./blog-page.js";
+import { clearHomePagesIfMatch } from "./home-page.js";
 import { invalidateContentCache } from "./content-public.js";
-import { clearErrorPageIfMatches } from "../rendering/error-pages.js";
+import { clearErrorPagesIfMatch } from "../rendering/error-pages.js";
 import { liveUploadKey, trashedUploadKeyCandidates } from "../media/upload-paths.js";
 import { getUploadStore } from "../media/upload-store.js";
 import { removeVariantDir } from "../media/media-responsive.js";
@@ -54,11 +54,10 @@ export async function deleteRecordsCreatedBy(
     "SELECT id, type FROM content WHERE site_id = ? AND author_id = ?",
     [siteId, userId],
   );
-  for (const row of content) {
-    await clearHomePageIfMatches(siteId, row.id);
-    await clearBlogPageIfMatches(siteId, row.id);
-    await clearErrorPageIfMatches(siteId, row.id);
-  }
+  const contentIds = new Set(content.map((row) => row.id));
+  await clearHomePagesIfMatch(siteId, contentIds);
+  await clearBlogPagesIfMatch(siteId, contentIds);
+  await clearErrorPagesIfMatch(siteId, contentIds);
 
   await db.run(
     "DELETE FROM revisions WHERE site_id = ? AND created_by = ? AND kind IN ('working', 'autosave')",

@@ -16,3 +16,12 @@ describe("SYNC_FILTERS", () => {
     );
   });
 });
+
+describe("hook listen permissions", () => {
+  it("keeps the workspace admin's email behind platform:tenancy", async () => {
+    const { requiredPermissionForHook } = await import("../../src/hooks.js");
+    expect(requiredPermissionForHook("tenancy.workspaceCreated")).toBe("platform:tenancy");
+    expect(requiredPermissionForHook("workspace.created")).toBeNull();
+    expect(requiredPermissionForHook("account.sections")).toBe("users:read");
+  });
+});

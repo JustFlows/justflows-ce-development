@@ -99,6 +99,7 @@ export function templateCandidates(query: TemplateQuery): string[] {
     case "singular": {
       const type = slugSegment(query.contentType);
       const slug = slugSegment(query.slug);
+      if (type === "account") return dedupe([slug ? `account-${slug}` : "", "account", slug ? `page-${slug}` : "", "page", "singular", "index"]);
       if (type === "page") {
         return dedupe([slug ? `page-${slug}` : "", "page", "singular", "index"]);
       }

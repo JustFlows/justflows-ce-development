@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { DEFAULT_ACCOUNT_BLOCKS } from "@justflows/content";
 import { sanitizeBlockDocument } from "@justflows/blocks";
 import { loadThemePattern } from "../themes/theme-files.js";
 import { getActiveTheme, getSiteId, themeInstalledPath } from "../themes/themes-db.js";
@@ -17,6 +18,7 @@ export function isEmptyBlockDocument(value: unknown): boolean {
  * `content.patternTypes`.
  */
 export async function defaultBlocksForContentType(type: string): Promise<unknown> {
+  if (type === "account") return sanitizeBlockDocument(DEFAULT_ACCOUNT_BLOCKS);
   const siteId = await getSiteId();
   await ensurePluginRuntime();
   const contributed = await getRuntimeHooks().applyFilter(

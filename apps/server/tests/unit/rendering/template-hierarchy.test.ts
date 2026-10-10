@@ -107,3 +107,8 @@ describe("error-class candidates (justflows-ce#92)", () => {
     expect(templateCandidates({ kind: "rateLimited" })).toEqual(["429", "error", "index"]);
   });
 });
+
+
+it("uses an account-specific template before the normal editable page layout", () => {
+  expect(templateCandidates({ kind: "singular", contentType: "account", slug: "members" })).toEqual(["account-members", "account", "page-members", "page", "singular", "index"]);
+});
