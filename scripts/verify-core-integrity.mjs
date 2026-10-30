@@ -7,7 +7,9 @@
 //   node scripts/verify-core-integrity.mjs write-local
 //   node scripts/verify-core-integrity.mjs write-official
 //
-// write-official reads JUSTFLOWS_CORE_RELEASE_KEY (PEM). The signature covers
+// write-official reads JUSTFLOWS_CORE_RELEASE_KEY_FILE or JUSTFLOWS_CORE_RELEASE_KEY.
+// scripts/make-zip.sh runs it before packing, so a signed release contains
+// core-integrity.json. The signature covers
 // "justflows-core-files\n<version>\n<sha256 of the file list>" — see
 // coreFilesSignPayload in apps/server/src/lib/security/core-integrity.ts.
 // A missing manifest is unverified and exits 0. A mismatch exits 1.

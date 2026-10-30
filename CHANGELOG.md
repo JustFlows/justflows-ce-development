@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] [Unreleased]
+
+### Changed
+
+- **A signed release archive includes a core file manifest.** The archive lists the files an update replaces, and an update can check those files after it copies them. Uploads, storage, themes, plugins, and installed extensions stay out of that manifest. An installation without the manifest stays unverified. ([#120](https://github.com/JustFlows/justflows-ce/issues/120))
+
 ## [0.4.0]
 
 ### Added

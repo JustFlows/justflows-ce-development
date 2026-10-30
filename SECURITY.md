@@ -70,10 +70,13 @@ Also:
 - After a trusted install, Justflows stores a per-file baseline outside the
   package directory. A plugin that no longer matches is not loaded. Reinstall
   from a trusted package to restore it. There is no control that adopts the
-  current files as a new baseline. Core files can be checked with
-  `node scripts/verify-core-integrity.mjs`. Uploads, storage, secrets, and
-  installed extensions are not part of that manifest. A checkout with no
-  manifest is unverified, not a failed release.
+  current files as a new baseline. When the release key is set,
+  `scripts/make-zip.sh` writes `core-integrity.json` into the archive before
+  it signs the zip, so an update can check the core files it just copied.
+  Uploads, storage, secrets, themes, plugins, and installed extensions are
+  not part of that manifest. An installation with no manifest is unverified,
+  not a failed release. Check a tree with
+  `node scripts/verify-core-integrity.mjs`.
 - Leave `DB_SSL` alone unless you have a reason: database TLS is on by default
   for any non-localhost `DB_HOST`.
 - Complete first-run setup using the setup key from `install-token/TOKEN.txt`

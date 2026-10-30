@@ -123,6 +123,7 @@ async function listDirectory(dir: string, rootReal: string): Promise<{ real: str
 type Hashed =
   | { kind: "file" }
   | { kind: "directory" }
+  | { kind: "missing" }
   | { kind: "skip" };
 
 async function hashOne(
@@ -138,10 +139,7 @@ async function hashOne(
     handle = await fsp.open(full, requireNoFollow());
   } catch (err) {
     const code = errno(err);
-    if (code === "ENOENT") {
-      state.changed.push(relative);
-      return { kind: "skip" };
-    }
+    if (code === "ENOENT") return { kind: "missing" };
     if (code === "ELOOP" || code === "EISDIR") {
       if (code === "EISDIR") return { kind: "directory" };
       state.unexpected.push(relative);
@@ -211,6 +209,10 @@ async function walkFrom(
     const relative = relativeDir ? `${relativeDir}/${name}` : name;
     const full = path.join(listed.real, name);
     const hashed = await hashOne(full, relative, rootReal, limits, state);
+    if (hashed.kind === "missing") {
+      state.changed.push(relative);
+      continue;
+    }
     if (hashed.kind === "directory") {
       await walkFrom(full, relative, rootReal, limits, state, skipDirectory, depth + 1);
     }
@@ -310,6 +312,7 @@ export async function hashRelativeFile(
     deadline: Date.now() + limits.maxMs,
   };
   const hashed = await hashOne(full, relative, rootReal, limits, state);
+  if (hashed.kind === "missing") return { kind: "missing" };
   if (hashed.kind === "directory") return { kind: "unexpected" };
   if (state.files[0]) return { kind: "file", file: state.files[0] };
   if (state.changed.length) return { kind: "changed" };

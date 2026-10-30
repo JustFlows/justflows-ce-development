@@ -2342,7 +2342,7 @@
       "repair": "Réinstallez l’extension depuis un paquet de confiance. Justflows ne prend pas les fichiers actuels comme base.",
       "coreVerified": "Les fichiers du cœur correspondent au manifeste signé de la version.",
       "coreLocal": "Les fichiers du cœur correspondent à une base locale. Ce n’est pas une version officielle signée.",
-      "coreAbsent": "Aucun manifeste du cœur n’est présent. Une copie de développement n’est pas vérifiée, ce n’est pas une version en échec.",
+      "coreAbsent": "Cette installation n’a pas de manifeste du cœur signé. Une mise à jour depuis une version qui en contient un vérifie ces fichiers. Jusque-là, ce n’est pas vérifié, ce n’est pas une version en échec.",
       "coreFailed": "Les fichiers du cœur ne correspondent pas au manifeste.",
       "verified": "Vérifié",
       "unverifiable": "Aucune base",

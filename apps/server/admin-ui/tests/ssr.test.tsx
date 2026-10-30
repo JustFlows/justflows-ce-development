@@ -169,6 +169,6 @@ describe("admin SSR routes", () => {
     expect(html).toContain("acme.demo");
     expect(html).toContain("index.js");
     expect(html).toContain("Scan again");
-    expect(html).toContain("No core manifest is present");
+    expect(html).toContain("This installation has no signed core file manifest");
   });
 });

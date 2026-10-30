@@ -2342,7 +2342,7 @@
       "repair": "Installieren Sie die Erweiterung erneut aus einem vertrauenswürdigen Paket. Justflows übernimmt die aktuellen Dateien nicht als Basis.",
       "coreVerified": "Die Core-Dateien stimmen mit dem signierten Release-Manifest überein.",
       "coreLocal": "Die Core-Dateien stimmen mit einer lokalen Basis überein. Das ist kein offiziell signiertes Release.",
-      "coreAbsent": "Es gibt kein Core-Manifest. Ein Entwicklungsstand ist ungeprüft, kein fehlgeschlagenes Release.",
+      "coreAbsent": "Diese Installation hat kein signiertes Core-Manifest. Ein Update aus einem Release, das eines enthält, prüft diese Dateien. Bis dahin ist das ungeprüft, kein fehlgeschlagenes Release.",
       "coreFailed": "Die Core-Dateien stimmen nicht mit dem Manifest überein.",
       "verified": "Geprüft",
       "unverifiable": "Keine Basis",
