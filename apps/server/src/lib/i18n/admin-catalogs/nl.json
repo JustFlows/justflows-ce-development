@@ -2300,7 +2300,7 @@
       "repair": "Installeer de extensie opnieuw vanaf een vertrouwd pakket. Justflows neemt de huidige bestanden niet als basislijn.",
       "coreVerified": "Corebestanden komen overeen met het ondertekende releasemanifest.",
       "coreLocal": "Corebestanden komen overeen met een lokale basislijn. Dit is geen officiële ondertekende release.",
-      "coreAbsent": "Er is geen coremanifest. Een ontwikkelcheckout is niet geverifieerd, geen mislukte release.",
+      "coreAbsent": "Deze installatie heeft geen ondertekend coremanifest. Een update uit een release die het bevat, controleert deze bestanden. Tot die tijd is dit niet geverifieerd, geen mislukte release.",
       "coreFailed": "Corebestanden komen niet overeen met het manifest.",
       "verified": "Geverifieerd",
       "unverifiable": "Geen basislijn",

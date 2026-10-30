@@ -2768,7 +2768,7 @@
       "repair": "Reinstall the extension from a trusted package. Justflows does not treat the current files as the baseline.",
       "coreVerified": "Core files match the signed release manifest.",
       "coreLocal": "Core files match a local baseline. This is not an official signed release.",
-      "coreAbsent": "No core manifest is present. A development checkout is unverified, not a failed release.",
+      "coreAbsent": "This installation has no signed core file manifest. An update from a release that includes one checks these files. Until then this is unverified, not a failed release.",
       "coreFailed": "Core files do not match the manifest.",
       "verified": "Verified",
       "unverifiable": "No baseline",

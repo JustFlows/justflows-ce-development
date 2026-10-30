@@ -44,7 +44,10 @@ restore_pnpm_node_modules() {
     PNPM_HIDDEN=""
   fi
 }
-trap 'restore_pnpm_node_modules; node "$ROOT/scripts/restore-hosting.js" 2>/dev/null || true' EXIT
+remove_core_manifest() {
+  rm -f "$ROOT/core-integrity.json"
+}
+trap 'restore_pnpm_node_modules; remove_core_manifest; node "$ROOT/scripts/restore-hosting.js" 2>/dev/null || true' EXIT
 if [ -d "$ROOT/node_modules/.pnpm" ]; then
   PNPM_HIDDEN="$ROOT/node_modules.pnpm-hidden"
   mv "$ROOT/node_modules" "$PNPM_HIDDEN"
@@ -65,6 +68,17 @@ if [ -f "$ROOT/package-lock.json" ]; then
   node "$ROOT/scripts/generate-sbom.mjs" "$ROOT/sbom.cdx.json"
 else
   echo "    (skipping — no package-lock.json)"
+fi
+
+# The signed per-file manifest has to be inside the zip. An update copies it
+# with the rest of the core and can then check those files. The same release
+# key signs the zip. Themes, plugins, and CSS providers are not in the
+# manifest: an update leaves those directories in place.
+if [ -n "${JUSTFLOWS_CORE_RELEASE_KEY_FILE:-}" ] || [ -n "${JUSTFLOWS_CORE_RELEASE_KEY:-}" ]; then
+  echo "==> Writing signed core file manifest…"
+  node "$ROOT/scripts/verify-core-integrity.mjs" write-official --root "$ROOT"
+else
+  echo "==> No core file manifest: set JUSTFLOWS_CORE_RELEASE_KEY_FILE to include one."
 fi
 
 echo "==> Creating $OUT …"

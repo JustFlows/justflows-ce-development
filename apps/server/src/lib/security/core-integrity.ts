@@ -150,7 +150,13 @@ async function readManifest(root: string): Promise<CoreManifest | null> {
 
 function skipHeavyDirectory(relativeDir: string): boolean {
   const name = relativeDir.split("/").pop() ?? relativeDir;
-  return name === "node_modules" || name === ".git" || name === "storage" || name === "uploads";
+  return name === "node_modules"
+    || name === ".git"
+    || name === "storage"
+    || name === "uploads"
+    || name === "tests"
+    || name === "__tests__"
+    || name === "coverage";
 }
 
 async function addTree(files: IntegrityFile[], root: string, absolute: string, prefix: string): Promise<void> {
@@ -165,7 +171,7 @@ async function addTree(files: IntegrityFile[], root: string, absolute: string, p
   }
   for (const file of walked.files) {
     const relative = prefix ? `${prefix}/${file.path}` : file.path;
-    if (isMutable(relative)) continue;
+    if (isMutable(relative) || relative.endsWith(".tsbuildinfo")) continue;
     files.push({ path: relative, size: file.size, sha256: file.sha256 });
   }
 }
@@ -178,16 +184,20 @@ async function addFile(files: IntegrityFile[], root: string, relativePath: strin
   files.push(hashed.file);
 }
 
-/** Files an official or local baseline covers. Missing build output is skipped. */
+/**
+ * Files an official or local baseline covers. Missing build output is skipped.
+ *
+ * Plugins, themes, and CSS providers are left out. A core update does not
+ * replace those directories, so a manifest of them would fail on every site
+ * that already has its own copies.
+ */
 export async function collectCoreFiles(root = getJfRoot()): Promise<IntegrityFile[]> {
   const files: IntegrityFile[] = [];
   await addFile(files, root, "server.js");
   await addFile(files, root, "package.json");
+  await addFile(files, root, "apps/server/package.json");
   await addTree(files, root, path.join(root, "apps/server/dist"), "apps/server/dist");
   await addTree(files, root, path.join(root, "migrations"), "migrations");
-  await addTree(files, root, path.join(root, "plugins"), "plugins");
-  await addTree(files, root, path.join(root, "themes"), "themes");
-  await addTree(files, root, path.join(root, "css-providers"), "css-providers");
   let packageNames: string[] = [];
   try {
     packageNames = await fsp.readdir(path.join(root, "packages"));

@@ -2342,7 +2342,7 @@
       "repair": "Reinstala la extensión desde un paquete de confianza. Justflows no adopta los archivos actuales como línea base.",
       "coreVerified": "Los archivos del núcleo coinciden con el manifiesto firmado de la versión.",
       "coreLocal": "Los archivos del núcleo coinciden con una línea base local. No es una versión oficial firmada.",
-      "coreAbsent": "No hay un manifiesto del núcleo. Una copia de desarrollo queda sin verificar, no es una versión fallida.",
+      "coreAbsent": "Esta instalación no tiene un manifiesto del núcleo firmado. Una actualización de una versión que lo incluya comprueba estos archivos. Hasta entonces queda sin verificar, no es una versión fallida.",
       "coreFailed": "Los archivos del núcleo no coinciden con el manifiesto.",
       "verified": "Verificado",
       "unverifiable": "Sin línea base",

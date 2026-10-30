@@ -2807,7 +2807,7 @@
       "repair": "Zainstaluj rozszerzenie ponownie z zaufanego pakietu. Justflows nie przyjmuje bieżących plików jako bazy.",
       "coreVerified": "Pliki rdzenia są zgodne z podpisanym manifestem wydania.",
       "coreLocal": "Pliki rdzenia są zgodne z lokalną bazą. To nie jest oficjalne podpisane wydanie.",
-      "coreAbsent": "Brak manifestu rdzenia. Kopia deweloperska jest niezweryfikowana, to nie jest nieudane wydanie.",
+      "coreAbsent": "Ta instalacja nie ma podpisanego manifestu rdzenia. Aktualizacja z wydania, które go zawiera, sprawdza te pliki. Do tego czasu jest to niezweryfikowane, to nie jest nieudane wydanie.",
       "coreFailed": "Pliki rdzenia nie są zgodne z manifestem.",
       "verified": "Zweryfikowano",
       "unverifiable": "Brak bazy",
