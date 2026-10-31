@@ -9,6 +9,8 @@ export interface QuotaMeter {
   unit: "count" | "bytes" | "flag";
   limit: number | null;
   used: number | null;
+  /** A missing limit leaves this flag off. Other flags stay on until set to 0. */
+  whenUnset?: "off";
 }
 
 const STORAGE_METER = "storage" + ".bytes";
@@ -56,8 +58,13 @@ function meterLabel(key: string, fallback: string, t: (key: string) => string): 
   return fallback;
 }
 
+function flagOn(meter: QuotaMeter): boolean {
+  if (meter.whenUnset === "off") return typeof meter.limit === "number" && meter.limit > 0;
+  return meter.limit !== 0;
+}
+
 function toField(meter: QuotaMeter): string {
-  if (meter.unit === "flag") return meter.limit === 0 ? "0" : "1";
+  if (meter.unit === "flag") return flagOn(meter) ? "1" : "0";
   if (meter.limit === null) return "";
   if (meter.unit === "bytes") return String(Math.round(meter.limit / (1024 * 1024)));
   return String(meter.limit);
@@ -196,7 +203,7 @@ export default function QuotaLimitsCard({
                   <label className="jf-checkrow" key={meter.key}>
                     <input
                       type="checkbox"
-                      checked={(draft[meter.key] ?? "1") !== "0"}
+                      checked={(draft[meter.key] ?? (meter.whenUnset === "off" ? "0" : "1")) !== "0"}
                       onChange={(event) => setDraft((current) => ({ ...current, [meter.key]: event.target.checked ? "1" : "0" }))}
                     />
                     <span>{meterLabel(meter.key, meter.label, t)}</span>

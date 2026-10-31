@@ -39,4 +39,18 @@ describe("Settings → Storage and the own-storage switch", () => {
     limits.set("feature.ownStorage", 0);
     expect(await disabledAdminPaths("root-site")).not.toContain("/admin/settings/storage");
   });
+
+  it("hides a plugin's pages on a website whose plugin switch is turned off", async () => {
+    expect(await disabledAdminPaths("customer-site")).not.toContain("/admin/plugins/justflows.example");
+    limits.set("justflows.example.enabled", 1);
+    expect(await disabledAdminPaths("customer-site")).not.toContain("/admin/plugins/justflows.example");
+    limits.set("justflows.example.enabled", 0);
+    expect(await disabledAdminPaths("customer-site")).toContain("/admin/plugins/justflows.example");
+  });
+
+  it("ignores an off switch whose key is not a plugin id", async () => {
+    limits.set("../evil.enabled", 0);
+    limits.set("feature.enabled", 0);
+    expect((await disabledAdminPaths("customer-site")).some((path) => path.startsWith("/admin/plugins/"))).toBe(false);
+  });
 });

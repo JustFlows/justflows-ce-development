@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { PLUGIN_ID_RE, pluginAdminBasePath } from "@justflows/sdk";
 import type { RequestHandler } from "express";
 import { getTenantContext } from "./context.js";
 import { enforceQuota, quotaLimitMap } from "./quotas.js";
@@ -65,10 +66,19 @@ export async function disabledFeatureKeys(siteId: string): Promise<string[]> {
   return SITE_FEATURES.filter((feature) => limits.get(feature.key) === 0).map((feature) => feature.key);
 }
 
+/** Suffix of a plugin's own site switch, such as `justflows.example.enabled`. */
+const PLUGIN_FEATURE_SUFFIX = ".enabled";
+
 function disabledPathsFromLimits(limits: Map<string, number>): string[] {
   const paths: string[] = [];
   for (const feature of SITE_FEATURES) {
     if (limits.get(feature.key) === 0) paths.push(...feature.paths);
+  }
+  /** A plugin's `<plugin id>.enabled` switch stored as off hides that plugin's admin pages. */
+  for (const [key, value] of limits) {
+    if (value !== 0 || !key.endsWith(PLUGIN_FEATURE_SUFFIX)) continue;
+    const pluginId = key.slice(0, -PLUGIN_FEATURE_SUFFIX.length);
+    if (PLUGIN_ID_RE.test(pluginId)) paths.push(pluginAdminBasePath(pluginId));
   }
   return paths;
 }

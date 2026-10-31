@@ -159,6 +159,15 @@ export interface ContentRevisionRef extends ContentRef {
   readonly actorId?: string;
 }
 
+/** A comment was stored. No email, address, or comment text. */
+export interface CommentCreatedEvent {
+  readonly siteId: string;
+  readonly contentId: string;
+  readonly commentId: string;
+  readonly parentId: string;
+  readonly status: "pending" | "approved";
+}
+
 export interface ContentUpdateGateEvent extends ContentRef {
   readonly revision?: ContentRevisionSnapshot;
   readonly revisionId?: string;
@@ -822,6 +831,7 @@ export interface ActionEventMap {
   "content.revisionSaved": ContentRevisionRef;
   "content.revisionDiscarded": ContentRevisionRef;
   "content.revisionRestored": ContentRevisionRef;
+  "comments.created": CommentCreatedEvent;
 
   "media.uploaded": MediaUploadedEvent;
   "media.deleted": MediaRef;

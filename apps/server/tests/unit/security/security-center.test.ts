@@ -87,15 +87,21 @@ describe("security center checks", () => {
     expect(byId(rows, "runtime.update").status).toBe("warn");
   });
 
-  it("hides installation proxy and update details from another site", () => {
-    const rows = evaluateSecurityCenter(facts({
+  it("omits every installation-scoped check from another site's report", () => {
+    const report = securityCenterReport(facts({
       installationRoot: false,
       proxy: null,
       update: { state: "available", latest: "9.9.9", checkedAt: "2026-10-29T08:00:00.000Z" },
     }));
-    expect(byId(rows, "transport.proxy")).toMatchObject({ status: "not_applicable", summary: "otherSite", evidence: {} });
-    expect(byId(rows, "runtime.update")).toMatchObject({ status: "not_applicable", summary: "otherSite", href: null });
-    expect(byId(rows, "runtime.update").evidence).not.toHaveProperty("latest");
+    expect(report.checks.map((check) => check.id)).toEqual([
+      "accounts.mfa",
+      "accounts.sessions",
+      "accounts.apiKeys",
+      "headers.policy",
+      "recovery.backup",
+    ]);
+    expect(report.checks.every((check) => check.scope === "site")).toBe(true);
+    expect(JSON.stringify(report)).not.toContain("9.9.9");
   });
 
   it("treats production HTTP as a failed configuration and does not call an unread certificate a pass", () => {

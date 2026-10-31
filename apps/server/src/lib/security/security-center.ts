@@ -649,10 +649,11 @@ export function evaluateSecurityCenter(facts: SecurityCenterFacts): SecurityChec
 }
 
 export function securityCenterReport(facts: SecurityCenterFacts): SecurityCenterReport {
+  const checks = evaluateSecurityCenter(facts);
   return {
     checkedAt: facts.checkedAt,
     installationRoot: facts.installationRoot,
     auditAvailable: facts.auditAvailable,
-    checks: evaluateSecurityCenter(facts),
+    checks: facts.installationRoot ? checks : checks.filter((check) => check.scope === "site"),
   };
 }

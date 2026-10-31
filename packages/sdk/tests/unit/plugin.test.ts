@@ -240,7 +240,30 @@ describe("PluginManifestSchema — editor panels", () => {
         },
       ],
     });
-    expect(parsed.editorPanels?.[0]?.fields[0]?.type).toBe("image");
+    expect(parsed.editorPanels?.[0]?.fields?.[0]?.type).toBe("image");
+  });
+
+  it("accepts an embedded app instead of fields", () => {
+    const parsed = PluginManifestSchema.parse({
+      ...withPerm,
+      editorPanels: [{ id: "workflow", title: "Workflow", app: "comments" }],
+    });
+    expect(parsed.editorPanels?.[0]?.app).toBe("comments");
+  });
+
+  it("rejects a panel that has both fields and an app, or neither", () => {
+    expect(() =>
+      PluginManifestSchema.parse({
+        ...withPerm,
+        editorPanels: [{ id: "workflow", title: "Workflow", app: "comments", fields: [{ key: "x", type: "text", label: "X" }] }],
+      }),
+    ).toThrow();
+    expect(() =>
+      PluginManifestSchema.parse({
+        ...withPerm,
+        editorPanels: [{ id: "workflow", title: "Workflow" }],
+      }),
+    ).toThrow();
   });
 
   it("rejects an unknown field type or a bad key", () => {
@@ -252,5 +275,28 @@ describe("PluginManifestSchema — editor panels", () => {
         PluginManifestSchema.parse({ ...withPerm, editorPanels: [{ id: "p", title: "P", fields: [field] }] }),
       ).toThrow();
     }
+  });
+});
+
+describe("PluginManifestSchema — own sidebar section and workspace panels", () => {
+  it("accepts an emoji or an admin image file as the section icon", () => {
+    expect(PluginManifestSchema.parse({ ...base, adminSection: { label: "Acme", icon: "logo.png" } }).adminSection?.icon).toBe("logo.png");
+    expect(PluginManifestSchema.parse({ ...base, adminSection: { label: "Acme", icon: "⚡" } }).adminSection?.icon).toBe("⚡");
+    expect(() => PluginManifestSchema.parse({ ...base, adminSection: { label: "Acme", icon: "../logo.png" } })).toThrow();
+    expect(() => PluginManifestSchema.parse({ ...base, adminSection: { label: "Acme", icon: "https://x.test/logo.png" } })).toThrow();
+  });
+
+  it("accepts the plugin menu domain and workspace panels with a relative app path", () => {
+    const parsed = PluginManifestSchema.parse({
+      ...base,
+      permissions: ["admin:extend"],
+      adminMenu: [{ id: "home", label: "Acme", domain: "plugin" }],
+      workspacePanels: [{ id: "server", title: "Server", app: "workspace" }],
+    });
+    expect(parsed.adminMenu?.[0]?.domain).toBe("plugin");
+    expect(parsed.workspacePanels).toEqual([{ id: "server", title: "Server", app: "workspace" }]);
+    expect(() =>
+      PluginManifestSchema.parse({ ...base, workspacePanels: [{ id: "server", title: "Server", app: "../x" }] }),
+    ).toThrow();
   });
 });

@@ -821,6 +821,15 @@ export async function acceptCommentSubmission(
       nowIso,
     ],
   );
+  if (status === "pending" || status === "approved") {
+    await publishCommentCreated({
+      siteId,
+      contentId,
+      commentId: id,
+      parentId: parentId ?? "",
+      status,
+    });
+  }
 
   if (status === "pending" && settings.notifyModerator) {
     void notifyModerator(siteId, authorName, cleanBody).catch(() => undefined);
@@ -837,6 +846,24 @@ export async function acceptCommentSubmission(
     status: 303,
     location: returnLocation(returnTo, input.referer, status === "approved" ? "posted" : "pending"),
   };
+}
+
+/** Tell plugins a comment was stored. Failures stay off the visitor's response. */
+export async function publishCommentCreated(event: {
+  siteId: string;
+  contentId: string;
+  commentId: string;
+  parentId: string;
+  status: "pending" | "approved";
+}): Promise<void> {
+  try {
+    await getRuntimeHooks().dispatchAction("comments.created", event, {
+      siteId: event.siteId,
+      source: "http",
+    });
+  } catch {
+    /* The comment is already stored. */
+  }
 }
 
 function safeParse(value: string): unknown {

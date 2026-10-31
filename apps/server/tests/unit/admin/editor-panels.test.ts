@@ -21,6 +21,15 @@ describe("panelsFromManifest", () => {
     expect(panelsFromManifest({ permissions: [], editorPanels: [panel] }, "justflows.seo")).toEqual([]);
   });
 
+  it("keeps a panel that embeds an admin screen", () => {
+    expect(
+      panelsFromManifest(
+        { permissions: ["admin:extend"], editorPanels: [{ id: "workflow", title: "Workflow", app: "comments" }] },
+        "justflows.example",
+      ),
+    ).toEqual([{ id: "workflow", title: "Workflow", app: "comments", pluginId: "justflows.example" }]);
+  });
+
   it("drops a panel that no longer matches the schema", () => {
     const bad = { ...panel, fields: [{ key: "../x", type: "script", label: "" }] };
     expect(panelsFromManifest({ permissions: ["admin:extend"], editorPanels: [bad, panel] }, "justflows.seo")).toHaveLength(1);

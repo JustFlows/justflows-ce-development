@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { getDb } from "../database/db.js";
-import { commentPlainText, notifyOnApproval, sanitizeCommentBody } from "./comments-public.js";
+import { commentPlainText, notifyOnApproval, publishCommentCreated, sanitizeCommentBody } from "./comments-public.js";
 import { invalidatePublicPages } from "../cache/public-cache.js";
 import { auditLog } from "../security/audit-log.js";
 import { trainFromMark } from "./comments-rules.js";
@@ -224,6 +224,13 @@ export async function replyToComment(
     [id, actor.siteId, parent.content_id, parent.id, authorName, u?.email ?? null, clean, actor.userId, false, ts, ts],
   );
   void notifyOnApproval(actor.siteId, [id]).catch(() => undefined);
+  await publishCommentCreated({
+    siteId: actor.siteId,
+    contentId: parent.content_id,
+    commentId: id,
+    parentId: parent.id,
+    status: "approved",
+  });
   await bustCommentCache();
   return { status: 200, body: { ok: true, id } };
 }

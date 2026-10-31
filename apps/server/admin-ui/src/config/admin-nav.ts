@@ -16,8 +16,13 @@ import { internalAdminPath } from "../admin-path";
 
 export type NavDomain = {
   key: string;
+  /** Literal label used when `key` has no catalog entry (a plugin's own section). */
+  label?: string;
+  /** Locale code → label a plugin shipped for its own section. */
+  labels?: Record<string, string>;
   /** Matches the `domain` a plugin names in its manifest. */
   slug: string;
+  /** Emoji, or a same-origin image path such as a plugin logo. */
   icon: string;
   items: NavItem[];
 };
@@ -50,6 +55,8 @@ export type PluginMenuItem = {
   adminAppUrl?: string;
   /** Locale code → catalog URL declared in the plugin manifest. */
   adminCatalogs?: Record<string, string>;
+  /** The plugin's own sidebar section, on items with `domain: "plugin"`. */
+  section?: { label: string; labels?: Record<string, string>; icon: string };
 };
 
 /**
@@ -307,19 +314,27 @@ function toNavItem(item: PluginMenuItem): NavItem {
   };
 }
 
+/** Sidebar slug of a plugin's own section. */
+export function pluginSectionSlug(pluginId: string): string {
+  return `plugin:${pluginId}`;
+}
+
 /**
  * Merge plugin-contributed pages into the core domains. Unknown domains fall
  * back to Extensions so a plugin can never register an unreachable page.
+ * Pages in the `plugin` domain get a section per plugin, above Extensions.
  */
 export function buildNavDomains(pluginItems: PluginMenuItem[]): NavDomain[] {
   if (pluginItems.length === 0) return ADMIN_NAV_DOMAINS;
 
   const slugs = new Set(ADMIN_NAV_DOMAINS.map((domain) => domain.slug));
+  const listed = pluginItems.filter((item) => item.listed !== false);
+  const own = listed.filter((item) => item.domain === "plugin" && item.section);
 
-  return ADMIN_NAV_DOMAINS.map((domain) => {
-    const owned = pluginItems.filter(
+  const merged = ADMIN_NAV_DOMAINS.map((domain) => {
+    const owned = listed.filter(
       (item) =>
-        item.listed !== false &&
+        !own.includes(item) &&
         (slugs.has(item.domain) ? item.domain : "extensions") === domain.slug,
     );
     if (owned.length === 0) return domain;
@@ -328,6 +343,27 @@ export function buildNavDomains(pluginItems: PluginMenuItem[]): NavDomain[] {
     const trailing = domain.items.filter((item) => item.trailing);
     return { ...domain, items: [...core, ...owned.map(toNavItem), ...trailing] };
   });
+
+  const sections = new Map<string, NavDomain>();
+  for (const item of own) {
+    const section = item.section!;
+    const existing = sections.get(item.pluginId);
+    if (existing) {
+      existing.items.push(toNavItem(item));
+      continue;
+    }
+    sections.set(item.pluginId, {
+      key: `plugin.${item.pluginId}.section`,
+      label: section.label,
+      labels: section.labels,
+      slug: pluginSectionSlug(item.pluginId),
+      icon: section.icon,
+      items: [toNavItem(item)],
+    });
+  }
+  if (sections.size === 0) return merged;
+  const at = merged.findIndex((domain) => domain.slug === "extensions");
+  return [...merged.slice(0, at), ...sections.values(), ...merged.slice(at)];
 }
 
 function matchesNavItem(pathname: string, item: NavItem): boolean {
@@ -373,7 +409,11 @@ export function isDomainActive(domain: NavDomain, pathname: string): boolean {
  * Prefer the plugin's own label for `locale` (exact, then the base language),
  * then the core catalog translation, then the English label the plugin shipped.
  */
-export function navLabel(t: (key: string) => string, item: NavItem, locale?: string): string {
+export function navLabel(
+  t: (key: string) => string,
+  item: Pick<NavItem, "key" | "label" | "labels">,
+  locale?: string,
+): string {
   if (locale && item.labels) {
     const own = item.labels[locale] ?? item.labels[locale.split("-")[0]!];
     if (own) return own;

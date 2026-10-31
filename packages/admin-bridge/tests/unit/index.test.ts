@@ -98,6 +98,8 @@ describe("createAdminBridge", () => {
   it("forwards navigate requests and reports height", () => {
     const bridge = createAdminBridge();
     bridge.navigate("/admin/plugins/acme.forms/submissions");
+    bridge.setLayout("fill");
+    bridge.setLayout("default");
     bridge.reportHeight(742);
     expect(parentPost).toHaveBeenCalledWith(
       { source: "justflows-admin-plugin", type: "navigate", path: "/admin/plugins/acme.forms/submissions" },
@@ -105,6 +107,14 @@ describe("createAdminBridge", () => {
     );
     expect(parentPost).toHaveBeenCalledWith(
       { source: "justflows-admin-plugin", type: "resize", height: 742 },
+      origin,
+    );
+    expect(parentPost).toHaveBeenCalledWith(
+      { source: "justflows-admin-plugin", type: "layout", mode: "fill" },
+      origin,
+    );
+    expect(parentPost).toHaveBeenCalledWith(
+      { source: "justflows-admin-plugin", type: "layout", mode: "default" },
       origin,
     );
   });

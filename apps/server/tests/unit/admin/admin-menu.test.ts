@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import {
   finalizeAdminMenu,
   stampCatalogLabels,
+  stampSections,
   stampSetupPaths,
 } from "../../../src/lib/admin/admin-menu.js";
 
@@ -200,6 +201,33 @@ describe("menu labels", () => {
       );
       expect(forms?.labels).toEqual({ nl: "Formulieren", de: "Eigene Formulare" });
       expect(other?.labels).toBeUndefined();
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("stampSections", () => {
+  it("gives plugin domain items their section, translated from the plugin catalogs", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "jf-menu-section-"));
+    const nl = path.join(dir, "nl.json");
+    fs.writeFileSync(nl, JSON.stringify({ "menu.section": "Acme NL" }));
+    try {
+      const [own, shared] = stampSections(
+        [
+          { pluginId: "justflows.acme", id: "home", label: "Acme", path: "/admin/plugins/justflows.acme", icon: "⚡", domain: "plugin" },
+          { pluginId: "justflows.acme", id: "tool", label: "Tool", path: "/admin/plugins/justflows.acme/tool", icon: "⚡", domain: "tools" },
+        ],
+        new Map([["justflows.acme", { label: "Acme", labelKey: "menu.section", icon: "/ext/justflows.acme/admin/logo.png" }]]),
+        new Map([["justflows.acme", { nl }]]),
+      );
+      expect(own?.section).toEqual({
+        label: "Acme",
+        labelKey: "menu.section",
+        labels: { nl: "Acme NL" },
+        icon: "/ext/justflows.acme/admin/logo.png",
+      });
+      expect(shared?.section).toBeUndefined();
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }

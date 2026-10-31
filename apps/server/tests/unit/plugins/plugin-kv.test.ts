@@ -5,7 +5,7 @@ const query = vi.fn();
 const list = vi.fn();
 vi.mock("../../../src/lib/database/db.js", () => ({ getDb: async () => ({ query }) }));
 vi.mock("../../../src/lib/plugins/plugin-data.js", () => ({
-  createPluginDataApi: (pluginId: string, siteId: string) => ({
+  createPinnedPluginDataApi: (pluginId: string, siteId: string) => ({
     list: (collection: string) => list(pluginId, siteId, collection),
   }),
 }));

@@ -7,25 +7,50 @@ import { getTenantContext } from "../tenancy/context.js";
 import { installationRootSiteId } from "../tenancy/registry.js";
 import { getSiteId } from "../settings/site-settings.js";
 import { getPluginSetting } from "./plugin-kv.js";
+import { pluginSecretExists, readPluginSecret } from "./plugin-secrets.js";
 
 /**
  * `ctx.network` for a plugin holding `platform:network`. Reads go to the
  * installation database, so a site with its own database still sees the main
  * site's choices. Nothing here writes: the main site saves through its own
- * `ctx.settings`.
+ * `ctx.settings` and `ctx.secrets`.
  */
+
+/** The installation's main site, or the only site when tenancy tables are absent. */
+async function mainSiteId(): Promise<string | null> {
+  const rootId = await installationRootSiteId().catch(() => null);
+  if (rootId) return rootId;
+  return (await getSiteId()) ?? null;
+}
+
+/** Run a main-site read on the installation database when tenancy is installed. */
+async function readOnInstallation<T>(siteId: string, read: () => Promise<T>): Promise<T> {
+  const listed = await installationRootSiteId().catch(() => null);
+  if (!listed) return read();
+  const control = await getControlDb();
+  return runWithDatabase(control, read);
+}
+
 export function createPluginNetworkApi(pluginId: string): PluginNetworkApi {
   return {
     mainSiteSettings: {
       async get<T = unknown>(key: string): Promise<T | undefined> {
-        const rootId = await installationRootSiteId().catch(() => null);
+        const rootId = await mainSiteId();
         /** No tenancy tables: a single-site install is its own main site. */
-        if (!rootId) {
-          const siteId = await getSiteId();
-          return siteId ? getPluginSetting<T>(pluginId, siteId, key) : undefined;
-        }
-        const control = await getControlDb();
-        return runWithDatabase(control, () => getPluginSetting<T>(pluginId, rootId, key));
+        if (!rootId) return undefined;
+        return readOnInstallation(rootId, () => getPluginSetting<T>(pluginId, rootId, key));
+      },
+    },
+    mainSiteSecrets: {
+      async get(key: string): Promise<string | undefined> {
+        const siteId = await mainSiteId();
+        if (!siteId) return undefined;
+        return readOnInstallation(siteId, () => readPluginSecret(pluginId, siteId, key));
+      },
+      async has(key: string): Promise<boolean> {
+        const siteId = await mainSiteId();
+        if (!siteId) return false;
+        return readOnInstallation(siteId, () => pluginSecretExists(pluginId, siteId, key));
       },
     },
     async sites(): Promise<PluginNetworkSite[]> {

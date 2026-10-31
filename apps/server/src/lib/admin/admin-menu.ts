@@ -2,6 +2,7 @@
 
 import {
   ADMIN_MENU_DOMAINS,
+  AdminSectionSchema,
   pluginAdminBasePath,
   RELATIVE_ADMIN_PATH_RE,
   resolvePluginAdminPath,
@@ -29,6 +30,17 @@ export interface AdminMenuEntry extends Omit<PluginAdminMenuItem, "path"> {
   adminAppUrl?: string;
   /** Locale code → catalog URL, from `adminApp.locales` in the plugin manifest. */
   adminCatalogs?: Record<string, string>;
+  /** The plugin's own sidebar section, on items with `domain: "plugin"`. */
+  section?: AdminMenuSection;
+}
+
+/** A plugin's own sidebar section as the admin receives it. */
+export interface AdminMenuSection {
+  label: string;
+  labelKey?: string;
+  labels?: Record<string, string>;
+  /** An emoji, or an `/ext/<pluginId>/admin/<file>` image URL. */
+  icon: string;
 }
 
 const ADMIN_MENU_DOMAIN_SET = new Set<string>(ADMIN_MENU_DOMAINS);
@@ -170,6 +182,7 @@ export async function listPluginAdminMenu(siteId: string): Promise<AdminMenuEntr
   const setupByPlugin = new Map<string, string>();
   /** Plugins active on this site — used to drop stale adminApp / filter leftovers. */
   const activePluginIds = new Set<string>();
+  const sections = new Map<string, AdminMenuSection>();
 
   for (const row of rows) {
     if (!MENU_VISIBLE_STATUSES.has(row.status)) continue;
@@ -189,6 +202,9 @@ export async function listPluginAdminMenu(siteId: string): Promise<AdminMenuEntr
       const setupPath = resolveAdminPath(manifest.setupPath, row.plugin_id);
       if (setupPath) setupByPlugin.set(row.plugin_id, setupPath);
     }
+
+    const section = manifestSection(manifest, row.plugin_id);
+    if (section) sections.set(row.plugin_id, section);
 
     const items = "adminMenu" in manifest ? manifestMenu(manifest, row.plugin_id) : [];
 
@@ -226,10 +242,66 @@ export async function listPluginAdminMenu(siteId: string): Promise<AdminMenuEntr
     () => new Map<string, Record<string, string>>(),
   );
 
-  return stampCatalogLabels(
-    stampAdminAppUrls(stampSetupPaths(menu, setupByPlugin), adminAppRoutes),
+  return stampSections(
+    stampCatalogLabels(
+      stampAdminAppUrls(stampSetupPaths(menu, setupByPlugin), adminAppRoutes),
+      catalogFiles,
+    ),
+    sections,
     catalogFiles,
   );
+}
+
+/**
+ * The section a plugin declares in `adminSection`. Without one, a plugin that
+ * puts pages in the `plugin` domain gets a section named after the plugin.
+ */
+function manifestSection(manifest: Record<string, unknown>, pluginId: string): AdminMenuSection | null {
+  const permissions = Array.isArray(manifest.permissions) ? manifest.permissions : [];
+  if (!permissions.includes("admin:extend")) return null;
+  const parsed = AdminSectionSchema.safeParse(manifest.adminSection);
+  if (parsed.success) {
+    const { label, labelKey, labels, icon } = parsed.data;
+    return {
+      label,
+      ...(labelKey ? { labelKey } : {}),
+      ...(labels ? { labels } : {}),
+      icon: !icon ? "🔌" : icon.length <= 8 ? icon : `/ext/${pluginId}/admin/${icon}`,
+    };
+  }
+  const name = asString(manifest.name);
+  return name ? { label: name.slice(0, 60), icon: "🔌" } : null;
+}
+
+/**
+ * Attach the plugin's section to each of its `plugin` domain items, with the
+ * section label translated from the plugin's own catalogs. Labels the plugin
+ * declared itself win per locale.
+ */
+export function stampSections(
+  items: AdminMenuEntry[],
+  sections: Map<string, AdminMenuSection>,
+  catalogFiles: Map<string, Record<string, string>>,
+): AdminMenuEntry[] {
+  const resolved = new Map<string, AdminMenuSection>();
+  return items.map((item) => {
+    if (item.domain !== "plugin") return item;
+    let section = resolved.get(item.pluginId);
+    if (!section) {
+      section = sections.get(item.pluginId) ?? { label: item.pluginId, icon: "🔌" };
+      const files = section.labelKey ? catalogFiles.get(item.pluginId) : undefined;
+      if (section.labelKey && files) {
+        const labels: Record<string, string> = {};
+        for (const [code, file] of Object.entries(files)) {
+          const label = asString(readCatalog(file)?.[section.labelKey]);
+          if (label) labels[code] = label.slice(0, 60);
+        }
+        section = { ...section, labels: { ...labels, ...section.labels } };
+      }
+      resolved.set(item.pluginId, section);
+    }
+    return { ...item, section };
+  });
 }
 
 /**
