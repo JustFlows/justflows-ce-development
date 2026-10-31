@@ -3,13 +3,23 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Link, Navigate, NavLink } from "../admin-router";
 import { adminBasePath } from "../admin-path";
 import { ADMIN_UI_LOCALES, useT, type AdminUiLocale } from "../i18n/I18nProvider";
-import { ADMIN_DASHBOARD, canAccessPath, filterDomainsByRole, findDomainForPath, isDomainActive, pluginPageRoles } from "../config/admin-nav";
+import { ADMIN_DASHBOARD, canAccessPath, filterDomainsByRole, findDomainForPath, isDomainActive, navLabel, pluginPageRoles } from "../config/admin-nav";
 import DomainSubnav from "./DomainSubnav";
 import { usePluginMenu } from "./PluginMenuProvider";
 import { useSession, useSessionRole } from "./SessionProvider";
 import { JustflowsLogo } from "./JustflowsLogo";
 import { initialJson } from "../ssr-data";
 import { AssistantProvider, useAssistant } from "./ai/AssistantProvider";
+
+/** Emoji, or a same-origin image path such as a plugin logo. */
+function NavGlyph({ icon }: { icon: string }) {
+  const image = icon.startsWith("/");
+  return (
+    <span className={image ? "jf-nav__icon jf-nav__icon--image" : "jf-nav__icon"} aria-hidden="true">
+      {image ? <img src={icon} alt="" /> : icon}
+    </span>
+  );
+}
 
 /** Sidebar entry that opens the assistant panel, for users with ai:use. */
 function AssistantButton() {
@@ -125,10 +135,8 @@ export default function AdminShell() {
               className="jf-nav__link"
               aria-current={isDomainActive(domain, pathname) ? "page" : undefined}
             >
-              <span className="jf-nav__icon" aria-hidden="true">
-                {domain.icon}
-              </span>
-              {t(domain.key)}
+              <NavGlyph icon={domain.icon} />
+              {navLabel(t, domain, locale)}
             </Link>
           ))}
           <AssistantButton />

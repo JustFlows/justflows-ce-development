@@ -287,6 +287,29 @@ textarea {
   background: var(--jf-surface, #fff);
   display: block;
 }
+/* A plugin asked for the content area. The sidebar and section tabs stay. */
+.jf-main:has(.jf-page--fill) {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+.jf-page--fill {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+}
+.jf-page--fill .jf-pagehead {
+  display: none;
+}
+.jf-page--fill .jf-plugin-frame {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100% !important;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+}
 /* Author `display` would otherwise keep a hidden frame on top of Content, SEO, and the other core sections. */
 .jf-plugin-frame[hidden] {
   display: none !important;
@@ -473,6 +496,20 @@ textarea {
   font-size: 0.9rem;
   opacity: 0.85;
   flex-shrink: 0;
+}
+
+.jf-nav__icon--image {
+  opacity: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jf-nav__icon--image img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 /* Domain sub-navigation (shown above page content) */

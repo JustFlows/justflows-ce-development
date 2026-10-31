@@ -7,6 +7,20 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ## [0.4.1] [Unreleased]
 
+### Added
+
+- **A plugin can have its own sidebar section.** Menu items with `domain: "plugin"` are listed in a section for that plugin, above Extensions. `adminSection` in the manifest names it and sets its icon, which can be an emoji or an image from the plugin's admin app. ([#146](https://github.com/JustFlows/justflows-ce/issues/146))
+- **A plugin can add a card to Platform → Workspace.** `workspacePanels` in the manifest embeds a plugin admin screen there, and the admin bridge passes `workspaceId`. ([#146](https://github.com/JustFlows/justflows-ce/issues/146))
+- **A content editor section can embed a plugin admin screen.** An `editorPanels` entry with `app` shows that screen for the entry being edited, including a draft, and the admin bridge passes `contentId`. ([#146](https://github.com/JustFlows/justflows-ce/issues/146))
+- **Plugins hear about new comments.** The `comments.created` action runs when a visitor or moderator comment is stored as pending or approved. Spam and trash do not run it. It carries ids and the status, but no email, IP address, or comment text. ([#146](https://github.com/JustFlows/justflows-ce/issues/146))
+- **A website's Features list can turn a plugin off.** A plugin that registers the website flag `<plugin id>.enabled` gets a switch; off hides that plugin's admin pages on the website. A flag registered with `whenUnset: "off"` stays off until a plan or an operator turns it on. ([#146](https://github.com/JustFlows/justflows-ce/issues/146))
+- **A hosted site can read its plugin's main-site secrets.** `ctx.network.mainSiteSecrets` reads them, so a subsite can use a connection the main site saved. It cannot write them. ([#146](https://github.com/JustFlows/justflows-ce/issues/146))
+- **A plugin admin screen can use the whole content area.** `bridge.setLayout("fill")` keeps the sidebar and section tabs and gives the frame the rest. A sidebar section icon can be an image. ([#146](https://github.com/JustFlows/justflows-ce/issues/146))
+
+### Fixed
+
+- **A subsite's Security Center shows only checks that belong to that site.** Installation details such as the Node.js version, core updates, debug mode, the install wizard, session-cookie policy, public URL, trusted proxy, and file integrity stay on the main site. ([#198](https://github.com/JustFlows/justflows-ce/issues/198))
+
 ### Changed
 
 - **A signed release archive includes a core file manifest.** The archive lists the files an update replaces, and an update can check those files after it copies them. Uploads, storage, themes, plugins, and installed extensions stay out of that manifest. An installation without the manifest stays unverified. ([#120](https://github.com/JustFlows/justflows-ce/issues/120))

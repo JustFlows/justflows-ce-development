@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-import { createPluginDataApi } from "./plugin-data.js";
+import { createPinnedPluginDataApi } from "./plugin-data.js";
 import { deleteSiteSetting, getSiteSetting, getSiteSettings } from "../settings/site-settings.js";
 
 /** Plugin key-value rows (`ctx.settings`, Admin → Plugins → Settings). */
@@ -30,7 +30,7 @@ export async function getPluginSetting<T = unknown>(
   siteId: string,
   key: string,
 ): Promise<T | undefined> {
-  const row = await createPluginDataApi(pluginId, siteId).get<T>(PLUGIN_SETTINGS_COLLECTION, key);
+  const row = await createPinnedPluginDataApi(pluginId, siteId).get<T>(PLUGIN_SETTINGS_COLLECTION, key);
   if (row) return row.data;
   const legacy = await getSiteSetting<T>(siteId, legacySettingKey(pluginId, key));
   return legacy === null || legacy === undefined ? undefined : legacy;
@@ -41,7 +41,7 @@ export async function getPluginSettings(
   pluginId: string, siteId: string, keys: string[],
 ): Promise<Record<string, unknown>> {
   if (!keys.length) return {};
-  const rows = await createPluginDataApi(pluginId, siteId).list(PLUGIN_SETTINGS_COLLECTION);
+  const rows = await createPinnedPluginDataApi(pluginId, siteId).list(PLUGIN_SETTINGS_COLLECTION);
   const values = new Map(rows.map((row) => [row.id, row.data]));
   const missing = keys.filter((key) => !values.has(key));
   const legacy = await getSiteSettings(siteId, missing.map((key) => legacySettingKey(pluginId, key)));
@@ -56,12 +56,12 @@ export async function setPluginSetting<T = unknown>(
   key: string,
   value: T,
 ): Promise<void> {
-  await createPluginDataApi(pluginId, siteId).put(PLUGIN_SETTINGS_COLLECTION, key, value);
+  await createPinnedPluginDataApi(pluginId, siteId).put(PLUGIN_SETTINGS_COLLECTION, key, value);
   await deleteSiteSetting(siteId, legacySettingKey(pluginId, key));
 }
 
 export async function deletePluginSetting(pluginId: string, siteId: string, key: string): Promise<void> {
-  await createPluginDataApi(pluginId, siteId).delete(PLUGIN_SETTINGS_COLLECTION, key);
+  await createPinnedPluginDataApi(pluginId, siteId).delete(PLUGIN_SETTINGS_COLLECTION, key);
   await deleteSiteSetting(siteId, legacySettingKey(pluginId, key));
 }
 
@@ -70,7 +70,7 @@ export async function getPluginSecretCipher(
   siteId: string,
   key: string,
 ): Promise<string | undefined> {
-  const row = await createPluginDataApi(pluginId, siteId).get<string>(PLUGIN_SECRETS_COLLECTION, key);
+  const row = await createPinnedPluginDataApi(pluginId, siteId).get<string>(PLUGIN_SECRETS_COLLECTION, key);
   if (typeof row?.data === "string" && row.data) return row.data;
   const legacy = await getSiteSetting<string>(siteId, legacySettingKey(pluginId, `secret.${key}`));
   return legacy || undefined;
@@ -82,7 +82,7 @@ export async function setPluginSecretCipher(
   key: string,
   cipher: string,
 ): Promise<void> {
-  await createPluginDataApi(pluginId, siteId).put(PLUGIN_SECRETS_COLLECTION, key, cipher);
+  await createPinnedPluginDataApi(pluginId, siteId).put(PLUGIN_SECRETS_COLLECTION, key, cipher);
   await deleteSiteSetting(siteId, legacySettingKey(pluginId, `secret.${key}`));
 }
 
@@ -91,7 +91,7 @@ export async function deletePluginSecretCipher(
   siteId: string,
   key: string,
 ): Promise<void> {
-  await createPluginDataApi(pluginId, siteId).delete(PLUGIN_SECRETS_COLLECTION, key);
+  await createPinnedPluginDataApi(pluginId, siteId).delete(PLUGIN_SECRETS_COLLECTION, key);
   await deleteSiteSetting(siteId, legacySettingKey(pluginId, `secret.${key}`));
 }
 
@@ -100,7 +100,7 @@ export async function getPluginHostItem<T = unknown>(
   siteId: string,
   itemId: string,
 ): Promise<T | undefined> {
-  const row = await createPluginDataApi(pluginId, siteId).get<T>(PLUGIN_HOST_COLLECTION, itemId);
+  const row = await createPinnedPluginDataApi(pluginId, siteId).get<T>(PLUGIN_HOST_COLLECTION, itemId);
   if (row) return row.data;
   const legacyKey = legacyHostKey(pluginId, itemId);
   if (!legacyKey) return undefined;
@@ -114,13 +114,13 @@ export async function setPluginHostItem<T = unknown>(
   itemId: string,
   value: T,
 ): Promise<void> {
-  await createPluginDataApi(pluginId, siteId).put(PLUGIN_HOST_COLLECTION, itemId, value);
+  await createPinnedPluginDataApi(pluginId, siteId).put(PLUGIN_HOST_COLLECTION, itemId, value);
   const legacyKey = legacyHostKey(pluginId, itemId);
   if (legacyKey) await deleteSiteSetting(siteId, legacyKey);
 }
 
 export async function deletePluginHostItem(pluginId: string, siteId: string, itemId: string): Promise<void> {
-  await createPluginDataApi(pluginId, siteId).delete(PLUGIN_HOST_COLLECTION, itemId);
+  await createPinnedPluginDataApi(pluginId, siteId).delete(PLUGIN_HOST_COLLECTION, itemId);
   const legacyKey = legacyHostKey(pluginId, itemId);
   if (legacyKey) await deleteSiteSetting(siteId, legacyKey);
 }

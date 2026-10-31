@@ -16,6 +16,7 @@ export interface QuotaMeterDefinition {
   label: string;
   unit: QuotaUnit;
   owner: string;
+  whenUnset?: "off";
   count?: (scopeId: string) => Promise<number>;
 }
 
@@ -102,6 +103,7 @@ export function registerPluginMeter(pluginId: string, registration: QuotaMeterRe
     label,
     unit: registration.unit,
     owner: pluginId,
+    ...(registration.whenUnset === "off" ? { whenUnset: "off" as const } : {}),
     count: registration.count,
   });
   return () => {
@@ -422,7 +424,7 @@ export async function checkQuota(
   const limit = await resolveLimit(meter, scopeId);
   if (key === "storage.bytes" && limit === null) return { ok: true, limit: null, used: 0, remaining: null };
   if (meter.unit === "flag") {
-    const off = limit === 0;
+    const off = meter.whenUnset === "off" ? !(typeof limit === "number" && limit > 0) : limit === 0;
     return { ok: !off, limit, used: 0, remaining: off ? 0 : null };
   }
   let used: number | null;
@@ -499,7 +501,15 @@ export async function listQuotaMeters(scope: QuotaScope, scopeId: string): Promi
 }
 
 function meterView(meter: QuotaMeterDefinition, limit: number | null, used: number | null): QuotaMeterView {
-  return { key: meter.key, scope: meter.scope, label: meter.label, unit: meter.unit, limit, used };
+  return {
+    key: meter.key,
+    scope: meter.scope,
+    label: meter.label,
+    unit: meter.unit,
+    limit,
+    used,
+    ...(meter.whenUnset === "off" ? { whenUnset: "off" as const } : {}),
+  };
 }
 
 async function siteContentTypeMeters(siteId: string, seen: Set<string>): Promise<QuotaMeterDefinition[]> {

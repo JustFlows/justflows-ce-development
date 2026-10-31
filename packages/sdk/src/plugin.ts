@@ -88,6 +88,7 @@ export const ADMIN_MENU_DOMAINS = [
   "users",
   "helpdesk",
   "files",
+  "plugin",
   "extensions",
   "tools",
   "security",
@@ -250,15 +251,77 @@ export const EditorPanelFieldSchema = z.object({
  * A section a plugin adds to the content editor, next to Content, Discussion,
  * and Advanced. Shown while the plugin is active, for every content type.
  */
-export const EditorPanelSchema = z.object({
-  id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Panel id must be lowercase kebab-case"),
-  title: LocalizedTextSchema,
-  /** Show only for entries whose type is included in search engines. */
-  indexableOnly: z.boolean().optional(),
-  fields: z.array(EditorPanelFieldSchema).min(1).max(20),
-});
+export const EditorPanelSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Panel id must be lowercase kebab-case"),
+    title: LocalizedTextSchema,
+    /** Show only for entries whose type is included in search engines. */
+    indexableOnly: z.boolean().optional(),
+    fields: z.array(EditorPanelFieldSchema).max(20).optional(),
+    /**
+     * Relative admin-app path embedded in this section. The host passes the
+     * content id being edited. A panel has fields or this path.
+     */
+    app: z
+      .string()
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+      .max(40)
+      .optional(),
+  })
+  .superRefine((panel, ctx) => {
+    const hasFields = Array.isArray(panel.fields) && panel.fields.length > 0;
+    const hasApp = typeof panel.app === "string" && panel.app.length > 0;
+    if (hasFields === hasApp) {
+      ctx.addIssue({
+        code: "custom",
+        message: "An editor panel declares fields or an app route.",
+      });
+    }
+  });
 
 export type PluginEditorPanel = z.infer<typeof EditorPanelSchema>;
+
+/**
+ * The plugin's own sidebar section. Menu items with `domain: "plugin"` are
+ * listed there instead of in a shared section.
+ */
+export const AdminSectionSchema = z.object({
+  /** English label, shown when `labelKey` and `labels` have no translation. */
+  label: z.string().min(1).max(60),
+  /** Key in the plugin's own `adminApp.locales` catalogs. */
+  labelKey: z.string().max(120).optional(),
+  labels: z
+    .record(z.string().regex(PANEL_LOCALE_RE, "Locale code must look like en or nl-NL"), z.string().min(1).max(60))
+    .refine((value) => Object.keys(value).length <= 20, "At most 20 section label locales")
+    .optional(),
+  /** An emoji, or an image file in the plugin's admin app folder such as `logo.png`. */
+  icon: z
+    .string()
+    .min(1)
+    .max(120)
+    .refine(
+      (value) => value.length <= 8 || /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,110}\.(png|svg|webp)$/.test(value),
+      "Icon must be an emoji or a .png, .svg, or .webp file in the admin app folder",
+    )
+    .optional(),
+});
+
+export type PluginAdminSection = z.infer<typeof AdminSectionSchema>;
+
+/**
+ * A card a plugin adds to Platform → Workspace. The host embeds the relative
+ * admin-app path and passes the workspace id being viewed.
+ */
+export const WorkspacePanelSchema = z.object({
+  id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Panel id must be lowercase kebab-case"),
+  title: LocalizedTextSchema,
+  app: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .max(40),
+});
+
+export type PluginWorkspacePanel = z.infer<typeof WorkspacePanelSchema>;
 
 /** A plugin asset path: relative, no traversal, `.js`/`.mjs`/`.css` only. */
 const PluginAssetFileSchema = z
@@ -475,6 +538,10 @@ export const PluginManifestSchema = z
     adminMenu: z.array(AdminMenuItemSchema).max(20).optional(),
     /** Content editor sections this plugin adds. Honoured with `admin:extend`. */
     editorPanels: z.array(EditorPanelSchema).max(5).optional(),
+    /** Sidebar section for menu items with `domain: "plugin"`. Honoured with `admin:extend`. */
+    adminSection: AdminSectionSchema.optional(),
+    /** Platform → Workspace cards this plugin adds. Honoured with `admin:extend`. */
+    workspacePanels: z.array(WorkspacePanelSchema).max(5).optional(),
     /**
      * Page to open after activation when the plugin still needs a first-run
      * setup (database topology, credentials, store identity). Relative to the
@@ -1583,6 +1650,15 @@ export interface PluginNetworkApi {
     get<T = unknown>(key: string): Promise<T | undefined>;
   };
   /**
+   * This plugin's secrets on the main site, read-only, from any site.
+   * Absent on older hosts. The same key rules as `ctx.secrets` apply.
+   * A hosted site cannot write them; the main site saves through `ctx.secrets`.
+   */
+  mainSiteSecrets?: {
+    get(key: string): Promise<string | undefined>;
+    has(key: string): Promise<boolean>;
+  };
+  /**
    * Every live site in the installation, main site first. Only on the main
    * site; on any other site it rejects. The plugin decides what each site
    * gets, so another site's admins never see or change it.
@@ -1611,6 +1687,12 @@ export interface QuotaMeterRegistration {
   label: string;
   unit: QuotaUnit;
   /**
+   * Flags are on until a stored limit of 0 turns them off. `"off"` means a
+   * missing limit stays off, and only a limit above 0 turns the flag on.
+   * Use that for a feature a plan or an operator turns on.
+   */
+  whenUnset?: "on" | "off";
+  /**
    * Current usage for one workspace or site. The platform limits page calls
    * this. Omit it when the plugin only passes `used` to `check`.
    */
@@ -1633,6 +1715,8 @@ export interface QuotaMeterView {
   unit: QuotaUnit;
   limit: number | null;
   used: number | null;
+  /** Present when a missing flag limit means off. */
+  whenUnset?: "off";
 }
 
 /**

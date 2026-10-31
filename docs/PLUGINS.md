@@ -449,8 +449,24 @@ your hooks read it from `PublicPageContext.fields` or the content API.
 | `label`, `hint`, `placeholder` | One string, or `{ "<locale>": "<text>" }`; the editor picks the admin language, then its base language, then `en` |
 | `placeholder` tokens | `{title}`, `{excerpt}`, and `{url}` become the entry's title, excerpt, and public address |
 | `indexableOnly` | Show the panel only for content types included in search engines |
+| `app` | Relative admin-app path, such as `comments`. The editor embeds that screen and passes the content id. A panel has `fields` or `app`. |
 
-At most 5 panels per plugin and 20 fields per panel.
+An `app` panel is how a plugin configures one entry without a separate list of every page. The screen reads `contentId` from the admin bridge. At most 5 panels per plugin and 20 fields per panel.
+
+### Workspace panels
+
+`workspacePanels` adds cards to Platform → Workspace on the main site. Each
+card embeds one admin-app screen, and the screen reads `workspaceId` from the
+admin bridge. Your plugin's own routes decide who may read or change that
+workspace's settings.
+
+```json
+"workspacePanels": [
+  { "id": "server", "title": { "en": "Server", "nl": "Server" }, "app": "workspace" }
+]
+```
+
+At most 5 workspace panels per plugin. Both panel kinds need `admin:extend`.
 
 ## Ship your own stylesheet
 
@@ -555,9 +571,25 @@ generic plugin page for the menu item.
 ```
 
 `domain` is a left-sidebar group: `content`, `commerce`, `appearance`,
-`users`, `helpdesk`, `files`, `extensions` (default), `tools`, `security`, or
+`users`, `helpdesk`, `files`, `plugin`, `extensions` (default), `tools`, `security`, or
 `system`. A group with no pages stays hidden. `files` is the Shared files
 sidebar entry.
+
+`plugin` gives your plugin its own sidebar section, above Extensions. Name it
+with `adminSection` in the manifest; without it the section uses the plugin
+`name`.
+
+```json
+"adminSection": {
+  "label": "Acme",
+  "labelKey": "menu.section",
+  "icon": "logo.png"
+}
+```
+
+`labelKey` is looked up in your `adminApp.locales` catalogs. `icon` is an
+emoji, or a `.png`, `.svg`, or `.webp` file in your admin app folder, served
+from `/ext/<your plugin id>/admin/<file>`.
 
 **`path` is relative to your plugin's namespace `/admin/plugins/<your plugin
 id>`.** Omit it (or `""`) for the namespace root; otherwise a lowercase leaf

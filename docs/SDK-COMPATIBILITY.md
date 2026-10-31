@@ -77,7 +77,12 @@ All additive; existing plugins are unaffected.
 - The `html.title`, `html.canonical`, and `site.identity` filters, and a richer
   `html.head` context (`PublicPageContext`: content type and fields,
   description, canonical URL, share image, origin, and `indexable`).
-- `editorPanels` in the plugin manifest adds content editor sections
+- `editorPanels` in the plugin manifest adds content editor sections. A panel is either saved fields or an embedded admin screen for the entry being edited.
+- `workspacePanels` in the plugin manifest adds Platform → Workspace cards
+  (`WorkspacePanelSchema`, `PluginWorkspacePanel`). The admin bridge context
+  carries `workspaceId` for them.
+- The `plugin` menu domain gives a plugin its own sidebar section, named by
+  `adminSection` (`AdminSectionSchema`, `PluginAdminSection`).
   (`EditorPanelSchema`, `EditorPanelFieldSchema`, `LocalizedTextSchema`, and the
   `PluginEditorPanel` and `LocalizedText` types are exported).
 - `hostCooperative` is no longer part of the manifest schema. Manifests that

@@ -48,6 +48,11 @@ export interface AdminContext {
   /** Translation group for that row. Defaults to `contentId` when omitted. */
   translationGroupId?: string;
   /**
+   * Workspace this frame configures, when the host embeds the app as a
+   * Platform → Workspace card (`workspacePanels`).
+   */
+  workspaceId?: string;
+  /**
    * Editor menu section the host is showing, when this frame is embedded in
    * the content editor and has published sections with `reportSections`.
    */
@@ -95,6 +100,11 @@ export interface AdminBridge {
   onSection(listener: SectionListener): () => void;
   /** Ask the host to navigate elsewhere (`/admin/…` path, or an absolute URL → new tab). */
   navigate(path: string): void;
+  /**
+   * Ask the host to give this frame the admin content area (`fill`) or return
+   * it to the normal page (`default`). The sidebar and section tabs stay.
+   */
+  setLayout(mode: "default" | "fill"): void;
   /** Report the content height so the host can size the iframe. */
   reportHeight(pixels: number): void;
   /**
@@ -208,17 +218,23 @@ export function createAdminBridge(): AdminBridge {
     navigate(path) {
       if (typeof path === "string" && path) post({ type: "navigate", path });
     },
+    setLayout(mode) {
+      post({ type: "layout", mode: mode === "fill" ? "fill" : "default" });
+    },
     reportHeight(pixels) {
       const height = Number(pixels);
       if (Number.isFinite(height) && height > 0)
         post({ type: "resize", height: Math.ceil(height) });
     },
     autoResize(element = document.documentElement) {
+      let generation = 0;
       const report = () => {
+        const ticket = ++generation;
         if (frame) cancelAnimationFrame(frame);
-        frame = requestAnimationFrame(() =>
-          post({ type: "resize", height: currentHeight(element) }),
-        );
+        frame = requestAnimationFrame(() => {
+          if (ticket !== generation) return;
+          post({ type: "resize", height: currentHeight(element) });
+        });
       };
       report();
       if (typeof ResizeObserver !== "undefined") {
@@ -228,6 +244,9 @@ export function createAdminBridge(): AdminBridge {
       }
       window.addEventListener("load", report);
       return () => {
+        generation += 1;
+        if (frame) cancelAnimationFrame(frame);
+        frame = 0;
         resizeObserver?.disconnect();
         resizeObserver = null;
         window.removeEventListener("load", report);

@@ -149,6 +149,7 @@ function PluginFrame({
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const [height, setHeight] = useState(FRAME_MIN_HEIGHT);
   const [loaded, setLoaded] = useState(false);
+  const [fill, setFill] = useState(false);
 
   const routePath = internalAdminPath(pathname);
 
@@ -198,6 +199,9 @@ function PluginFrame({
           }
           break;
         }
+        case "layout":
+          setFill(data.mode === "fill");
+          break;
         default:
           break;
       }
@@ -220,7 +224,7 @@ function PluginFrame({
   }, [routePath, loaded, post]);
 
   return (
-    <div className="jf-page jf-page--flush">
+    <div className={fill ? "jf-page jf-page--flush jf-page--fill" : "jf-page jf-page--flush"}>
       <header className="jf-pagehead">
         <div className="jf-pagehead__text">
           <h1>{heading}</h1>

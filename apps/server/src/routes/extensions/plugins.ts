@@ -327,8 +327,19 @@ router.delete("/:id", requireRole("administrator"), async (req, res) => {
 // Registered ahead of "/:id" so the literal path is not swallowed by the param.
 router.get("/editor-panels", requireSession, async (req, res) => {
   try {
+    const { syncBundledPlugins } = await import("../../lib/plugins/plugins-db.js");
+    await syncBundledPlugins(req.session!.siteId).catch(() => false);
     const { listEditorPanels } = await import("../../lib/admin/editor-panels.js");
     res.json({ panels: await listEditorPanels(req.session!.siteId) });
+  } catch (err) {
+    sendServerError(res, "plugins", err);
+  }
+});
+
+router.get("/workspace-panels", requireSession, async (req, res) => {
+  try {
+    const { listWorkspacePanels } = await import("../../lib/admin/workspace-panels.js");
+    res.json({ panels: await listWorkspacePanels(req.session!.siteId) });
   } catch (err) {
     sendServerError(res, "plugins", err);
   }

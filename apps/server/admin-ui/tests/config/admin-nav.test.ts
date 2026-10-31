@@ -10,6 +10,7 @@ import {
   navLabel,
   navRuleFor,
   pluginPageRoles,
+  pluginSectionSlug,
   parsePluginSections,
 } from "../../src/config/admin-nav";
 
@@ -242,6 +243,60 @@ describe("buildNavDomains", () => {
     /** Without declared roles the page keeps the plugin-page rule. */
     expect(canAccessPath("support-agent", "/admin/plugins/justflows.helpdesk")).toBe(false);
     expect(canAccessPath("editor", "/admin/plugins/justflows.forms", audience)).toBe(true);
+  });
+
+  it("gives a plugin in the plugin domain its own section above Extensions", () => {
+    const section = { label: "Acme", labels: { nl: "Acme NL" }, icon: "/ext/justflows.acme/admin/logo.png" };
+    const domains = buildNavDomains([
+      {
+        pluginId: "justflows.acme",
+        id: "overview",
+        label: "Acme",
+        path: "/admin/plugins/justflows.acme",
+        icon: "⚡",
+        domain: "plugin",
+        end: true,
+        section,
+      },
+      {
+        pluginId: "justflows.acme",
+        id: "connect",
+        label: "Connection",
+        path: "/admin/plugins/justflows.acme/connect",
+        icon: "🔗",
+        domain: "plugin",
+        section,
+      },
+      {
+        pluginId: "justflows.forms",
+        id: "forms",
+        label: "Forms",
+        path: "/admin/plugins/justflows.forms",
+        icon: "forms",
+        domain: "extensions",
+      },
+    ]);
+    const slugs = domains.map((d) => d.slug);
+    expect(slugs.indexOf(pluginSectionSlug("justflows.acme"))).toBe(slugs.indexOf("extensions") - 1);
+    const acme = domains.find((d) => d.slug === pluginSectionSlug("justflows.acme"));
+    expect(acme?.icon).toBe("/ext/justflows.acme/admin/logo.png");
+    expect(acme ? navLabel((key) => key, acme, "nl") : "").toBe("Acme NL");
+    expect(acme ? navLabel((key) => key, acme, "en") : "").toBe("Acme");
+    expect(acme?.items.map((item) => item.to)).toEqual([
+      "/admin/plugins/justflows.acme",
+      "/admin/plugins/justflows.acme/connect",
+    ]);
+    const extensions = domains.find((d) => d.slug === "extensions")?.items.map((item) => item.to) ?? [];
+    expect(extensions.some((path) => path.includes("justflows.acme"))).toBe(false);
+    expect(extensions).toContain("/admin/plugins/justflows.forms");
+  });
+
+  it("puts a plugin domain page without a section under Extensions", () => {
+    const domains = buildNavDomains([
+      { pluginId: "justflows.acme", id: "overview", label: "Acme", path: "/admin/plugins/justflows.acme", icon: "⚡", domain: "plugin" },
+    ]);
+    expect(domains.find((d) => d.slug === "extensions")?.items.map((item) => item.to)).toContain("/admin/plugins/justflows.acme");
+    expect(domains.some((d) => d.slug.startsWith("plugin:"))).toBe(false);
   });
 
   it("gives Shared files its own sidebar domain instead of a Plugins tab", () => {
