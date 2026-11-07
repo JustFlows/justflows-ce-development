@@ -13,6 +13,7 @@ import { sanitizeBlockDocument } from "@justflows/blocks";
 import { getDb } from "../database/db.js";
 import { pluginCallSiteId } from "./request-site.js";
 import { serializeContentRow } from "../content/content-api.js";
+import { getAnonymousVisibilityScope } from "../content/visibility-scope.js";
 import { createContentType, getContentTypeBySlug } from "../content/content-types-db.js";
 import { getDefaultLocale } from "../i18n/languages-db.js";
 import { clearHomePagesIfMatch } from "../content/home-page.js";
@@ -161,6 +162,8 @@ export function createPluginContentApi(pluginId: string, activatedSiteId: string
       );
       let row = rows[0] ?? null;
       if (!row) return null;
+      /** Plugins build feeds and other shared output here, so they always read as a stranger. */
+      if (!(await getAnonymousVisibilityScope(siteId)).allows(serializeContentRow(row))) return null;
       // A translation keeps the original's group but may have its own slug.
       const locale = query.locale?.trim();
       const group = row["translation_group_id"] == null ? String(row["id"]) : String(row["translation_group_id"]);
@@ -203,8 +206,9 @@ export function createPluginContentApi(pluginId: string, activatedSiteId: string
       if (query.authorUsername && !authorId) return [];
 
       const db = await getDb();
-      const params: (string | number)[] = [siteId];
-      let sql = "SELECT * FROM content WHERE site_id = ? AND status = 'published'";
+      const anonymous = (await getAnonymousVisibilityScope(siteId)).sql();
+      const params: (string | number)[] = [siteId, ...anonymous.params];
+      let sql = `SELECT * FROM content WHERE site_id = ? AND status = 'published' AND ${anonymous.sql}`;
       if (types.length) {
         sql += ` AND type IN (${types.map(() => "?").join(", ")})`;
         params.push(...types);

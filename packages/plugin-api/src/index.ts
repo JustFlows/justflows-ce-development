@@ -15,5 +15,7 @@ export type { RegisteredPluginRole } from "./role-registry.js";
 export { PluginDiagnosticRegistry } from "./diagnostic-registry.js";
 export { PluginPatternRegistry } from "./pattern-registry.js";
 export type { RegisteredPluginPattern } from "./pattern-registry.js";
+export { PluginVisibilityRuleRegistry } from "./visibility-rule-registry.js";
+export type { RegisteredVisibilityRule } from "./visibility-rule-registry.js";
 export { PluginPlaceholderRegistry, placeholderImgHtml } from "./placeholder-registry.js";
 export type { RegisteredPlaceholder } from "./placeholder-registry.js";

@@ -4735,5 +4735,75 @@
     "removeTerm": "Retirer {name}",
     "addOrCreate": "Ajouter ou créer",
     "addExisting": "Ajouter un terme existant"
+  },
+  "visibility": {
+    "typeTitle": "Visibilité",
+    "typeHint": "Qui peut consulter les contenus de ce type. Un contenu peut remplacer cela par sa propre règle.",
+    "itemTitle": "Visibilité",
+    "itemHint": "S'applique à toutes les traductions de ce contenu. Un contenu masqué renvoie une erreur 404 et n'apparaît pas dans les listes, la recherche, les flux et les sitemaps.",
+    "modeInherit": "Utiliser la règle du type de contenu",
+    "modeCustom": "Utiliser une règle pour ce contenu",
+    "inheritedPublic": "Le type de contenu n'a pas de règle : tout le monde peut consulter ce contenu.",
+    "inheritedRestricted": "La règle du type de contenu s'applique.",
+    "audience": "Qui peut consulter",
+    "audiences": {
+      "everyone": "Tout le monde",
+      "authenticated": "Utilisateurs connectés",
+      "nobody": "Uniquement les rôles, utilisateurs et règles ci-dessous"
+    },
+    "allowRoles": "Autoriser ces rôles",
+    "denyRoles": "Refuser ces rôles",
+    "allowUsers": "Autoriser ces utilisateurs",
+    "denyUsers": "Refuser ces utilisateurs",
+    "userSearch": "Ajouter un utilisateur",
+    "userIdHint": "Vous ne pouvez pas lister les utilisateurs. Saisissez un ID utilisateur.",
+    "userIdPlaceholder": "ID utilisateur",
+    "remove": "Retirer {name}",
+    "precedence": "Ordre : utilisateur refusé, utilisateur autorisé, rôle refusé, règles d'extension requises, rôle autorisé, règles d'extension qui accordent l'accès, puis qui peut consulter.",
+    "rules": "Règles d'extension",
+    "noRules": "Aucune extension active n'ajoute de règles de visibilité.",
+    "addRule": "Ajouter une règle",
+    "ruleMode": "Cette règle",
+    "ruleModes": {
+      "require": "Doit être validée",
+      "grant": "Donne accès au visiteur"
+    },
+    "ruleMissing": "L'extension de cette règle n'est pas active. Une règle requise masque ce contenu jusqu'au retour de l'extension.",
+    "save": "Enregistrer la visibilité",
+    "saved": "Visibilité enregistrée.",
+    "loadError": "Impossible de charger la visibilité.",
+    "saveError": "Impossible d'enregistrer la visibilité.",
+    "explainTitle": "Vérifier l'accès",
+    "explainAs": "Vérifier en tant que",
+    "explainKinds": {
+      "anonymous": "Visiteur anonyme",
+      "role": "Un rôle",
+      "user": "Un utilisateur"
+    },
+    "explainRun": "Vérifier",
+    "explainError": "Impossible de vérifier l'accès.",
+    "explainSaved": "Vérifie la règle enregistrée, pas les modifications non enregistrées.",
+    "allowed": "Peut consulter",
+    "denied": "Ne peut pas consulter",
+    "sources": {
+      "default": "Aucune règle ne s'applique.",
+      "type": "Décidé par la règle du type de contenu.",
+      "item": "Décidé par la règle de ce contenu."
+    },
+    "reasons": {
+      "public": "Ce contenu est public.",
+      "user_denied": "Cet utilisateur est refusé.",
+      "user_allowed": "Cet utilisateur est autorisé.",
+      "role_denied": "Un rôle refusé correspond.",
+      "role_allowed": "Un rôle autorisé correspond.",
+      "audience_everyone": "Tout le monde peut consulter.",
+      "audience_authenticated": "Les utilisateurs connectés peuvent consulter.",
+      "authentication_required": "Le visiteur doit se connecter.",
+      "not_allowed": "Aucune règle ne donne accès à ce visiteur.",
+      "rule_unavailable": "Une règle d'extension requise n'est pas disponible.",
+      "rule_error": "Une règle d'extension a échoué.",
+      "rule_invalid": "Une règle d'extension a renvoyé une réponse non valide."
+    },
+    "pluginReason": "La règle d'extension {rule} a répondu : {reason}"
   }
 }

@@ -1864,7 +1864,11 @@
       "seo": "Show SEO fields, use their values on public pages and include published entries in the sitemap. Disabling this is not a noindex or access restriction.",
       "comments": "Set the type default for new comments. Disabled closes all entries, including entries explicitly set to open. Moderation and spam protection still apply."
     },
-    "modes": { "inherit": "Use site default", "enabled": "Enabled", "disabled": "Disabled" },
+    "modes": {
+      "inherit": "Use site default",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
     "source": "Source",
     "customFields": "Custom fields",
     "actions": "Actions",
@@ -4726,5 +4730,75 @@
     "removeTerm": "Remove {name}",
     "addOrCreate": "Add or create",
     "addExisting": "Add existing"
+  },
+  "visibility": {
+    "typeTitle": "Visibility",
+    "typeHint": "Who can view entries of this type. An entry can replace this with its own rule.",
+    "itemTitle": "Visibility",
+    "itemHint": "Applies to every translation of this entry. A hidden entry answers 404 and is left out of lists, search, feeds, and sitemaps.",
+    "modeInherit": "Use the content type's rule",
+    "modeCustom": "Use a rule for this entry",
+    "inheritedPublic": "The content type has no rule, so everyone can view this entry.",
+    "inheritedRestricted": "The content type's rule applies.",
+    "audience": "Who can view",
+    "audiences": {
+      "everyone": "Everyone",
+      "authenticated": "Signed-in users",
+      "nobody": "Only the roles, users, and rules below"
+    },
+    "allowRoles": "Allow these roles",
+    "denyRoles": "Deny these roles",
+    "allowUsers": "Allow these users",
+    "denyUsers": "Deny these users",
+    "userSearch": "Add a user",
+    "userIdHint": "You can't list users, so enter a user ID.",
+    "userIdPlaceholder": "User ID",
+    "remove": "Remove {name}",
+    "precedence": "Order: a denied user, an allowed user, a denied role, required plugin rules, an allowed role, granting plugin rules, then who can view.",
+    "rules": "Plugin rules",
+    "noRules": "No active plugin adds visibility rules.",
+    "addRule": "Add a rule",
+    "ruleMode": "This rule",
+    "ruleModes": {
+      "require": "Must pass",
+      "grant": "Lets the viewer in"
+    },
+    "ruleMissing": "This rule's plugin isn't active. A required rule hides this content until the plugin is back.",
+    "save": "Save visibility",
+    "saved": "Visibility saved.",
+    "loadError": "Couldn't load visibility.",
+    "saveError": "Couldn't save visibility.",
+    "explainTitle": "Check access",
+    "explainAs": "Check as",
+    "explainKinds": {
+      "anonymous": "Anonymous visitor",
+      "role": "A role",
+      "user": "A user"
+    },
+    "explainRun": "Check",
+    "explainError": "Couldn't check access.",
+    "explainSaved": "Checks the saved rule, not unsaved changes.",
+    "allowed": "Can view",
+    "denied": "Can't view",
+    "sources": {
+      "default": "No rule applies.",
+      "type": "Decided by the content type's rule.",
+      "item": "Decided by this entry's rule."
+    },
+    "reasons": {
+      "public": "This content is public.",
+      "user_denied": "This user is denied.",
+      "user_allowed": "This user is allowed.",
+      "role_denied": "A denied role matched.",
+      "role_allowed": "An allowed role matched.",
+      "audience_everyone": "Everyone can view.",
+      "audience_authenticated": "Signed-in users can view.",
+      "authentication_required": "The viewer must sign in.",
+      "not_allowed": "No rule lets this viewer in.",
+      "rule_unavailable": "A required plugin rule isn't available.",
+      "rule_error": "A plugin rule failed.",
+      "rule_invalid": "A plugin rule returned an invalid answer."
+    },
+    "pluginReason": "Plugin rule {rule} answered: {reason}"
   }
 }

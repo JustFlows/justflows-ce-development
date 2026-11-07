@@ -4,6 +4,19 @@ export { SDK_VERSION, SDK_API_VERSION } from "./version.js";
 export { ExtensionEnginesSchema } from "./compatibility.js";
 export type { ExtensionEngines } from "./compatibility.js";
 
+export type {
+  ContentVisibilityParams,
+  ContentVisibilityRuleDecision,
+  ContentVisibilityRuleDefinition,
+  ContentVisibilityRuleField,
+  ContentVisibilityRuleInput,
+  ContentVisibilityRuleOption,
+  ContentVisibilitySubject,
+  ContentVisibilitySurface,
+  ContentVisibilityViewerInfo,
+  PluginVisibilityApi,
+} from "./visibility.js";
+
 // Hooks — typed action/gate/filter contracts
 export {
   SYNC_FILTERS,

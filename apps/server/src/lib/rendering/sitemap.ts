@@ -7,6 +7,7 @@ import { slashPath } from "../navigation/permalinks.js";
 import { createContentPermalinkResolver, getPermalinkState, listPermalinkTerms, taxonomyPermalink } from "../navigation/permalinks-db.js";
 import { getHomeContent } from "../content/home-page.js";
 import { listPublishedContent } from "../content/content-public.js";
+import { getAnonymousVisibilityScope } from "../content/visibility-scope.js";
 import { getDefaultLocale } from "../i18n/languages-db.js";
 import { localePath } from "../i18n/locales.js";
 import { siteOrigin } from "./site-origin.js";
@@ -36,7 +37,9 @@ export async function buildSitemapXml(siteId: string): Promise<string> {
   const resolvePermalink = await createContentPermalinkResolver(siteId, {
     state, defaultLocale, terms, homes: new Map([[defaultLocale, home]]),
   });
-  const paths = new Set<string>(home && typeSettings.get(home.type)?.seo === false ? [] : ["/"]);
+  const scope = await getAnonymousVisibilityScope(siteId);
+  const homeListed = !home || (typeSettings.get(home.type)?.seo !== false && scope.allows(home));
+  const paths = new Set<string>(homeListed ? ["/"] : []);
 
   for (const item of published) {
     const isHome =

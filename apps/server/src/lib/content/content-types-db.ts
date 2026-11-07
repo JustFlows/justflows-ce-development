@@ -252,6 +252,11 @@ export async function updateContentType(
     values,
   );
 
+  if (patch.settings !== undefined && JSON.stringify(patch.settings.visibility ?? null) !== JSON.stringify(existing.settings.visibility)) {
+    const { applyVisibilityChange } = await import("./visibility-policies.js");
+    await applyVisibilityChange(siteId);
+  }
+
   if (patch.settings !== undefined || (patch.cacheControl !== undefined && patch.cacheControl !== existing.cacheControl)) {
     const { revalidateSelected } = await import("../cache/cache-revalidate.js");
     await revalidateSelected(["pages", "content"]);

@@ -56,6 +56,24 @@ export { SearchQuerySchema, searchTokens, searchHighlight } from "./search.js";
 export type { SearchQuery } from "./search.js";
 
 export { contentTypePolicy, publicContentTypeSql } from "./service/content-types.js";
+export {
+  ANONYMOUS_VIEWER,
+  CONTENT_VISIBILITY_REASON_RE,
+  CONTENT_VISIBILITY_RULE_ID_RE,
+  ContentVisibilityPolicySchema,
+  ContentVisibilityRuleRefSchema,
+  decideContentVisibility,
+  isOpenVisibilityPolicy,
+} from "./service/visibility.js";
+export type {
+  ContentVisibilityDecider,
+  ContentVisibilityDecision,
+  ContentVisibilityPolicy,
+  ContentVisibilityRuleOutcome,
+  ContentVisibilityRuleRef,
+  ContentVisibilityRuleRunner,
+  ContentVisibilityViewer,
+} from "./service/visibility.js";
 export { DEFAULT_ACCOUNT_BLOCKS, seedAccountPage } from "./service/account-page.js";
 export { AUTH_PAGES, AUTH_PAGE_SLUGS, DEFAULT_AUTH_BLOCKS, defaultAuthBlocks, seedAuthPages } from "./service/auth-page.js";
 export type { AuthPageSlug } from "./service/auth-page.js";

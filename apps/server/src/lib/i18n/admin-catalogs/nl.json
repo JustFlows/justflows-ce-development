@@ -4732,5 +4732,75 @@
     "removeTerm": "{name} verwijderen",
     "addOrCreate": "Toevoegen of aanmaken",
     "addExisting": "Bestaande toevoegen"
+  },
+  "visibility": {
+    "typeTitle": "Zichtbaarheid",
+    "typeHint": "Wie items van dit type kan bekijken. Een item kan dit vervangen door een eigen regel.",
+    "itemTitle": "Zichtbaarheid",
+    "itemHint": "Geldt voor alle vertalingen van dit item. Een verborgen item geeft een 404 en staat niet in lijsten, zoekresultaten, feeds en sitemaps.",
+    "modeInherit": "De regel van het contenttype gebruiken",
+    "modeCustom": "Een regel voor dit item gebruiken",
+    "inheritedPublic": "Het contenttype heeft geen regel, dus iedereen kan dit item bekijken.",
+    "inheritedRestricted": "De regel van het contenttype is van toepassing.",
+    "audience": "Wie kan bekijken",
+    "audiences": {
+      "everyone": "Iedereen",
+      "authenticated": "Ingelogde gebruikers",
+      "nobody": "Alleen de rollen, gebruikers en regels hieronder"
+    },
+    "allowRoles": "Deze rollen toestaan",
+    "denyRoles": "Deze rollen weigeren",
+    "allowUsers": "Deze gebruikers toestaan",
+    "denyUsers": "Deze gebruikers weigeren",
+    "userSearch": "Gebruiker toevoegen",
+    "userIdHint": "Je kunt geen gebruikers opvragen, dus vul een gebruikers-ID in.",
+    "userIdPlaceholder": "Gebruikers-ID",
+    "remove": "{name} verwijderen",
+    "precedence": "Volgorde: een geweigerde gebruiker, een toegestane gebruiker, een geweigerde rol, vereiste pluginregels, een toegestane rol, toegangsregels van plugins en daarna wie kan bekijken.",
+    "rules": "Pluginregels",
+    "noRules": "Geen actieve plugin voegt zichtbaarheidsregels toe.",
+    "addRule": "Regel toevoegen",
+    "ruleMode": "Deze regel",
+    "ruleModes": {
+      "require": "Moet slagen",
+      "grant": "Geeft de bezoeker toegang"
+    },
+    "ruleMissing": "De plugin van deze regel is niet actief. Een vereiste regel verbergt deze content totdat de plugin weer actief is.",
+    "save": "Zichtbaarheid opslaan",
+    "saved": "Zichtbaarheid opgeslagen.",
+    "loadError": "Zichtbaarheid kon niet worden geladen.",
+    "saveError": "Zichtbaarheid kon niet worden opgeslagen.",
+    "explainTitle": "Toegang controleren",
+    "explainAs": "Controleren als",
+    "explainKinds": {
+      "anonymous": "Anonieme bezoeker",
+      "role": "Een rol",
+      "user": "Een gebruiker"
+    },
+    "explainRun": "Controleren",
+    "explainError": "Toegang kon niet worden gecontroleerd.",
+    "explainSaved": "Controleert de opgeslagen regel, niet je niet-opgeslagen wijzigingen.",
+    "allowed": "Kan bekijken",
+    "denied": "Kan niet bekijken",
+    "sources": {
+      "default": "Er is geen regel van toepassing.",
+      "type": "Bepaald door de regel van het contenttype.",
+      "item": "Bepaald door de regel van dit item."
+    },
+    "reasons": {
+      "public": "Deze content is openbaar.",
+      "user_denied": "Deze gebruiker is geweigerd.",
+      "user_allowed": "Deze gebruiker is toegestaan.",
+      "role_denied": "Een geweigerde rol komt overeen.",
+      "role_allowed": "Een toegestane rol komt overeen.",
+      "audience_everyone": "Iedereen kan bekijken.",
+      "audience_authenticated": "Ingelogde gebruikers kunnen bekijken.",
+      "authentication_required": "De bezoeker moet inloggen.",
+      "not_allowed": "Geen enkele regel geeft deze bezoeker toegang.",
+      "rule_unavailable": "Een vereiste pluginregel is niet beschikbaar.",
+      "rule_error": "Een pluginregel is mislukt.",
+      "rule_invalid": "Een pluginregel gaf een ongeldig antwoord."
+    },
+    "pluginReason": "Pluginregel {rule} antwoordde: {reason}"
   }
 }

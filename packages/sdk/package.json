@@ -1,6 +1,6 @@
 {
   "name": "@justflows/sdk",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": false,
   "description": "Justflows SDK — stable public API for plugin and theme developers",
   "type": "module",

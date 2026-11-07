@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { serializeContentRow, type ContentResponse } from "../../../src/lib/content/content-api.js";
 import { DEFAULT_PERMALINK_SETTINGS } from "../../../src/lib/navigation/permalinks.js";
 
+vi.mock("../../../src/lib/content/visibility-scope.js", () => {
+  const open = { restricted: false, allows: () => true, sql: () => ({ sql: "1 = 1", params: [] }) };
+  return { getVisibilityScope: async () => open, getAnonymousVisibilityScope: async () => open, isOpenToEveryone: async () => true };
+});
 vi.mock("../../../src/lib/account/pages.js", () => ({ accountPageExclusions: async () => [{ path: "/members", match: "exact" }] }));
 const published = vi.fn();
 const home = vi.fn();

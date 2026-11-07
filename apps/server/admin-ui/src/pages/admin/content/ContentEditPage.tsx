@@ -24,6 +24,7 @@ import {
 import PluginContentFrame, { type PluginContentFrameHandle } from "./PluginContentFrame";
 import PluginPanelFrame from "@components/PluginPanelFrame";
 import ContentTermsPanel, { type ContentTermsPanelHandle } from "@components/ContentTermsPanel";
+import ContentVisibilityPanel from "@components/ContentVisibilityPanel";
 import {
   fetchTypePattern,
   isEmptyBlockDocument,
@@ -1363,6 +1364,10 @@ export default function EditContentPage() {
                 )}
               </div>
             </div>
+
+            {item.type !== "account" && item.type !== "auth" && (
+              <ContentVisibilityPanel contentId={item.id} disabled={saving} />
+            )}
 
             <ContentTermsPanel
               ref={termsRef}

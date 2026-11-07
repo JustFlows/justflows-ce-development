@@ -10,6 +10,7 @@ const SITE_TABLES = [
   "sites",
   "users",
   "content",
+  "content_visibility",
   "site_settings",
   "media",
   "revisions",

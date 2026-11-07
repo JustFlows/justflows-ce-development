@@ -48,7 +48,7 @@ describe("plugin hook context", () => {
     await loader.activate(plugin.manifest.id, "site-1");
 
     expect(seen?.version).toBe("1.0.0");
-    expect(seen?.runtime).toEqual({ justflows: "0.1.8-dev.1", sdk: "0.1.7", sdkApi: 1 });
+    expect(seen?.runtime).toEqual({ justflows: "0.1.8-dev.1", sdk: "0.1.8", sdkApi: 1 });
   });
 
   it("refuses a network handler without platform:network", async () => {
@@ -153,6 +153,21 @@ describe("plugin hook context", () => {
     expect(await app.hooks.applyFilter("search.backend", null, { siteId: "site-1" })).toBe(engine);
     await loader.deactivate("justflows.test", "site-1");
     expect(await app.hooks.applyFilter("search.backend", null, { siteId: "site-1" })).toBeNull();
+  });
+
+  it("registers a visibility rule only with content:read, and drops it on deactivate", async () => {
+    const rule = { id: "sample", label: "Sample", evaluate: () => ({ effect: "allow" as const, reason: "ok" }) };
+    const refused = makePlugin({ id: "justflows.refused", permissions: [] }, (ctx) => {
+      expect(() => ctx.visibility.registerRule(rule)).toThrow(/content:read/);
+    });
+    await activate(refused);
+    const { loader } = await activate(makePlugin({ permissions: ["content:read"] }, (ctx) => {
+      ctx.visibility.registerRule(rule);
+    }));
+    const [registered] = loader.visibilityRuleRegistry.all();
+    expect(registered?.registryId).toMatch(/:sample$/);
+    await loader.deactivate(registered!.pluginId, "site-1");
+    expect(loader.visibilityRuleRegistry.all()).toEqual([]);
   });
 
   it("refuses a sensitive hook without the declared permission", async () => {

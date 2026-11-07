@@ -6,6 +6,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const query = vi.fn();
 const run = vi.fn();
 
+vi.mock("../../../src/lib/content/visibility-scope.js", () => {
+  const open = { restricted: false, allows: () => true, sql: () => ({ sql: "1 = 1", params: [] }) };
+  return { getVisibilityScope: async () => open, getAnonymousVisibilityScope: async () => open, isOpenToEveryone: async () => true };
+});
 vi.mock("../../../src/lib/database/db.js", () => ({
   getDb: async () => ({ query, run }),
 }));

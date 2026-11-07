@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-import { cacheControlPolicy, effectiveContentCacheControl } from "@justflows/content";
+import { NEVER_CACHE_CONTROL, cacheControlPolicy, effectiveContentCacheControl, isOpenVisibilityPolicy } from "@justflows/content";
 import { normalizeFields } from "../content/content-api.js";
 import { getDb } from "../database/db.js";
 import { createContentPermalinkResolver, getPermalinkState, permalinkContent } from "../navigation/permalinks-db.js";
+import { effectiveVisibilityPolicy, loadVisibilityPolicies } from "../content/visibility-policies.js";
 
 export interface ContentCacheRule {
   id: string;
@@ -25,12 +26,15 @@ export async function contentCacheRules(siteId: string): Promise<ContentCacheRul
     : "JSON_EXTRACT(fields, '$.cacheControl') IS NOT NULL AND JSON_TYPE(JSON_EXTRACT(fields, '$.cacheControl')) <> 'NULL'";
   const overrides = await db.query<{ id: string; fields: unknown }>(
     `SELECT id, fields FROM content WHERE site_id = ? AND trashed_at IS NULL AND ${overridePredicate}`, [siteId]);
-  if (!types.length && !overrides.length) return [];
+  const visibility = await loadVisibilityPolicies(siteId);
+  if (!types.length && !overrides.length && !visibility.restricted) return [];
   const defaults = new Map(types.map(type => [type.slug, type.cache_control]));
   const fieldsById = new Map(overrides.map(row => [String(row.id), normalizeFields(Buffer.isBuffer(row.fields) ? row.fields.toString("utf8") : row.fields)]));
   const policies = new Map<string, ReturnType<typeof cacheControlPolicy>>();
   const contents = (await permalinkContent(siteId, false)).filter(content => {
-    const header = effectiveContentCacheControl(content.type, fieldsById.get(content.id) ?? {}, defaults.get(content.type) ?? null);
+    /** A page with visibility rules answers per visitor: no shared cache and no exported file may hold it. */
+    const gated = visibility.restricted && !isOpenVisibilityPolicy(effectiveVisibilityPolicy(visibility, content).policy);
+    const header = gated ? NEVER_CACHE_CONTROL : effectiveContentCacheControl(content.type, fieldsById.get(content.id) ?? {}, defaults.get(content.type) ?? null);
     if (header === null) return false;
     policies.set(content.id, cacheControlPolicy(header));
     return true;

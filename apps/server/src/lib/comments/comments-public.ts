@@ -663,6 +663,9 @@ export async function acceptCommentSubmission(
   if (!content || !contentTypePolicy(content.type).publiclyDiscoverable || content.status !== "published") {
     return fail(404, "Post not found");
   }
+  const { getVisibilityScope } = await import("../content/visibility-scope.js");
+  const visibilityRef = { id: content.id, type: content.type, translationGroupId: content.translation_group_id };
+  if (!(await getVisibilityScope(siteId)).allows(visibilityRef)) return fail(404, "Post not found");
 
   const typeSettings = await getContentTypeSettings(siteId, content.type);
   if (typeSettings.comments === "disabled") return fail(403, "Comments are disabled for this content type");

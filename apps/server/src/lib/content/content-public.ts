@@ -7,6 +7,7 @@ import { overlayWorkingOnRow } from "./content-revisions.js";
 import { getDefaultLocale, resolveContentLocale } from "../i18n/languages-db.js";
 import { getJfCache } from "../cache/jf-cache.js";
 import { cacheSiteId } from "../cache/site-cache-key.js";
+import { getAnonymousVisibilityScope, getVisibilityScope } from "./visibility-scope.js";
 
 const CONTENT_CACHE_PREFIX = "content:";
 
@@ -111,6 +112,7 @@ export async function getPublishedContentBySlug(
   requestedLocale?: string,
   preview = false,
 ): Promise<ContentResponse | null> {
+  /** An authorized preview is an editorial view, not a public one: rules do not apply. */
   if (preview) {
     return fetchPublishedContentBySlug(slug, requestedLocale, true);
   }
@@ -120,7 +122,9 @@ export async function getPublishedContentBySlug(
   const content = await getJfCache().remember(cacheKey, await contentCacheTtl(), () =>
     fetchPublishedContentBySlug(slug, requestedLocale, false),
   );
-  return content && contentTypePolicy(content.type).publiclyDiscoverable ? content : null;
+  if (!content || !contentTypePolicy(content.type).publiclyDiscoverable) return null;
+  /** The cache holds the row for everyone. The decision is made here, per visitor. */
+  return (await getVisibilityScope(content.siteId)).allows(content) ? content : null;
 }
 
 /**
@@ -178,7 +182,9 @@ export async function listPublishedContent(siteId: string): Promise<ContentRespo
     );
     return rows.map((row) => serializeContentRow(row));
   });
-  return items.filter(item => contentTypePolicy(item.type).publiclyDiscoverable);
+  /** Feeds sitemaps and exports, which every visitor shares: always the anonymous answer. */
+  const scope = await getAnonymousVisibilityScope(siteId);
+  return items.filter(item => contentTypePolicy(item.type).publiclyDiscoverable && scope.allows(item));
 }
 
 export interface PublishedPostsPage {
@@ -193,23 +199,26 @@ export async function listPublishedPostsPage(
   { limit, offset }: { limit: number; offset: number },
 ): Promise<PublishedPostsPage> {
   const cacheKey = `${CONTENT_CACHE_PREFIX}published-posts:${siteId}:${locale}:${limit}:${offset}`;
-
-  return getJfCache().remember(cacheKey, await contentCacheTtl(), async () => {
+  const scope = await getVisibilityScope(siteId);
+  const visible = scope.sql();
+  const load = async () => {
     const db = await getDb();
     const [rows, countRows] = await Promise.all([
       db.query<Record<string, unknown>>(
-        `SELECT * FROM content WHERE site_id = ? AND type = 'post' AND locale = ? AND status = 'published'
+        `SELECT * FROM content WHERE site_id = ? AND type = 'post' AND locale = ? AND status = 'published' AND ${visible.sql}
          ORDER BY published_at DESC, created_at DESC LIMIT ? OFFSET ?`,
-        [siteId, locale, limit, offset],
+        [siteId, locale, ...visible.params, limit, offset],
       ),
       db.query<{ total: number }>(
-        "SELECT COUNT(*) AS total FROM content WHERE site_id = ? AND type = 'post' AND locale = ? AND status = 'published'",
-        [siteId, locale],
+        `SELECT COUNT(*) AS total FROM content WHERE site_id = ? AND type = 'post' AND locale = ? AND status = 'published' AND ${visible.sql}`,
+        [siteId, locale, ...visible.params],
       ),
     ]);
     return {
       items: rows.map((row) => serializeContentRow(row)),
       total: Number(countRows[0]?.total ?? 0),
     };
-  });
+  };
+  /** This list differs per visitor once a site has rules, so it cannot be shared. */
+  return scope.restricted ? load() : getJfCache().remember(cacheKey, await contentCacheTtl(), load);
 }

@@ -12,6 +12,7 @@ import { getRuntimeHooks } from "../plugins/plugin-runtime.js";
 import { getSiteSetting, setSiteSetting } from "../settings/site-settings.js";
 import { serializeContentRow } from "../content/content-api.js";
 import { contentPermalinks } from "../navigation/permalinks-db.js";
+import { getVisibilityScope, isOpenToEveryone } from "../content/visibility-scope.js";
 
 export const SearchSettingsSchema = z.object({
   publicTypes: z
@@ -180,7 +181,12 @@ export async function indexSearchContent(
           row.status === "published" &&
           !row.trashed_at &&
           settings.publicTypes.includes(doc.type) &&
-          (!row.published_at || new Date(String(row.published_at)).getTime() <= Date.now())
+          (!row.published_at || new Date(String(row.published_at)).getTime() <= Date.now()) &&
+          (await isOpenToEveryone(siteId, {
+            id,
+            type: doc.type,
+            translationGroupId: row.translation_group_id == null ? null : String(row.translation_group_id),
+          }))
         )
           await withDeadline(engine.upsert(doc));
         else await withDeadline(engine.remove(id, siteId));
@@ -327,6 +333,9 @@ export async function searchContent(siteId: string, query: SearchQuery, access: 
     where +=
       " AND c.status = 'published' AND (c.published_at IS NULL OR c.published_at <= CURRENT_TIMESTAMP)";
     inList("c.type", settings.publicTypes);
+    const visible = (await getVisibilityScope(siteId)).sql("c");
+    where += ` AND ${visible.sql}`;
+    params.push(...visible.params);
   } else {
     if (access.admin.ownerId) add("c.author_id = ?", access.admin.ownerId);
     if (access.admin.types) inList("c.type", access.admin.types);

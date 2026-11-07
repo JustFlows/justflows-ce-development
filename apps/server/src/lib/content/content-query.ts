@@ -2,6 +2,7 @@
 import { contentTypePolicy, publicContentTypeSql } from "@justflows/content";
 import { getDb } from "../database/db.js";
 import { serializeContentRow } from "./content-api.js";
+import { getVisibilityScope } from "./visibility-scope.js";
 export interface ContentQueryOptions { contentType: string; taxonomy: string; term: string; orderBy: string; order: string; limit: number; offset: number }
 /** Bounded, published and discoverable content only, in this site's exact locale. */
 export async function queryPublishedContent(siteId: string, locale: string, options: ContentQueryOptions) {
@@ -9,6 +10,9 @@ export async function queryPublishedContent(siteId: string, locale: string, opti
   const db = await getDb();
   const params: (string | number)[] = [siteId, locale];
   let where = `c.site_id = ? AND c.locale = ? AND c.trashed_at IS NULL AND c.status = 'published' AND (c.published_at IS NULL OR c.published_at <= CURRENT_TIMESTAMP) AND ${publicContentTypeSql("c.type")}`;
+  const visible = (await getVisibilityScope(siteId)).sql("c");
+  where += ` AND ${visible.sql}`;
+  params.push(...visible.params);
   if (options.contentType) { where += ' AND c.type = ?'; params.push(options.contentType); }
   if (options.taxonomy || options.term) {
     where += ' AND EXISTS (SELECT 1 FROM content_terms ct JOIN terms t ON t.id = ct.term_id JOIN taxonomies x ON x.id = t.taxonomy_id WHERE ct.content_id = c.id AND t.site_id = c.site_id AND x.site_id = c.site_id';

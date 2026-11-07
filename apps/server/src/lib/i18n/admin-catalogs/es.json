@@ -4735,5 +4735,75 @@
     "removeTerm": "Quitar {name}",
     "addOrCreate": "Añadir o crear",
     "addExisting": "Añadir existente"
+  },
+  "visibility": {
+    "typeTitle": "Visibilidad",
+    "typeHint": "Quién puede ver las entradas de este tipo. Una entrada puede sustituirlo por una regla propia.",
+    "itemTitle": "Visibilidad",
+    "itemHint": "Se aplica a todas las traducciones de esta entrada. Una entrada oculta responde con un 404 y no aparece en listas, búsquedas, feeds ni sitemaps.",
+    "modeInherit": "Usar la regla del tipo de contenido",
+    "modeCustom": "Usar una regla para esta entrada",
+    "inheritedPublic": "El tipo de contenido no tiene regla, así que todo el mundo puede ver esta entrada.",
+    "inheritedRestricted": "Se aplica la regla del tipo de contenido.",
+    "audience": "Quién puede ver",
+    "audiences": {
+      "everyone": "Todo el mundo",
+      "authenticated": "Usuarios con sesión iniciada",
+      "nobody": "Solo los roles, usuarios y reglas de abajo"
+    },
+    "allowRoles": "Permitir estos roles",
+    "denyRoles": "Denegar estos roles",
+    "allowUsers": "Permitir estos usuarios",
+    "denyUsers": "Denegar estos usuarios",
+    "userSearch": "Añadir un usuario",
+    "userIdHint": "No puedes listar usuarios, así que introduce un ID de usuario.",
+    "userIdPlaceholder": "ID de usuario",
+    "remove": "Quitar {name}",
+    "precedence": "Orden: usuario denegado, usuario permitido, rol denegado, reglas de plugin obligatorias, rol permitido, reglas de plugin que conceden acceso y, por último, quién puede ver.",
+    "rules": "Reglas de plugins",
+    "noRules": "Ningún plugin activo añade reglas de visibilidad.",
+    "addRule": "Añadir una regla",
+    "ruleMode": "Esta regla",
+    "ruleModes": {
+      "require": "Debe cumplirse",
+      "grant": "Da acceso al visitante"
+    },
+    "ruleMissing": "El plugin de esta regla no está activo. Una regla obligatoria oculta este contenido hasta que el plugin vuelva a estar activo.",
+    "save": "Guardar visibilidad",
+    "saved": "Visibilidad guardada.",
+    "loadError": "No se pudo cargar la visibilidad.",
+    "saveError": "No se pudo guardar la visibilidad.",
+    "explainTitle": "Comprobar acceso",
+    "explainAs": "Comprobar como",
+    "explainKinds": {
+      "anonymous": "Visitante anónimo",
+      "role": "Un rol",
+      "user": "Un usuario"
+    },
+    "explainRun": "Comprobar",
+    "explainError": "No se pudo comprobar el acceso.",
+    "explainSaved": "Comprueba la regla guardada, no los cambios sin guardar.",
+    "allowed": "Puede ver",
+    "denied": "No puede ver",
+    "sources": {
+      "default": "No se aplica ninguna regla.",
+      "type": "Lo decide la regla del tipo de contenido.",
+      "item": "Lo decide la regla de esta entrada."
+    },
+    "reasons": {
+      "public": "Este contenido es público.",
+      "user_denied": "Este usuario está denegado.",
+      "user_allowed": "Este usuario está permitido.",
+      "role_denied": "Coincide un rol denegado.",
+      "role_allowed": "Coincide un rol permitido.",
+      "audience_everyone": "Todo el mundo puede ver.",
+      "audience_authenticated": "Los usuarios con sesión iniciada pueden ver.",
+      "authentication_required": "El visitante debe iniciar sesión.",
+      "not_allowed": "Ninguna regla da acceso a este visitante.",
+      "rule_unavailable": "Una regla de plugin obligatoria no está disponible.",
+      "rule_error": "Ha fallado una regla de plugin.",
+      "rule_invalid": "Una regla de plugin devolvió una respuesta no válida."
+    },
+    "pluginReason": "La regla de plugin {rule} respondió: {reason}"
   }
 }

@@ -27,6 +27,7 @@ import { getSiteId } from "../../lib/settings/site-settings.js";
 import { canViewUnpublishedSite, isSiteClosed, isSitePublic } from "../../lib/settings/site-visibility.js";
 import type { Request, Response } from "express";
 import { sendServerError } from "../../lib/http/send-error.js";
+import { getVisibilityScope, type VisibilityScope } from "../../lib/content/visibility-scope.js";
 
 const router = Router();
 
@@ -47,6 +48,33 @@ async function ensurePublicApiAccess(req: Request, res: Response): Promise<boole
     res.status(404).json({ error: "Not found" });
   }
   return false;
+}
+
+/** With rules on the site, an answer depends on who asked: nothing in between may keep it. */
+async function requestVisibility(res: Response, siteId: string): Promise<VisibilityScope> {
+  const scope = await getVisibilityScope(siteId);
+  if (scope.restricted) {
+    res.setHeader("Cache-Control", "private, no-store");
+    res.setHeader("CDN-Cache-Control", "no-store");
+    res.vary("Cookie");
+  }
+  return scope;
+}
+
+/** Files used by an item this visitor may not see, so the listing does not point at them. */
+async function hiddenMediaFilter(
+  siteId: string,
+  scope: VisibilityScope,
+): Promise<(row: Record<string, unknown>) => boolean> {
+  if (!scope.restricted) return () => true;
+  const visible = scope.sql();
+  const db = await getDb();
+  const hidden = await db.query<{ blocks: unknown; fields: unknown }>(
+    `SELECT blocks, fields FROM content WHERE site_id = ? AND NOT (${visible.sql})`,
+    [siteId, ...visible.params],
+  );
+  const documents = hidden.map((row) => `${JSON.stringify(row.blocks) ?? ""}${JSON.stringify(row.fields) ?? ""}`);
+  return (row) => !documents.some((document) => document.includes(String(row.url)));
 }
 
 function wantsPreview(req: Request): boolean {
@@ -156,7 +184,8 @@ router.get("/media", async (req, res) => {
       "SELECT id, filename, mime_type, size_bytes, url, alt_text, caption, width, height, uploaded_at FROM media WHERE site_id = ? AND trashed_at IS NULL ORDER BY uploaded_at DESC LIMIT ?",
       [siteId, limit],
     );
-    res.json({ items: rows.map(serializeMediaRow) });
+    const shown = await hiddenMediaFilter(siteId, await requestVisibility(res, siteId));
+    res.json({ items: rows.filter(shown).map(serializeMediaRow) });
   } catch (err) {
     sendServerError(res, "public-api", err);
   }
@@ -173,6 +202,7 @@ router.get("/menus", async (req, res) => {
     const locale = await resolveContentLocale(req.query.locale as string | undefined, siteId);
     const defaultLocale = await getDefaultLocale(siteId);
     const preview = (await previewAccess(req, res)).unpublished;
+    await requestVisibility(res, siteId);
     const menus = await listMenus(siteId);
     const items = await Promise.all(
       menus.map(async (menu) => ({
@@ -209,6 +239,7 @@ router.get("/menus/:slug", async (req, res) => {
     const locale = await resolveContentLocale(req.query.locale as string | undefined, siteId);
     const defaultLocale = await getDefaultLocale(siteId);
     const preview = (await previewAccess(req, res)).unpublished;
+    await requestVisibility(res, siteId);
     res.json({
       menu: {
         slug: menu.slug,
@@ -252,6 +283,9 @@ router.get("/content", async (req, res) => {
 
     if (!preview.unpublished) {
       sql += " AND status = 'published' AND (published_at IS NULL OR published_at <= CURRENT_TIMESTAMP)";
+      const visible = (await requestVisibility(res, siteId)).sql();
+      sql += ` AND ${visible.sql}`;
+      params.push(...visible.params);
     }
     if (type) {
       sql += " AND type = ?";
@@ -302,12 +336,22 @@ router.get("/content/:slug", async (req, res) => {
       : "SELECT * FROM content WHERE site_id = ? AND slug = ? AND locale = ? AND status = 'published' AND trashed_at IS NULL AND (published_at IS NULL OR published_at <= CURRENT_TIMESTAMP) LIMIT 1";
 
     const rows = await db.query<Record<string, unknown>>(sql.replace(" LIMIT 1", ` AND ${publicContentTypeSql()} LIMIT 1`), [siteId, req.params.slug, locale]);
-    if (!rows[0]) {
+    const scope = await requestVisibility(res, siteId);
+    const found = rows[0];
+    const hidden =
+      found &&
+      !preview.unpublished &&
+      !scope.allows({
+        id: String(found.id),
+        type: String(found.type),
+        translationGroupId: found.translation_group_id == null ? null : String(found.translation_group_id),
+      });
+    if (!found || hidden) {
       res.status(404).json({ error: "Not found" });
       return;
     }
 
-    res.json(await serializePublicContent(rows[0], siteId, preview.working));
+    res.json(await serializePublicContent(found, siteId, preview.working));
   } catch (err) {
     sendServerError(res, "public-api", err);
   }

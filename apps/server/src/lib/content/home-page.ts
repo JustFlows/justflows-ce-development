@@ -121,6 +121,18 @@ export async function getHomeContent(
   return null;
 }
 
+/** The home page as this visitor may see it. Null falls back to the theme's own home. */
+export async function getVisibleHomeContent(
+  siteId: string,
+  locale: string,
+  preview = false,
+): Promise<ContentResponse | null> {
+  const home = await getHomeContent(siteId, locale, preview);
+  if (!home || preview) return home;
+  const { getVisibilityScope } = await import("./visibility-scope.js");
+  return (await getVisibilityScope(siteId)).allows(home) ? home : null;
+}
+
 export function isHomeContentSlug(
   content: { id: string; slug: string; translationGroupId?: string | null } | null,
   home: ContentResponse | null,

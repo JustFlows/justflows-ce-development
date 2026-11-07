@@ -4,6 +4,10 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ query: vi.fn(), closed: false, public: true, staff: true }));
+vi.mock("../../../src/lib/content/visibility-scope.js", () => {
+  const open = { restricted: false, allows: () => true, sql: () => ({ sql: "1 = 1", params: [] }) };
+  return { getVisibilityScope: async () => open, getAnonymousVisibilityScope: async () => open, isOpenToEveryone: async () => true };
+});
 vi.mock("../../../src/lib/database/db.js", () => ({ getDb: async () => ({ query: mocks.query }) }));
 vi.mock("../../../src/lib/settings/site-settings.js", () => ({ getSiteId: async () => "site-a" }));
 vi.mock("../../../src/lib/settings/site-visibility.js", () => ({ isSitePublic: async () => mocks.public, isSiteClosed: async () => mocks.closed, canViewUnpublishedSite: async () => mocks.staff }));

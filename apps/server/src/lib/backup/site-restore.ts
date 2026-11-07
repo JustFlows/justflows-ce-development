@@ -18,6 +18,7 @@ const RESTORE_ORDER = [
   "taxonomies",
   "terms",
   "content",
+  "content_visibility",
   "revisions",
   "content_terms",
   "menus",
@@ -28,7 +29,7 @@ const RESTORE_ORDER = [
 const DELETE_ORDER = [...RESTORE_ORDER].reverse();
 const IDENTIFIER = /^[a-z][a-z0-9_]*$/;
 const OMIT_COLUMNS = new Set(["password_hash", "site_id"]);
-const NULL_USER_COLUMNS = new Set(["author_id", "created_by", "uploaded_by", "user_id"]);
+const NULL_USER_COLUMNS = new Set(["author_id", "created_by", "uploaded_by", "updated_by", "user_id"]);
 const SENSITIVE_SETTING_KEY =
   /(secret|password|credential|private.?key|access.?token|refresh.?token|api.?key)/i;
 

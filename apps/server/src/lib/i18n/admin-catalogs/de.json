@@ -4735,5 +4735,75 @@
     "removeTerm": "{name} entfernen",
     "addOrCreate": "Hinzufügen oder anlegen",
     "addExisting": "Vorhandenen hinzufügen"
+  },
+  "visibility": {
+    "typeTitle": "Sichtbarkeit",
+    "typeHint": "Wer Einträge dieses Typs ansehen kann. Ein Eintrag kann dies durch eine eigene Regel ersetzen.",
+    "itemTitle": "Sichtbarkeit",
+    "itemHint": "Gilt für alle Übersetzungen dieses Eintrags. Ein verborgener Eintrag antwortet mit 404 und fehlt in Listen, Suche, Feeds und Sitemaps.",
+    "modeInherit": "Regel des Inhaltstyps verwenden",
+    "modeCustom": "Eigene Regel für diesen Eintrag verwenden",
+    "inheritedPublic": "Der Inhaltstyp hat keine Regel, daher kann jeder diesen Eintrag ansehen.",
+    "inheritedRestricted": "Die Regel des Inhaltstyps gilt.",
+    "audience": "Wer ansehen kann",
+    "audiences": {
+      "everyone": "Alle",
+      "authenticated": "Angemeldete Benutzer",
+      "nobody": "Nur die Rollen, Benutzer und Regeln unten"
+    },
+    "allowRoles": "Diese Rollen zulassen",
+    "denyRoles": "Diese Rollen sperren",
+    "allowUsers": "Diese Benutzer zulassen",
+    "denyUsers": "Diese Benutzer sperren",
+    "userSearch": "Benutzer hinzufügen",
+    "userIdHint": "Du kannst keine Benutzer auflisten. Gib deshalb eine Benutzer-ID ein.",
+    "userIdPlaceholder": "Benutzer-ID",
+    "remove": "{name} entfernen",
+    "precedence": "Reihenfolge: gesperrter Benutzer, zugelassener Benutzer, gesperrte Rolle, erforderliche Plugin-Regeln, zugelassene Rolle, gewährende Plugin-Regeln, dann wer ansehen kann.",
+    "rules": "Plugin-Regeln",
+    "noRules": "Kein aktives Plugin fügt Sichtbarkeitsregeln hinzu.",
+    "addRule": "Regel hinzufügen",
+    "ruleMode": "Diese Regel",
+    "ruleModes": {
+      "require": "Muss bestanden werden",
+      "grant": "Lässt den Besucher zu"
+    },
+    "ruleMissing": "Das Plugin dieser Regel ist nicht aktiv. Eine erforderliche Regel verbirgt diesen Inhalt, bis das Plugin wieder aktiv ist.",
+    "save": "Sichtbarkeit speichern",
+    "saved": "Sichtbarkeit gespeichert.",
+    "loadError": "Sichtbarkeit konnte nicht geladen werden.",
+    "saveError": "Sichtbarkeit konnte nicht gespeichert werden.",
+    "explainTitle": "Zugriff prüfen",
+    "explainAs": "Prüfen als",
+    "explainKinds": {
+      "anonymous": "Anonymer Besucher",
+      "role": "Eine Rolle",
+      "user": "Ein Benutzer"
+    },
+    "explainRun": "Prüfen",
+    "explainError": "Zugriff konnte nicht geprüft werden.",
+    "explainSaved": "Prüft die gespeicherte Regel, nicht ungespeicherte Änderungen.",
+    "allowed": "Kann ansehen",
+    "denied": "Kann nicht ansehen",
+    "sources": {
+      "default": "Es gilt keine Regel.",
+      "type": "Entschieden durch die Regel des Inhaltstyps.",
+      "item": "Entschieden durch die Regel dieses Eintrags."
+    },
+    "reasons": {
+      "public": "Dieser Inhalt ist öffentlich.",
+      "user_denied": "Dieser Benutzer ist gesperrt.",
+      "user_allowed": "Dieser Benutzer ist zugelassen.",
+      "role_denied": "Eine gesperrte Rolle trifft zu.",
+      "role_allowed": "Eine zugelassene Rolle trifft zu.",
+      "audience_everyone": "Alle können ansehen.",
+      "audience_authenticated": "Angemeldete Benutzer können ansehen.",
+      "authentication_required": "Der Besucher muss sich anmelden.",
+      "not_allowed": "Keine Regel lässt diesen Besucher zu.",
+      "rule_unavailable": "Eine erforderliche Plugin-Regel ist nicht verfügbar.",
+      "rule_error": "Eine Plugin-Regel ist fehlgeschlagen.",
+      "rule_invalid": "Eine Plugin-Regel hat eine ungültige Antwort geliefert."
+    },
+    "pluginReason": "Plugin-Regel {rule} antwortete: {reason}"
   }
 }

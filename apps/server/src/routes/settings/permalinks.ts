@@ -14,6 +14,7 @@ import { getSiteId } from "../../lib/settings/site-settings.js";
 import { getDefaultLocale, getActiveLocaleCodes } from "../../lib/i18n/languages-db.js";
 import { localePath, parseLocalePrefix } from "../../lib/i18n/locales.js";
 import { getHomeContent } from "../../lib/content/home-page.js";
+import { getVisibilityScope } from "../../lib/content/visibility-scope.js";
 import type { ContentResponse } from "../../lib/content/content-api.js";
 
 interface PermalinkHandlers {
@@ -70,10 +71,13 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
           getDefaultLocale(siteId),
           getActiveLocaleCodes(),
         ]);
+        /** A hidden item leaves this list, so its URL, id, redirects, and archive entries all act as if it never existed. */
+        const visibility = preview ? null : await getVisibilityScope(siteId);
         const items = candidates.filter(
           (item) =>
             activeLocales.includes(item.locale) &&
-            (item.status === "published" || (preview && item.status === "draft")),
+            (item.status === "published" || (preview && item.status === "draft")) &&
+            (!visibility || visibility.allows(item)),
         );
         const identity = typeof req.query.p === "string" ? req.query.p : null;
         let pagination = req.path.match(/^(.*)\/page\/([1-9][0-9]*)\/?$/);

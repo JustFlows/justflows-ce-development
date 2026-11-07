@@ -42,6 +42,7 @@ import { PluginCapabilityRegistry } from "./capability-registry.js";
 import { PluginRoleRegistry } from "./role-registry.js";
 import { PluginDiagnosticRegistry } from "./diagnostic-registry.js";
 import { PluginPatternRegistry } from "./pattern-registry.js";
+import { PluginVisibilityRuleRegistry } from "./visibility-rule-registry.js";
 import { PluginPlaceholderRegistry, placeholderImgHtml } from "./placeholder-registry.js";
 
 export interface LoadedPlugin {
@@ -288,6 +289,7 @@ export class PluginLoader {
   readonly roleRegistry: PluginRoleRegistry;
   readonly diagnosticRegistry: PluginDiagnosticRegistry;
   readonly patternRegistry: PluginPatternRegistry;
+  readonly visibilityRuleRegistry: PluginVisibilityRuleRegistry;
   readonly placeholderRegistry: PluginPlaceholderRegistry;
   private readonly placeholderResolver: PluginPlaceholderResolver;
   private readonly eventPublisher: ((event: string, payload: unknown, siteId: string) => Promise<void>) | undefined;
@@ -333,6 +335,7 @@ export class PluginLoader {
       roleRegistry?: PluginRoleRegistry;
       diagnosticRegistry?: PluginDiagnosticRegistry;
       patternRegistry?: PluginPatternRegistry;
+      visibilityRuleRegistry?: PluginVisibilityRuleRegistry;
       placeholderRegistry?: PluginPlaceholderRegistry;
       /** Host resolution (site choice, filter, shipped defaults). Without one,
        * only plugin-registered kinds resolve. */
@@ -412,6 +415,7 @@ export class PluginLoader {
     this.roleRegistry = options?.roleRegistry ?? new PluginRoleRegistry();
     this.diagnosticRegistry = options?.diagnosticRegistry ?? new PluginDiagnosticRegistry();
     this.patternRegistry = options?.patternRegistry ?? new PluginPatternRegistry();
+    this.visibilityRuleRegistry = options?.visibilityRuleRegistry ?? new PluginVisibilityRuleRegistry();
     this.placeholderRegistry = options?.placeholderRegistry ?? new PluginPlaceholderRegistry();
     this.placeholderResolver =
       options?.placeholderResolver ??
@@ -609,6 +613,7 @@ export class PluginLoader {
     this.roleRegistry.removePlugin(pluginId);
     this.diagnosticRegistry.removePlugin(pluginId);
     this.patternRegistry.removePlugin(pluginId);
+    this.visibilityRuleRegistry.removePlugin(pluginId);
     this.placeholderRegistry.removePlugin(pluginId);
     this.jobsCleanup?.(pluginId);
     this.mailCleanup?.(pluginId);
@@ -863,6 +868,16 @@ export class PluginLoader {
       },
       patterns: {
         register: (pattern) => this.patternRegistry.register(pluginId, pattern),
+      },
+      visibility: {
+        registerRule: (definition) => {
+          if (!permissions.has("content:read")) {
+            throw new Error(
+              `Plugin "${pluginId}" cannot register visibility rules without the "content:read" permission. Add it to the plugin manifest.`,
+            );
+          }
+          return this.visibilityRuleRegistry.register(pluginId, definition);
+        },
       },
       media: {
         placeholder: (kind) => this.placeholderResolver(siteId, kind),

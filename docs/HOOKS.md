@@ -578,6 +578,10 @@ been deactivated — hides the item; the filter is seeded with `false`; return
 `allowed` unchanged for a condition id you do not own so another handler (or
 the deny-by-default) still applies to it.
 
+Content visibility is not a hook. A rule has exactly one owner and a failure
+must deny, so plugins register rules through `ctx.visibility.registerRule`. See
+[Content visibility](CONTENT_VISIBILITY.md).
+
 ---
 
 ## Performance

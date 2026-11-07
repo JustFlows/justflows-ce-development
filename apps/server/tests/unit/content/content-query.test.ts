@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ query: vi.fn() }));
+vi.mock("../../../src/lib/content/visibility-scope.js", () => {
+  const open = { restricted: false, allows: () => true, sql: () => ({ sql: "1 = 1", params: [] }) };
+  return { getVisibilityScope: async () => open, getAnonymousVisibilityScope: async () => open, isOpenToEveryone: async () => true };
+});
 vi.mock('../../../src/lib/database/db.js', () => ({ getDb: async () => ({ query: mocks.query }) }));
 vi.mock('../../../src/lib/content/content-api.js', () => ({ serializeContentRow: (row: unknown) => row }));
 import { queryPublishedContent } from '../../../src/lib/content/content-query.js';

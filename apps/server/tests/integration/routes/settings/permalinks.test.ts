@@ -11,6 +11,7 @@ let state: PermalinkState;
 let items: ReturnType<typeof serializeContentRow>[];
 let terms: PermalinkTerm[];
 let publicSite = true;
+let hiddenIds = new Set<string>();
 vi.mock("../../../../src/lib/navigation/permalinks-db.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../../src/lib/navigation/permalinks-db.js")>()),
   getPermalinkState: async () => state,
@@ -18,6 +19,9 @@ vi.mock("../../../../src/lib/navigation/permalinks-db.js", async (importOriginal
   listPermalinkTerms: async () => terms,
 }));
 vi.mock("../../../../src/lib/settings/site-settings.js", () => ({ getSiteId: async () => "s1" }));
+vi.mock("../../../../src/lib/content/visibility-scope.js", () => ({
+  getVisibilityScope: async () => ({ allows: (item: { id: string }) => !hiddenIds.has(item.id) }),
+}));
 vi.mock("../../../../src/lib/i18n/languages-db.js", () => ({
   getDefaultLocale: async () => "en-US",
   getActiveLocaleCodes: async () => ["en-US", "nl-NL"],
@@ -54,6 +58,7 @@ beforeAll(async () => {
 });
 afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 beforeEach(() => {
+  hiddenIds = new Set();
   state = {
     settings: { ...defaults, structure: PERMALINK_PRESETS.day, trailingSlash: "always" },
     redirects: { "/old": "p1" },
@@ -140,6 +145,16 @@ describe("public permalink routing", () => {
     expect((await get("/2026/09/07/hello/page/1/")).headers.get("location")).toBe(
       "/2026/09/07/hello/",
     );
+  });
+  it("treats an entry the visitor may not see as if it never existed", async () => {
+    terms = [{ id: "t1", name: "News", slug: "news", taxonomy: "category", contentIds: ["p1"] } as unknown as PermalinkTerm];
+    expect((await get("/2026/09/07/hello/")).status).toBe(200);
+    hiddenIds = new Set(["p1"]);
+    for (const path of ["/2026/09/07/hello/", "/old", "/?p=p1"]) {
+      const response = await get(path);
+      expect(response.status, path).toBe(404);
+      expect(response.headers.get("location"), path).toBeNull();
+    }
   });
   it("never exposes unpublished targets or bypasses site visibility", async () => {
     items = [];

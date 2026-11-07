@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { contentTypeCacheMiddleware } from "./middleware/content-type-cache.js";
+import { visibilityRequestContext } from "./lib/content/visibility-viewer.js";
 import { accountPagesRouter } from "./routes/public/account-pages.js";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -133,6 +134,7 @@ export function createApp(): express.Application {
   // headers, so its own 403 keeps the policy.
   app.use(tenantContext);
   app.use(rejectForeignSiteId);
+  app.use(visibilityRequestContext);
   app.use(securityHeaders);
 
   app.use((req, res, next) => { if (!isInstalled()) { next(); return; } accountPagesRouter(req, res, next); });

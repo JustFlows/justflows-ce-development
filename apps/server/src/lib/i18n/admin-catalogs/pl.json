@@ -4730,5 +4730,75 @@
     "removeTerm": "Usuń {name}",
     "addOrCreate": "Dodaj lub utwórz",
     "addExisting": "Dodaj istniejący"
+  },
+  "visibility": {
+    "typeTitle": "Widoczność",
+    "typeHint": "Kto może oglądać wpisy tego typu. Wpis może zastąpić to własną regułą.",
+    "itemTitle": "Widoczność",
+    "itemHint": "Dotyczy wszystkich tłumaczeń tego wpisu. Ukryty wpis zwraca błąd 404 i nie pojawia się na listach, w wyszukiwarce, kanałach ani mapach witryny.",
+    "modeInherit": "Użyj reguły typu treści",
+    "modeCustom": "Użyj reguły dla tego wpisu",
+    "inheritedPublic": "Typ treści nie ma reguły, więc każdy może oglądać ten wpis.",
+    "inheritedRestricted": "Obowiązuje reguła typu treści.",
+    "audience": "Kto może oglądać",
+    "audiences": {
+      "everyone": "Wszyscy",
+      "authenticated": "Zalogowani użytkownicy",
+      "nobody": "Tylko role, użytkownicy i reguły poniżej"
+    },
+    "allowRoles": "Zezwól tym rolom",
+    "denyRoles": "Odmów tym rolom",
+    "allowUsers": "Zezwól tym użytkownikom",
+    "denyUsers": "Odmów tym użytkownikom",
+    "userSearch": "Dodaj użytkownika",
+    "userIdHint": "Nie możesz wyświetlić listy użytkowników, więc wpisz ID użytkownika.",
+    "userIdPlaceholder": "ID użytkownika",
+    "remove": "Usuń {name}",
+    "precedence": "Kolejność: użytkownik z odmową, użytkownik z dostępem, rola z odmową, wymagane reguły wtyczek, rola z dostępem, reguły wtyczek przyznające dostęp, a na końcu kto może oglądać.",
+    "rules": "Reguły wtyczek",
+    "noRules": "Żadna aktywna wtyczka nie dodaje reguł widoczności.",
+    "addRule": "Dodaj regułę",
+    "ruleMode": "Ta reguła",
+    "ruleModes": {
+      "require": "Musi zostać spełniona",
+      "grant": "Daje odwiedzającemu dostęp"
+    },
+    "ruleMissing": "Wtyczka tej reguły nie jest aktywna. Wymagana reguła ukrywa tę treść, dopóki wtyczka nie wróci.",
+    "save": "Zapisz widoczność",
+    "saved": "Zapisano widoczność.",
+    "loadError": "Nie udało się wczytać widoczności.",
+    "saveError": "Nie udało się zapisać widoczności.",
+    "explainTitle": "Sprawdź dostęp",
+    "explainAs": "Sprawdź jako",
+    "explainKinds": {
+      "anonymous": "Anonimowy odwiedzający",
+      "role": "Rola",
+      "user": "Użytkownik"
+    },
+    "explainRun": "Sprawdź",
+    "explainError": "Nie udało się sprawdzić dostępu.",
+    "explainSaved": "Sprawdza zapisaną regułę, a nie niezapisane zmiany.",
+    "allowed": "Może oglądać",
+    "denied": "Nie może oglądać",
+    "sources": {
+      "default": "Nie obowiązuje żadna reguła.",
+      "type": "Zdecydowała reguła typu treści.",
+      "item": "Zdecydowała reguła tego wpisu."
+    },
+    "reasons": {
+      "public": "Ta treść jest publiczna.",
+      "user_denied": "Temu użytkownikowi odmówiono dostępu.",
+      "user_allowed": "Ten użytkownik ma dostęp.",
+      "role_denied": "Pasuje rola z odmową.",
+      "role_allowed": "Pasuje rola z dostępem.",
+      "audience_everyone": "Wszyscy mogą oglądać.",
+      "audience_authenticated": "Zalogowani użytkownicy mogą oglądać.",
+      "authentication_required": "Odwiedzający musi się zalogować.",
+      "not_allowed": "Żadna reguła nie daje temu odwiedzającemu dostępu.",
+      "rule_unavailable": "Wymagana reguła wtyczki jest niedostępna.",
+      "rule_error": "Reguła wtyczki nie zadziałała.",
+      "rule_invalid": "Reguła wtyczki zwróciła nieprawidłową odpowiedź."
+    },
+    "pluginReason": "Reguła wtyczki {rule} odpowiedziała: {reason}"
   }
 }

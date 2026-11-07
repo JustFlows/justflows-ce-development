@@ -203,6 +203,7 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
 
   app.use("/api/search", requireInstalled, (await import("./routes/public/search.js")).default);
   app.use("/api/content", requireInstalled, contentRoutes);
+  app.use("/api/content-visibility", requireInstalled, (await import("./routes/content/visibility.js")).default);
   app.use("/api/trash", requireInstalled, requireSiteFeature("feature.trash"), trashRoutes);
   app.use("/api/media", requireInstalled, mediaRoutes);
   app.use("/api/comments", requireInstalled, requireSiteFeature("feature.comments"), commentsRoutes);

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 import type { ContentTypeSettings } from "@justflows/content";
 import { useT } from "../i18n/I18nProvider";
+import ContentVisibilityFields from "./ContentVisibilityFields";
 
 export type TypeSettings = Partial<ContentTypeSettings>;
 
@@ -123,6 +124,17 @@ export default function ContentTypeSettingsFields({
         </select>
         <span className="jf-field__hint">{t("contentTypes.settingsHints.comments")}</span>
       </div>
+      {!protectedType && (
+        <>
+          <h3 className="jf-card__title">{t("visibility.typeTitle")}</h3>
+          <p className="jf-field__hint">{t("visibility.typeHint")}</p>
+          <ContentVisibilityFields
+            idPrefix="ct-visibility"
+            policy={settings.visibility ?? null}
+            onChange={(visibility) => update({ visibility })}
+          />
+        </>
+      )}
     </>
   );
 }

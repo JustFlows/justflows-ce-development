@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ query: vi.fn(), content: vi.fn(), state: vi.fn(), resolver: vi.fn() }));
+const mocks = vi.hoisted(() => ({ query: vi.fn(), content: vi.fn(), state: vi.fn(), resolver: vi.fn(), policies: vi.fn() }));
 vi.mock("../../../src/lib/database/db.js", () => ({ getDb: async () => ({ query: mocks.query }) }));
+vi.mock("../../../src/lib/content/visibility-policies.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../src/lib/content/visibility-policies.js")>()),
+  loadVisibilityPolicies: mocks.policies,
+}));
 vi.mock("../../../src/lib/navigation/permalinks-db.js", () => ({ permalinkContent: mocks.content, getPermalinkState: mocks.state, createContentPermalinkResolver: mocks.resolver }));
 import { contentCacheRules, contentCacheExclusions, matchContentCacheRule } from "../../../src/lib/cache/content-type-cache.js";
 
@@ -10,6 +14,7 @@ describe("content cache URL policies", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.query.mockReset();
+    mocks.policies.mockResolvedValue({ types: new Map(), overrides: new Map(), restricted: false });
     mocks.state.mockResolvedValue({ redirects: { "/old": "1" } });
     mocks.resolver.mockResolvedValue(async (content: { id: string }) => `/pages/${content.id}`);
   });
@@ -18,6 +23,22 @@ describe("content cache URL policies", () => {
     expect(await contentCacheRules("site-a")).toEqual([]);
     expect(mocks.content).not.toHaveBeenCalled();
     expect(mocks.query.mock.calls[0]?.[1]).toEqual(["site-a"]);
+  });
+  it("keeps a page with visibility rules out of every shared cache, whatever its type allows", async () => {
+    const policy = { audience: "authenticated", allowRoles: [], denyRoles: [], allowUsers: [], denyUsers: [], rules: [] };
+    mocks.policies.mockResolvedValue({ types: new Map(), overrides: new Map([["1", { groupId: "1", hash: "h", policy }]]), restricted: true });
+    mocks.query.mockResolvedValueOnce([{ slug: "page", cache_control: "public, max-age=600" }]).mockResolvedValueOnce([]);
+    mocks.content.mockResolvedValue([{ id: "1", type: "page" }, { id: "2", type: "page" }]);
+    const rules = await contentCacheRules("site-a");
+    expect(rules.find(rule => rule.id === "1")).toMatchObject({ header: "private, no-store", shared: false, ttl: 0 });
+    expect(rules.find(rule => rule.id === "2")).toMatchObject({ shared: true });
+  });
+  it("marks a restricted page even when no type sets a cache policy", async () => {
+    const policy = { audience: "nobody", allowRoles: [], denyRoles: [], allowUsers: [], denyUsers: [], rules: [] };
+    mocks.policies.mockResolvedValue({ types: new Map([["post", { hash: "h", policy }]]), overrides: new Map(), restricted: true });
+    mocks.query.mockResolvedValue([]);
+    mocks.content.mockResolvedValue([{ id: "1", type: "post" }, { id: "2", type: "page" }]);
+    expect((await contentCacheRules("site-a")).map(rule => rule.id)).toEqual(["1"]);
   });
   it("resolves many pages once and covers aliases, ids and pagination", async () => {
     mocks.query.mockResolvedValueOnce([{ slug: "page", cache_control: "private, no-store" }]).mockResolvedValueOnce([]);

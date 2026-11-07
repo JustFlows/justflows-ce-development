@@ -64,7 +64,7 @@ import {
   type ResolvedNavItem,
 } from "../../lib/navigation/menus-db.js";
 import { getEffectiveHomeBlocks } from "../../lib/themes/theme-home-blocks.js";
-import { getHomeContent, isHomeContentSlug } from "../../lib/content/home-page.js";
+import { getHomeContent, getVisibleHomeContent, isHomeContentSlug } from "../../lib/content/home-page.js";
 import {
   getErrorPageConfig,
   getErrorPageSource,
@@ -144,6 +144,7 @@ import {
 import { resolvePublicTemplate, resolveThemePartBlocks } from "../../lib/rendering/template-render.js";
 import { registerCoreWidgets, withCoreWidgetData, type WidgetMenuItem } from "../../lib/rendering/core-widgets.js";
 import { listPublishedPostsPage } from "../../lib/content/content-public.js";
+import { getVisibilityScope } from "../../lib/content/visibility-scope.js";
 import { contentPermalinks } from "../../lib/navigation/permalinks-db.js";
 import {
   blocksPlaceWidgetArea,
@@ -757,7 +758,9 @@ async function loadNavItems(
 ): Promise<RenderableNavItem[]> {
   const siteId = await getSiteId();
   let resolved: ResolvedNavItem[];
-  if (!preview && siteId && !(await menuIsCacheable(siteId, menuSlug))) {
+  /** A menu links content, so with rules on the site its items can differ per visitor. */
+  const perVisitor = siteId ? (await getVisibilityScope(siteId)).restricted : false;
+  if (!preview && siteId && (perVisitor || !(await menuIsCacheable(siteId, menuSlug)))) {
     const visibility = await resolvePublicMenuVisibility(req, res);
     resolved = await getNavItemsForMenuSlug(menuSlug, locale, defaultLocale, preview, visibility);
   } else {
@@ -1797,7 +1800,7 @@ async function renderHomeHtml(
 ): Promise<string> {
   const ctx = await buildPageContext(req, res, reqPath, preview);
   const siteId = await getSiteId();
-  const home = siteId ? await getHomeContent(siteId, ctx.locale, preview) : null;
+  const home = siteId ? await getVisibleHomeContent(siteId, ctx.locale, preview) : null;
   const withHeader = await applyPageHeader(
     req,
     res,
@@ -2070,6 +2073,10 @@ export async function renderSinglePageHtml(
     pageContent = rows[0]
       ? serializeContentRow(showWorking ? await overlayWorkingOnRow(rows[0], true) : rows[0])
       : null;
+  }
+  /** An editor's preview and a signed preview link are editorial views. Everyone else is checked. */
+  if (pageContent && !preview && !scopedPreview && !(await getVisibilityScope(pageContent.siteId)).allows(pageContent)) {
+    pageContent = null;
   }
   if (!pageContent) {
     return renderNotFoundHtml(pageCtx, req, res, reqPath);

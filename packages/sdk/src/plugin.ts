@@ -1456,6 +1456,8 @@ export interface PluginContentApi {
 
   /**
    * List published content, newest first. Requires the `content:read` permission.
+   * Like `getPublished`, this always answers as an anonymous visitor: an entry
+   * with visibility rules that exclude anonymous visitors is left out.
    * Scheduled (future `publishedAt`) and expired entries are excluded unless
    * `includeScheduled` is set.
    */
@@ -2187,6 +2189,12 @@ export interface PluginContext {
 
   /** Register sanitized block patterns for the editor. Removed on deactivate. */
   patterns: PluginPatternsApi;
+
+  /**
+   * Add content visibility rule types. Requires `content:read`. Removed on
+   * deactivate. See `docs/CONTENT_VISIBILITY.md`.
+   */
+  visibility: import("./visibility.js").PluginVisibilityApi;
 
   /**
    * Placeholder images for empty image slots. Use `placeholder()` instead of

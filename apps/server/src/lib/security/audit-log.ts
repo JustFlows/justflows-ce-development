@@ -110,6 +110,7 @@ export const AUDIT_ACTIONS = [
   "content.published",
   "content.schedule_set",
   "content.schedule_changed",
+  "content.visibility_changed",
   "content.schedule_cancelled",
   "content.schedule_executed",
   "content.revision_restored",

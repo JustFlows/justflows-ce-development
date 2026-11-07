@@ -24,6 +24,7 @@ import { getDb } from "../database/db.js";
 import { localizePublicPath } from "../i18n/locales.js";
 import { getActiveLocaleCodes } from "../i18n/languages-db.js";
 import { getSiteId } from "../themes/themes-db.js";
+import { getVisibilityScope } from "../content/visibility-scope.js";
 import { sanitizeNavUrl } from "./nav-url.js";
 import type { BlockNode } from "../runtime/types.js";
 
@@ -711,6 +712,8 @@ export async function resolveMenuItems(
     preview,
   );
   const activeLocales = await getActiveLocaleCodes();
+  const visibilitySiteId = options.siteId ?? (await getSiteId());
+  const contentVisibility = !preview && visibilitySiteId ? await getVisibilityScope(visibilitySiteId) : null;
 
   const permalinkResolvers = new Map<string, ReturnType<typeof createContentPermalinkResolver>>();
   async function resolveContentUrl(content: MenuContentRef): Promise<string> {
@@ -741,6 +744,8 @@ export async function resolveMenuItems(
 
       if (isContentLinkedMenuItem(linked)) {
         const content = contentMap.get(linked.contentId);
+        /** A link to something this visitor may not see would give away its title and URL. */
+        if (content && contentVisibility && !contentVisibility.allows(content)) continue;
         if (content) {
           url = await resolveContentUrl(content);
           if (!label) {
