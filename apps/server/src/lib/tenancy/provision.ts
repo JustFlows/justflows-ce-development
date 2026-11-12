@@ -267,6 +267,14 @@ export async function createWorkspace(input: CreateWorkspaceInput): Promise<Prov
       databaseMode: input.databaseMode,
       adminEmail: input.admin?.email ? String(input.admin.email).toLowerCase() : "",
     });
+    /** Not awaited: a mail failure must never undo or fail a created workspace. */
+    void import("./site-created-mail.js").then(({ sendSiteCreatedMail }) => sendSiteCreatedMail({
+      siteId,
+      siteName: input.siteName,
+      siteUrl,
+      email: input.admin.email,
+      displayName: input.admin.displayName,
+    })).catch(() => undefined);
     return { ok: true, tenantId, siteId, hostname };
   } catch (err) {
     if (err instanceof WorkspaceOwnerTakenError) {
