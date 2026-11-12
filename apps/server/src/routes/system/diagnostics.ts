@@ -188,8 +188,7 @@ async function extensionDiagnostics(siteId: string) {
     db.query<PluginDiagnosticRow>("SELECT plugin_id, version, status, approved_permissions, manifest FROM plugins WHERE site_id = ? ORDER BY plugin_id", [siteId]),
     db.query<ThemeDiagnosticRow>("SELECT theme_id, version, status, manifest FROM themes WHERE site_id = ? ORDER BY theme_id", [siteId]),
   ]);
-  const { withRootPluginManifests } = await import("../../lib/plugins/plugin-root-manifest.js");
-  const dbPlugins = new Map((await withRootPluginManifests(siteId, pluginRows)).map((row) => [row.plugin_id, row]));
+  const dbPlugins = new Map(pluginRows.map((row) => [row.plugin_id, row]));
   const dbThemes = new Map(themeRows.map((row) => [row.theme_id, row]));
   const mergeDb = (item: ExtensionInventoryItem): ExtensionInventoryItem => {
     const row = item.kind === "plugin" ? dbPlugins.get(item.id) : dbThemes.get(item.id);

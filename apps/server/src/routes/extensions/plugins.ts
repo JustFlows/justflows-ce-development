@@ -97,6 +97,16 @@ async function readPluginSettings(
   return { schema: resolveSettingsSchema(schema, defaultLocale), values: merged, languages };
 }
 
+/**
+ * Only the main site installs plugins and decides their version, so another
+ * site's admin is not told which version runs.
+ */
+function withoutVersionOffRoot<T extends { version?: string }>(plugin: T): T | Omit<T, "version"> {
+  if (isInstallationRootRequest()) return plugin;
+  const { version: _version, ...rest } = plugin;
+  return rest;
+}
+
 // The installed extension set and its versions fingerprint the site.
 router.get("/", requireRole("administrator", "editor"), async (req, res) => {
   const session = req.session!;
@@ -106,7 +116,7 @@ router.get("/", requireRole("administrator", "editor"), async (req, res) => {
     await ensurePluginRuntime();
     const { listVisiblePlugins } = await import("../../lib/plugins/plugin-multisite.js");
     const plugins = await listVisiblePlugins(session.siteId);
-    res.json({ plugins });
+    res.json({ plugins: plugins.map(withoutVersionOffRoot) });
   } catch (err) {
     sendServerError(res, "plugins", err);
   }
@@ -397,7 +407,7 @@ router.get("/:id", requireRole("administrator", "editor"), async (req, res) => {
     res.status(404).json({ error: "Plugin not found" });
     return;
   }
-  res.json({ plugin: pluginToDto(plugin) });
+  res.json({ plugin: withoutVersionOffRoot(pluginToDto(plugin)) });
 });
 
 router.get("/:id/settings", requireRole("administrator"), async (req, res) => {
