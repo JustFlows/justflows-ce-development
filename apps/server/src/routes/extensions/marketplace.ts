@@ -100,6 +100,12 @@ router.post("/install", requireRole("administrator"), async (req, res) => {
         manifest: { ...result.manifest, installedPath: result.installedPath },
         status: "installed",
       });
+      /** The row now points at this build, so versions left by earlier installs are unused. */
+      const { purgeOtherPluginVersions } = await import("../../lib/plugins/plugin-purge.js");
+      if (purgeOtherPluginVersions(result.installedPath).removed.length > 0) {
+        const { invalidateIntegrityCache } = await import("../../lib/security/extension-integrity.js");
+        invalidateIntegrityCache();
+      }
       if (result.approvedPermissions.length > 0) {
         auditFromRequest(req, "plugin.permissions_approved", {
           target: result.manifest.id,

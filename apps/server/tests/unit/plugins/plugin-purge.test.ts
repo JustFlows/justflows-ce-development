@@ -133,4 +133,17 @@ describe("purgeOtherPluginVersions", () => {
     expect(purgeOtherPluginVersions(outside).removed).toEqual([]);
     expect(fs.existsSync(sibling)).toBe(true);
   });
+
+  it("leaves nothing of the plugin on disk when a delete also purges the live build", () => {
+    const plugins = path.join(root, "packages-installed", "plugins");
+    const live = path.join(plugins, "acme.demo", "0.3.0", "2222222222222222");
+    const old = path.join(plugins, "acme.demo", "0.1.0", "1111111111111111");
+    for (const dir of [live, old]) fs.mkdirSync(dir, { recursive: true });
+
+    purgeOtherPluginVersions(live);
+    expect(purgePluginFiles({ installedPath: live }).ok).toBe(true);
+
+    expect(fs.existsSync(path.join(plugins, "acme.demo"))).toBe(false);
+    expect(fs.existsSync(plugins)).toBe(true);
+  });
 });
