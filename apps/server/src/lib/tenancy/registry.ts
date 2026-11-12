@@ -2,6 +2,7 @@
 
 import { getControlDb, type DbClient } from "../database/db.js";
 import { isMissingColumnError, isMissingTableError } from "../database/schema-errors.js";
+import { multisiteEnabled } from "./multisite.js";
 import type { DatabaseChoice, DatabaseMode, TenantStatus, UserMode } from "./context.js";
 import { hostnameFromUrl, pickHost, type HostDecision, type HostRecord } from "./host.js";
 
@@ -119,6 +120,12 @@ export async function resolveHost(hostname: string, db?: DbClient): Promise<Reso
     return { kind: "unavailable" };
   }
   if (!loaded) return { kind: "unconfigured" };
+  if (!multisiteEnabled()) {
+    /** With multisite off only the root site is served; other sites keep their data but are unreachable. */
+    const root = loaded.records.filter((record) => record.rootSite);
+    if (root.length === 0) return { kind: "unconfigured" };
+    return pickHost({ hostname, records: root, siteCount: 1 });
+  }
   if (loaded.records.length === 0 && loaded.siteCount <= 1) return { kind: "unconfigured" };
   return pickHost({ hostname, records: loaded.records, siteCount: loaded.siteCount });
 }

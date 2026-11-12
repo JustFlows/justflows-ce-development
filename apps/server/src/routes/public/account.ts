@@ -14,6 +14,7 @@ import { platformBaseDomain } from "../../lib/tenancy/saas-settings.js";
 import { signupBaseDomain } from "../../lib/tenancy/host.js";
 import { listQuotaMeters } from "../../lib/tenancy/quotas.js";
 import { auditLog } from "../../lib/security/audit-log.js";
+import { requireMultisite } from "../../lib/tenancy/multisite.js";
 
 export const pageRouter = Router();
 export const apiRouter = Router();
@@ -38,7 +39,7 @@ pageRouter.get("/", reads, optionalSession, async (req, res) => {
   await serveAccountContent(req, res, page.content, page.url);
 });
 apiRouter.use(privateResponse, reads, requireSession);
-apiRouter.use("/workspaces", requireInstallationRoot);
+apiRouter.use("/workspaces", requireMultisite, requireInstallationRoot);
 apiRouter.get("/workspaces", async (req, res) => {
   const [workspaces, siteDomain] = await Promise.all([
     ownerAccount(req.session!.userId), platformBaseDomain().then(signupBaseDomain),

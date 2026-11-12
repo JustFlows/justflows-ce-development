@@ -2,6 +2,7 @@
 
 import { getControlDb, getDb } from "../database/db.js";
 import { getTenantContext } from "./context.js";
+import { multisiteEnabled } from "./multisite.js";
 
 export interface LoginAccount {
   id: string;
@@ -13,7 +14,9 @@ export interface LoginAccount {
   token_version: number | null;
 }
 
+/** Nobody operates the platform while multisite is off. */
 export async function isPlatformOperator(userId: string): Promise<boolean> {
+  if (!multisiteEnabled()) return false;
   try {
     const db = await getControlDb();
     const rows = await db.query<{ user_id: string }>(

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { getControlDb } from "../database/db.js";
+import { multisiteEnabled } from "./multisite.js";
 
 /** Ownership is always scoped to the authenticated root user, never an email. */
 export async function ownedWorkspace(userId: string, tenantId: string) {
@@ -12,7 +13,9 @@ export async function ownedWorkspace(userId: string, tenantId: string) {
   return rows[0] ?? null;
 }
 
+/** Workspace ownership is a multisite feature; with it off an account owns none. */
 export async function ownerAccount(userId: string) {
+  if (!multisiteEnabled()) return [];
   const db = await getControlDb();
   const workspaces = await db.query<{ id: string; name: string; status: string; user_mode: string }>(
     "SELECT id, name, status, user_mode FROM tenants WHERE owner_user_id = ? AND status <> 'deleted' ORDER BY created_at ASC, id ASC LIMIT 200",

@@ -46,6 +46,9 @@ vi.mock("../../../../src/lib/account/sections.js", () => ({ accountSections: moc
 
 import { accountCacheMiddleware } from "../../../../src/middleware/account-cache.js";
 import { apiRouter, pageRouter } from "../../../../src/routes/public/account.js";
+
+/** These cover multisite features, which run only with the flag on. */
+process.env.JF_MULTISITE = "true";
 let server: Server;
 let base: string;
 beforeAll(async () => {

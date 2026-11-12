@@ -2,6 +2,20 @@
 
 One Justflows installation can serve many sites. A **workspace** (tenant) owns one or more sites. Each site is reached by its own hostname. An unknown host is refused. It is never served as another workspace's site.
 
+## Turning multisite on
+
+Multisite is off unless `.env` has `JF_MULTISITE=true` (restart after changing it). Unset, `false`, or any other value means off.
+
+Off never deletes data. A single-site install runs exactly as before; it is one workspace with one site underneath. Everything else is disabled:
+
+- Only the root site (the one created at install) is served. Other sites' hostnames answer "Site not found" until multisite is back on.
+- `/api/platform/*`, `/api/signup`, the owner workspace API under `/api/account/workspaces`, and the management API's `/tenants` and `/sites/:id/quotas` answer 404.
+- Nobody is a platform operator, so the admin hides the Platform screens. The `/account` page lists no workspaces.
+- Plugins with `platform:tenancy` get an error from `ctx.tenancy`.
+- The deleted-site purge job does not run.
+
+When other sites exist while multisite is off, the server logs a warning at boot.
+
 ## Database choice
 
 Every workspace chooses where its data lives:

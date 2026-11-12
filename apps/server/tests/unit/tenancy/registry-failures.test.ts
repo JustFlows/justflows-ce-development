@@ -36,3 +36,31 @@ describe("tenant registry failures", () => {
     await expect(installationRootSiteId(failingClient(timeout))).rejects.toThrow("timeout");
   });
 });
+
+describe("multisite switch", () => {
+  const row = (hostname: string, siteId: string) => ({
+    hostname, site_id: siteId, tenant_id: `t-${siteId}`, site_status: "active", tenant_status: "active",
+    user_mode: "isolated", database_mode: "shared", database_choice: "current",
+  });
+  const client = {
+    query: vi.fn(async (sql: string) => {
+      if (sql.includes("COUNT")) return [{ count: 2 }];
+      if (sql.includes("LIMIT 1")) return [{ id: "root" }];
+      return [row("root.example.com", "root"), row("other.example.com", "other")];
+    }),
+  } as unknown as DbClient;
+
+  it("serves only the root site while off and every site while on", async () => {
+    const original = process.env.JF_MULTISITE;
+    try {
+      delete process.env.JF_MULTISITE;
+      await expect(resolveHost("root.example.com", client)).resolves.toMatchObject({ kind: "ready", record: { siteId: "root" } });
+      await expect(resolveHost("other.example.com", client)).resolves.toEqual({ kind: "unknown" });
+      process.env.JF_MULTISITE = "true";
+      await expect(resolveHost("other.example.com", client)).resolves.toMatchObject({ kind: "ready", record: { siteId: "other" } });
+    } finally {
+      if (original === undefined) delete process.env.JF_MULTISITE;
+      else process.env.JF_MULTISITE = original;
+    }
+  });
+});

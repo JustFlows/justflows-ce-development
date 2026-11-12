@@ -14,6 +14,7 @@ import { getControlDb } from "../database/db.js";
 import { refuseDelegated } from "../security/delegated-call.js";
 import { getSiteId } from "../settings/site-settings.js";
 import { installationRootSiteId } from "../tenancy/registry.js";
+import { multisiteEnabled } from "../tenancy/multisite.js";
 import { getTenantContext } from "../tenancy/context.js";
 import {
   createAdditionalSite,
@@ -33,6 +34,9 @@ import {
 async function requireTenancy(pluginId: string, permissions: ReadonlySet<PluginPermission>, action: string): Promise<void> {
   if (!permissions.has("platform:tenancy")) {
     throw new Error(`Plugin "${pluginId}" requires the "platform:tenancy" permission`);
+  }
+  if (!multisiteEnabled()) {
+    throw new Error(`${action} needs multisite. Set JF_MULTISITE=true to enable it.`);
   }
   refuseDelegated(action);
   const root = await installationRootSiteId();

@@ -11,6 +11,10 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 - **The setup wizard knows when a hosting panel installed the site.** A panel integration writes `INSTALL_HOST` in `.env` (`plesk` or `cpanel`; anything else is ignored). The account step then says the setup key is shown in that panel, and keeps the steps for finding `install-token/TOKEN.txt` under "Can't find it?". The panel can also open the setup page with the key in the link (`/install#setup-key=…`). The wizard fills it in only for a known panel, and always removes it from the address bar at once. The part after `#` is never sent to the server, and the server still checks the key as before. ([#288](https://github.com/JustFlows/justflows-ce/issues/288))
 
+### Changed
+
+- **Multisite is off unless `JF_MULTISITE=true`.** Set it in `.env` and restart to use workspaces, extra sites, public signup and platform domains. Unset, `false` or any other value turns all of it off without deleting data. Only the root site (the first one created) is served, and other sites' hostnames answer "Site not found" until multisite is back on. `/api/platform/*`, `/api/signup`, `/api/account/workspaces` and the management API's `/tenants` and `/sites/:id/quotas` answer 404. Nobody is a platform operator, so the admin hides the Platform screens, and the account page lists no workspaces. `ctx.tenancy` refuses plugin calls, and the deleted-site purge job does not run. The server logs a warning at boot when other sites exist while multisite is off. **Installations that serve more than one site must add `JF_MULTISITE=true` before upgrading.** See [docs/MULTISITE.md](docs/MULTISITE.md).
+
 ### Fixed
 
 - **The setup key field in the setup wizard has its label again.** The help box was inside the field wrapper, so the "Setup key" label was not connected to the input for screen readers or label clicks.
