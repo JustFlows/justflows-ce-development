@@ -12,6 +12,7 @@ import { setCsrfCookie } from "./lib/auth/session.js";
 import { adminAccessGate } from "./middleware/admin-access.js";
 import { getAdminPathConfig, toInternalAdminPath } from "./lib/admin/admin-path.js";
 import { requireSiteFeature } from "./lib/tenancy/site-features.js";
+import { requireMultisite } from "./lib/tenancy/multisite.js";
 
 /** Admin SPA document routes, including the common trailing-slash root. */
 export const ADMIN_PAGE_PATH_RE = /^\/admin(?:\/.*)?$/;
@@ -46,6 +47,8 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
       console.error("[justflows] Pending migrations failed:", err);
       throw err instanceof Error ? err : new Error(String(err));
     }
+    const { warnIfMultisiteDataDisabled } = await import("./lib/tenancy/multisite.js");
+    await warnIfMultisiteDataDisabled();
     const { startRevisionJobs } = await import("./lib/content/revision-jobs.js");
     startRevisionJobs();
     const { startCoreAutoUpdateJob } = await import("./lib/updates/core-auto-update.js");
@@ -58,8 +61,11 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
     startTrashPurgeJob();
     const { startInboundMailJob } = await import("./lib/email/inbound-imap.js");
     startInboundMailJob();
-    const { startDeletedSitePurgeJob } = await import("./lib/tenancy/purge-deleted-job.js");
-    startDeletedSitePurgeJob();
+    const { multisiteEnabled } = await import("./lib/tenancy/multisite.js");
+    if (multisiteEnabled()) {
+      const { startDeletedSitePurgeJob } = await import("./lib/tenancy/purge-deleted-job.js");
+      startDeletedSitePurgeJob();
+    }
     const { startCommentSpamPurgeJob } = await import("./lib/comments/comments-spam-purge.js");
     startCommentSpamPurgeJob();
     const { startDomainCheckJob } = await import("./lib/domains/custom-domains.js");
@@ -210,9 +216,9 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
   app.use("/api/comment-rules", requireInstalled, requireSiteFeature("feature.comments"), commentRulesRoutes);
   app.use("/api/comment-spam-terms", requireInstalled, requireSiteFeature("feature.comments"), commentSpamTermsRoutes);
   app.use("/api/users", requireInstalled, usersRoutes);
-  app.use("/api/platform/custom-domains", requireInstalled, (await import("./routes/platform/custom-domains.js")).default);
-  app.use("/api/platform", requireInstalled, (await import("./routes/platform/tenants.js")).default);
-  app.use("/api/signup", requireInstalled, (await import("./routes/public/signup.js")).default);
+  app.use("/api/platform/custom-domains", requireInstalled, requireMultisite, (await import("./routes/platform/custom-domains.js")).default);
+  app.use("/api/platform", requireInstalled, requireMultisite, (await import("./routes/platform/tenants.js")).default);
+  app.use("/api/signup", requireInstalled, requireMultisite, (await import("./routes/public/signup.js")).default);
   const account = await import("./routes/public/account.js");
   app.use("/api/account", requireInstalled, account.apiRouter);
   app.use("/api/platform-account", requireInstalled, account.apiRouter);

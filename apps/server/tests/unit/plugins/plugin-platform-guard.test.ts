@@ -30,6 +30,7 @@ vi.mock("../../../src/lib/tenancy/quotas.js", () => ({
   setQuotaLimit,
 }));
 
+process.env.JF_MULTISITE = "true";
 const { createPluginTenancyApi } = await import("../../../src/lib/plugins/plugin-tenancy.js");
 const { createPluginQuotasApi } = await import("../../../src/lib/plugins/plugin-quotas.js");
 const { runAsDelegate, DelegatedCallRefused } = await import("../../../src/lib/security/delegated-call.js");
@@ -110,5 +111,17 @@ describe("limits", () => {
     await expect(runAsDelegate({ kind: "api-key", client: "Script" }, () => api.set("users", null))).rejects.toBeInstanceOf(DelegatedCallRefused);
     await expect(runAsDelegate({ kind: "mcp", client: "Claude" }, () => api.set("users", 99, { siteId: "other" }))).rejects.toBeInstanceOf(DelegatedCallRefused);
     expect(setQuotaLimit).not.toHaveBeenCalled();
+  });
+});
+
+describe("multisite switch", () => {
+  it("refuses workspace operations while multisite is off", async () => {
+    process.env.JF_MULTISITE = "false";
+    try {
+      await expect(createPluginTenancyApi("acme.platform", TENANCY).suspend("t-1")).rejects.toThrow(/JF_MULTISITE/);
+      expect(provision.suspendTenant).not.toHaveBeenCalled();
+    } finally {
+      process.env.JF_MULTISITE = "true";
+    }
   });
 });

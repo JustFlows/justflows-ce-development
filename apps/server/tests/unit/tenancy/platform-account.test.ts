@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const query = vi.hoisted(() => vi.fn());
 vi.mock("../../../src/lib/database/db.js", () => ({ getControlDb: async () => ({ query }) }));
 import { ownerAccount, ownedWorkspace } from "../../../src/lib/tenancy/platform-account.js";
+
+/** These cover multisite features, which run only with the flag on. */
+process.env.JF_MULTISITE = "true";
 beforeEach(() => query.mockReset());
 describe("workspace owner account data", () => {
   it("batches sites for multiple workspaces and strips unsafe navigation URLs", async () => {

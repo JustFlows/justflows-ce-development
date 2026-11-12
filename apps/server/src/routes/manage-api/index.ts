@@ -14,6 +14,7 @@ import systemRoutes from "./system.js";
 import tenantsRoutes, { siteQuotaRoutes } from "./tenants.js";
 import taxonomyRoutes from "./taxonomy.js";
 import webhooksRoutes from "./webhooks.js";
+import { requireMultisite } from "../../lib/tenancy/multisite.js";
 
 /**
  * `/api/manage/v1` — the federated management API (#135).
@@ -42,7 +43,8 @@ router.use("/comments", commentsRoutes);
 router.use("/settings", settingsRoutes);
 router.use("/", designRoutes);
 router.use("/", siteAdminRoutes);
-router.use("/tenants", tenantsRoutes);
+router.use("/tenants", requireMultisite, tenantsRoutes);
+router.use("/sites/:id/quotas", requireMultisite);
 router.use("/sites", siteQuotaRoutes);
 router.use("/webhooks", webhooksRoutes);
 // Flat sub-paths (menus, content-types, languages, redirects / users, roles /
