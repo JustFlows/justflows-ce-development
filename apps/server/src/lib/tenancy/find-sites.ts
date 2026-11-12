@@ -18,7 +18,7 @@ export interface FindSitesContext {
  * The site's admin sign-in page under its own admin path, which may be a custom one.
  * Null when the path cannot be read, so no wrong address is mailed.
  */
-async function adminSignInUrl(siteId: string, origin: string): Promise<string | null> {
+export async function adminSignInUrl(siteId: string, origin: string): Promise<string | null> {
   try {
     const { getAdminPathConfig } = await import("../admin/admin-path.js");
     const result = await withSiteUsers(siteId, async () => (await getAdminPathConfig()).path);
