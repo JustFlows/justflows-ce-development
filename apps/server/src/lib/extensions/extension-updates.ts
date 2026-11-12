@@ -306,6 +306,19 @@ export async function updateExtension(
       }
     }
 
+    /**
+     * Only a successful update removes the old builds, so a failed activation
+     * still leaves the previous version on disk to go back to.
+     */
+    if (!activationError) {
+      const { purgeOtherPluginVersions } = await import("../plugins/plugin-purge.js");
+      const pruned = purgeOtherPluginVersions(result.installedPath);
+      if (pruned.removed.length > 0) {
+        const { invalidateIntegrityCache } = await import("../security/extension-integrity.js");
+        invalidateIntegrityCache();
+      }
+    }
+
     if (result.approvedPermissions.length > 0) {
       const { approvedPermissionsDetail } =
         await import("../plugins/plugin-permission-approval.js");

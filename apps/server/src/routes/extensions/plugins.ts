@@ -199,6 +199,12 @@ router.post("/", packageUploadRequestLimit, requireRole("administrator"), admitP
       },
       status: "installed",
     });
+    /** The row now points at this build, so older versions on disk are unused. */
+    const { purgeOtherPluginVersions } = await import("../../lib/plugins/plugin-purge.js");
+    if (purgeOtherPluginVersions(result.installedPath).removed.length > 0) {
+      const { invalidateIntegrityCache } = await import("../../lib/security/extension-integrity.js");
+      invalidateIntegrityCache();
+    }
 
     auditFromRequest(req, "plugin.installed", {
       target: result.manifest.id,
