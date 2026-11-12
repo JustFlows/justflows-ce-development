@@ -1,7 +1,7 @@
 /**
  * Justflows install wizard.
  */
-import { cloneElement, isValidElement, useEffect, useState, type ReactElement } from "react";
+import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactElement } from "react";
 import { useNavigate } from "../admin-router";
 import { JustflowsLogo } from "@components/JustflowsLogo";
 import {
@@ -51,6 +51,32 @@ interface InstallLog {
 
 const OTHER_LOCALE = "__other__";
 
+type InstallHost = "plesk" | "cpanel";
+
+const HOST_LABELS: Record<InstallHost, string> = {
+  plesk: "Plesk",
+  cpanel: "cPanel",
+};
+
+function parseInstallHost(value: unknown): InstallHost | null {
+  return value === "plesk" || value === "cpanel" ? value : null;
+}
+
+/**
+ * Reads a setup key a hosting panel passed in the URL fragment
+ * (`/install#setup-key=…`) and removes the fragment at once, so the key does
+ * not stay in the address bar or the history entry. A fragment is never sent
+ * to a server or in a Referer header.
+ */
+function takeSetupKeyFromFragment(): string | null {
+  if (typeof window === "undefined" || !window.location.hash) return null;
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const key = params.get("setup-key");
+  if (key === null) return null;
+  window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+  return /^[A-Za-z0-9_-]{16,128}$/.test(key) ? key : null;
+}
+
 const DRIVER_LABELS: Record<DbForm["driver"], string> = {
   postgres: "PostgreSQL",
   mysql: "MySQL",
@@ -99,6 +125,29 @@ export default function InstallPage() {
    */
   const [dbProvisioned, setDbProvisioned] = useState<DbForm["driver"] | null>(null);
   const [provisionChecked, setProvisionChecked] = useState(false);
+  /** The hosting panel that installed this site, when it says so (`INSTALL_HOST`). */
+  const [installHost, setInstallHost] = useState<InstallHost | null>(null);
+  /** A key passed by the panel; it is only filled in once a known host is confirmed. */
+  const pendingSetupKey = useRef<string | null>(null);
+  const [keyFromHost, setKeyFromHost] = useState(false);
+
+  useEffect(() => {
+    /** Keep the first read: the fragment is gone after it (and StrictMode runs effects twice). */
+    const key = takeSetupKeyFromFragment();
+    if (key) pendingSetupKey.current = key;
+  }, []);
+
+  /** Records the host and, for a known host, fills in the key it passed. */
+  function applyInstallHost(value: unknown) {
+    const host = parseInstallHost(value);
+    setInstallHost(host);
+    const key = pendingSetupKey.current;
+    if (host && key) {
+      pendingSetupKey.current = null;
+      setInstallTokenValue((current) => (current.trim() ? current : key));
+      setKeyFromHost(true);
+    }
+  }
 
   // First-run zip installs download npm packages before the site wizard. Do not
   // collect database details — and never POST /api/install — until that finishes.
@@ -148,7 +197,8 @@ export default function InstallPage() {
     setProvisionChecked(true);
     fetch("/api/install/status")
       .then((r) => r.json())
-      .then((data: { databaseProvisioned?: boolean; databaseDriver?: string | null }) => {
+      .then((data: { databaseProvisioned?: boolean; databaseDriver?: string | null; installHost?: string | null }) => {
+        applyInstallHost(data.installHost);
         const driver = data.databaseDriver;
         if (data.databaseProvisioned && (driver === "postgres" || driver === "mysql" || driver === "mariadb")) {
           setDbProvisioned(driver);
@@ -171,9 +221,10 @@ export default function InstallPage() {
     if (step !== "account") return;
     fetch("/api/install/status")
       .then((r) => r.json())
-      .then((data: { tokenRequired?: boolean; tokenFile?: string | null }) => {
+      .then((data: { tokenRequired?: boolean; tokenFile?: string | null; installHost?: string | null }) => {
         setTokenRequired(Boolean(data.tokenRequired));
         setTokenFile(data.tokenFile ?? null);
+        applyInstallHost(data.installHost);
       })
       .catch(() => {
         setTokenRequired(true);
@@ -213,6 +264,23 @@ export default function InstallPage() {
     (!tokenRequired || installTokenValue.trim().length > 0) &&
     account.password.length >= 12 &&
     account.password === account.confirmPassword;
+
+  /** How to find the key in the site's files; shared by both callouts. */
+  const setupKeyFileSteps = (
+    <>
+      <ol className="jf-callout__steps">
+        <li>{t("install.account.setupKeyStep1")}</li>
+        <li>
+          {t("install.account.setupKeyStep2Before")}{" "}
+          <code>{tokenFile ? tokenFile.split("/")[0] : "install-token"}</code>{" "}
+          {t("install.account.setupKeyStep2Between")} <code>TOKEN.txt</code>.
+        </li>
+        <li>{t("install.account.setupKeyStep3")}</li>
+      </ol>
+      <p className="jf-callout__note">{t("install.account.setupKeyNote1")}</p>
+      <p className="jf-callout__note">{t("install.account.setupKeyNote2")}</p>
+    </>
+  );
 
   // ── install ───────────────────────────────────────────────────────────────
   async function runInstall() {
@@ -599,30 +667,43 @@ export default function InstallPage() {
               <p className="jf-prose">{t("install.account.intro")}</p>
 
               {tokenRequired && (
-                <Field label={t("install.account.setupKeyLabel")}>
-                  <input
-                    className="jf-input"
-                    value={installTokenValue}
-                    placeholder={t("install.account.setupKeyPlaceholder")}
-                    autoComplete="off"
-                    spellCheck={false}
-                    onChange={(e) => setInstallTokenValue(e.target.value)}
-                  />
-                  <div className="jf-callout">
-                    <p className="jf-callout__title">{t("install.account.setupKeyCalloutTitle")}</p>
-                    <ol className="jf-callout__steps">
-                      <li>{t("install.account.setupKeyStep1")}</li>
-                      <li>
-                        {t("install.account.setupKeyStep2Before")}{" "}
-                        <code>{tokenFile ? tokenFile.split("/")[0] : "install-token"}</code>{" "}
-                        {t("install.account.setupKeyStep2Between")} <code>TOKEN.txt</code>.
-                      </li>
-                      <li>{t("install.account.setupKeyStep3")}</li>
-                    </ol>
-                    <p className="jf-callout__note">{t("install.account.setupKeyNote1")}</p>
-                    <p className="jf-callout__note">{t("install.account.setupKeyNote2")}</p>
-                  </div>
-                </Field>
+                <>
+                  <Field label={t("install.account.setupKeyLabel")}>
+                    <input
+                      className="jf-input"
+                      value={installTokenValue}
+                      placeholder={t("install.account.setupKeyPlaceholder")}
+                      autoComplete="off"
+                      spellCheck={false}
+                      onChange={(e) => setInstallTokenValue(e.target.value)}
+                    />
+                  </Field>
+                  {installHost ? (
+                    <div className="jf-callout">
+                      {keyFromHost && installTokenValue.trim() ? (
+                        <p className="jf-callout__title">
+                          {t("install.account.hostKeyPrefilled", { host: HOST_LABELS[installHost] })}
+                        </p>
+                      ) : (
+                        <>
+                          <p className="jf-callout__title">
+                            {t("install.account.hostKeyTitle", { host: HOST_LABELS[installHost] })}
+                          </p>
+                          <p className="jf-prose">{t("install.account.hostKeyBody", { host: HOST_LABELS[installHost] })}</p>
+                        </>
+                      )}
+                      <details>
+                        <summary>{t("install.account.hostKeyFallback")}</summary>
+                        {setupKeyFileSteps}
+                      </details>
+                    </div>
+                  ) : (
+                    <div className="jf-callout">
+                      <p className="jf-callout__title">{t("install.account.setupKeyCalloutTitle")}</p>
+                      {setupKeyFileSteps}
+                    </div>
+                  )}
+                </>
               )}
 
               <Field label={t("install.account.emailLabel")}>
