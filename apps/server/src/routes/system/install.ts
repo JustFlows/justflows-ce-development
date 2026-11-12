@@ -15,7 +15,9 @@ import {
   installTokenWaived,
   tokenMatches,
 } from "../../lib/installation/install-token.js";
-import { readProvisionedDatabase } from "../../lib/installation/provisioned-database.js";
+import { parseProvisionedDatabase, readProvisionedDatabase } from "../../lib/installation/provisioned-database.js";
+import { parseInstallHost } from "../../lib/installation/install-host.js";
+import { readEnvMap } from "../../lib/settings/env-file.js";
 import { getJustflowsVersion } from "../../lib/runtime/version.js";
 import { SiteUrlSchema } from "../../lib/settings/site-url.js";
 import { freshInstallSiteSettings, parseInstallLocale, siteSettingsInsertSql } from "../../lib/installation/install-defaults.js";
@@ -129,7 +131,10 @@ router.get("/status", async (req, res) => {
    * Anonymous callers learn only that the host provided a database and its
    * driver — never the host, name, user, or password.
    */
-  const provisioned = installed ? null : await readProvisionedDatabase();
+  const env = installed ? null : await readEnvMap();
+  const provisioned = env ? parseProvisionedDatabase(env) : null;
+  /** The hosting panel that installed the site, from a fixed list (see install-host.ts). */
+  const installHost = env ? parseInstallHost(env) : null;
   // Mint on this request so `pnpm dev` (no root server.js) still writes the
   // file before the owner is asked to paste it.
   if (!installed && installTokenRequired()) {
@@ -143,6 +148,7 @@ router.get("/status", async (req, res) => {
     tokenFile: installTokenFileExists() ? "install-token/TOKEN.txt" : null,
     databaseProvisioned: provisioned !== null,
     databaseDriver: provisioned?.driver ?? null,
+    installHost,
   });
 });
 

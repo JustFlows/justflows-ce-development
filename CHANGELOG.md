@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **The setup wizard knows when a hosting panel installed the site.** A panel integration writes `INSTALL_HOST` in `.env` (`plesk` or `cpanel`; anything else is ignored). The account step then says the setup key is shown in that panel, and keeps the steps for finding `install-token/TOKEN.txt` under "Can't find it?". The panel can also open the setup page with the key in the link (`/install#setup-key=…`). The wizard fills it in only for a known panel, and always removes it from the address bar at once. The part after `#` is never sent to the server, and the server still checks the key as before. ([#288](https://github.com/JustFlows/justflows-ce/issues/288))
+
+### Fixed
+
+- **The setup key field in the setup wizard has its label again.** The help box was inside the field wrapper, so the "Setup key" label was not connected to the input for screen readers or label clicks.
+
 ## [0.4.3]
 
 ### Added

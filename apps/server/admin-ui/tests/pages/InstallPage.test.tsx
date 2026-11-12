@@ -199,4 +199,67 @@ describe("InstallPage", () => {
       expect(await screen.findByLabelText("Database username")).toBeInTheDocument();
     });
   });
+  describe("when a hosting panel installed the site", () => {
+    function stubHost(installHost: string | null) {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn((input: RequestInfo | URL) => {
+          const path = String(input);
+          if (path.includes("/api/bootstrap/status")) return jsonResponse({ ready: true });
+          if (path.includes("/api/install/status")) {
+            return jsonResponse({ tokenRequired: true, tokenFile: "install-token/TOKEN.txt", databaseProvisioned: false, installHost });
+          }
+          return jsonResponse({});
+        }),
+      );
+    }
+
+    async function reachAccountStep(): Promise<void> {
+      const user = userEvent.setup();
+      render(
+        <MemoryRouter>
+          <InstallPage />
+        </MemoryRouter>,
+      );
+      await user.click(await screen.findByRole("button", { name: /let's go/i }));
+      await user.type(screen.getByLabelText("Database username"), "db_user");
+      await user.click(screen.getByRole("button", { name: /next/i }));
+      await user.type(screen.getByLabelText("Site name"), "Acme");
+      await user.click(screen.getByRole("button", { name: /next/i }));
+      expect(await screen.findByRole("heading", { name: "Admin account" })).toBeInTheDocument();
+    }
+
+    afterEach(() => {
+      window.history.replaceState(null, "", "/");
+    });
+
+    it("fills in the key the panel passed and removes it from the address bar", async () => {
+      window.history.replaceState(null, "", "/install#setup-key=TkdsRs_P7cf3pomDXRZEjNG_-Ou05ADn");
+      stubHost("plesk");
+      await reachAccountStep();
+
+      expect(window.location.hash).toBe("");
+      expect(screen.getByLabelText("Setup key")).toHaveValue("TkdsRs_P7cf3pomDXRZEjNG_-Ou05ADn");
+      expect(screen.getByText("Setup key filled in from Plesk.")).toBeInTheDocument();
+    });
+
+    it("says where the panel shows the key and keeps the file steps as a fallback", async () => {
+      stubHost("plesk");
+      await reachAccountStep();
+
+      expect(screen.getByText("Your setup key is in Plesk")).toBeInTheDocument();
+      expect(screen.getByText(/can't find it\?/i)).toBeInTheDocument();
+      expect(screen.getByLabelText("Setup key")).toHaveValue("");
+    });
+
+    it("ignores a key in the link when no known panel installed the site", async () => {
+      window.history.replaceState(null, "", "/install#setup-key=TkdsRs_P7cf3pomDXRZEjNG_-Ou05ADn");
+      stubHost(null);
+      await reachAccountStep();
+
+      expect(window.location.hash).toBe("");
+      expect(screen.getByLabelText("Setup key")).toHaveValue("");
+      expect(screen.getByText("Where to find your setup key")).toBeInTheDocument();
+    });
+  });
 });
