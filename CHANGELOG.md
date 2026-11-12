@@ -10,6 +10,7 @@ and this project uses [Semantic Versioning](https://semver.org/).
 ### Added
 
 - **The setup wizard knows when a hosting panel installed the site.** A panel integration writes `INSTALL_HOST` in `.env` (`plesk` or `cpanel`; anything else is ignored). The account step then says the setup key is shown in that panel, and keeps the steps for finding `install-token/TOKEN.txt` under "Can't find it?". The panel can also open the setup page with the key in the link (`/install#setup-key=…`). The wizard fills it in only for a known panel, and always removes it from the address bar at once. The part after `#` is never sent to the server, and the server still checks the key as before. ([#288](https://github.com/JustFlows/justflows-ce/issues/288))
+- **A new workspace's owner gets an email with their site details.** Every way of creating a workspace sends it: public signup, Admin → Platform, the management API and plugins with `ctx.tenancy`. It contains the site name, the site address, the admin sign-in address under that site's own admin path, and the email address to sign in with. The password is never in the email. The email is sent after the workspace is created, and a failed send never fails or undoes it. Each send is recorded in the main site's audit log as `workspace.created_mail`, with the reason when it fails. The new "Site created" email template (`core.site-created`) is listed only on the main site.
 
 ### Changed
 
