@@ -2,6 +2,7 @@
 
 import { EditorPanelSchema, type PluginEditorPanel } from "@justflows/sdk";
 import { getDb } from "../database/db.js";
+import { withRootPluginManifests } from "../plugins/plugin-root-manifest.js";
 
 /** A content editor section from an active plugin, as the editor receives it. */
 export interface EditorPanelEntry extends PluginEditorPanel {
@@ -31,10 +32,11 @@ export async function activePluginManifests(
   siteId: string,
 ): Promise<Array<{ pluginId: string; manifest: Record<string, unknown> }>> {
   const db = await getDb();
-  const rows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> | null }>(
+  const siteRows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> | null }>(
     "SELECT plugin_id, manifest FROM plugins WHERE site_id = ? AND status = 'active' ORDER BY plugin_id",
     [siteId],
   );
+  const rows = await withRootPluginManifests(siteId, siteRows);
   const out: Array<{ pluginId: string; manifest: Record<string, unknown> }> = [];
   for (const row of rows) {
     try {

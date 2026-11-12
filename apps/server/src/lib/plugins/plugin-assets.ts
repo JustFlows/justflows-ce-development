@@ -7,6 +7,7 @@ import { parseEnvBool } from "@justflows/core";
 import { PLUGIN_ID_RE } from "@justflows/sdk";
 import { blockAssetMarker } from "@justflows/blocks";
 import { getDb } from "../database/db.js";
+import { withRootPluginManifests } from "./plugin-root-manifest.js";
 import { pageAssetTags, readMarkupAssets, readPerPageStyles } from "../rendering/block-assets.js";
 import { getSiteId } from "../themes/themes-db.js";
 import { pluginsDir } from "./plugins-db.js";
@@ -209,12 +210,13 @@ async function loadPluginAssetSets(): Promise<PluginAssetSet[]> {
   if (!siteId) return [];
 
   const db = await getDb();
-  const rows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> }>(
+  const siteRows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> }>(
     // Ordered so the concatenated bundle (and its content hash / URL) is stable
     // across restarts and replicas rather than following the driver's row order.
     "SELECT plugin_id, manifest FROM plugins WHERE site_id = ? AND status = 'active' ORDER BY plugin_id",
     [siteId],
   );
+  const rows = await withRootPluginManifests(siteId, siteRows);
 
   const out: PluginAssetSet[] = [];
   for (const row of rows) {

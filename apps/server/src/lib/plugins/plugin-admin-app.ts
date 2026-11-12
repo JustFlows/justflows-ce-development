@@ -8,6 +8,7 @@ import {
   resolvePluginAdminPath,
 } from "@justflows/sdk";
 import { getDb } from "../database/db.js";
+import { withRootPluginManifests } from "./plugin-root-manifest.js";
 import { getSiteId } from "../themes/themes-db.js";
 import { bundledBasePathFor } from "./plugin-assets.js";
 import { resolvePathUnderBase } from "../security/safe-path.js";
@@ -162,12 +163,13 @@ async function loadPluginAdminSets(siteId: string): Promise<PluginAdminSet[]> {
   if (!siteId) return [];
 
   const db = await getDb();
-  const rows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> }>(
+  const siteRows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> }>(
     // Ordered so `buildBundle`'s concatenation — and therefore the bundle hash —
     // does not depend on the row order the driver happens to return.
     "SELECT plugin_id, manifest FROM plugins WHERE site_id = ? AND status = 'active' ORDER BY plugin_id",
     [siteId],
   );
+  const rows = await withRootPluginManifests(siteId, siteRows);
 
   const out: PluginAdminSet[] = [];
   for (const row of rows) {
