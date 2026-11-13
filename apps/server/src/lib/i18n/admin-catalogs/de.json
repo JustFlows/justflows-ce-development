@@ -1418,7 +1418,8 @@
       "restoreHintPart": "Wiederherstellen lädt diese Version in den Editor. Speichere einen Entwurf oder veröffentliche, um sie zu behalten.",
       "restoreUnsavedConfirm": "Wiederherstellen ersetzt deine ungespeicherten Änderungen. Sie bleiben in diesem Browser erhalten und können danach wiederhergestellt werden. Fortfahren?",
       "stateDraft": "Entwurf",
-      "statePublished": "Veröffentlicht"
+      "statePublished": "Veröffentlicht",
+      "layers": "Ebenen"
     },
     "drop": {
       "rejectNesting": "{child} kann nicht in {parent} stehen.",
@@ -1436,6 +1437,28 @@
       "cancelled": "Verschieben abgebrochen. Nichts wurde geändert.",
       "releaseToMove": "Loslassen, um {block} hierher zu verschieben",
       "releaseToInsert": "Loslassen, um {block} hier hinzuzufügen"
+    },
+    "navigator": {
+      "title": "Ebenen",
+      "search": "Block suchen",
+      "keysHint": "Pfeile zum Blättern, Enter zum Auswählen, Alt+Pfeile zum Verschieben, F2 zum Umbenennen.",
+      "empty": "Noch keine Blöcke.",
+      "noMatches": "Keine passenden Blöcke.",
+      "root": "Oberste Ebene",
+      "moved": "{block} an Position {position} in {parent} verschoben.",
+      "movedInto": "{block} nach {parent} verschoben.",
+      "cannotMove": "Weiter in diese Richtung geht es nicht.",
+      "moveTo": "„{block}“ verschieben nach…",
+      "chooseDestination": "Container wählen",
+      "noDestinations": "Kein anderer Ort nimmt diesen Block auf",
+      "rename": "Name nur in diesem Editor",
+      "badge": {
+        "reusable": "Wiederverwendbarer Block: Änderungen gelten auf jeder Seite, die ihn nutzt",
+        "hidden": "Auf manchen Geräten ausgeblendet",
+        "locked": "Gesperrt",
+        "unavailable": "Blocktyp nicht verfügbar: Das Plugin ist eventuell deaktiviert",
+        "dynamic": "Zeigt Inhalte der Seite oder Website"
+      }
     }
   },
   "dashboard": {

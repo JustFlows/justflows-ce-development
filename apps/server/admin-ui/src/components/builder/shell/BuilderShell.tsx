@@ -70,6 +70,8 @@ export interface BuilderShellProps {
    * header list). When given, the left panel offers Blocks and Site tabs.
    */
   sitePanel?: ReactNode;
+  /** The layers tree for the document (navigator). */
+  layers?: ReactNode;
   /** Right panel content (the inspector). */
   inspector: ReactNode;
   /** Canvas content, already wrapped in the theme preview scope. */
@@ -102,6 +104,7 @@ export default function BuilderShell({
   onSelectCrumb,
   library,
   sitePanel,
+  layers,
   inspector,
   canvas,
   canvasBackdrop,
@@ -214,12 +217,11 @@ export default function BuilderShell({
         className={`jf-shell__body${prefs.leftOpen ? "" : " jf-shell__body--no-left"}${prefs.rightOpen ? "" : " jf-shell__body--no-right"}`}
       >
         <aside id={leftId} className="jf-shell__left" aria-label={t("builder.shell.library")} hidden={!prefs.leftOpen}>
-          {sitePanel ? (
+          {sitePanel || layers ? (
             <LeftPanelTabs
               active={prefs.leftTab}
               onChange={(leftTab) => onPrefsChange({ leftTab })}
-              library={library}
-              site={sitePanel}
+              panels={{ library, ...(sitePanel ? { site: sitePanel } : {}), ...(layers ? { layers } : {}) }}
             />
           ) : (
             library
@@ -324,54 +326,64 @@ export function ShellBar({ bar }: { bar: BuilderShellBar }) {
 function LeftPanelTabs({
   active,
   onChange,
-  library,
-  site,
+  panels,
 }: {
   active: LeftPanelTab;
   onChange: (tab: LeftPanelTab) => void;
-  library: ReactNode;
-  site: ReactNode;
+  /** The panels offered, in tab order; a missing panel is not shown. */
+  panels: Partial<Record<LeftPanelTab, ReactNode>>;
 }) {
   const { t } = useT();
   const baseId = useId();
-  const tabs: Array<{ id: LeftPanelTab; label: string }> = [
-    { id: "site", label: t("builder.shell.site") },
-    { id: "library", label: t("builder.shell.library") },
-  ];
+  const labels: Record<LeftPanelTab, string> = {
+    site: t("builder.shell.site"),
+    library: t("builder.shell.library"),
+    layers: t("builder.shell.layers"),
+  };
+  const order: LeftPanelTab[] = ["site", "library", "layers"];
+  const tabs = order.filter((id) => panels[id] !== undefined);
+  const current = tabs.includes(active) ? active : (tabs.includes("library") ? "library" : tabs[0]!);
+  /** Arrow keys move between tabs, as the WAI-ARIA tabs pattern expects. */
   const onKey = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+    const i = tabs.indexOf(current);
+    const rtl = getComputedStyle(e.currentTarget).direction === "rtl";
+    let next: LeftPanelTab | undefined;
+    if (e.key === (rtl ? "ArrowLeft" : "ArrowRight")) next = tabs[(i + 1) % tabs.length];
+    else if (e.key === (rtl ? "ArrowRight" : "ArrowLeft")) next = tabs[(i - 1 + tabs.length) % tabs.length];
+    else if (e.key === "Home") next = tabs[0];
+    else if (e.key === "End") next = tabs[tabs.length - 1];
+    if (!next) return;
     e.preventDefault();
-    const next: LeftPanelTab = active === "site" ? "library" : "site";
     onChange(next);
     document.getElementById(`${baseId}-${next}`)?.focus();
   };
   return (
     <>
       <div className="jf-inspector__tabs jf-shell__left-tabs" role="tablist" aria-label={t("builder.shell.library")}>
-        {tabs.map((tab) => (
+        {tabs.map((id) => (
           <button
-            key={tab.id}
-            id={`${baseId}-${tab.id}`}
+            key={id}
+            id={`${baseId}-${id}`}
             type="button"
             role="tab"
             className="jf-inspector__tab"
-            aria-selected={active === tab.id}
+            aria-selected={current === id}
             aria-controls={`${baseId}-panel`}
-            tabIndex={active === tab.id ? 0 : -1}
-            onClick={() => onChange(tab.id)}
+            tabIndex={current === id ? 0 : -1}
+            onClick={() => onChange(id)}
             onKeyDown={onKey}
           >
-            {tab.label}
+            {labels[id]}
           </button>
         ))}
       </div>
       <div
         id={`${baseId}-panel`}
         role="tabpanel"
-        aria-labelledby={`${baseId}-${active}`}
-        className={active === "site" ? "jf-shell__site" : "jf-shell__library"}
+        aria-labelledby={`${baseId}-${current}`}
+        className={current === "library" ? "jf-shell__library" : "jf-shell__site"}
       >
-        {active === "site" ? site : library}
+        {panels[current]}
       </div>
     </>
   );

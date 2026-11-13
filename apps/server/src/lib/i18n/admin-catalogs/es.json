@@ -1418,7 +1418,8 @@
       "restoreHintPart": "Restaurar carga esta versión en el editor. Guarda un borrador o publica para conservarla.",
       "restoreUnsavedConfirm": "Restaurar reemplaza tus cambios sin guardar. Se conservan en este navegador y puedes restaurarlos después. ¿Continuar?",
       "stateDraft": "Borrador",
-      "statePublished": "Publicado"
+      "statePublished": "Publicado",
+      "layers": "Capas"
     },
     "drop": {
       "rejectNesting": "{child} no puede ir dentro de {parent}.",
@@ -1436,6 +1437,28 @@
       "cancelled": "Movimiento cancelado. No ha cambiado nada.",
       "releaseToMove": "Suelta para mover {block} aquí",
       "releaseToInsert": "Suelta para añadir {block} aquí"
+    },
+    "navigator": {
+      "title": "Capas",
+      "search": "Buscar un bloque",
+      "keysHint": "Flechas para recorrer, Intro para seleccionar, Alt+flechas para mover, F2 para renombrar.",
+      "empty": "Aún no hay bloques.",
+      "noMatches": "Ningún bloque coincide.",
+      "root": "Nivel superior",
+      "moved": "{block} movido a la posición {position} en {parent}.",
+      "movedInto": "{block} movido a {parent}.",
+      "cannotMove": "No se puede mover más en esa dirección.",
+      "moveTo": "Mover «{block}» a…",
+      "chooseDestination": "Elige un contenedor",
+      "noDestinations": "Ningún otro lugar acepta este bloque",
+      "rename": "Nombre solo en este editor",
+      "badge": {
+        "reusable": "Bloque reutilizable: los cambios afectan a cada página que lo usa",
+        "hidden": "Oculto en algunos dispositivos",
+        "locked": "Bloqueado",
+        "unavailable": "Tipo de bloque no disponible: puede que su plugin esté desactivado",
+        "dynamic": "Muestra contenido de la página o del sitio"
+      }
     }
   },
   "dashboard": {

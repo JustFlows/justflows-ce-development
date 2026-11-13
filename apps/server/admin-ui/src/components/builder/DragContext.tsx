@@ -45,6 +45,8 @@ interface BuilderDragContextValue {
   rejectionText: (reason: DropRejection, target: DropTarget, type?: string) => string;
   /** Display name of a block type. */
   typeLabel: (type: string) => string;
+  /** Show and announce a short result message (drops, keyboard moves). */
+  announce: (status: DropStatus) => void;
 }
 
 const BuilderDragContext = createContext<BuilderDragContextValue | null>(null);
@@ -301,6 +303,7 @@ export function BuilderDragProvider({
         verdictFor,
         rejectionText,
         typeLabel,
+        announce,
       }}
     >
       {children}

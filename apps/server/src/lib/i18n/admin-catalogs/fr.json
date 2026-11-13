@@ -1418,7 +1418,8 @@
       "restoreHintPart": "La restauration charge cette version dans l’éditeur. Enregistrez un brouillon ou publiez pour la conserver.",
       "restoreUnsavedConfirm": "La restauration remplace vos modifications non enregistrées. Elles restent dans ce navigateur et peuvent être restaurées ensuite. Continuer ?",
       "stateDraft": "Brouillon",
-      "statePublished": "Publié"
+      "statePublished": "Publié",
+      "layers": "Calques"
     },
     "drop": {
       "rejectNesting": "{child} ne peut pas aller dans {parent}.",
@@ -1436,6 +1437,28 @@
       "cancelled": "Déplacement annulé. Rien n’a changé.",
       "releaseToMove": "Relâchez pour déplacer {block} ici",
       "releaseToInsert": "Relâchez pour ajouter {block} ici"
+    },
+    "navigator": {
+      "title": "Calques",
+      "search": "Trouver un bloc",
+      "keysHint": "Flèches pour parcourir, Entrée pour sélectionner, Alt+flèches pour déplacer, F2 pour renommer.",
+      "empty": "Aucun bloc pour l’instant.",
+      "noMatches": "Aucun bloc ne correspond.",
+      "root": "Niveau supérieur",
+      "moved": "{block} déplacé en position {position} dans {parent}.",
+      "movedInto": "{block} déplacé dans {parent}.",
+      "cannotMove": "Impossible d’aller plus loin dans ce sens.",
+      "moveTo": "Déplacer « {block} » vers…",
+      "chooseDestination": "Choisir un conteneur",
+      "noDestinations": "Aucun autre emplacement n’accepte ce bloc",
+      "rename": "Nom dans cet éditeur uniquement",
+      "badge": {
+        "reusable": "Bloc réutilisable : les modifications s’appliquent à chaque page qui l’utilise",
+        "hidden": "Masqué sur certains appareils",
+        "locked": "Verrouillé",
+        "unavailable": "Type de bloc indisponible : son extension est peut-être désactivée",
+        "dynamic": "Affiche du contenu de la page ou du site"
+      }
     }
   },
   "dashboard": {

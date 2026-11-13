@@ -22,7 +22,7 @@ export type BuilderZoom = (typeof BUILDER_ZOOM_LEVELS)[number];
 export const INSPECTOR_TABS = ["content", "style", "layout", "responsive", "interactions", "advanced"] as const;
 export type InspectorTab = (typeof INSPECTOR_TABS)[number];
 
-export const LEFT_PANEL_TABS = ["library", "site"] as const;
+export const LEFT_PANEL_TABS = ["library", "layers", "site"] as const;
 export type LeftPanelTab = (typeof LEFT_PANEL_TABS)[number];
 
 /**

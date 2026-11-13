@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import type { BlockDocument, BlockCatalogEntry, BlockNode } from "./types";
 import BlockLibrary from "./BlockLibrary";
 import BlockInspector from "./BlockInspector";
+import Navigator from "./Navigator";
 import { PageCanvas } from "./BlockCanvas";
 import { BuilderDragProvider } from "./DragContext";
 import { createBlock } from "./block-defaults";
@@ -459,6 +460,15 @@ export default function PageBuilder({
               />
             }
             sitePanel={sitePanel}
+            layers={
+              <Navigator
+                blocks={headerOnly ? headerBlocks : blocks}
+                catalog={catalogMap}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onChange={headerOnly ? emitHeaderBlocks : emit}
+              />
+            }
             inspector={inspector}
             canvasBackdrop={
               /**

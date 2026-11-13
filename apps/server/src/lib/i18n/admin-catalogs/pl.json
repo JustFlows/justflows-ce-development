@@ -1413,7 +1413,8 @@
       "restoreHintPart": "Przywrócenie wczytuje tę wersję do edytora. Zapisz szkic lub opublikuj, aby ją zachować.",
       "restoreUnsavedConfirm": "Przywrócenie zastąpi niezapisane zmiany. Zostaną zachowane w tej przeglądarce i można je potem przywrócić. Kontynuować?",
       "stateDraft": "Szkic",
-      "statePublished": "Opublikowano"
+      "statePublished": "Opublikowano",
+      "layers": "Warstwy"
     },
     "drop": {
       "rejectNesting": "Bloku {child} nie można umieścić w {parent}.",
@@ -1431,6 +1432,28 @@
       "cancelled": "Przenoszenie anulowane. Nic się nie zmieniło.",
       "releaseToMove": "Puść, aby przenieść tu {block}",
       "releaseToInsert": "Puść, aby dodać tu {block}"
+    },
+    "navigator": {
+      "title": "Warstwy",
+      "search": "Znajdź blok",
+      "keysHint": "Strzałki — przeglądanie, Enter — wybór, Alt+strzałki — przenoszenie, F2 — zmiana nazwy.",
+      "empty": "Brak bloków.",
+      "noMatches": "Brak pasujących bloków.",
+      "root": "Najwyższy poziom",
+      "moved": "Przeniesiono {block} na pozycję {position} w {parent}.",
+      "movedInto": "Przeniesiono {block} do {parent}.",
+      "cannotMove": "Dalej w tę stronę się nie da.",
+      "moveTo": "Przenieś „{block}” do…",
+      "chooseDestination": "Wybierz kontener",
+      "noDestinations": "Żadne inne miejsce nie przyjmie tego bloku",
+      "rename": "Nazwa tylko w tym edytorze",
+      "badge": {
+        "reusable": "Blok wielokrotnego użytku: zmiany dotyczą każdej strony, która go używa",
+        "hidden": "Ukryty na niektórych urządzeniach",
+        "locked": "Zablokowany",
+        "unavailable": "Typ bloku niedostępny: wtyczka może być wyłączona",
+        "dynamic": "Pokazuje treść strony lub witryny"
+      }
     }
   },
   "dashboard": {

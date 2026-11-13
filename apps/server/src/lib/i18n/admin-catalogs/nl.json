@@ -1415,7 +1415,8 @@
       "restoreHintPart": "Terugzetten laadt deze versie in de editor. Sla een concept op of publiceer om hem te houden.",
       "restoreUnsavedConfirm": "Terugzetten vervangt je niet-opgeslagen wijzigingen. Ze blijven in deze browser bewaard en zijn daarna terug te zetten. Doorgaan?",
       "stateDraft": "Concept",
-      "statePublished": "Gepubliceerd"
+      "statePublished": "Gepubliceerd",
+      "layers": "Lagen"
     },
     "drop": {
       "rejectNesting": "{child} kan niet in {parent}.",
@@ -1433,6 +1434,28 @@
       "cancelled": "Verplaatsen geannuleerd. Er is niets veranderd.",
       "releaseToMove": "Laat los om {block} hierheen te verplaatsen",
       "releaseToInsert": "Laat los om {block} hier toe te voegen"
+    },
+    "navigator": {
+      "title": "Lagen",
+      "search": "Zoek een blok",
+      "keysHint": "Pijltjes om te bladeren, Enter om te selecteren, Alt+pijltjes om te verplaatsen, F2 om te hernoemen.",
+      "empty": "Nog geen blokken.",
+      "noMatches": "Geen blokken gevonden.",
+      "root": "Bovenste niveau",
+      "moved": "{block} verplaatst naar positie {position} in {parent}.",
+      "movedInto": "{block} verplaatst naar {parent}.",
+      "cannotMove": "Verder in die richting kan niet.",
+      "moveTo": "“{block}” verplaatsen naar…",
+      "chooseDestination": "Kies een container",
+      "noDestinations": "Geen andere plek accepteert dit blok",
+      "rename": "Naam alleen in deze editor",
+      "badge": {
+        "reusable": "Herbruikbaar blok: wijzigingen gelden op elke pagina die het gebruikt",
+        "hidden": "Verborgen op sommige apparaten",
+        "locked": "Vergrendeld",
+        "unavailable": "Bloktype niet beschikbaar: de plug-in staat mogelijk uit",
+        "dynamic": "Toont inhoud van de pagina of site"
+      }
     }
   },
   "dashboard": {
