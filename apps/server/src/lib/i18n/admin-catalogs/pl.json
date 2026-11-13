@@ -1414,6 +1414,23 @@
       "restoreUnsavedConfirm": "Przywrócenie zastąpi niezapisane zmiany. Zostaną zachowane w tej przeglądarce i można je potem przywrócić. Kontynuować?",
       "stateDraft": "Szkic",
       "statePublished": "Opublikowano"
+    },
+    "drop": {
+      "rejectNesting": "Bloku {child} nie można umieścić w {parent}.",
+      "rejectNestingRoot": "Bloku {child} nie można umieścić na tym poziomie. Umieść go w odpowiednim kontenerze.",
+      "reject": {
+        "nesting": "Tego bloku nie można tu umieścić.",
+        "self": "Bloku nie można upuścić na samego siebie.",
+        "descendant": "Bloku nie można przenieść do jego własnej zawartości.",
+        "region": "Tutaj nie można przenosić bloków do tego obszaru.",
+        "missing": "Ten blok już nie istnieje."
+      },
+      "noTarget": "Nie przeniesiono: puść nad strefą upuszczania.",
+      "moved": "Przeniesiono: {block}.",
+      "inserted": "Dodano: {block}.",
+      "cancelled": "Przenoszenie anulowane. Nic się nie zmieniło.",
+      "releaseToMove": "Puść, aby przenieść tu {block}",
+      "releaseToInsert": "Puść, aby dodać tu {block}"
     }
   },
   "dashboard": {

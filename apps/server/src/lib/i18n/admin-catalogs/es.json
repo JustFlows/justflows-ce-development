@@ -1419,6 +1419,23 @@
       "restoreUnsavedConfirm": "Restaurar reemplaza tus cambios sin guardar. Se conservan en este navegador y puedes restaurarlos después. ¿Continuar?",
       "stateDraft": "Borrador",
       "statePublished": "Publicado"
+    },
+    "drop": {
+      "rejectNesting": "{child} no puede ir dentro de {parent}.",
+      "rejectNestingRoot": "{child} no puede ir en este nivel. Colócalo dentro de un contenedor adecuado.",
+      "reject": {
+        "nesting": "Este bloque no puede ir aquí.",
+        "self": "Un bloque no se puede soltar sobre sí mismo.",
+        "descendant": "Un bloque no se puede mover dentro de su propio contenido.",
+        "region": "Aquí no se pueden mover bloques a esa zona.",
+        "missing": "Ese bloque ya no existe."
+      },
+      "noTarget": "No se movió: suelta sobre una zona de destino.",
+      "moved": "{block} movido.",
+      "inserted": "{block} añadido.",
+      "cancelled": "Movimiento cancelado. No ha cambiado nada.",
+      "releaseToMove": "Suelta para mover {block} aquí",
+      "releaseToInsert": "Suelta para añadir {block} aquí"
     }
   },
   "dashboard": {

@@ -5019,3 +5019,43 @@ input[type="range"] {
     max-height: 12rem;
   }
 }
+
+/* Canvas: outline the innermost hovered block, and the drop result message. */
+.jf-canvas-block:hover:not(:has(.jf-canvas-block:hover)):not([data-selected]) {
+  outline: 1px dashed var(--jf-accent);
+  outline-offset: 2px;
+}
+.jf-drop-status {
+  position: fixed;
+  inset-block-end: 1rem;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  max-width: min(32rem, calc(100vw - 2rem));
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+[dir="rtl"] .jf-drop-status {
+  transform: translateX(50%);
+}
+.jf-drop-status--ok,
+.jf-drop-status--error {
+  opacity: 1;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  border: 1px solid var(--jf-border);
+  box-shadow: var(--jf-shadow-md, 0 8px 24px rgba(0, 0, 0, 0.18));
+}
+.jf-drop-status--error {
+  border-color: var(--jf-danger);
+  color: var(--jf-danger);
+}
+@media (prefers-reduced-motion: reduce) {
+  .jf-drop-status {
+    transition: none;
+  }
+}

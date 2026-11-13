@@ -1419,6 +1419,23 @@
       "restoreUnsavedConfirm": "La restauration remplace vos modifications non enregistrées. Elles restent dans ce navigateur et peuvent être restaurées ensuite. Continuer ?",
       "stateDraft": "Brouillon",
       "statePublished": "Publié"
+    },
+    "drop": {
+      "rejectNesting": "{child} ne peut pas aller dans {parent}.",
+      "rejectNestingRoot": "{child} ne peut pas aller à ce niveau. Placez-le dans un conteneur adapté.",
+      "reject": {
+        "nesting": "Ce bloc ne peut pas aller ici.",
+        "self": "Un bloc ne peut pas être déposé sur lui-même.",
+        "descendant": "Un bloc ne peut pas être déplacé dans son propre contenu.",
+        "region": "Les blocs ne peuvent pas être déplacés vers cette zone ici.",
+        "missing": "Ce bloc n’existe plus."
+      },
+      "noTarget": "Non déplacé : relâchez au-dessus d’une zone de dépôt.",
+      "moved": "{block} déplacé.",
+      "inserted": "{block} ajouté.",
+      "cancelled": "Déplacement annulé. Rien n’a changé.",
+      "releaseToMove": "Relâchez pour déplacer {block} ici",
+      "releaseToInsert": "Relâchez pour ajouter {block} ici"
     }
   },
   "dashboard": {

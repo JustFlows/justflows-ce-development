@@ -10,6 +10,7 @@ import { useBlockMoveHandle } from "./useBlockMoveHandle";
 import GridEditor from "./GridEditor";
 import { GRID_BLOCK_TYPE, gridColumns, nextRow } from "./grid";
 import { compactBlockPlacement, parseBlockPlacement } from "@justflows/blocks";
+import { inertPreviewHandlers } from "./inert-preview";
 
 const iconBtn: React.CSSProperties = {
   background: "var(--jf-surface-3)",
@@ -61,6 +62,7 @@ export function PageCanvas({
 
   return (
     <div
+      {...inertPreviewHandlers}
       style={{
         minHeight: !compact && blocks.length === 0 ? 320 : undefined,
         width: compact ? "100%" : undefined,
@@ -214,6 +216,9 @@ function BlockRow({
 
   return (
     <div
+      className="jf-canvas-block"
+      data-block-id={block.id}
+      data-selected={isSelected ? "true" : undefined}
       style={{
         marginBottom: depth === 0 ? "0.75rem" : "0.4rem",
         border: `2px solid ${isSelected ? "var(--jf-accent)" : "transparent"}`,
@@ -228,6 +233,7 @@ function BlockRow({
       }}
     >
       <div
+        data-builder-chrome="true"
         onPointerDown={onPointerDown}
         onClick={(e) => e.stopPropagation()}
         style={{

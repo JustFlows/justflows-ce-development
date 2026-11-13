@@ -9,6 +9,7 @@ import {
   type BuilderZoom,
   type LeftPanelTab,
 } from "./builder-prefs";
+import { inertPreviewHandlers } from "../inert-preview";
 
 /**
  * What the shell is editing. Decides the context badge and whether the
@@ -252,6 +253,7 @@ export default function BuilderShell({
               zoom: prefs.zoom === 100 ? undefined : prefs.zoom / 100,
             }}
             onClick={(e) => e.stopPropagation()}
+            {...inertPreviewHandlers}
           >
             {canvasBackdrop}
             {canvas}

@@ -1414,6 +1414,23 @@
       "restoreUnsavedConfirm": "Restoring replaces your unsaved changes. They stay in this browser and can be restored afterwards. Continue?",
       "stateDraft": "Draft",
       "statePublished": "Published"
+    },
+    "drop": {
+      "rejectNesting": "{child} can't go inside {parent}.",
+      "rejectNestingRoot": "{child} can't go at this level. Put it inside a fitting container.",
+      "reject": {
+        "nesting": "This block can't go here.",
+        "self": "A block can't be dropped onto itself.",
+        "descendant": "A block can't be moved inside its own contents.",
+        "region": "Blocks can't be moved into that area here.",
+        "missing": "That block no longer exists."
+      },
+      "noTarget": "Not moved: release over a drop zone.",
+      "moved": "Moved {block}.",
+      "inserted": "Added {block}.",
+      "cancelled": "Move cancelled. Nothing changed.",
+      "releaseToMove": "Release to move {block} here",
+      "releaseToInsert": "Release to add {block} here"
     }
   },
   "dashboard": {

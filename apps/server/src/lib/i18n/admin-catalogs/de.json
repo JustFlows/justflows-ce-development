@@ -1419,6 +1419,23 @@
       "restoreUnsavedConfirm": "Wiederherstellen ersetzt deine ungespeicherten Änderungen. Sie bleiben in diesem Browser erhalten und können danach wiederhergestellt werden. Fortfahren?",
       "stateDraft": "Entwurf",
       "statePublished": "Veröffentlicht"
+    },
+    "drop": {
+      "rejectNesting": "{child} kann nicht in {parent} stehen.",
+      "rejectNestingRoot": "{child} kann nicht auf dieser Ebene stehen. Lege es in einen passenden Container.",
+      "reject": {
+        "nesting": "Dieser Block kann hier nicht stehen.",
+        "self": "Ein Block kann nicht auf sich selbst abgelegt werden.",
+        "descendant": "Ein Block kann nicht in seinen eigenen Inhalt verschoben werden.",
+        "region": "Blöcke können hier nicht in diesen Bereich verschoben werden.",
+        "missing": "Dieser Block existiert nicht mehr."
+      },
+      "noTarget": "Nicht verschoben: über einer Ablagefläche loslassen.",
+      "moved": "{block} verschoben.",
+      "inserted": "{block} hinzugefügt.",
+      "cancelled": "Verschieben abgebrochen. Nichts wurde geändert.",
+      "releaseToMove": "Loslassen, um {block} hierher zu verschieben",
+      "releaseToInsert": "Loslassen, um {block} hier hinzuzufügen"
     }
   },
   "dashboard": {

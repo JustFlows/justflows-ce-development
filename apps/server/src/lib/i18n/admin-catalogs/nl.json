@@ -1416,6 +1416,23 @@
       "restoreUnsavedConfirm": "Terugzetten vervangt je niet-opgeslagen wijzigingen. Ze blijven in deze browser bewaard en zijn daarna terug te zetten. Doorgaan?",
       "stateDraft": "Concept",
       "statePublished": "Gepubliceerd"
+    },
+    "drop": {
+      "rejectNesting": "{child} kan niet in {parent}.",
+      "rejectNestingRoot": "{child} kan niet op dit niveau. Zet het in een passende container.",
+      "reject": {
+        "nesting": "Dit blok kan hier niet.",
+        "self": "Een blok kan niet op zichzelf worden neergezet.",
+        "descendant": "Een blok kan niet in zijn eigen inhoud worden verplaatst.",
+        "region": "Blokken kunnen hier niet naar dat gebied worden verplaatst.",
+        "missing": "Dat blok bestaat niet meer."
+      },
+      "noTarget": "Niet verplaatst: laat los boven een neerzetvak.",
+      "moved": "{block} verplaatst.",
+      "inserted": "{block} toegevoegd.",
+      "cancelled": "Verplaatsen geannuleerd. Er is niets veranderd.",
+      "releaseToMove": "Laat los om {block} hierheen te verplaatsen",
+      "releaseToInsert": "Laat los om {block} hier toe te voegen"
     }
   },
   "dashboard": {
