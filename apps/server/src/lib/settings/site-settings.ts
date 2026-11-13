@@ -108,6 +108,23 @@ export class SiteSettingContentionError extends Error {
 const ATOMIC_ATTEMPTS = 5;
 
 /**
+ * SQL that is true when `value` holds the JSON text `previous`, per driver.
+ * PostgreSQL rows written by `setSiteSetting` hold the JSON text as a jsonb
+ * string, while rows written elsewhere may hold real jsonb, so both forms
+ * match. MariaDB stores JSON as text without a JSON type, so both sides are
+ * normalized with JSON_COMPACT. MySQL compares its JSON type natively.
+ */
+function storedValueEquals(driver: string | undefined): { sql: string; params: (previous: string) => string[] } {
+  if (driver === "postgres") {
+    return { sql: "value = ?::jsonb OR value = ?::text::jsonb", params: (previous) => [previous, previous] };
+  }
+  if (driver === "mariadb") {
+    return { sql: "JSON_COMPACT(value) = JSON_COMPACT(?)", params: (previous) => [previous] };
+  }
+  return { sql: "value = CAST(? AS JSON)", params: (previous) => [previous] };
+}
+
+/**
  * Read-modify-write a setting without losing a concurrent write. The new value
  * is only written if the stored value is still the one `mutate` saw (compared
  * as JSON, so key order and spacing do not matter); otherwise the latest value
@@ -143,18 +160,13 @@ export async function updateSiteSettingAtomically<T>(
     } else {
       const previous = JSON.stringify(current ?? null);
       if (previous === serialized) return next;
-      /** A stored SQL NULL never equals anything, so it is matched explicitly. */
-      changed =
-        current === null
-          ? await db.execute(
-              `UPDATE site_settings SET value = ?, updated_at = ? WHERE site_id = ? AND ${column} = ? AND value IS NULL`,
-              [serialized, now(), siteId, key],
-            )
-          : await db.execute(
-              `UPDATE site_settings SET value = ?, updated_at = ?
-               WHERE site_id = ? AND ${column} = ? AND value = ${driver === "postgres" ? "?::jsonb" : "CAST(? AS JSON)"}`,
-              [serialized, now(), siteId, key, previous],
-            );
+      const match = storedValueEquals(driver);
+      /** `null` here is SQL NULL or a stored JSON null; SQL NULL never equals anything, so it is matched explicitly. */
+      changed = await db.execute(
+        `UPDATE site_settings SET value = ?, updated_at = ?
+         WHERE site_id = ? AND ${column} = ? AND (${current === null ? "value IS NULL OR " : ""}${match.sql})`,
+        [serialized, now(), siteId, key, ...match.params(previous)],
+      );
     }
     if (changed === 1) return next;
   }
