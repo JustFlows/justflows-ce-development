@@ -1386,7 +1386,9 @@
         "responsive": "Adaptable",
         "interactions": "Interacciones",
         "advanced": "Avanzado"
-      }
+      },
+      "site": "Sitio",
+      "siteParts": "Partes del sitio"
     }
   },
   "dashboard": {

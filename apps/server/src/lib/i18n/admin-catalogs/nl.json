@@ -1383,7 +1383,9 @@
         "responsive": "Responsief",
         "interactions": "Interacties",
         "advanced": "Geavanceerd"
-      }
+      },
+      "site": "Site",
+      "siteParts": "Site-onderdelen"
     }
   },
   "dashboard": {

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -76,5 +76,74 @@ describe("ThemeCustomizePage menus tab", () => {
     expect(screen.getByRole("button", { name: "Menus" }).className).toContain(
       "jf-theme-builder__tab--active",
     );
+  });
+});
+
+function mockSiteParts(): void {
+  const base = (fetch as unknown as { getMockImplementation: () => (input: RequestInfo | URL) => Promise<Response> }).getMockImplementation();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((input: RequestInfo | URL) => {
+      const path = String(input);
+      if (path === "/api/templates") {
+        return jsonResponse({ slots: [{ slug: "single", customised: false }, { slug: "page", customised: true }], creatable: [] });
+      }
+      if (path.startsWith("/api/templates/")) return jsonResponse({ blocks: [], fromThemeDefault: true });
+      if (path === "/api/headers") return jsonResponse({ library: { version: 1, defaultId: null, entries: [] } });
+      if (path.includes("/api/blocks")) return jsonResponse({ blocks: [] });
+      return base(input);
+    }),
+  );
+}
+
+describe("ThemeCustomizePage site parts in the builder shell", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  });
+
+  it("opens the footer in the shell with its own save buttons and the site navigation", async () => {
+    mockFetch();
+    mockSiteParts();
+    const user = userEvent.setup();
+    renderPage("/admin/themes/customize?tab=footer");
+
+    expect(await screen.findByText("Global footer", { selector: ".jf-shell__context" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Default");
+    expect(screen.getByRole("button", { name: "Publish" })).toBeInTheDocument();
+    /** The customizer's own tab row is replaced by the Site panel. */
+    expect(document.querySelector(".jf-theme-builder__tabs")).toBeNull();
+
+    await user.click(screen.getByRole("tab", { name: "Site" }));
+    const nav = screen.getByRole("navigation", { name: "Site parts" });
+    expect(within(nav).getByRole("button", { name: "Footer" })).toHaveAttribute("aria-current", "page");
+
+    await user.click(within(nav).getByRole("button", { name: "Templates" }));
+    expect(await screen.findByText("Template", { selector: ".jf-shell__context" })).toBeInTheDocument();
+
+    await user.click(within(screen.getByRole("navigation", { name: "Site parts" })).getByRole("button", { name: "Menus" }));
+    expect(await screen.findByText("Add menu items")).toBeInTheDocument();
+    expect(document.querySelector(".jf-theme-builder__tabs")).not.toBeNull();
+  });
+
+  it("opens the first template slot instead of an empty canvas", async () => {
+    mockFetch();
+    mockSiteParts();
+    renderPage("/admin/themes/customize?tab=templates");
+
+    expect(await screen.findByText("Template", { selector: ".jf-shell__context" })).toBeInTheDocument();
+    await vi.waitFor(() =>
+      expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input) === "/api/templates/single")).toBe(true),
+    );
+  });
+
+  it("keeps the header part in the shell when no header is saved yet", async () => {
+    mockFetch();
+    mockSiteParts();
+    renderPage("/admin/themes/customize?tab=header");
+
+    expect(await screen.findByRole("navigation", { name: "Site parts" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Default");
+    expect(screen.getByRole("button", { name: "Publish" })).toBeInTheDocument();
   });
 });

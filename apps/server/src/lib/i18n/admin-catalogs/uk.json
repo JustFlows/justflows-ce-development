@@ -1381,7 +1381,9 @@
         "responsive": "Адаптивність",
         "interactions": "Взаємодії",
         "advanced": "Додатково"
-      }
+      },
+      "site": "Сайт",
+      "siteParts": "Розділи сайту"
     }
   },
   "dashboard": {

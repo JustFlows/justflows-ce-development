@@ -7,6 +7,7 @@ import {
   BUILDER_ZOOM_LEVELS,
   type BuilderPrefs,
   type BuilderZoom,
+  type LeftPanelTab,
 } from "./builder-prefs";
 
 /**
@@ -61,6 +62,11 @@ export interface BuilderShellProps {
   onSelectCrumb: (id: string | null) => void;
   /** Left panel content (the block library). */
   library: ReactNode;
+  /**
+   * Site navigation and document controls (theme parts, template slots, the
+   * header list). When given, the left panel offers Blocks and Site tabs.
+   */
+  sitePanel?: ReactNode;
   /** Right panel content (the inspector). */
   inspector: ReactNode;
   /** Canvas content, already wrapped in the theme preview scope. */
@@ -92,6 +98,7 @@ export default function BuilderShell({
   breadcrumbs,
   onSelectCrumb,
   library,
+  sitePanel,
   inspector,
   canvas,
   canvasBackdrop,
@@ -105,45 +112,9 @@ export default function BuilderShell({
   const impactKey = SITE_WIDE_IMPACT[context];
   const siteWide = Boolean(impactKey);
 
-  const saveLabel =
-    bar?.saveState === "saving"
-      ? t("common.saving")
-      : bar?.saveState === "saved"
-        ? `✓ ${t("common.saved")}`
-        : bar?.saveState === "dirty"
-          ? t("builder.shell.unsaved")
-          : bar?.saveState === "error"
-            ? bar.saveError || t("builder.shell.saveFailed")
-            : "";
-
   return (
     <div className={`jf-shell${bar ? " jf-shell--page" : ""}`} data-context={context}>
-      {bar && (
-        <header className="jf-editor__bar jf-shell__bar">
-          <button type="button" className="jf-btn jf-btn--onbar" onClick={bar.onExit}>
-            <span aria-hidden="true" className="jf-shell__back">←</span> {t("common.back")}
-          </button>
-          <div className="jf-editor__title">
-            <h1 className="jf-editor__name">{bar.title}</h1>
-            {bar.subtitle && <div className="jf-editor__sub">{bar.subtitle}</div>}
-          </div>
-          <div className="jf-editor__actions">
-            <span
-              className={`jf-editor__status${bar.saveState === "saved" ? " jf-editor__status--ok" : ""}${bar.saveState === "error" ? " jf-editor__status--error" : ""}`}
-              role="status"
-              aria-live="polite"
-            >
-              {saveLabel}
-            </span>
-            {bar.previewUrl && (
-              <a className="jf-btn jf-btn--onbar" href={bar.previewUrl} target="_blank" rel="noreferrer">
-                {t("pageBuilderPage.preview")} <span aria-hidden="true">↗</span>
-              </a>
-            )}
-            {bar.actions}
-          </div>
-        </header>
-      )}
+      {bar && <ShellBar bar={bar} />}
 
       <div className="jf-shell__toolbar" role="toolbar" aria-label={t("builder.shell.toolbar")}>
         <button
@@ -240,7 +211,16 @@ export default function BuilderShell({
         className={`jf-shell__body${prefs.leftOpen ? "" : " jf-shell__body--no-left"}${prefs.rightOpen ? "" : " jf-shell__body--no-right"}`}
       >
         <aside id={leftId} className="jf-shell__left" aria-label={t("builder.shell.library")} hidden={!prefs.leftOpen}>
-          {library}
+          {sitePanel ? (
+            <LeftPanelTabs
+              active={prefs.leftTab}
+              onChange={(leftTab) => onPrefsChange({ leftTab })}
+              library={library}
+              site={sitePanel}
+            />
+          ) : (
+            library
+          )}
         </aside>
 
         <main className="jf-shell__canvas" aria-label={t("builder.shell.canvas")} onClick={onCanvasBackgroundClick}>
@@ -279,6 +259,136 @@ export default function BuilderShell({
         <aside id={rightId} className="jf-shell__right" aria-label={t("builder.shell.inspector")} hidden={!prefs.rightOpen}>
           {inspector}
         </aside>
+      </div>
+    </div>
+  );
+}
+
+/** The top bar of a stand-alone builder: exit, identity, save state, preview, actions. */
+export function ShellBar({ bar }: { bar: BuilderShellBar }) {
+  const { t } = useT();
+  const saveLabel =
+    bar?.saveState === "saving"
+      ? t("common.saving")
+      : bar?.saveState === "saved"
+        ? `✓ ${t("common.saved")}`
+        : bar?.saveState === "dirty"
+          ? t("builder.shell.unsaved")
+          : bar?.saveState === "error"
+            ? bar.saveError || t("builder.shell.saveFailed")
+            : "";
+
+  return (
+    <header className="jf-editor__bar jf-shell__bar">
+      <button type="button" className="jf-btn jf-btn--onbar" onClick={bar.onExit}>
+        <span aria-hidden="true" className="jf-shell__back">←</span> {t("common.back")}
+      </button>
+      <div className="jf-editor__title">
+        <h1 className="jf-editor__name">{bar.title}</h1>
+        {bar.subtitle && <div className="jf-editor__sub">{bar.subtitle}</div>}
+      </div>
+      <div className="jf-editor__actions">
+        <span
+          className={`jf-editor__status${bar.saveState === "saved" ? " jf-editor__status--ok" : ""}${bar.saveState === "error" ? " jf-editor__status--error" : ""}`}
+          role="status"
+          aria-live="polite"
+        >
+          {saveLabel}
+        </span>
+        {bar.previewUrl && (
+          <a className="jf-btn jf-btn--onbar" href={bar.previewUrl} target="_blank" rel="noreferrer">
+            {t("pageBuilderPage.preview")} <span aria-hidden="true">↗</span>
+          </a>
+        )}
+        {bar.actions}
+      </div>
+    </header>
+  );
+}
+
+/** Blocks | Site switch for the left panel. */
+function LeftPanelTabs({
+  active,
+  onChange,
+  library,
+  site,
+}: {
+  active: LeftPanelTab;
+  onChange: (tab: LeftPanelTab) => void;
+  library: ReactNode;
+  site: ReactNode;
+}) {
+  const { t } = useT();
+  const baseId = useId();
+  const tabs: Array<{ id: LeftPanelTab; label: string }> = [
+    { id: "site", label: t("builder.shell.site") },
+    { id: "library", label: t("builder.shell.library") },
+  ];
+  const onKey = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+    e.preventDefault();
+    const next: LeftPanelTab = active === "site" ? "library" : "site";
+    onChange(next);
+    document.getElementById(`${baseId}-${next}`)?.focus();
+  };
+  return (
+    <>
+      <div className="jf-inspector__tabs jf-shell__left-tabs" role="tablist" aria-label={t("builder.shell.library")}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            id={`${baseId}-${tab.id}`}
+            type="button"
+            role="tab"
+            className="jf-inspector__tab"
+            aria-selected={active === tab.id}
+            aria-controls={`${baseId}-panel`}
+            tabIndex={active === tab.id ? 0 : -1}
+            onClick={() => onChange(tab.id)}
+            onKeyDown={onKey}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div
+        id={`${baseId}-panel`}
+        role="tabpanel"
+        aria-labelledby={`${baseId}-${active}`}
+        className={active === "site" ? "jf-shell__site" : "jf-shell__library"}
+      >
+        {active === "site" ? site : library}
+      </div>
+    </>
+  );
+}
+
+/**
+ * The shell frame without a canvas: top bar, site panel, and a message. Used
+ * when a site part has nothing to edit yet (no template chosen, no header
+ * saved), so switching parts never drops out of the builder layout.
+ */
+export function BuilderShellEmpty({
+  bar,
+  sitePanel,
+  children,
+}: {
+  bar: BuilderShellBar;
+  sitePanel: ReactNode;
+  children: ReactNode;
+}) {
+  const { t } = useT();
+  return (
+    <div className="jf-shell jf-shell--page">
+      <ShellBar bar={bar} />
+      <div className="jf-shell__body jf-shell__body--no-right">
+        <aside className="jf-shell__left" aria-label={t("builder.shell.site")}>
+          <div className="jf-shell__site">{sitePanel}</div>
+        </aside>
+        <main className="jf-shell__canvas" aria-label={t("builder.shell.canvas")}>
+          <div className="jf-shell__empty">{children}</div>
+        </main>
+        <span />
       </div>
     </div>
   );

@@ -22,12 +22,17 @@ export type BuilderZoom = (typeof BUILDER_ZOOM_LEVELS)[number];
 export const INSPECTOR_TABS = ["content", "style", "layout", "responsive", "interactions", "advanced"] as const;
 export type InspectorTab = (typeof INSPECTOR_TABS)[number];
 
+export const LEFT_PANEL_TABS = ["library", "site"] as const;
+export type LeftPanelTab = (typeof LEFT_PANEL_TABS)[number];
+
 /**
  * Non-sensitive editor preferences. Kept per user in this browser only; never
  * written into a document or sent to the server.
  */
 export interface BuilderPrefs {
   leftOpen: boolean;
+  /** Which left panel shows when the shell offers site navigation. */
+  leftTab: LeftPanelTab;
   rightOpen: boolean;
   breakpoint: BuilderBreakpoint;
   zoom: BuilderZoom;
@@ -36,6 +41,7 @@ export interface BuilderPrefs {
 
 export const DEFAULT_BUILDER_PREFS: BuilderPrefs = {
   leftOpen: true,
+  leftTab: "library",
   rightOpen: true,
   breakpoint: "desktop",
   zoom: 100,
@@ -52,6 +58,7 @@ export function parseBuilderPrefs(raw: unknown): BuilderPrefs {
   const input = raw as Record<string, unknown>;
   return {
     leftOpen: typeof input.leftOpen === "boolean" ? input.leftOpen : DEFAULT_BUILDER_PREFS.leftOpen,
+    leftTab: oneOf(input.leftTab, LEFT_PANEL_TABS, DEFAULT_BUILDER_PREFS.leftTab),
     rightOpen: typeof input.rightOpen === "boolean" ? input.rightOpen : DEFAULT_BUILDER_PREFS.rightOpen,
     breakpoint: oneOf(input.breakpoint, BUILDER_BREAKPOINTS, DEFAULT_BUILDER_PREFS.breakpoint),
     zoom: oneOf(input.zoom, BUILDER_ZOOM_LEVELS, DEFAULT_BUILDER_PREFS.zoom),

@@ -1381,7 +1381,9 @@
         "responsive": "Адаптивность",
         "interactions": "Взаимодействия",
         "advanced": "Дополнительно"
-      }
+      },
+      "site": "Сайт",
+      "siteParts": "Разделы сайта"
     }
   },
   "dashboard": {

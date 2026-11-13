@@ -1,5 +1,5 @@
 import { useT } from "../../i18n/I18nProvider";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { BlockDocument, BlockCatalogEntry, BlockNode } from "./types";
 import BlockLibrary from "./BlockLibrary";
 import BlockInspector from "./BlockInspector";
@@ -77,6 +77,8 @@ interface PageBuilderProps {
   context?: BuilderContext;
   /** Top bar for a stand-alone builder route. Embedded builders leave it out. */
   shellBar?: BuilderShellBar;
+  /** Site navigation and document controls shown beside the block library. */
+  sitePanel?: ReactNode;
 }
 
 export default function PageBuilder({
@@ -94,6 +96,7 @@ export default function PageBuilder({
   flatCanvas = false,
   context,
   shellBar,
+  sitePanel,
 }: PageBuilderProps) {
   const { t } = useT();
   const [prefs, setPrefs] = useBuilderPrefs(useOptionalSessionUserId());
@@ -454,6 +457,7 @@ export default function PageBuilder({
                 headerOnly={headerOnly}
               />
             }
+            sitePanel={sitePanel}
             inspector={inspector}
             canvasBackdrop={
               /**

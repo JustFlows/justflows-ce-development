@@ -4,6 +4,7 @@ import { Link, useNavigate } from "../../../admin-router";
 import MediaImageField from "@components/MediaImageField";
 import PageBuilder, { type BlockDocument } from "@components/builder/PageBuilder";
 import HeaderLibraryEditor from "./HeaderLibraryEditor";
+import { BuilderShellEmpty, type BuilderSaveState, type BuilderShellBar } from "@components/builder/shell/BuilderShell";
 import MenusPage from "./MenusPage";
 import { useT } from "../../../i18n/I18nProvider";
 
@@ -236,6 +237,11 @@ export default function CustomizeThemePage() {
   useEffect(() => {
     if (tab === "templates" && templateSlots.length === 0) void loadTemplateList();
   }, [tab, templateSlots.length, loadTemplateList]);
+
+  /** Open the first slot when the templates part has nothing selected, so the canvas is never empty for no reason. */
+  useEffect(() => {
+    if (tab === "templates" && !templateSlug && templateSlots[0]) void openTemplate(templateSlots[0].slug);
+  }, [tab, templateSlug, templateSlots, openTemplate]);
 
   const [errorPages, setErrorPages] = useState<ErrorPageConfig>({});
   const [errorThemeSlots, setErrorThemeSlots] = useState<string[]>([]);
@@ -659,6 +665,208 @@ export default function CustomizeThemePage() {
     ? `${localePath(selectedBlog.locale, selectedBlog.slug, defaultLocale)}?preview=1&_=${previewNonce}`
     : null;
 
+  const tabSubtitle =
+    tab === "homepage"
+      ? t("themeCustomize.subHomepage")
+      : tab === "blog"
+        ? t("themeCustomize.subBlog")
+        : tab === "header"
+          ? t("themeCustomize.subHeader")
+          : tab === "footer"
+            ? t("themeCustomize.subFooter")
+            : tab === "templates"
+              ? t("themeCustomize.subTemplates")
+              : t("themeCustomize.subStyles");
+
+  /**
+   * Header, footer, and templates are block documents, so they open in the
+   * builder shell itself: its top bar replaces this page's bar, and the Site
+   * panel replaces the tab row. The other parts are settings forms and keep
+   * the customizer layout below.
+   */
+  if (tab === "header" || tab === "footer" || tab === "templates") {
+    const partTabs: Array<[EditorTab, string]> = [
+      ["homepage", t("themeCustomize.tabHomepage")],
+      ["blog", t("themeCustomize.tabBlog")],
+      ["styles", t("themeCustomize.tabStyles")],
+      ["header", t("themeCustomize.tabHeader")],
+      ["footer", t("themeCustomize.tabFooter")],
+      ["menus", t("nav.menus")],
+      ["templates", t("themeCustomize.tabTemplates")],
+      ["error-pages", t("themeCustomize.tabErrorPages")],
+    ];
+    const siteNav = (
+      <nav aria-label={t("builder.shell.siteParts")}>
+        <p className="jf-site-nav__heading">{t("builder.shell.siteParts")}</p>
+        <ul className="jf-site-nav">
+          {partTabs.map(([id, label]) => (
+            <li key={id}>
+              <button type="button" aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)}>
+                {label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    );
+    const saveAsButton = (
+      <button
+        type="button"
+        className="jf-btn jf-btn--onbar"
+        disabled={savingAs}
+        onClick={() => void saveAsTheme()}
+        title={t("themeCustomize.saveAsTitle")}
+      >
+        {savingAs ? t("common.saving") : t("themeCustomize.saveAsButton")}
+      </button>
+    );
+    const baseBar = {
+      title: t("themeCustomize.headerTitle", { themeName }),
+      subtitle: tabSubtitle,
+      onExit: () => void exitCustomize(),
+      previewUrl: "/?preview=1",
+    };
+    const partState = (busy: boolean): BuilderSaveState =>
+      busy ? "saving" : error ? "error" : saved ? "saved" : "idle";
+
+    if (tab === "header") {
+      return <HeaderLibraryEditor bar={baseBar} siteNav={siteNav} extraActions={saveAsButton} />;
+    }
+
+    if (tab === "footer") {
+      const footerBar: BuilderShellBar = {
+        ...baseBar,
+        saveState: partState(footerSaving),
+        saveError: error,
+        actions: (
+          <>
+            {saveAsButton}
+            <button type="button" className="jf-btn jf-btn--onbar" disabled={footerSaving} onClick={() => void saveFooter(false)}>
+              {footerSaving ? t("common.saving") : t("content.saveDraft")}
+            </button>
+            <button type="button" className="jf-btn jf-btn--primary" disabled={footerSaving} onClick={() => void saveFooter(true)}>
+              {t("content.publish")}
+            </button>
+          </>
+        ),
+      };
+      return <PageBuilder value={footer} onChange={setFooter} context="footer" shellBar={footerBar} sitePanel={siteNav} />;
+    }
+
+    const templateBar: BuilderShellBar = {
+      ...baseBar,
+      saveState: partState(templateSaving),
+      saveError: error,
+      actions: (
+        <>
+          {saveAsButton}
+          {templateSlug && templateSlots.find((slot) => slot.slug === templateSlug)?.customised && (
+            <button type="button" className="jf-btn jf-btn--onbar" disabled={templateSaving} onClick={() => void resetTemplate()}>
+              {t("themeCustomize.resetToTheme")}
+            </button>
+          )}
+          {templateSlug && (
+            <>
+              <button type="button" className="jf-btn jf-btn--onbar" disabled={templateSaving} onClick={() => void saveTemplate(false)}>
+                {templateSaving ? t("common.saving") : t("content.saveDraft")}
+              </button>
+              <button type="button" className="jf-btn jf-btn--primary" disabled={templateSaving} onClick={() => void saveTemplate(true)}>
+                {t("content.publish")}
+              </button>
+            </>
+          )}
+        </>
+      ),
+    };
+    const templatePanel = (
+      <>
+        {siteNav}
+            <div className="jf-field">
+              <label className="jf-field__label">{t("themeCustomize.templatesLabel")}</label>
+              <p className="jf-field__hint" style={{ marginTop: 0 }}>
+                {t("themeCustomize.templatesHint")}
+              </p>
+              <div className="jf-stack" style={{ gap: "0.35rem", marginTop: "0.5rem" }}>
+                {templateSlots.length === 0 && (
+                  <p className="jf-field__hint" style={{ margin: 0 }}>
+                    {t("themeCustomize.noTemplatesHint")}
+                  </p>
+                )}
+                {templateSlots.map((slot) => (
+                  <button
+                    key={slot.slug}
+                    type="button"
+                    className={`jf-btn jf-btn--block${
+                      templateSlug === slot.slug ? " jf-btn--primary" : " jf-btn--ghost"
+                    }`}
+                    style={{ justifyContent: "space-between", display: "flex", textAlign: "left" }}
+                    title={templateSlotHint(t, slot.slug) ?? slot.slug}
+                    onClick={() => void openTemplate(slot.slug)}
+                  >
+                    <span>
+                      {slotLabel(t, slot.slug)}{" "}
+                      <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>{slot.slug}</span>
+                    </span>
+                    <span style={{ fontSize: "0.7rem", opacity: 0.8 }}>
+                      {slot.customised ? (slot.hasDraft ? t("themeCustomize.customisedDraft") : t("themeCustomize.customised")) : ""}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {creatableSlots.length > 0 && (
+              <div className="jf-field">
+                <label className="jf-field__label" htmlFor="jf-add-template">
+                  {t("themeCustomize.addTemplateLabel")}
+                </label>
+                <select
+                  id="jf-add-template"
+                  className="jf-input"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) void openTemplate(e.target.value);
+                  }}
+                >
+                  <option value="">{t("themeCustomize.chooseSlotOption")}</option>
+                  {creatableSlots.map((slug) => (
+                    <option key={slug} value={slug}>
+                      {slotLabel(t, slug)} ({slug})
+                    </option>
+                  ))}
+                </select>
+                <p className="jf-field__hint">
+                  {templateSlotHint(t, templateSlug ?? "") ?? t("themeCustomize.blankCanvasHint")}
+                </p>
+              </div>
+            )}
+        {templateSlug && templateFromDefault && (
+          <div className="jf-alert" style={{ fontSize: "0.85rem" }}>
+            {t("themeCustomize.editingFromDefaultPrefix")} <strong>{templateSlug}</strong>{" "}
+            {t("themeCustomize.editingFromDefaultSuffix")}
+          </div>
+        )}
+      </>
+    );
+    return templateSlug ? (
+      <PageBuilder
+        key={templateSlug}
+        value={templateDoc}
+        onChange={setTemplateDoc}
+        context="template"
+        shellBar={templateBar}
+        sitePanel={templatePanel}
+      />
+    ) : (
+      <BuilderShellEmpty bar={templateBar} sitePanel={templatePanel}>
+        <p>{t("themeCustomize.pickTemplateHint")}</p>
+      </BuilderShellEmpty>
+    );
+  }
+
+  /** Widened so the shared tab row can mark the block-document parts too. */
+  const isActiveTab = (id: EditorTab) => tab === id;
+
   return (
     <div className="jf-editor">
       <header className="jf-editor__bar">
@@ -669,17 +877,7 @@ export default function CustomizeThemePage() {
         <div className="jf-editor__title">
           <div className="jf-editor__name">{t("themeCustomize.headerTitle", { themeName })}</div>
           <div className="jf-editor__sub">
-            {tab === "homepage"
-              ? t("themeCustomize.subHomepage")
-              : tab === "blog"
-                ? t("themeCustomize.subBlog")
-                : tab === "header"
-                  ? t("themeCustomize.subHeader")
-                  : tab === "footer"
-                    ? t("themeCustomize.subFooter")
-                    : tab === "templates"
-                      ? t("themeCustomize.subTemplates")
-                      : t("themeCustomize.subStyles")}
+            {tabSubtitle}
             {dirty ? t("themeCustomize.unsavedSuffix") : ""}
           </div>
         </div>
@@ -720,112 +918,62 @@ export default function CustomizeThemePage() {
               </button>
             </>
           )}
-          {tab === "footer" && (
-            <>
-              <button
-                type="button"
-                className="jf-btn jf-btn--onbar"
-                disabled={footerSaving}
-                onClick={() => void saveFooter(false)}
-              >
-                {footerSaving ? t("common.saving") : t("content.saveDraft")}
-              </button>
-              <button
-                type="button"
-                className="jf-btn jf-btn--primary"
-                disabled={footerSaving}
-                onClick={() => void saveFooter(true)}
-              >
-                {t("content.publish")}
-              </button>
-            </>
-          )}
-          {tab === "templates" && templateSlug && (
-            <>
-              {templateSlots.find((s) => s.slug === templateSlug)?.customised && (
-                <button
-                  type="button"
-                  className="jf-btn jf-btn--onbar"
-                  disabled={templateSaving}
-                  onClick={() => void resetTemplate()}
-                >
-                  {t("themeCustomize.resetToTheme")}
-                </button>
-              )}
-              <button
-                type="button"
-                className="jf-btn jf-btn--onbar"
-                disabled={templateSaving}
-                onClick={() => void saveTemplate(false)}
-              >
-                {templateSaving ? t("common.saving") : t("content.saveDraft")}
-              </button>
-              <button
-                type="button"
-                className="jf-btn jf-btn--primary"
-                disabled={templateSaving}
-                onClick={() => void saveTemplate(true)}
-              >
-                {t("content.publish")}
-              </button>
-            </>
-          )}
         </div>
       </header>
 
       <div className="jf-theme-builder__tabs">
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "homepage" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("homepage") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("homepage")}
         >
           {t("themeCustomize.tabHomepage")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "blog" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("blog") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("blog")}
         >
           {t("themeCustomize.tabBlog")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "styles" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("styles") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("styles")}
         >
           {t("themeCustomize.tabStyles")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "header" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("header") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("header")}
         >
           {t("themeCustomize.tabHeader")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "footer" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("footer") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("footer")}
         >
           {t("themeCustomize.tabFooter")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "menus" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("menus") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("menus")}
         >
           {t("nav.menus")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "templates" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("templates") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("templates")}
         >
           {t("themeCustomize.tabTemplates")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "error-pages" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("error-pages") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("error-pages")}
         >
           {t("themeCustomize.tabErrorPages")}
@@ -980,87 +1128,6 @@ export default function CustomizeThemePage() {
             )}
           </div>
         </div>
-      ) : tab === "templates" ? (
-        <div className="jf-customizer">
-          <aside className="jf-customizer__controls" style={{ padding: "1rem" }}>
-            <div className="jf-field">
-              <label className="jf-field__label">{t("themeCustomize.templatesLabel")}</label>
-              <p className="jf-field__hint" style={{ marginTop: 0 }}>
-                {t("themeCustomize.templatesHint")}
-              </p>
-              <div className="jf-stack" style={{ gap: "0.35rem", marginTop: "0.5rem" }}>
-                {templateSlots.length === 0 && (
-                  <p className="jf-field__hint" style={{ margin: 0 }}>
-                    {t("themeCustomize.noTemplatesHint")}
-                  </p>
-                )}
-                {templateSlots.map((slot) => (
-                  <button
-                    key={slot.slug}
-                    type="button"
-                    className={`jf-btn jf-btn--block${
-                      templateSlug === slot.slug ? " jf-btn--primary" : " jf-btn--ghost"
-                    }`}
-                    style={{ justifyContent: "space-between", display: "flex", textAlign: "left" }}
-                    title={templateSlotHint(t, slot.slug) ?? slot.slug}
-                    onClick={() => void openTemplate(slot.slug)}
-                  >
-                    <span>
-                      {slotLabel(t, slot.slug)}{" "}
-                      <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>{slot.slug}</span>
-                    </span>
-                    <span style={{ fontSize: "0.7rem", opacity: 0.8 }}>
-                      {slot.customised ? (slot.hasDraft ? t("themeCustomize.customisedDraft") : t("themeCustomize.customised")) : ""}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {creatableSlots.length > 0 && (
-              <div className="jf-field">
-                <label className="jf-field__label" htmlFor="jf-add-template">
-                  {t("themeCustomize.addTemplateLabel")}
-                </label>
-                <select
-                  id="jf-add-template"
-                  className="jf-input"
-                  value=""
-                  onChange={(e) => {
-                    if (e.target.value) void openTemplate(e.target.value);
-                  }}
-                >
-                  <option value="">{t("themeCustomize.chooseSlotOption")}</option>
-                  {creatableSlots.map((slug) => (
-                    <option key={slug} value={slug}>
-                      {slotLabel(t, slug)} ({slug})
-                    </option>
-                  ))}
-                </select>
-                <p className="jf-field__hint">
-                  {templateSlotHint(t, templateSlug ?? "") ?? t("themeCustomize.blankCanvasHint")}
-                </p>
-              </div>
-            )}
-          </aside>
-          <div className="jf-customizer__preview" style={{ padding: 0 }}>
-            {templateSlug ? (
-              <div className="jf-editor__body">
-                {templateFromDefault && (
-                  <div className="jf-alert" style={{ margin: "0.75rem", fontSize: "0.85rem" }}>
-                    {t("themeCustomize.editingFromDefaultPrefix")} <strong>{templateSlug}</strong>{" "}
-                    {t("themeCustomize.editingFromDefaultSuffix")}
-                  </div>
-                )}
-                <PageBuilder value={templateDoc} onChange={setTemplateDoc} context="template" />
-              </div>
-            ) : (
-              <p className="jf-field__hint" style={{ padding: "1rem" }}>
-                {t("themeCustomize.pickTemplateHint")}
-              </p>
-            )}
-          </div>
-        </div>
       ) : tab === "error-pages" ? (
         <div className="jf-editor__body" style={{ padding: "1rem", maxWidth: "40rem" }}>
           <div className="jf-field">
@@ -1099,15 +1166,6 @@ export default function CustomizeThemePage() {
             </div>
           </div>
         </div>
-      ) : tab === "footer" ? (
-        <div className="jf-editor__body">
-          <PageBuilder value={footer} onChange={setFooter} context="footer" />
-        </div>
-      ) : tab === "header" ? (
-        <div className="jf-editor__body">
-          <HeaderLibraryEditor />
-        </div>
-
       ) : tab === "menus" ? (
         <div className="jf-editor__body">
           <MenusPage embedded />

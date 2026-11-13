@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import PageBuilder from "@components/builder/PageBuilder";
+import { BuilderShellEmpty, type BuilderSaveState, type BuilderShellBar } from "@components/builder/shell/BuilderShell";
 import {
   DEFAULT_PAGE_HEADER,
   diffPageHeader,
@@ -32,12 +33,21 @@ function newEntry(name: string): SiteHeaderEntryDTO {
   };
 }
 
+interface HeaderLibraryEditorProps {
+  /** Identity and exit for the shell's top bar; this editor adds its own save state and buttons. */
+  bar: Omit<BuilderShellBar, "saveState" | "saveError" | "actions">;
+  /** Theme builder navigation, shown above the header controls in the Site panel. */
+  siteNav: ReactNode;
+  /** Extra top-bar buttons shared by every theme builder part (e.g. Save as theme). */
+  extraActions?: ReactNode;
+}
+
 /**
  * The theme customizer's "Header" tab: manage the site header library — named
  * headers, one marked the site default, each with optional per-locale
  * overrides — and edit the selected one with the shared header builder.
  */
-export default function HeaderLibraryEditor() {
+export default function HeaderLibraryEditor({ bar, siteNav, extraActions }: HeaderLibraryEditorProps) {
   const { t } = useT();
   const [lib, setLib] = useState<SiteHeaderLibraryDTO>(emptyLib);
   const [entryId, setEntryId] = useState<string>("");
@@ -46,6 +56,7 @@ export default function HeaderLibraryEditor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"" | "saved" | "error">("");
+  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -86,6 +97,7 @@ export default function HeaderLibraryEditor() {
         entries: prev.entries.map((e) => (e.id === id ? updater(e) : e)),
       }));
       setStatus("");
+      setDirty(true);
     },
     [],
   );
@@ -118,6 +130,7 @@ export default function HeaderLibraryEditor() {
     setEntryId(entryEl.id);
     setLocale(BASE_LOCALE);
     setStatus("");
+    setDirty(true);
   }
 
   function renameHeader() {
@@ -140,12 +153,14 @@ export default function HeaderLibraryEditor() {
     });
     setEntryId((prev) => (prev === entry.id ? "" : prev));
     setStatus("");
+    setDirty(true);
   }
 
   function makeDefault() {
     if (!entry) return;
     setLib((prev) => ({ ...prev, defaultId: entry.id }));
     setStatus("");
+    setDirty(true);
   }
 
   function clearLocaleOverride() {
@@ -176,6 +191,7 @@ export default function HeaderLibraryEditor() {
         }
       }
       setStatus("saved");
+      setDirty(false);
       setTimeout(() => setStatus(""), 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -185,16 +201,32 @@ export default function HeaderLibraryEditor() {
     }
   }
 
-  if (loading) return <div className="jf-center">{t("headerLibrary.loading")}</div>;
-
   const overridden = Boolean(entry && locale !== BASE_LOCALE && entry.overrides[locale]);
+  const saveState: BuilderSaveState = saving ? "saving" : status === "error" ? "error" : status === "saved" ? "saved" : dirty ? "dirty" : "idle";
+  const shellBar: BuilderShellBar = {
+    ...bar,
+    saveState,
+    saveError: error,
+    actions: (
+      <>
+        {extraActions}
+        <button type="button" className="jf-btn jf-btn--onbar" disabled={saving || loading} onClick={() => void save(false)}>
+          {saving ? t("common.saving") : t("content.saveDraft")}
+        </button>
+        <button type="button" className="jf-btn jf-btn--primary" disabled={saving || loading} onClick={() => void save(true)}>
+          {t("content.publish")}
+        </button>
+      </>
+    ),
+  };
 
-  return (
-    <div className="jf-customizer">
-      <aside
-        className="jf-customizer__controls"
-        style={{ padding: "1.1rem", display: "flex", flexDirection: "column", gap: "1.4rem" }}
-      >
+  const sitePanel = (
+    <>
+      {siteNav}
+      {loading ? (
+        <p className="jf-field__hint" role="status">{t("headerLibrary.loading")}</p>
+      ) : (
+        <>
         <div className="jf-field">
           <label className="jf-field__label" htmlFor="jf-header-entry">{t("headerLibrary.headerLabel")}</label>
           <select
@@ -284,62 +316,31 @@ export default function HeaderLibraryEditor() {
           </div>
         )}
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.5rem",
-            paddingTop: "0.9rem",
-            borderTop: "1px solid var(--jf-border)",
-          }}
-        >
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              type="button"
-              className="jf-btn jf-btn--ghost"
-              style={{ flex: 1 }}
-              disabled={saving}
-              onClick={() => void save(false)}
-            >
-              {saving ? t("common.saving") : t("content.saveDraft")}
-            </button>
-            <button
-              type="button"
-              className="jf-btn jf-btn--primary"
-              style={{ flex: 1 }}
-              disabled={saving}
-              onClick={() => void save(true)}
-            >
-              {t("content.publish")}
-            </button>
-          </div>
-          {status === "saved" && (
-            <span className="jf-field__hint" style={{ color: "var(--jf-success)" }}>✓ {t("common.saved")}</span>
-          )}
-          {status === "error" && (
-            <span className="jf-field__hint" style={{ color: "var(--jf-danger)" }}>{error}</span>
-          )}
-        </div>
-      </aside>
+        </>
+      )}
+    </>
+  );
 
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-        {entry ? (
-          <PageBuilder
-            key={`${entry.id}:${locale}`}
-            value={{ version: 1, blocks: effectiveConfig.blocks }}
-            onChange={() => {}}
-            enableHeader
-            headerOnly
-            isPage
-            header={effectiveConfig}
-            onHeaderChange={onConfigChange}
-          />
-        ) : (
-          <p className="jf-field__hint" style={{ padding: "1.1rem" }}>
-            {t("headerLibrary.emptyState")}
-          </p>
-        )}
-      </div>
-    </div>
+  if (loading || !entry) {
+    return (
+      <BuilderShellEmpty bar={shellBar} sitePanel={sitePanel}>
+        {loading ? <span role="status">{t("headerLibrary.loading")}</span> : <p>{t("headerLibrary.emptyState")}</p>}
+      </BuilderShellEmpty>
+    );
+  }
+
+  return (
+    <PageBuilder
+      key={`${entry.id}:${locale}`}
+      value={{ version: 1, blocks: effectiveConfig.blocks }}
+      onChange={() => {}}
+      enableHeader
+      headerOnly
+      isPage
+      header={effectiveConfig}
+      onHeaderChange={onConfigChange}
+      shellBar={shellBar}
+      sitePanel={sitePanel}
+    />
   );
 }
