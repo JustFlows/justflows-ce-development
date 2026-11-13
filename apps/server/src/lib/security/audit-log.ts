@@ -124,6 +124,8 @@ export const AUDIT_ACTIONS = [
   "content.revision_restored",
   "content.revision_discarded",
   "content.revision_pruned",
+  "design.part_published",
+  "design.part_reset",
   "trash.trashed",
   "trash.restored",
   "trash.purged",

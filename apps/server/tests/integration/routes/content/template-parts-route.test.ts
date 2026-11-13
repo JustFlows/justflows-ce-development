@@ -54,6 +54,12 @@ vi.mock("../../../../src/lib/themes/theme-files.js", () => ({
   loadThemeDemoFooter: () => themeFooterBlocks,
 }));
 vi.mock("../../../../src/lib/cache/cache-revalidate.js", () => ({ revalidateOnUpdate: async () => {} }));
+const audits: Array<Record<string, unknown>> = [];
+vi.mock("../../../../src/lib/security/audit-log.js", () => ({
+  auditLog: async (entry: Record<string, unknown>) => {
+    audits.push(entry);
+  },
+}));
 vi.mock("../../../../src/middleware/auth.js", () => ({
   requireRole: () => (_req: express.Request, _res: express.Response, next: express.NextFunction) =>
     next(),
@@ -146,5 +152,21 @@ describe("template part revisions", () => {
   it("still saves without a revision for older clients", async () => {
     await put({ blocks: [], draft: true, expectedRevision: 0 });
     expect((await put({ blocks: [], draft: false })).status).toBe(200);
+  });
+});
+
+describe("template part audit", () => {
+  it("records publishing the footer, but not a draft save", async () => {
+    audits.length = 0;
+    const put = (draft: boolean) =>
+      fetch(`${base}/api/template-parts/footer`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blocks: [], draft }),
+      });
+    await put(true);
+    expect(audits).toEqual([]);
+    await put(false);
+    expect(audits).toEqual([expect.objectContaining({ action: "design.part_published", target: "footer", siteId: "site-1" })]);
   });
 });

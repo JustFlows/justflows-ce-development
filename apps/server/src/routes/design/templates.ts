@@ -2,6 +2,7 @@
 
 import { Router } from "express";
 import { z } from "zod";
+import { auditLog } from "../../lib/security/audit-log.js";
 import { DocumentRevisionConflictError, documentConflictBody } from "../../lib/database/document-revision.js";
 import { sanitizeBlockDocument } from "@justflows/blocks";
 import { requireRole } from "../../middleware/auth.js";
@@ -114,6 +115,17 @@ router.put("/:slug", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) => 
       expectedRevision: body.expectedRevision,
       actorId: req.session?.userId ?? null,
     });
+    if (!body.draft) {
+      /** Publishing a site-wide part changes every page that shows it. */
+      void auditLog({
+        siteId: ctx.siteId,
+        action: "design.part_published",
+        actorId: req.session?.userId ?? null,
+        actorRole: req.session?.role ?? null,
+        target: `template:${slug}`,
+        detail: `revision ${revision}`,
+      });
+    }
     if (!body.draft) await revalidateOnUpdate("theme");
     // Advisory only — a template may legitimately reference a plugin block that
     // is not installed yet. The editor shows the list; the save still lands.
@@ -157,6 +169,13 @@ router.delete("/:slug", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) 
     return;
   }
   await resetStoredTemplate(ctx.siteId, ctx.themeId, slug);
+  void auditLog({
+    siteId: ctx.siteId,
+    action: "design.part_reset",
+    actorId: req.session?.userId ?? null,
+    actorRole: req.session?.role ?? null,
+    target: `template:${slug}`,
+  });
   await revalidateOnUpdate("theme");
   res.json({ ok: true });
 });

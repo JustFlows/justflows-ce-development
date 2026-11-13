@@ -2,6 +2,7 @@
 
 import { Router } from "express";
 import { z } from "zod";
+import { auditLog } from "../../lib/security/audit-log.js";
 import { DocumentRevisionConflictError, documentConflictBody } from "../../lib/database/document-revision.js";
 import { getSiteId } from "../../lib/themes/themes-db.js";
 import { revalidateOnUpdate } from "../../lib/cache/cache-revalidate.js";
@@ -87,6 +88,17 @@ router.put("/", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) => {
       expectedRevision: body.expectedRevision,
       actorId: req.session?.userId ?? null,
     });
+    if (!body.draft) {
+      /** Publishing a site-wide part changes every page that shows it. */
+      void auditLog({
+        siteId: siteId,
+        action: "design.part_published",
+        actorId: req.session?.userId ?? null,
+        actorRole: req.session?.role ?? null,
+        target: "header",
+        detail: `revision ${revision}`,
+      });
+    }
     if (!body.draft) await revalidateOnUpdate("theme");
     res.json({ library, revision });
   } catch (err) {
