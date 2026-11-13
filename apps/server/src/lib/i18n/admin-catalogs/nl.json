@@ -1397,7 +1397,9 @@
       "recoveryFound": "Deze browser heeft niet-opgeslagen wijzigingen van {time} bewaard.",
       "restore": "Terugzetten",
       "discard": "Weggooien",
-      "sessionExpired": "Je sessie is verlopen. Log in een ander tabblad opnieuw in en sla dan op. Je wijzigingen blijven in deze browser bewaard."
+      "sessionExpired": "Je sessie is verlopen. Log in een ander tabblad opnieuw in en sla dan op. Je wijzigingen blijven in deze browser bewaard.",
+      "conflictPart": "Iemand anders heeft dit opgeslagen nadat je het opende. Je wijzigingen staan er nog en zijn niet opgeslagen.",
+      "overwritePartConfirm": "De nieuwere versie vervangen door de jouwe? De wijzigingen van de ander gaan dan verloren."
     }
   },
   "dashboard": {

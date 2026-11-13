@@ -1400,7 +1400,9 @@
       "recoveryFound": "Este navegador guardó cambios sin guardar del {time}.",
       "restore": "Restaurarlos",
       "discard": "Descartar",
-      "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión en otra pestaña y guarda. Tus cambios se conservan en este navegador."
+      "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión en otra pestaña y guarda. Tus cambios se conservan en este navegador.",
+      "conflictPart": "Otra persona guardó esto después de que lo abrieras. Tus cambios siguen aquí y no se han guardado.",
+      "overwritePartConfirm": "¿Reemplazar la versión más reciente por la tuya? Los cambios de la otra persona se perderán."
     }
   },
   "dashboard": {

@@ -1395,7 +1395,9 @@
       "recoveryFound": "This browser kept unsaved changes from {time}.",
       "restore": "Restore them",
       "discard": "Discard",
-      "sessionExpired": "Your session has expired. Sign in again in another tab, then save. Your changes are kept in this browser."
+      "sessionExpired": "Your session has expired. Sign in again in another tab, then save. Your changes are kept in this browser.",
+      "conflictPart": "Someone else saved this after you opened it. Your changes are still here and have not been saved.",
+      "overwritePartConfirm": "Replace the newer version with yours? The other person’s changes will be lost."
     }
   },
   "dashboard": {

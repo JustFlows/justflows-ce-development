@@ -2,6 +2,7 @@
 
 import { Router } from "express";
 import { z } from "zod";
+import { DocumentRevisionConflictError, documentConflictBody } from "../../lib/database/document-revision.js";
 import {
   deleteReusableBlock,
   listReusableBlocks,
@@ -16,9 +17,9 @@ import { CONTENT_READ_ROLES, THEME_CUSTOMIZE_ROLES } from "../../lib/auth/rbac.j
 import { param } from "../../lib/http/params.js";
 import {
   getTemplatePart,
+  getTemplatePartRevision,
   isTemplatePart,
-  publishTemplatePart,
-  saveTemplatePart,
+  writeTemplatePart,
 } from "../../lib/rendering/template-parts.js";
 
 const router = Router();
@@ -78,6 +79,8 @@ export const templatePartsRouter = Router();
 const PartSchema = z.object({
   blocks: z.array(z.record(z.string(), z.unknown())),
   draft: z.boolean().default(false),
+  /** Revision the editor loaded; `0` = never saved. A mismatch is a 409, not an overwrite. */
+  expectedRevision: z.number().int().min(0).optional(),
 });
 
 templatePartsRouter.get("/:part", requireRole(...CONTENT_READ_ROLES), async (req, res) => {
@@ -93,6 +96,7 @@ templatePartsRouter.get("/:part", requireRole(...CONTENT_READ_ROLES), async (req
   }
   const blocks = await getTemplatePart(siteId, part, false);
   const draft = await getTemplatePart(siteId, part, true);
+  const revision = await getTemplatePartRevision(siteId, part);
 
   // Nothing customised yet — seed the editor with the active theme's default
   // (`demo/footer.json`), the same starting composition the public site renders.
@@ -104,12 +108,12 @@ templatePartsRouter.get("/:part", requireRole(...CONTENT_READ_ROLES), async (req
       : null;
     if (themeFooter?.length) {
       const seeded = sanitizeBlockDocument({ version: 1, blocks: themeFooter }).blocks;
-      res.json({ blocks: seeded, draft: [], fromThemeDefault: true });
+      res.json({ blocks: seeded, draft: [], fromThemeDefault: true, revision });
       return;
     }
   }
 
-  res.json({ blocks, draft });
+  res.json({ blocks, draft, revision });
 });
 
 templatePartsRouter.put("/:part", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) => {
@@ -125,12 +129,17 @@ templatePartsRouter.put("/:part", requireRole(...THEME_CUSTOMIZE_ROLES), async (
       res.status(503).json({ error: "No site found" });
       return;
     }
-    const blocks = body.draft
-      ? await saveTemplatePart(siteId, part, body.blocks, true)
-      : await publishTemplatePart(siteId, part, body.blocks);
+    const { blocks, revision } = await writeTemplatePart(siteId, part, body.blocks, {
+      draft: body.draft,
+      expectedRevision: body.expectedRevision,
+    });
     if (!body.draft) await revalidateOnUpdate("theme");
-    res.json({ blocks });
+    res.json({ blocks, revision });
   } catch (err) {
+    if (err instanceof DocumentRevisionConflictError) {
+      res.status(409).json(documentConflictBody(err));
+      return;
+    }
     res.status(400).json({ error: err instanceof Error ? err.message : "Could not save" });
   }
 });

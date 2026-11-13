@@ -4,6 +4,7 @@ import { sanitizeBlockDocument } from "@justflows/blocks";
 import {
   clearTemplatePartDraftDoc,
   getTemplatePartDoc,
+  getTemplatePartDocs,
   publishTemplatePartDoc,
   saveTemplatePartDraft,
   saveTemplatePartPublished,
@@ -52,6 +53,30 @@ export async function saveTemplatePart(
   if (draft) await saveTemplatePartDraft(siteId, part, doc);
   else await saveTemplatePartPublished(siteId, part, doc);
   return sanitized.blocks as BlockNode[];
+}
+
+/**
+ * Save a template part as a draft or publish it, with an optional revision
+ * check. Returns the stored blocks and the row's new revision; a stale
+ * `expectedRevision` throws `DocumentRevisionConflictError`.
+ */
+export async function writeTemplatePart(
+  siteId: string,
+  part: TemplatePart,
+  blocks: unknown,
+  opts: { draft: boolean; expectedRevision?: number },
+): Promise<{ blocks: BlockNode[]; revision: number }> {
+  const sanitized = sanitizeBlockDocument({ version: 1, blocks });
+  const doc = { version: 1 as const, blocks: sanitized.blocks };
+  const revision = opts.draft
+    ? await saveTemplatePartDraft(siteId, part, doc, opts.expectedRevision)
+    : await publishTemplatePartDoc(siteId, part, doc, opts.expectedRevision);
+  return { blocks: sanitized.blocks as BlockNode[], revision };
+}
+
+/** The part row's current revision, or 0 when it has never been saved. */
+export async function getTemplatePartRevision(siteId: string, part: TemplatePart): Promise<number> {
+  return (await getTemplatePartDocs(siteId, part)).revision;
 }
 
 export async function clearTemplatePartDraft(siteId: string, part: TemplatePart): Promise<void> {

@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { migrationsDir } from "../runtime/jf-root.js";
 
-export const MIGRATION_ORDER = ["0036_baseline", "0037_tenancy", "0038_quota_limits", "0039_custom_domains", "0040_security_hardening", "0041_domain_provider_attachment", "0042_private_files", "0043_storage_quota_locks", "0044_workspace_owner", "0045_account_pages", "0046_content_type_cache_control", "0047_taxonomy_content_types", "0048_job_queue", "0049_workspace_deletion", "0050_content_type_settings", "0051_auth_claims", "0052_translation_group_dates", "0053_backup_schedules", "0054_content_visibility", "0055_mcp_hub_sites", "0056_webauthn"] as const;
+export const MIGRATION_ORDER = ["0036_baseline", "0037_tenancy", "0038_quota_limits", "0039_custom_domains", "0040_security_hardening", "0041_domain_provider_attachment", "0042_private_files", "0043_storage_quota_locks", "0044_workspace_owner", "0045_account_pages", "0046_content_type_cache_control", "0047_taxonomy_content_types", "0048_job_queue", "0049_workspace_deletion", "0050_content_type_settings", "0051_auth_claims", "0052_translation_group_dates", "0053_backup_schedules", "0054_content_visibility", "0055_mcp_hub_sites", "0056_webauthn", "0057_document_revisions"] as const;
 
 export type DbDriver = "postgres" | "mysql" | "mariadb";
 

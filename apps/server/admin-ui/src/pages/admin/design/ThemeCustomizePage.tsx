@@ -204,6 +204,26 @@ export default function CustomizeThemePage() {
   const [templateDoc, setTemplateDoc] = useState<BlockDocument>({ version: 1, blocks: [] });
   const [templateFromDefault, setTemplateFromDefault] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
+  /** Revisions the editor loaded, sent back so a save never overwrites someone else's newer one. */
+  const [footerRevision, setFooterRevision] = useState(0);
+  const [templateRevision, setTemplateRevision] = useState(0);
+  /** Which part's save was refused because another editor saved first. */
+  const [partConflict, setPartConflict] = useState<"footer" | "template" | null>(null);
+
+  const loadFooter = useCallback(async () => {
+    try {
+      const data = (await (await fetch("/api/template-parts/footer")).json()) as {
+        blocks?: unknown[];
+        draft?: unknown[];
+        revision?: number;
+      };
+      const blocks = (data.draft?.length ? data.draft : data.blocks) ?? [];
+      setFooter({ version: 1, blocks: blocks as BlockDocument["blocks"] });
+      setFooterRevision(data.revision ?? 0);
+    } catch {
+      /* leave as-is */
+    }
+  }, []);
 
   const loadTemplateList = useCallback(async () => {
     try {
@@ -217,6 +237,7 @@ export default function CustomizeThemePage() {
   }, []);
 
   const openTemplate = useCallback(async (slug: string) => {
+    setPartConflict(null);
     setTemplateSlug(slug);
     setTemplateDoc({ version: 1, blocks: [] });
     try {
@@ -225,10 +246,12 @@ export default function CustomizeThemePage() {
         blocks?: unknown[];
         draft?: unknown[];
         fromThemeDefault?: boolean;
+        revision?: number;
       };
       const blocks = (data.draft?.length ? data.draft : data.blocks) ?? [];
       setTemplateDoc({ version: 1, blocks: blocks as BlockDocument["blocks"] });
       setTemplateFromDefault(Boolean(data.fromThemeDefault));
+      setTemplateRevision(data.revision ?? 0);
     } catch {
       /* leave empty */
     }
@@ -324,13 +347,7 @@ export default function CustomizeThemePage() {
   }
 
   useEffect(() => {
-    fetch("/api/template-parts/footer")
-      .then((r) => r.json())
-      .then((data: { blocks?: unknown[]; draft?: unknown[] }) => {
-        const blocks = (data.draft?.length ? data.draft : data.blocks) ?? [];
-        setFooter({ version: 1, blocks: blocks as BlockDocument["blocks"] });
-      })
-      .catch(() => {});
+    void loadFooter();
   }, []);
 
   useEffect(() => {
@@ -549,17 +566,23 @@ export default function CustomizeThemePage() {
     });
   }
 
-  async function saveFooter(publish: boolean) {
+  async function saveFooter(publish: boolean, expectedRevision = footerRevision) {
     setFooterSaving(true);
     setError("");
     try {
       const res = await fetch("/api/template-parts/footer", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blocks: footer.blocks, draft: !publish }),
+        body: JSON.stringify({ blocks: footer.blocks, draft: !publish, expectedRevision }),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as { error?: string; revision?: number };
+      if (res.status === 409) {
+        setPartConflict("footer");
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? t("themeCustomize.footerSaveError"));
+      if (typeof data.revision === "number") setFooterRevision(data.revision);
+      setPartConflict(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       reloadPreview();
@@ -570,7 +593,7 @@ export default function CustomizeThemePage() {
     }
   }
 
-  async function saveTemplate(publish: boolean) {
+  async function saveTemplate(publish: boolean, expectedRevision = templateRevision) {
     if (!templateSlug) return;
     setTemplateSaving(true);
     setError("");
@@ -578,10 +601,16 @@ export default function CustomizeThemePage() {
       const res = await fetch(`/api/templates/${encodeURIComponent(templateSlug)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blocks: templateDoc.blocks, draft: !publish }),
+        body: JSON.stringify({ blocks: templateDoc.blocks, draft: !publish, expectedRevision }),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as { error?: string; revision?: number };
+      if (res.status === 409) {
+        setPartConflict("template");
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? t("themeCustomize.templateSaveError"));
+      if (typeof data.revision === "number") setTemplateRevision(data.revision);
+      setPartConflict(null);
       setSaved(true);
       setTemplateFromDefault(false);
       setTimeout(() => setSaved(false), 2000);
@@ -726,8 +755,37 @@ export default function CustomizeThemePage() {
       onExit: () => void exitCustomize(),
       previewUrl: "/?preview=1",
     };
+    /** A refused save belongs to the part it happened on, not to whichever part is open now. */
+    const openConflict = partConflict !== null && partConflict === (tab === "footer" ? "footer" : "template");
     const partState = (busy: boolean): BuilderSaveState =>
-      busy ? "saving" : error ? "error" : saved ? "saved" : "idle";
+      openConflict ? "conflict" : busy ? "saving" : error ? "error" : saved ? "saved" : "idle";
+
+    /** Replace local edits with what is stored now. */
+    const loadLatestPart = () => {
+      setPartConflict(null);
+      if (tab === "footer") void loadFooter();
+      else if (templateSlug) void openTemplate(templateSlug);
+    };
+    /** Explicitly save this editor's version over the newer one, as a draft. */
+    const overwritePart = async () => {
+      if (!window.confirm(t("builder.shell.overwritePartConfirm"))) return;
+      const url = tab === "footer" ? "/api/template-parts/footer" : `/api/templates/${encodeURIComponent(templateSlug ?? "")}`;
+      const latest = (await (await fetch(url)).json().catch(() => ({}))) as { revision?: number };
+      setPartConflict(null);
+      if (tab === "footer") await saveFooter(false, latest.revision ?? 0);
+      else await saveTemplate(false, latest.revision ?? 0);
+    };
+    const partNotice = openConflict ? (
+      <>
+        <p>{t("builder.shell.conflictPart")}</p>
+        <button type="button" className="jf-btn jf-btn--sm jf-btn--primary" onClick={loadLatestPart}>
+          {t("builder.shell.loadLatest")}
+        </button>
+        <button type="button" className="jf-btn jf-btn--sm" onClick={() => void overwritePart()}>
+          {t("builder.shell.overwrite")}
+        </button>
+      </>
+    ) : undefined;
 
     if (tab === "header") {
       return <HeaderLibraryEditor bar={baseBar} siteNav={siteNav} extraActions={saveAsButton} />;
@@ -738,6 +796,7 @@ export default function CustomizeThemePage() {
         ...baseBar,
         saveState: partState(footerSaving),
         saveError: error,
+        notice: partNotice,
         actions: (
           <>
             {saveAsButton}
@@ -757,6 +816,7 @@ export default function CustomizeThemePage() {
       ...baseBar,
       saveState: partState(templateSaving),
       saveError: error,
+      notice: partNotice,
       actions: (
         <>
           {saveAsButton}

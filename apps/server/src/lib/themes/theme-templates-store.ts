@@ -63,6 +63,31 @@ export async function getStoredTemplateDocs(
   return { published: toBlocks(doc), draft: toBlocks(draft) };
 }
 
+/**
+ * Save a template override as a draft or publish it, with an optional
+ * revision check. Returns the stored blocks and the row's new revision; a
+ * stale `expectedRevision` throws `DocumentRevisionConflictError`.
+ */
+export async function writeStoredTemplate(
+  siteId: string,
+  themeId: string,
+  slug: string,
+  blocks: unknown,
+  opts: { draft: boolean; expectedRevision?: number },
+): Promise<{ blocks: BlockNode[]; revision: number }> {
+  const sanitized = sanitizeBlockDocument({ version: 1, blocks });
+  const doc = { version: 1 as const, blocks: sanitized.blocks };
+  const revision = opts.draft
+    ? await saveThemeTemplateDraft(siteId, themeId, slug, doc, opts.expectedRevision)
+    : await publishThemeTemplateDoc(siteId, themeId, slug, doc, opts.expectedRevision);
+  return { blocks: sanitized.blocks as BlockNode[], revision };
+}
+
+/** The override row's current revision, or 0 when the site has none. */
+export async function getStoredTemplateRevision(siteId: string, themeId: string, slug: string): Promise<number> {
+  return (await getThemeTemplateDocs(siteId, themeId, slug)).revision;
+}
+
 export async function saveStoredTemplate(
   siteId: string,
   themeId: string,

@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { getDb } from "../database/db.js";
+import { DocumentRevisionConflictError, revisionOf } from "../database/document-revision.js";
 import { runAllMigrations } from "../database/run-migrations.js";
 
 /**
@@ -45,12 +46,13 @@ function parseJson<T>(value: unknown): T | null {
 interface Row {
   doc: unknown;
   draft_doc: unknown;
+  revision?: unknown;
 }
 
 async function readRow(siteId: string, themeId: string, slug: string): Promise<Row | null> {
   const db = await getDb();
   const rows = await db.query<Row>(
-    "SELECT doc, draft_doc FROM theme_templates WHERE site_id = ? AND theme_id = ? AND slug = ? LIMIT 1",
+    "SELECT doc, draft_doc, revision FROM theme_templates WHERE site_id = ? AND theme_id = ? AND slug = ? LIMIT 1",
     [siteId, themeId, slug],
   );
   return rows[0] ?? null;
@@ -72,11 +74,12 @@ export async function getThemeTemplateDocs<T>(
   siteId: string,
   themeId: string,
   slug: string,
-): Promise<{ doc: T | null; draft: T | null }> {
+): Promise<{ doc: T | null; draft: T | null; revision: number }> {
   const row = await readRow(siteId, themeId, slug);
   return {
     doc: row ? parseJson<T>(row.doc) : null,
     draft: row ? parseJson<T>(row.draft_doc) : null,
+    revision: row ? revisionOf(row.revision) : 0,
   };
 }
 
@@ -102,12 +105,19 @@ export async function listOverriddenTemplateSlugs(
   return rows.map((r) => String(r.slug));
 }
 
+/**
+ * Write a row and return its new revision. With `expectedRevision` the write
+ * only applies when the stored revision still matches (`0` = no row yet), and
+ * a mismatch throws {@link DocumentRevisionConflictError} without writing.
+ */
 async function upsert(
   siteId: string,
   themeId: string,
   slug: string,
   set: { doc?: unknown; draft_doc?: unknown | null },
-): Promise<void> {
+  expectedRevision?: number,
+): Promise<number> {
+  if (expectedRevision !== undefined) return conditionalWrite(siteId, themeId, slug, set, expectedRevision);
   const db = await getDb();
   const driver = process.env.DB_DRIVER as "postgres" | "mysql" | "mariadb" | undefined;
   const hasDoc = Object.prototype.hasOwnProperty.call(set, "doc");
@@ -127,10 +137,11 @@ async function upsert(
        ON CONFLICT (site_id, theme_id, slug) DO UPDATE SET
          doc = ${hasDoc ? "EXCLUDED.doc" : "theme_templates.doc"},
          draft_doc = ${hasDraft ? "EXCLUDED.draft_doc" : "theme_templates.draft_doc"},
+         revision = theme_templates.revision + 1,
          updated_at = EXCLUDED.updated_at`,
       [randomUUID(), siteId, themeId, slug, docJson ?? "{}", draftJson, stamp, stamp],
     );
-    return;
+    return revisionOf((await readRow(siteId, themeId, slug))?.revision);
   }
 
   await db.run(
@@ -139,9 +150,65 @@ async function upsert(
      ON DUPLICATE KEY UPDATE
        doc = ${hasDoc ? "VALUES(doc)" : "doc"},
        draft_doc = ${hasDraft ? "VALUES(draft_doc)" : "draft_doc"},
+       revision = revision + 1,
        updated_at = VALUES(updated_at)`,
     [randomUUID(), siteId, themeId, slug, docJson ?? "{}", draftJson, stamp, stamp],
   );
+  return revisionOf((await readRow(siteId, themeId, slug))?.revision);
+}
+
+async function conditionalWrite(
+  siteId: string,
+  themeId: string,
+  slug: string,
+  set: { doc?: unknown; draft_doc?: unknown | null },
+  expectedRevision: number,
+): Promise<number> {
+  const db = await getDb();
+  const hasDoc = Object.prototype.hasOwnProperty.call(set, "doc");
+  const hasDraft = Object.prototype.hasOwnProperty.call(set, "draft_doc");
+  const draftJson = set.draft_doc == null ? null : JSON.stringify(set.draft_doc);
+  const stamp = nowSql();
+
+  if (expectedRevision === 0) {
+    const existing = await readRow(siteId, themeId, slug);
+    if (existing) throw new DocumentRevisionConflictError(0, revisionOf(existing.revision));
+    try {
+      await db.run(
+        `INSERT INTO theme_templates (id, site_id, theme_id, slug, doc, draft_doc, revision, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+        [randomUUID(), siteId, themeId, slug, JSON.stringify(hasDoc ? (set.doc ?? {}) : {}), hasDraft ? draftJson : null, stamp, stamp],
+      );
+    } catch (err) {
+      /** Lost an insert race: another editor created the row first. */
+      const raced = await readRow(siteId, themeId, slug);
+      if (raced) throw new DocumentRevisionConflictError(0, revisionOf(raced.revision));
+      throw err;
+    }
+    return 1;
+  }
+
+  const sets: string[] = [];
+  const values: (string | number | null)[] = [];
+  if (hasDoc) {
+    sets.push("doc = ?");
+    values.push(JSON.stringify(set.doc ?? {}));
+  }
+  if (hasDraft) {
+    sets.push("draft_doc = ?");
+    values.push(draftJson);
+  }
+  sets.push("revision = revision + 1", "updated_at = ?");
+  values.push(stamp);
+  const changed = await db.execute(
+    `UPDATE theme_templates SET ${sets.join(", ")} WHERE site_id = ? AND theme_id = ? AND slug = ? AND revision = ?`,
+    [...values, siteId, themeId, slug, expectedRevision],
+  );
+  if (changed !== 1) {
+    const current = await readRow(siteId, themeId, slug);
+    throw new DocumentRevisionConflictError(expectedRevision, current ? revisionOf(current.revision) : 0);
+  }
+  return expectedRevision + 1;
 }
 
 /** Write the working copy without touching the published doc. */
@@ -150,8 +217,9 @@ export async function saveThemeTemplateDraft(
   themeId: string,
   slug: string,
   doc: unknown,
-): Promise<void> {
-  await upsert(siteId, themeId, slug, { draft_doc: doc });
+  expectedRevision?: number,
+): Promise<number> {
+  return upsert(siteId, themeId, slug, { draft_doc: doc }, expectedRevision);
 }
 
 /** Write the published doc without touching the draft. */
@@ -160,8 +228,9 @@ export async function saveThemeTemplatePublished(
   themeId: string,
   slug: string,
   doc: unknown,
-): Promise<void> {
-  await upsert(siteId, themeId, slug, { doc });
+  expectedRevision?: number,
+): Promise<number> {
+  return upsert(siteId, themeId, slug, { doc }, expectedRevision);
 }
 
 /** Publish: write the published doc and drop the leftover draft. */
@@ -170,16 +239,18 @@ export async function publishThemeTemplateDoc(
   themeId: string,
   slug: string,
   doc: unknown,
-): Promise<void> {
-  await upsert(siteId, themeId, slug, { doc, draft_doc: null });
+  expectedRevision?: number,
+): Promise<number> {
+  return upsert(siteId, themeId, slug, { doc, draft_doc: null }, expectedRevision);
 }
 
 export async function clearThemeTemplateDraftDoc(
   siteId: string,
   themeId: string,
   slug: string,
-): Promise<void> {
-  await upsert(siteId, themeId, slug, { draft_doc: null });
+  expectedRevision?: number,
+): Promise<number> {
+  return upsert(siteId, themeId, slug, { draft_doc: null }, expectedRevision);
 }
 
 /** Drop the override entirely — the template reverts to the theme's own file. */

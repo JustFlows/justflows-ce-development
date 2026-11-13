@@ -194,6 +194,28 @@ export async function publishSiteHeaderLibrary(
   return parsed;
 }
 
+/**
+ * Save the library as a draft or publish it, with an optional revision check.
+ * Returns the stored library and the row's new revision; a stale
+ * `expectedRevision` throws `DocumentRevisionConflictError`.
+ */
+export async function writeSiteHeaderLibrary(
+  siteId: string,
+  lib: unknown,
+  opts: { draft: boolean; expectedRevision?: number },
+): Promise<{ library: SiteHeaderLibrary; revision: number }> {
+  const parsed = parseSiteHeaderLibrary(lib);
+  const revision = opts.draft
+    ? await saveTemplatePartDraft(siteId, PART, parsed, opts.expectedRevision)
+    : await publishTemplatePartDoc(siteId, PART, parsed, opts.expectedRevision);
+  return { library: parsed, revision };
+}
+
+/** The header library row's current revision, or 0 when it has never been saved. */
+export async function getSiteHeaderLibraryRevision(siteId: string): Promise<number> {
+  return (await getTemplatePartDocs(siteId, PART)).revision;
+}
+
 /** Lightweight list for the per-page header dropdown. */
 export async function listSiteHeaderOptions(
   siteId: string,

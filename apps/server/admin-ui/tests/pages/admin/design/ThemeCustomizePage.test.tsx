@@ -147,3 +147,71 @@ describe("ThemeCustomizePage site parts in the builder shell", () => {
     expect(screen.getByRole("button", { name: "Publish" })).toBeInTheDocument();
   });
 });
+
+describe("ThemeCustomizePage site part conflicts", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  function withPut(path: string, status: number, body: unknown) {
+    const base = vi.mocked(fetch).getMockImplementation()!;
+    const puts: Array<Record<string, unknown>> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input) === path && init?.method === "PUT") {
+          puts.push(JSON.parse(String(init.body)));
+          return jsonResponse(body, status);
+        }
+        if (String(input) === "/api/template-parts/footer") return jsonResponse({ blocks: [], draft: [], revision: 7 });
+        if (String(input) === "/api/headers") {
+          return jsonResponse({ library: { version: 1, defaultId: null, entries: [] }, draft: null, revision: 3 });
+        }
+        return base(input);
+      }),
+    );
+    return puts;
+  }
+
+  it("sends the footer revision it loaded and stops on a conflict", async () => {
+    mockFetch();
+    mockSiteParts();
+    const puts = withPut("/api/template-parts/footer", 409, { code: "document_conflict", expectedRevision: 7, actualRevision: 8 });
+    const user = userEvent.setup();
+    renderPage("/admin/themes/customize?tab=footer");
+
+    await user.click(await screen.findByRole("button", { name: "Save draft" }));
+    expect(puts[0]).toMatchObject({ draft: true, expectedRevision: 7 });
+    expect(await screen.findByText(/Someone else saved this after you opened it/)).toBeInTheDocument();
+    expect(screen.getAllByRole("status").some((el) => /Not saved/.test(el.textContent ?? ""))).toBe(true);
+  });
+
+  it("only overwrites the footer after confirmation, using the latest revision", async () => {
+    mockFetch();
+    mockSiteParts();
+    const puts = withPut("/api/template-parts/footer", 409, { code: "document_conflict" });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup();
+    renderPage("/admin/themes/customize?tab=footer");
+
+    await user.click(await screen.findByRole("button", { name: "Save draft" }));
+    await user.click(await screen.findByRole("button", { name: "Save mine over it" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/will be lost/));
+    await vi.waitFor(() => expect(puts).toHaveLength(2));
+    expect(puts[1]).toMatchObject({ draft: true, expectedRevision: 7 });
+  });
+
+  it("sends the header library revision and shows a conflict", async () => {
+    mockFetch();
+    mockSiteParts();
+    const puts = withPut("/api/headers", 409, { code: "document_conflict" });
+    const user = userEvent.setup();
+    renderPage("/admin/themes/customize?tab=header");
+
+    await user.click(await screen.findByRole("button", { name: "Save draft" }));
+    expect(puts[0]).toMatchObject({ draft: true, expectedRevision: 3 });
+    expect(await screen.findByText(/Someone else saved this after you opened it/)).toBeInTheDocument();
+  });
+});

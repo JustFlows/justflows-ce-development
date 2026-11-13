@@ -2,6 +2,7 @@
 
 import { Router } from "express";
 import { z } from "zod";
+import { DocumentRevisionConflictError, documentConflictBody } from "../../lib/database/document-revision.js";
 import { getSiteId } from "../../lib/themes/themes-db.js";
 import { revalidateOnUpdate } from "../../lib/cache/cache-revalidate.js";
 import { requireRole } from "../../middleware/auth.js";
@@ -14,8 +15,8 @@ import {
   hasSiteHeaderLibraryDraft,
   listSiteHeaderOptions,
   parseSiteHeaderLibrary,
-  publishSiteHeaderLibrary,
-  saveSiteHeaderLibrary,
+  getSiteHeaderLibraryRevision,
+  writeSiteHeaderLibrary,
   type SiteHeaderLibrary,
 } from "../../lib/rendering/site-header.js";
 
@@ -24,6 +25,8 @@ const router = Router();
 const LibrarySchema = z.object({
   library: z.record(z.string(), z.unknown()),
   draft: z.boolean().default(false),
+  /** Revision the editor loaded; `0` = never saved. A mismatch is a 409, not an overwrite. */
+  expectedRevision: z.number().int().min(0).optional(),
 });
 
 /** Drop overrides for locales the site no longer serves, then re-normalise. */
@@ -50,6 +53,7 @@ router.get("/", requireRole(...CONTENT_READ_ROLES), async (_req, res) => {
     draft: (await hasSiteHeaderLibraryDraft(siteId))
       ? await getSiteHeaderLibrary(siteId, true)
       : null,
+    revision: await getSiteHeaderLibraryRevision(siteId),
   });
 });
 
@@ -78,12 +82,17 @@ router.put("/", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) => {
       return;
     }
     const lib = await sanitizeLibrary(body.library);
-    const library = body.draft
-      ? await saveSiteHeaderLibrary(siteId, lib, true)
-      : await publishSiteHeaderLibrary(siteId, lib);
+    const { library, revision } = await writeSiteHeaderLibrary(siteId, lib, {
+      draft: body.draft,
+      expectedRevision: body.expectedRevision,
+    });
     if (!body.draft) await revalidateOnUpdate("theme");
-    res.json({ library });
+    res.json({ library, revision });
   } catch (err) {
+    if (err instanceof DocumentRevisionConflictError) {
+      res.status(409).json(documentConflictBody(err));
+      return;
+    }
     res.status(400).json({ error: err instanceof Error ? err.message : "Could not save" });
   }
 });

@@ -57,19 +57,25 @@ export default function HeaderLibraryEditor({ bar, siteNav, extraActions }: Head
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"" | "saved" | "error">("");
   const [dirty, setDirty] = useState(false);
+  /** Revision the editor loaded, sent back so a save never overwrites someone else's newer library. */
+  const [revision, setRevision] = useState(0);
+  const [conflict, setConflict] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
   const [error, setError] = useState("");
 
   useEffect(() => {
     fetch("/api/headers")
       .then((r) => r.json())
-      .then((body: { library?: SiteHeaderLibraryDTO; draft?: SiteHeaderLibraryDTO | null }) => {
+      .then((body: { library?: SiteHeaderLibraryDTO; draft?: SiteHeaderLibraryDTO | null; revision?: number }) => {
         const next = body.draft ?? body.library ?? emptyLib();
         setLib(next);
-        setEntryId(next.defaultId ?? next.entries[0]?.id ?? "");
+        setEntryId((prev) => (next.entries.some((e) => e.id === prev) ? prev : (next.defaultId ?? next.entries[0]?.id ?? "")));
+        setRevision(body.revision ?? 0);
+        setDirty(false);
       })
       .catch(() => setLib(emptyLib()))
       .finally(() => setLoading(false));
-  }, []);
+  }, [reloadTick]);
 
   useEffect(() => {
     fetch("/api/languages/active")
@@ -172,7 +178,7 @@ export default function HeaderLibraryEditor({ bar, siteNav, extraActions }: Head
     });
   }
 
-  async function save(publish: boolean) {
+  async function save(publish: boolean, expectedRevision = revision) {
     setSaving(true);
     setError("");
     setStatus("");
@@ -180,10 +186,16 @@ export default function HeaderLibraryEditor({ bar, siteNav, extraActions }: Head
       const res = await fetch("/api/headers", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ library: lib, draft: !publish }),
+        body: JSON.stringify({ library: lib, draft: !publish, expectedRevision }),
       });
-      const body = (await res.json()) as { error?: string; library?: SiteHeaderLibraryDTO };
+      const body = (await res.json()) as { error?: string; library?: SiteHeaderLibraryDTO; revision?: number };
+      if (res.status === 409) {
+        setConflict(true);
+        return;
+      }
       if (!res.ok) throw new Error(body.error ?? t("headerLibrary.saveError"));
+      if (typeof body.revision === "number") setRevision(body.revision);
+      setConflict(false);
       if (publish && body.library) {
         setLib(body.library);
         if (!body.library.entries.some((e) => e.id === entryId)) {
@@ -202,11 +214,34 @@ export default function HeaderLibraryEditor({ bar, siteNav, extraActions }: Head
   }
 
   const overridden = Boolean(entry && locale !== BASE_LOCALE && entry.overrides[locale]);
-  const saveState: BuilderSaveState = saving ? "saving" : status === "error" ? "error" : status === "saved" ? "saved" : dirty ? "dirty" : "idle";
+  /** Replace local edits with the stored library. */
+  const loadLatest = () => {
+    setConflict(false);
+    setReloadTick((n) => n + 1);
+  };
+  /** Explicitly save this editor's library over the newer one, as a draft. */
+  const overwrite = async () => {
+    if (!window.confirm(t("builder.shell.overwritePartConfirm"))) return;
+    const latest = (await (await fetch("/api/headers")).json().catch(() => ({}))) as { revision?: number };
+    setConflict(false);
+    await save(false, latest.revision ?? 0);
+  };
+  const saveState: BuilderSaveState = conflict ? "conflict" : saving ? "saving" : status === "error" ? "error" : status === "saved" ? "saved" : dirty ? "dirty" : "idle";
   const shellBar: BuilderShellBar = {
     ...bar,
     saveState,
     saveError: error,
+    notice: conflict ? (
+      <>
+        <p>{t("builder.shell.conflictPart")}</p>
+        <button type="button" className="jf-btn jf-btn--sm jf-btn--primary" onClick={loadLatest}>
+          {t("builder.shell.loadLatest")}
+        </button>
+        <button type="button" className="jf-btn jf-btn--sm" onClick={() => void overwrite()}>
+          {t("builder.shell.overwrite")}
+        </button>
+      </>
+    ) : undefined,
     actions: (
       <>
         {extraActions}

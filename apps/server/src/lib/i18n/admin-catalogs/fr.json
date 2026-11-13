@@ -1400,7 +1400,9 @@
       "recoveryFound": "Ce navigateur a conservé des modifications non enregistrées du {time}.",
       "restore": "Les restaurer",
       "discard": "Ignorer",
-      "sessionExpired": "Votre session a expiré. Reconnectez-vous dans un autre onglet, puis enregistrez. Vos modifications sont conservées dans ce navigateur."
+      "sessionExpired": "Votre session a expiré. Reconnectez-vous dans un autre onglet, puis enregistrez. Vos modifications sont conservées dans ce navigateur.",
+      "conflictPart": "Quelqu’un d’autre a enregistré ceci après son ouverture. Vos modifications sont toujours là et n’ont pas été enregistrées.",
+      "overwritePartConfirm": "Remplacer la version plus récente par la vôtre ? Les modifications de l’autre personne seront perdues."
     }
   },
   "dashboard": {

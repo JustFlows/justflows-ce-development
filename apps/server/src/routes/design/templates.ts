@@ -2,6 +2,7 @@
 
 import { Router } from "express";
 import { z } from "zod";
+import { DocumentRevisionConflictError, documentConflictBody } from "../../lib/database/document-revision.js";
 import { sanitizeBlockDocument } from "@justflows/blocks";
 import { requireRole } from "../../middleware/auth.js";
 import { CONTENT_READ_ROLES, THEME_CUSTOMIZE_ROLES } from "../../lib/auth/rbac.js";
@@ -16,9 +17,9 @@ import {
   getStoredTemplateDocs,
   isTemplateSlug,
   listTemplateSlots,
-  publishStoredTemplate,
+  getStoredTemplateRevision,
   resetStoredTemplate,
-  saveStoredTemplate,
+  writeStoredTemplate,
 } from "../../lib/themes/theme-templates-store.js";
 
 const router = Router();
@@ -26,6 +27,8 @@ const router = Router();
 const SaveSchema = z.object({
   blocks: z.array(z.record(z.string(), z.unknown())),
   draft: z.boolean().default(false),
+  /** Revision the editor loaded; `0` = no site override yet. A mismatch is a 409, not an overwrite. */
+  expectedRevision: z.number().int().min(0).optional(),
 });
 
 async function activeTheme(): Promise<{
@@ -76,8 +79,9 @@ router.get("/:slug", requireRole(...CONTENT_READ_ROLES), async (req, res) => {
   }
 
   const { published, draft } = await getStoredTemplateDocs(ctx.siteId, ctx.themeId, slug);
+  const revision = await getStoredTemplateRevision(ctx.siteId, ctx.themeId, slug);
   if (published?.length || draft?.length) {
-    res.json({ blocks: published ?? [], draft: draft ?? [] });
+    res.json({ blocks: published ?? [], draft: draft ?? [], revision });
     return;
   }
 
@@ -86,10 +90,10 @@ router.get("/:slug", requireRole(...CONTENT_READ_ROLES), async (req, res) => {
   const themeBlocks = loadThemeTemplate(ctx.themeId, slug, ctx.installedPath);
   if (themeBlocks?.length) {
     const seeded = sanitizeBlockDocument({ version: 1, blocks: themeBlocks }).blocks;
-    res.json({ blocks: seeded, draft: [], fromThemeDefault: true });
+    res.json({ blocks: seeded, draft: [], fromThemeDefault: true, revision });
     return;
   }
-  res.json({ blocks: [], draft: [], fromThemeDefault: true });
+  res.json({ blocks: [], draft: [], fromThemeDefault: true, revision });
 });
 
 router.put("/:slug", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) => {
@@ -105,15 +109,20 @@ router.put("/:slug", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) => 
       res.status(503).json({ error: "No site found" });
       return;
     }
-    const blocks = body.draft
-      ? await saveStoredTemplate(ctx.siteId, ctx.themeId, slug, body.blocks, true)
-      : await publishStoredTemplate(ctx.siteId, ctx.themeId, slug, body.blocks);
+    const { blocks, revision } = await writeStoredTemplate(ctx.siteId, ctx.themeId, slug, body.blocks, {
+      draft: body.draft,
+      expectedRevision: body.expectedRevision,
+    });
     if (!body.draft) await revalidateOnUpdate("theme");
     // Advisory only — a template may legitimately reference a plugin block that
     // is not installed yet. The editor shows the list; the save still lands.
     const { unknownBlockTypes } = validateTemplateBlocks(blocks);
-    res.json({ blocks, unknownBlockTypes });
+    res.json({ blocks, unknownBlockTypes, revision });
   } catch (err) {
+    if (err instanceof DocumentRevisionConflictError) {
+      res.status(409).json(documentConflictBody(err));
+      return;
+    }
     res.status(400).json({ error: err instanceof Error ? err.message : "Could not save" });
   }
 });

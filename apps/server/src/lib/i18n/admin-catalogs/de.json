@@ -1400,7 +1400,9 @@
       "recoveryFound": "Dieser Browser hat ungespeicherte Änderungen vom {time} aufbewahrt.",
       "restore": "Wiederherstellen",
       "discard": "Verwerfen",
-      "sessionExpired": "Deine Sitzung ist abgelaufen. Melde dich in einem anderen Tab erneut an und speichere dann. Deine Änderungen bleiben in diesem Browser erhalten."
+      "sessionExpired": "Deine Sitzung ist abgelaufen. Melde dich in einem anderen Tab erneut an und speichere dann. Deine Änderungen bleiben in diesem Browser erhalten.",
+      "conflictPart": "Jemand anderes hat dies gespeichert, nachdem du es geöffnet hast. Deine Änderungen sind noch da und wurden nicht gespeichert.",
+      "overwritePartConfirm": "Die neuere Version durch deine ersetzen? Die Änderungen der anderen Person gehen dabei verloren."
     }
   },
   "dashboard": {
