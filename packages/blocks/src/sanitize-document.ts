@@ -7,6 +7,8 @@ import { sanitizeBlockClassName, sanitizeBlockCss } from "./safe-css.js";
 import { isPlacementShaped, sanitizePlacementProp } from "./layout.js";
 import { sanitizeBlockStyleProp } from "./block-style.js";
 import { normalizeDeviceList } from "./visibility.js";
+import { sanitizeBlockBreakpoints, sanitizeContainerLayout, sanitizeStyleRef } from "./builder-values.js";
+import { BLOCK_NODE_KEYS, sanitizeEditorMeta } from "./document-contract.js";
 
 
 interface BlockLike {
@@ -143,8 +145,31 @@ function sanitizeProps(type: string, props: Record<string, unknown>): Record<str
     else delete next["style"];
   }
 
+  /**
+   * Builder 2.0 values (see `builder-values.ts`). Each key is namespaced so a
+   * block schema's own props cannot collide with it; an invalid value is
+   * dropped rather than stored.
+   */
+  if ("containerLayout" in next) {
+    const layout = sanitizeContainerLayout(next["containerLayout"]);
+    if (layout) next["containerLayout"] = layout;
+    else delete next["containerLayout"];
+  }
+  if ("styleRef" in next) {
+    const ref = sanitizeStyleRef(next["styleRef"]);
+    if (ref) next["styleRef"] = ref;
+    else delete next["styleRef"];
+  }
+  if ("breakpoints" in next) {
+    const breakpoints = sanitizeBlockBreakpoints(next["breakpoints"]);
+    if (breakpoints) next["breakpoints"] = breakpoints;
+    else delete next["breakpoints"];
+  }
+
   return next;
 }
+
+const NODE_KEYS = new Set<string>(BLOCK_NODE_KEYS);
 
 function sanitizeNode(node: unknown): unknown {
   if (!node || typeof node !== "object") return node;
@@ -152,7 +177,21 @@ function sanitizeNode(node: unknown): unknown {
   const type = typeof n.type === "string" ? n.type : "";
   const props = sanitizeProps(type, asRecord(n.props));
   const children = Array.isArray(n.children) ? n.children.map(sanitizeNode) : n.children;
-  return { ...n, props, children };
+  /**
+   * Only contract keys are stored. Anything else on a node is transient editor
+   * state (selection, drag, hover) and must never reach the database.
+   */
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(n)) {
+    if (NODE_KEYS.has(key) && key !== "editor") out[key] = value;
+  }
+  out["props"] = props;
+  out["children"] = children;
+  if ("editor" in n) {
+    const editor = sanitizeEditorMeta(n["editor"]);
+    if (editor) out["editor"] = editor;
+  }
+  return out;
 }
 
 /** Sanitize a stored block document before it is written to the database. */

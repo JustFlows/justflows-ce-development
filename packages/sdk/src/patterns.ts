@@ -6,12 +6,32 @@ export const PATTERN_FORMAT_VERSION = 1 as const;
 export const PATTERN_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,80}$/;
 export const BLOCK_TYPE_RE = /^[a-z0-9][a-z0-9.-]{1,119}$/;
 
+/**
+ * Editor-only node metadata (navigator label, accidental-change locks). It is
+ * never rendered; the host normalizes it again when the pattern is stored.
+ */
+export interface PatternBlockEditorMeta {
+  label?: string | undefined;
+  lock?: { move?: boolean | undefined; remove?: boolean | undefined; edit?: boolean | undefined } | undefined;
+}
+
+export const PatternBlockEditorMetaSchema: z.ZodType<PatternBlockEditorMeta> = z
+  .object({
+    label: z.string().max(200).optional(),
+    lock: z
+      .object({ move: z.boolean().optional(), remove: z.boolean().optional(), edit: z.boolean().optional() })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
 export interface PatternBlock {
   id: string;
   type: string;
   version: number;
   props: Record<string, unknown>;
   children?: PatternBlock[] | undefined;
+  editor?: PatternBlockEditorMeta | undefined;
 }
 
 export const PatternBlockSchema: z.ZodType<PatternBlock> = z.lazy(() =>
@@ -22,6 +42,7 @@ export const PatternBlockSchema: z.ZodType<PatternBlock> = z.lazy(() =>
       version: z.number().int().positive(),
       props: z.record(z.string(), z.unknown()).default({}),
       children: z.array(PatternBlockSchema).optional(),
+      editor: PatternBlockEditorMetaSchema.optional(),
     })
     .strict(),
 );

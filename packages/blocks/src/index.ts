@@ -115,3 +115,62 @@ export function createBlockRegistrySync(): BlockRegistry {
 }
 
 export { functionalBlockCss } from "./functional-css.js";
+
+export {
+  BLOCK_DOCUMENT_VERSION,
+  BLOCK_ID_MAX_LENGTH,
+  BLOCK_MAX_DEPTH,
+  BLOCK_NODE_KEYS,
+  EDITOR_LABEL_MAX_LENGTH,
+  EDITOR_LOCK_FLAGS,
+  ROOT_PARENT,
+  canNestBlock,
+  isValidBlockId,
+  reassignBlockIds,
+  repairBlockIds,
+  sanitizeEditorMeta,
+  validateBlockDocument,
+} from "./document-contract.js";
+export type {
+  BlockDocumentIssue,
+  BlockDocumentIssueCode,
+  BlockEditorMeta,
+  BlockIdFactory,
+  BlockNestingInfo,
+  BlockNestingLookup,
+  CanonicalBlockDocument,
+  CanonicalBlockNode,
+  EditorLockFlag,
+  ValidateBlockDocumentOptions,
+} from "./document-contract.js";
+export {
+  BREAKPOINT_LAYOUT_FIELDS,
+  BREAKPOINT_PLACEMENT_FIELDS,
+  BREAKPOINT_STYLE_FIELDS,
+  CONTAINER_ALIGN,
+  CONTAINER_DIRECTIONS,
+  CONTAINER_DISPLAYS,
+  CONTAINER_JUSTIFY,
+  CONTAINER_WRAPS,
+  OVERRIDE_BREAKPOINTS,
+  STYLE_REF_RE,
+  VALUE_SOURCES,
+  sanitizeBlockBreakpoints,
+  sanitizeContainerLayout,
+  sanitizeStyleRef,
+} from "./builder-values.js";
+export type {
+  BlockBreakpoints,
+  BreakpointOverride,
+  BreakpointStyleField,
+  ContainerLayout,
+  OverrideBreakpoint,
+  ValueSource,
+} from "./builder-values.js";
+export { BlockMigrator } from "./block-migrations.js";
+export type {
+  BlockMigration,
+  BlockMigrationFailure,
+  BlockMigrationFailureReason,
+  BlockMigrationResult,
+} from "./block-migrations.js";

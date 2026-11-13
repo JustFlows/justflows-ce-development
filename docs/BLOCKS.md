@@ -31,6 +31,9 @@ ctx.blocks.register({
 sanitizer — do not emit raw script tags. The editor catalog lists registered
 blocks; public HTML is produced by the public renderer, not by the admin application.
 
+The stored document format, id and nesting rules, breakpoint overrides, and
+block migrations are specified in [Builder document architecture](BUILDER-DOCUMENT.md).
+
 ## Props every block carries
 
 Five props are handled by the platform, not by the block's own `render`, so a

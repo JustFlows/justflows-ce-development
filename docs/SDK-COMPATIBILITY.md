@@ -45,6 +45,14 @@ Plugins additionally receive executable runtime context and can inspect
 `SDK_API_VERSION` from `@justflows/sdk`. `ctx.version` continues to mean the
 plugin's own version.
 
+### In development — pattern block editor metadata
+
+`PatternBlock` takes an optional `editor` object (`label`, `lock`) that holds
+navigator labels and locks. `PatternBlockEditorMetaSchema` and the
+`PatternBlockEditorMeta` type are exported. Unknown keys inside `editor` are
+rejected, like the rest of a pattern block. Existing patterns are unaffected. See
+[Builder document architecture](BUILDER-DOCUMENT.md).
+
 ### In development — search
 
 `SearchBackend`, `SearchDocument`, and the permission-gated `search.backend`

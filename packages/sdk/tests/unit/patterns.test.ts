@@ -19,6 +19,13 @@ describe("BlockPatternSchema", () => {
     });
   });
 
+  it("accepts editor-only labels and locks but rejects unknown editor keys", () => {
+    const labelled = { ...paragraph, editor: { label: "Intro", lock: { move: true } } };
+    expect(BlockPatternSchema.safeParse({ id: "hero", title: "Hero", blocks: [labelled] }).success).toBe(true);
+    const extra = { ...paragraph, editor: { label: "Intro", selected: true } };
+    expect(BlockPatternSchema.safeParse({ id: "hero", title: "Hero", blocks: [extra] }).success).toBe(false);
+  });
+
   it("requires every non-core block type to be declared", () => {
     const result = BlockPatternSchema.safeParse({
       id: "form",

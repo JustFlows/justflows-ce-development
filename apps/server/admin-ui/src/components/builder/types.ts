@@ -1,4 +1,4 @@
-import type { BlockInspectorSupports } from "@justflows/blocks";
+import type { BlockEditorMeta, BlockInspectorSupports } from "@justflows/blocks";
 
 export interface BlockNode {
   id: string;
@@ -6,6 +6,8 @@ export interface BlockNode {
   version: number;
   props: Record<string, unknown>;
   children?: BlockNode[];
+  /** Editor-only label and lock flags; never rendered. See `docs/BUILDER-DOCUMENT.md`. */
+  editor?: BlockEditorMeta;
 }
 
 export interface BlockDocument {

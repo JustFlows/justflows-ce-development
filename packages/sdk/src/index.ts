@@ -346,6 +346,7 @@ export {
   PATTERN_SLUG_RE,
   BLOCK_TYPE_RE,
   PatternBlockSchema,
+  PatternBlockEditorMetaSchema,
   PatternLocaleSchema,
   BlockPatternSchema,
   PatternSetSchema,
@@ -353,6 +354,7 @@ export {
 } from "./patterns.js";
 export type {
   PatternBlock,
+  PatternBlockEditorMeta,
   BlockPattern,
   PatternSet,
   ThemePatternRegistration,
