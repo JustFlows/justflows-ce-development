@@ -4903,3 +4903,21 @@ input[type="range"] {
   color: var(--jf-text-3);
   margin: 0 0 0.35rem;
 }
+
+/* Builder shell: a decision the author has to make (conflict, recovered changes). */
+.jf-shell__notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem;
+  background: var(--jf-warning-soft);
+  color: var(--jf-text);
+  border-block-end: 1px solid var(--jf-border);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.jf-shell__notice p {
+  margin: 0;
+  flex: 1 1 18rem;
+}

@@ -12,6 +12,8 @@ export interface ContentLiveSnapshotResponse {
 
 export interface ContentWorkingMeta {
   id: string;
+  /** Bumped on every save of this draft; send back as `expectedWorkingVersion`. */
+  version: number;
   source: string;
   baseVersion: number;
   updatedAt: string;

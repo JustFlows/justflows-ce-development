@@ -29,7 +29,7 @@ export function isSiteWideContext(context: BuilderContext): boolean {
   return context in SITE_WIDE_IMPACT;
 }
 
-export type BuilderSaveState = "idle" | "dirty" | "saving" | "saved" | "error";
+export type BuilderSaveState = "idle" | "dirty" | "autosaving" | "saving" | "saved" | "error" | "conflict";
 
 export interface BuilderCrumb {
   /** Block id, or `null` for the document root. */
@@ -47,6 +47,8 @@ export interface BuilderShellBar {
   previewUrl?: string | null;
   /** Context-specific controls (header picker, save, publish). */
   actions?: ReactNode;
+  /** A message that needs a decision (conflict, recovered changes), shown under the bar. */
+  notice?: ReactNode;
 }
 
 export interface BuilderShellProps {
@@ -268,17 +270,21 @@ export default function BuilderShell({
 export function ShellBar({ bar }: { bar: BuilderShellBar }) {
   const { t } = useT();
   const saveLabel =
-    bar?.saveState === "saving"
+    bar.saveState === "saving"
       ? t("common.saving")
-      : bar?.saveState === "saved"
-        ? `✓ ${t("common.saved")}`
-        : bar?.saveState === "dirty"
-          ? t("builder.shell.unsaved")
-          : bar?.saveState === "error"
-            ? bar.saveError || t("builder.shell.saveFailed")
-            : "";
-
+      : bar.saveState === "autosaving"
+        ? t("builder.shell.autosaving")
+        : bar.saveState === "saved"
+          ? `✓ ${t("common.saved")}`
+          : bar.saveState === "dirty"
+            ? t("builder.shell.unsaved")
+            : bar.saveState === "conflict"
+              ? t("builder.shell.conflict")
+              : bar.saveState === "error"
+                ? bar.saveError || t("builder.shell.saveFailed")
+                : "";
   return (
+    <>
     <header className="jf-editor__bar jf-shell__bar">
       <button type="button" className="jf-btn jf-btn--onbar" onClick={bar.onExit}>
         <span aria-hidden="true" className="jf-shell__back">←</span> {t("common.back")}
@@ -289,7 +295,7 @@ export function ShellBar({ bar }: { bar: BuilderShellBar }) {
       </div>
       <div className="jf-editor__actions">
         <span
-          className={`jf-editor__status${bar.saveState === "saved" ? " jf-editor__status--ok" : ""}${bar.saveState === "error" ? " jf-editor__status--error" : ""}`}
+          className={`jf-editor__status${bar.saveState === "saved" ? " jf-editor__status--ok" : ""}${bar.saveState === "error" || bar.saveState === "conflict" ? " jf-editor__status--error" : ""}`}
           role="status"
           aria-live="polite"
         >
@@ -303,6 +309,12 @@ export function ShellBar({ bar }: { bar: BuilderShellBar }) {
         {bar.actions}
       </div>
     </header>
+    {bar.notice && (
+      <div className="jf-shell__notice" role="alert">
+        {bar.notice}
+      </div>
+    )}
+    </>
   );
 }
 

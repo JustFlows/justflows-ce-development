@@ -1383,7 +1383,19 @@
         "advanced": "Advanced"
       },
       "site": "Site",
-      "siteParts": "Site parts"
+      "siteParts": "Site parts",
+      "autosaving": "Autosaving…",
+      "conflict": "Not saved: newer version exists",
+      "conflictDraft": "Someone else changed this page's draft after you opened it. Your edits are still here and have not been saved.",
+      "conflictDraftBy": "{name} changed this page's draft after you opened it. Your edits are still here and have not been saved.",
+      "conflictLive": "This page was changed or published elsewhere after you opened it. Your edits are still here and have not been saved.",
+      "loadLatest": "Load the latest version",
+      "overwrite": "Save mine over it",
+      "overwriteConfirm": "Replace the newer version with yours? The other changes will be kept in the page's revisions.",
+      "recoveryFound": "This browser kept unsaved changes from {time}.",
+      "restore": "Restore them",
+      "discard": "Discard",
+      "sessionExpired": "Your session has expired. Sign in again in another tab, then save. Your changes are kept in this browser."
     }
   },
   "dashboard": {

@@ -1388,7 +1388,19 @@
         "advanced": "Avanzado"
       },
       "site": "Sitio",
-      "siteParts": "Partes del sitio"
+      "siteParts": "Partes del sitio",
+      "autosaving": "Guardando automáticamente…",
+      "conflict": "Sin guardar: hay una versión más reciente",
+      "conflictDraft": "Otra persona cambió el borrador de esta página después de que la abrieras. Tus cambios siguen aquí y no se han guardado.",
+      "conflictDraftBy": "{name} cambió el borrador de esta página después de que la abrieras. Tus cambios siguen aquí y no se han guardado.",
+      "conflictLive": "Esta página se cambió o publicó en otro lugar después de que la abrieras. Tus cambios siguen aquí y no se han guardado.",
+      "loadLatest": "Cargar la última versión",
+      "overwrite": "Guardar la mía encima",
+      "overwriteConfirm": "¿Reemplazar la versión más reciente por la tuya? Los otros cambios se conservan en las revisiones de la página.",
+      "recoveryFound": "Este navegador guardó cambios sin guardar del {time}.",
+      "restore": "Restaurarlos",
+      "discard": "Descartar",
+      "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión en otra pestaña y guarda. Tus cambios se conservan en este navegador."
     }
   },
   "dashboard": {

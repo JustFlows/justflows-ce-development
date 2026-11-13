@@ -1388,7 +1388,19 @@
         "advanced": "Erweitert"
       },
       "site": "Website",
-      "siteParts": "Website-Bereiche"
+      "siteParts": "Website-Bereiche",
+      "autosaving": "Automatisch speichern…",
+      "conflict": "Nicht gespeichert: neuere Version vorhanden",
+      "conflictDraft": "Jemand anderes hat den Entwurf dieser Seite geändert, nachdem du sie geöffnet hast. Deine Änderungen sind noch da und wurden nicht gespeichert.",
+      "conflictDraftBy": "{name} hat den Entwurf dieser Seite geändert, nachdem du sie geöffnet hast. Deine Änderungen sind noch da und wurden nicht gespeichert.",
+      "conflictLive": "Diese Seite wurde woanders geändert oder veröffentlicht, nachdem du sie geöffnet hast. Deine Änderungen sind noch da und wurden nicht gespeichert.",
+      "loadLatest": "Neueste Version laden",
+      "overwrite": "Meine Version darüber speichern",
+      "overwriteConfirm": "Die neuere Version durch deine ersetzen? Die anderen Änderungen bleiben in den Revisionen der Seite erhalten.",
+      "recoveryFound": "Dieser Browser hat ungespeicherte Änderungen vom {time} aufbewahrt.",
+      "restore": "Wiederherstellen",
+      "discard": "Verwerfen",
+      "sessionExpired": "Deine Sitzung ist abgelaufen. Melde dich in einem anderen Tab erneut an und speichere dann. Deine Änderungen bleiben in diesem Browser erhalten."
     }
   },
   "dashboard": {

@@ -1388,7 +1388,19 @@
         "advanced": "Avancé"
       },
       "site": "Site",
-      "siteParts": "Parties du site"
+      "siteParts": "Parties du site",
+      "autosaving": "Enregistrement automatique…",
+      "conflict": "Non enregistré : une version plus récente existe",
+      "conflictDraft": "Quelqu’un d’autre a modifié le brouillon de cette page après son ouverture. Vos modifications sont toujours là et n’ont pas été enregistrées.",
+      "conflictDraftBy": "{name} a modifié le brouillon de cette page après son ouverture. Vos modifications sont toujours là et n’ont pas été enregistrées.",
+      "conflictLive": "Cette page a été modifiée ou publiée ailleurs après son ouverture. Vos modifications sont toujours là et n’ont pas été enregistrées.",
+      "loadLatest": "Charger la dernière version",
+      "overwrite": "Enregistrer ma version par-dessus",
+      "overwriteConfirm": "Remplacer la version plus récente par la vôtre ? Les autres modifications restent dans les révisions de la page.",
+      "recoveryFound": "Ce navigateur a conservé des modifications non enregistrées du {time}.",
+      "restore": "Les restaurer",
+      "discard": "Ignorer",
+      "sessionExpired": "Votre session a expiré. Reconnectez-vous dans un autre onglet, puis enregistrez. Vos modifications sont conservées dans ce navigateur."
     }
   },
   "dashboard": {

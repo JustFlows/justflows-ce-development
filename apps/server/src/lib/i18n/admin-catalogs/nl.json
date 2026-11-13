@@ -1385,7 +1385,19 @@
         "advanced": "Geavanceerd"
       },
       "site": "Site",
-      "siteParts": "Site-onderdelen"
+      "siteParts": "Site-onderdelen",
+      "autosaving": "Automatisch opslaan…",
+      "conflict": "Niet opgeslagen: er is een nieuwere versie",
+      "conflictDraft": "Iemand anders heeft het concept van deze pagina gewijzigd nadat je hem opende. Je wijzigingen staan er nog en zijn niet opgeslagen.",
+      "conflictDraftBy": "{name} heeft het concept van deze pagina gewijzigd nadat je hem opende. Je wijzigingen staan er nog en zijn niet opgeslagen.",
+      "conflictLive": "Deze pagina is elders gewijzigd of gepubliceerd nadat je hem opende. Je wijzigingen staan er nog en zijn niet opgeslagen.",
+      "loadLatest": "Nieuwste versie laden",
+      "overwrite": "Mijn versie eroverheen opslaan",
+      "overwriteConfirm": "De nieuwere versie vervangen door de jouwe? De andere wijzigingen blijven bewaard in de revisies van de pagina.",
+      "recoveryFound": "Deze browser heeft niet-opgeslagen wijzigingen van {time} bewaard.",
+      "restore": "Terugzetten",
+      "discard": "Weggooien",
+      "sessionExpired": "Je sessie is verlopen. Log in een ander tabblad opnieuw in en sla dan op. Je wijzigingen blijven in deze browser bewaard."
     }
   },
   "dashboard": {

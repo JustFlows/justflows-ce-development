@@ -14,6 +14,7 @@ import {
   cloneBlocks,
   updateBlockProps,
   updateBlockTree,
+  historyStepKey,
 } from "./block-tree";
 import { getChildCount, getParentType, libraryTargetParent, HEADER_SLOT_PARENT_TYPE } from "./dnd";
 import HeaderChrome, { HeaderInspector, previewNavLabels, type HeaderMenu } from "./HeaderChrome";
@@ -162,10 +163,10 @@ export default function PageBuilder({
 
   const emit = useCallback(
     (nextBlocks: BlockNode[]) => {
-      history.record(nextBlocks);
+      history.record(nextBlocks, { coalesce: historyStepKey(blocks, nextBlocks) });
       onChange({ version: 1, blocks: nextBlocks });
     },
-    [history, onChange],
+    [history, onChange, blocks],
   );
 
   const emitHeaderBlocks = useCallback(

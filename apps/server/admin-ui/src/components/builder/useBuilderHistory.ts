@@ -9,8 +9,18 @@ export interface HistoryState<T> {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
-  /** Call after every change that came from the editor, not from history. */
-  record: (value: T) => void;
+  /**
+   * Call after every change that came from the editor, not from history.
+   * Without options, edits closer together than the coalesce window share a
+   * step. With `{ coalesce }`, only edits that share the same non-null key
+   * (e.g. typing into one block) share a step; `null` always starts a new one.
+   */
+  record: (value: T, options?: RecordOptions) => void;
+}
+
+export interface RecordOptions {
+  /** Edits with the same key inside the coalesce window are one undo step; `null` never coalesces. */
+  coalesce: string | null;
 }
 
 /**
@@ -39,21 +49,27 @@ export function useBuilderHistory<T>(
   const past = useRef<T[]>([]);
   const future = useRef<T[]>([]);
   const lastAt = useRef(0);
+  /** Key of the last recorded edit; `undefined` means "time-based", the legacy behaviour. */
+  const lastKey = useRef<string | null | undefined>(undefined);
   const travelling = useRef(false);
   const baseline = useRef<T>(current);
   const [, force] = useState(0);
 
   const rerender = useCallback(() => force((n) => n + 1), []);
 
-  const record = useCallback((value: T) => {
+  const record = useCallback((value: T, options?: RecordOptions) => {
     if (travelling.current) {
       travelling.current = false;
       baseline.current = value;
       return;
     }
     const now = Date.now();
-    // Successive keystrokes collapse into the step they started from.
-    if (now - lastAt.current > COALESCE_MS) {
+    const key = options ? options.coalesce : undefined;
+    const withinWindow = now - lastAt.current <= COALESCE_MS;
+    /** Successive keystrokes collapse into the step they started from; a different kind of edit never does. */
+    const continues = withinWindow && (key === undefined ? lastKey.current === undefined : key !== null && key === lastKey.current);
+    lastKey.current = key;
+    if (!continues) {
       past.current = [...past.current, baseline.current].slice(-LIMIT);
       future.current = [];
     }
@@ -69,6 +85,7 @@ export function useBuilderHistory<T>(
     future.current = [baseline.current, ...future.current].slice(0, LIMIT);
     travelling.current = true;
     lastAt.current = 0;
+    lastKey.current = undefined;
     apply(previous);
     rerender();
   }, [apply, rerender]);
@@ -80,6 +97,7 @@ export function useBuilderHistory<T>(
     past.current = [...past.current, baseline.current].slice(-LIMIT);
     travelling.current = true;
     lastAt.current = 0;
+    lastKey.current = undefined;
     apply(next);
     rerender();
   }, [apply, rerender]);

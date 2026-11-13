@@ -1383,7 +1383,19 @@
         "advanced": "Zaawansowane"
       },
       "site": "Witryna",
-      "siteParts": "Części witryny"
+      "siteParts": "Części witryny",
+      "autosaving": "Autozapis…",
+      "conflict": "Nie zapisano: istnieje nowsza wersja",
+      "conflictDraft": "Ktoś inny zmienił szkic tej strony po jej otwarciu. Twoje zmiany nadal tu są i nie zostały zapisane.",
+      "conflictDraftBy": "{name} zmienił(a) szkic tej strony po jej otwarciu. Twoje zmiany nadal tu są i nie zostały zapisane.",
+      "conflictLive": "Ta strona została zmieniona lub opublikowana gdzie indziej po jej otwarciu. Twoje zmiany nadal tu są i nie zostały zapisane.",
+      "loadLatest": "Wczytaj najnowszą wersję",
+      "overwrite": "Zapisz moją wersję zamiast niej",
+      "overwriteConfirm": "Zastąpić nowszą wersję twoją? Pozostałe zmiany zostaną zachowane w rewizjach strony.",
+      "recoveryFound": "Ta przeglądarka zachowała niezapisane zmiany z {time}.",
+      "restore": "Przywróć je",
+      "discard": "Odrzuć",
+      "sessionExpired": "Twoja sesja wygasła. Zaloguj się ponownie w innej karcie, a potem zapisz. Twoje zmiany są zachowane w tej przeglądarce."
     }
   },
   "dashboard": {

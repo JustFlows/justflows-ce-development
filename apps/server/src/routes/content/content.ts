@@ -568,6 +568,7 @@ router.patch("/:id", requireSession, async (req, res) => {
     const currentVersion = Number(row.version ?? 1) || 1;
     if (body.data.expectedVersion != null && body.data.expectedVersion !== currentVersion) {
       res.status(409).json({
+        code: "version_conflict",
         error: `Version conflict: expected ${body.data.expectedVersion}, got ${currentVersion}`,
         expectedVersion: body.data.expectedVersion,
         actualVersion: currentVersion,
@@ -959,6 +960,9 @@ router.post("/:id/publish", requireSession, async (req, res) => {
   const id = param(req.params.id);
   const expectedVersion =
     typeof req.body?.expectedVersion === "number" ? req.body.expectedVersion : undefined;
+  const rawWorking = req.body?.expectedWorkingVersion;
+  const expectedWorkingVersion =
+    typeof rawWorking === "number" && Number.isInteger(rawWorking) && rawWorking >= 0 ? rawWorking : undefined;
   try {
     const db = await getDb();
     const rows = await db.query<Record<string, unknown>>(
@@ -979,7 +983,7 @@ router.post("/:id/publish", requireSession, async (req, res) => {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
-    await publishRow(rows[0], { expectedVersion }, session, res);
+    await publishRow(rows[0], { expectedVersion, expectedWorkingVersion }, session, res);
   } catch (err) {
     sendServerError(res, "content", err);
   }

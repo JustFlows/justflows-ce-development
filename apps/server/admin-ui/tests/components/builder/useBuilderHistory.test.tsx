@@ -123,3 +123,58 @@ describe("useBuilderHistory", () => {
     expect(h.apply).toHaveBeenCalledWith(["a"]);
   });
 });
+
+describe("useBuilderHistory keyed steps", () => {
+  function keyed(initial: string[]) {
+    let value = initial;
+    const apply = vi.fn((next: string[]) => {
+      value = next;
+    });
+    const view = renderHook(({ current }) => useBuilderHistory(current, apply), { initialProps: { current: value } });
+    return {
+      apply,
+      result: view.result,
+      edit(next: string[], coalesce: string | null) {
+        act(() => {
+          value = next;
+          view.result.current.record(next, { coalesce });
+        });
+        view.rerender({ current: next });
+      },
+    };
+  }
+
+  it("merges quick edits to the same block into one step", () => {
+    const h = keyed(["a"]);
+    h.edit(["ab"], "props:p1");
+    h.edit(["abc"], "props:p1");
+    act(() => h.result.current.undo());
+    expect(h.apply).toHaveBeenLastCalledWith(["a"]);
+    expect(h.result.current.canUndo).toBe(false);
+  });
+
+  it("keeps a quick structural edit separate from typing before it", () => {
+    const h = keyed(["a"]);
+    h.edit(["ab"], "props:p1");
+    h.edit(["ab", "new"], null);
+    act(() => h.result.current.undo());
+    expect(h.apply).toHaveBeenLastCalledWith(["ab"]);
+    expect(h.result.current.canUndo).toBe(true);
+  });
+
+  it("never merges two structural edits, however fast", () => {
+    const h = keyed(["a"]);
+    h.edit(["a", "b"], null);
+    h.edit(["a", "b", "c"], null);
+    act(() => h.result.current.undo());
+    expect(h.apply).toHaveBeenLastCalledWith(["a", "b"]);
+  });
+
+  it("starts a new step when typing moves to another block", () => {
+    const h = keyed(["a"]);
+    h.edit(["ab"], "props:p1");
+    h.edit(["abz"], "props:p2");
+    act(() => h.result.current.undo());
+    expect(h.apply).toHaveBeenLastCalledWith(["ab"]);
+  });
+});
