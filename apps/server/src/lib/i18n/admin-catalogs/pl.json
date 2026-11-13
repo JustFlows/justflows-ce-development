@@ -1339,6 +1339,49 @@
         "click": "Click"
       },
       "checklistItem": "Checklist item"
+    },
+    "shell": {
+      "toolbar": "Narzędzia kreatora",
+      "library": "Bloki",
+      "inspector": "Ustawienia",
+      "canvas": "Obszar roboczy",
+      "breadcrumbs": "Położenie zaznaczonego bloku",
+      "history": "Historia",
+      "breakpoint": "Szerokość podglądu",
+      "zoom": "Powiększenie",
+      "unsaved": "Niezapisane zmiany",
+      "saveFailed": "Nie udało się zapisać",
+      "retry": "Spróbuj ponownie",
+      "leaveUnsaved": "Masz niezapisane zmiany. Mimo to zamknąć kreator?",
+      "breakpointLabel": {
+        "desktop": "Komputer",
+        "tablet": "Tablet",
+        "mobile": "Telefon"
+      },
+      "context": {
+        "page": "Strona",
+        "post": "Wpis",
+        "header": "Nagłówek globalny",
+        "footer": "Stopka globalna",
+        "template": "Szablon",
+        "reusable": "Blok wielokrotnego użytku",
+        "pattern": "Wzorzec",
+        "fragment": "Treść"
+      },
+      "impact": {
+        "header": "Zmiany pojawią się na każdej stronie z tym nagłówkiem.",
+        "footer": "Zmiany pojawią się na każdej stronie.",
+        "template": "Zmiany dotyczą każdej strony wyświetlanej tym szablonem.",
+        "reusable": "Zmiany pojawią się wszędzie, gdzie użyto tego bloku."
+      },
+      "tab": {
+        "content": "Treść",
+        "style": "Styl",
+        "layout": "Układ",
+        "responsive": "Responsywność",
+        "interactions": "Interakcje",
+        "advanced": "Zaawansowane"
+      }
     }
   },
   "dashboard": {

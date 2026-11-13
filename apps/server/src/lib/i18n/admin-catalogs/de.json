@@ -1344,6 +1344,49 @@
         "click": "Click"
       },
       "checklistItem": "Checklist item"
+    },
+    "shell": {
+      "toolbar": "Builder-Werkzeuge",
+      "library": "Blöcke",
+      "inspector": "Einstellungen",
+      "canvas": "Arbeitsfläche",
+      "breadcrumbs": "Position des ausgewählten Blocks",
+      "history": "Verlauf",
+      "breakpoint": "Vorschaubreite",
+      "zoom": "Zoom",
+      "unsaved": "Ungespeicherte Änderungen",
+      "saveFailed": "Speichern fehlgeschlagen",
+      "retry": "Erneut versuchen",
+      "leaveUnsaved": "Es gibt ungespeicherte Änderungen. Den Builder trotzdem verlassen?",
+      "breakpointLabel": {
+        "desktop": "Desktop",
+        "tablet": "Tablet",
+        "mobile": "Mobil"
+      },
+      "context": {
+        "page": "Seite",
+        "post": "Beitrag",
+        "header": "Globaler Header",
+        "footer": "Globaler Footer",
+        "template": "Vorlage",
+        "reusable": "Wiederverwendbarer Block",
+        "pattern": "Muster",
+        "fragment": "Inhalt"
+      },
+      "impact": {
+        "header": "Änderungen erscheinen auf jeder Seite, die diesen Header nutzt.",
+        "footer": "Änderungen erscheinen auf jeder Seite.",
+        "template": "Änderungen betreffen jede Seite, die diese Vorlage darstellt.",
+        "reusable": "Änderungen erscheinen überall, wo dieser Block verwendet wird."
+      },
+      "tab": {
+        "content": "Inhalt",
+        "style": "Stil",
+        "layout": "Layout",
+        "responsive": "Responsiv",
+        "interactions": "Interaktionen",
+        "advanced": "Erweitert"
+      }
     }
   },
   "dashboard": {

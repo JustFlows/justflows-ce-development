@@ -1339,6 +1339,49 @@
         "click": "Click"
       },
       "checklistItem": "Checklist item"
+    },
+    "shell": {
+      "toolbar": "Builder tools",
+      "library": "Blocks",
+      "inspector": "Settings",
+      "canvas": "Canvas",
+      "breadcrumbs": "Selected block location",
+      "history": "History",
+      "breakpoint": "Preview width",
+      "zoom": "Zoom",
+      "unsaved": "Unsaved changes",
+      "saveFailed": "Save failed",
+      "retry": "Try again",
+      "leaveUnsaved": "You have unsaved changes. Leave the builder anyway?",
+      "breakpointLabel": {
+        "desktop": "Desktop",
+        "tablet": "Tablet",
+        "mobile": "Mobile"
+      },
+      "context": {
+        "page": "Page",
+        "post": "Post",
+        "header": "Global header",
+        "footer": "Global footer",
+        "template": "Template",
+        "reusable": "Reusable block",
+        "pattern": "Pattern",
+        "fragment": "Content"
+      },
+      "impact": {
+        "header": "Changes appear on every page that uses this header.",
+        "footer": "Changes appear on every page.",
+        "template": "Changes affect every page this template renders.",
+        "reusable": "Changes appear everywhere this block is used."
+      },
+      "tab": {
+        "content": "Content",
+        "style": "Style",
+        "layout": "Layout",
+        "responsive": "Responsive",
+        "interactions": "Interactions",
+        "advanced": "Advanced"
+      }
     }
   },
   "dashboard": {

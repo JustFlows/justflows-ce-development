@@ -16,7 +16,9 @@ import { GRID_BLOCK_TYPE } from "./grid";
 import MediaImageField from "../MediaImageField";
 import { useMergeTags } from "../../lib/merge-tags";
 import { useThemeStyleTokens } from "../../lib/theme-style-tokens";
-import { inspectorSections } from "./inspector-sections";
+import { inspectorSections, type InspectorSections } from "./inspector-sections";
+import { INSPECTOR_FIELDS } from "@justflows/blocks";
+import { INSPECTOR_TABS, type InspectorTab } from "./shell/builder-prefs";
 
 
 const fieldLabel: React.CSSProperties = {
@@ -146,6 +148,25 @@ interface BlockInspectorProps {
   onConvertToReusable?: (ref: string) => void;
   /** Only the block's own fields: no title, style, layout, animation, or JSON panels (widget rows). */
   compact?: boolean;
+  /** Inspector tab to show, remembered per user by the builder shell. Defaults to Content. */
+  tab?: InspectorTab;
+  onTabChange?: (tab: InspectorTab) => void;
+}
+
+/** A copy of the section switches limited to the given layout groups, for one inspector tab. */
+function onlySections(
+  sections: InspectorSections,
+  groups: ReadonlyArray<keyof typeof INSPECTOR_FIELDS>,
+): InspectorSections {
+  const allowed = new Set<string>(groups.flatMap((group) => INSPECTOR_FIELDS[group]));
+  return {
+    ...sections,
+    spacing: groups.includes("spacing") && sections.spacing,
+    size: groups.includes("size") && sections.size,
+    appearance: groups.includes("appearance") && sections.appearance,
+    colors: groups.includes("colors") && sections.colors,
+    field: (name) => allowed.has(name) && sections.field(name),
+  };
 }
 
 export default function BlockInspector({
@@ -160,8 +181,13 @@ export default function BlockInspector({
   onReloadReusable,
   onConvertToReusable,
   compact = false,
+  tab: requestedTab = "content",
+  onTabChange,
 }: BlockInspectorProps) {
   const { t } = useT();
+  const [localTab, setLocalTab] = useState<InspectorTab>(requestedTab);
+  const activeRequest = onTabChange ? requestedTab : localTab;
+  const selectTab = (next: InspectorTab) => (onTabChange ? onTabChange(next) : setLocalTab(next));
   const mergeTags = useMergeTags();
   const { blockControls } = useThemeStyleTokens();
   const p = block.props;
@@ -574,44 +600,104 @@ export default function BlockInspector({
 
   if (compact) return <div>{fields}</div>;
 
+  const styleSections = onlySections(sections, ["appearance", "colors"]);
+  const layoutSections = onlySections(sections, ["spacing", "size"]);
+  const showThemeControls = !catalogEntry?.schema?.style || Boolean(p.style && typeof p.style === "object");
+  const panels: Record<InspectorTab, React.ReactNode> = {
+    content: (
+      <>
+        {fields}
+        {onConvertToReusable && onReloadReusable && (
+          <ReusablePanel block={block} items={reusable} onReload={onReloadReusable} onConvert={onConvertToReusable} />
+        )}
+      </>
+    ),
+    style:
+      showThemeControls || styleSections.appearance || styleSections.colors ? (
+        <>
+          {showThemeControls && <ThemeBlockControls block={block} onChange={onChange} showAll={sections.themeVariables} />}
+          <BlockLayoutPanel block={block} onChange={onChange} sections={styleSections} />
+        </>
+      ) : null,
+    layout:
+      parentType === GRID_BLOCK_TYPE || layoutSections.spacing || layoutSections.size ? (
+        <>
+          {parentType === GRID_BLOCK_TYPE && <GridPlacementPanel block={block} columns={parentColumns} onChange={onChange} />}
+          <BlockLayoutPanel block={block} onChange={onChange} sections={layoutSections} />
+        </>
+      ) : null,
+    responsive: sections.advanced ? <BlockStylePanel block={block} onChange={onChange} part="devices" /> : null,
+    interactions: sections.animation ? (
+      <AnimationPanel
+        blockId={block.id}
+        value={p.animation}
+        onChange={(animation) => {
+          if (!animation) {
+            const next = { ...p };
+            delete next.animation;
+            onChange(next);
+            return;
+          }
+          onChange({ ...p, animation });
+        }}
+      />
+    ) : null,
+    advanced:
+      sections.advanced || onSyncBlock ? (
+        <>
+          {sections.advanced && <BlockStylePanel block={block} onChange={onChange} part="code" />}
+          {onSyncBlock && <BlockJsonPanel key={block.id} block={block} onApply={onSyncBlock} />}
+        </>
+      ) : null,
+  };
+  const tabs = INSPECTOR_TABS.filter((name) => panels[name] !== null);
+  const activeTab: InspectorTab = tabs.includes(activeRequest) ? activeRequest : "content";
+  const tabId = (name: InspectorTab) => `jf-inspector-${block.id}-tab-${name}`;
+  const panelId = `jf-inspector-${block.id}-panel`;
+
+  /** Arrow keys move between tabs, as the WAI-ARIA tabs pattern expects. */
+  const onTabKey = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const index = tabs.indexOf(activeTab);
+    const rtl = getComputedStyle(e.currentTarget).direction === "rtl";
+    const forward = rtl ? "ArrowLeft" : "ArrowRight";
+    const backward = rtl ? "ArrowRight" : "ArrowLeft";
+    let next: InspectorTab | undefined;
+    if (e.key === forward) next = tabs[(index + 1) % tabs.length];
+    else if (e.key === backward) next = tabs[(index - 1 + tabs.length) % tabs.length];
+    else if (e.key === "Home") next = tabs[0];
+    else if (e.key === "End") next = tabs[tabs.length - 1];
+    if (!next) return;
+    e.preventDefault();
+    selectTab(next);
+    document.getElementById(tabId(next))?.focus();
+  };
+
   return (
-    <div>
-      <div style={{ fontWeight: 700, fontSize: "0.75rem", color: "var(--jf-text-3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem" }}>
-        {catalogEntry?.icon} {catalogEntry?.title ?? block.type}
+    <div className="jf-inspector">
+      <div className="jf-inspector__title">
+        {catalogEntry?.icon} {block.editor?.label || catalogEntry?.title || block.type}
       </div>
-      {fields}
-      {(!catalogEntry?.schema?.style || (p.style && typeof p.style === "object")) && (
-        <ThemeBlockControls block={block} onChange={onChange} showAll={sections.themeVariables} />
-      )}
-      {sections.animation && (
-        <AnimationPanel
-          blockId={block.id}
-          value={p.animation}
-          onChange={(animation) => {
-            if (!animation) {
-              const next = { ...p };
-              delete next.animation;
-              onChange(next);
-              return;
-            }
-            onChange({ ...p, animation });
-          }}
-        />
-      )}
-      {parentType === GRID_BLOCK_TYPE && (
-        <GridPlacementPanel block={block} columns={parentColumns} onChange={onChange} />
-      )}
-      {onConvertToReusable && onReloadReusable && (
-        <ReusablePanel
-          block={block}
-          items={reusable}
-          onReload={onReloadReusable}
-          onConvert={onConvertToReusable}
-        />
-      )}
-      <BlockLayoutPanel block={block} onChange={onChange} sections={sections} />
-      {sections.advanced && <BlockStylePanel block={block} onChange={onChange} />}
-      {onSyncBlock && <BlockJsonPanel key={block.id} block={block} onApply={onSyncBlock} />}
+      <div className="jf-inspector__tabs" role="tablist" aria-label={t("builder.shell.inspector")}>
+        {tabs.map((name) => (
+          <button
+            key={name}
+            id={tabId(name)}
+            type="button"
+            role="tab"
+            className="jf-inspector__tab"
+            aria-selected={activeTab === name}
+            aria-controls={panelId}
+            tabIndex={activeTab === name ? 0 : -1}
+            onClick={() => selectTab(name)}
+            onKeyDown={onTabKey}
+          >
+            {t(`builder.shell.tab.${name}`)}
+          </button>
+        ))}
+      </div>
+      <div id={panelId} role="tabpanel" aria-labelledby={tabId(activeTab)} className="jf-inspector__panel">
+        {panels[activeTab]}
+      </div>
     </div>
   );
 }

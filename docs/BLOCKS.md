@@ -160,6 +160,14 @@ library (built under Theme builder → Header) via a dropdown rather than editin
 header chrome inline. A post gets the same block canvas and inspector but omits
 those page-level tools, so its document stays focused on the article body.
 
+Every block document (page, post, global header, footer, template) opens in the
+same builder layout: a toolbar with the editing context, undo/redo, preview
+width, zoom, and preview scheme; the block library; the canvas with breadcrumbs
+for the selected block; and settings grouped into Content, Style, Layout,
+Responsive, Interactions, and Advanced tabs. The global header, footer, and
+templates are flagged as site-wide. Panel, width, zoom, and tab choices are
+per-user browser preferences and are never stored in a document.
+
 URL fields on `core.button`, `core.hero`, `core.cta`, and `core.link-list` accept
 ordinary typed URLs and can also pick a published page or post by title. The
 picker stores a root-relative path such as `/about`; it does not create a live

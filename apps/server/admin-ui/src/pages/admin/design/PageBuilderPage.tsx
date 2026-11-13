@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "../../../admin-router";
 import PageBuilder, { type BlockDocument } from "@components/builder/PageBuilder";
@@ -6,6 +6,7 @@ import HeaderRefField from "@components/builder/HeaderRefField";
 import { fieldsWithHeaderRef, headerRefFromFields } from "../../../lib/page-header";
 import { fetchTypePattern, isEmptyBlockDocument, shouldSeedTypePattern, usesBlockEditor } from "../../../lib/content-layout";
 import { useT } from "../../../i18n/I18nProvider";
+import type { BuilderSaveState } from "@components/builder/shell/BuilderShell";
 
 interface ContentItem {
   id: string;
@@ -30,11 +31,16 @@ export default function PageBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const savedTimer = useRef<number | undefined>(undefined);
   const [error, setError] = useState("");
   const [mergeTags, setMergeTags] = useState<Record<string, string> | undefined>(undefined);
   const [blockEditor, setBlockEditor] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
+    setError("");
     fetch(`/api/content/${id}`)
       .then(async (r) => {
         const data = await r.json() as ContentItem & { error?: string };
@@ -59,7 +65,25 @@ export default function PageBuilderPage() {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, attempt]);
+
+  useEffect(() => () => window.clearTimeout(savedTimer.current), []);
+
+  /** Warn before a reload or tab close would lose unsaved changes. */
+  useEffect(() => {
+    if (!dirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty]);
+
+  const update = useCallback((patch: Partial<ContentItem>) => {
+    setItem((prev) => (prev ? { ...prev, ...patch } : prev));
+    setDirty(true);
+    setSaved(false);
+  }, []);
 
   const save = useCallback(async (publish = false) => {
     if (!item) return;
@@ -91,8 +115,10 @@ export default function PageBuilderPage() {
         if (!published.ok) throw new Error(body.error ?? t("pageBuilderPage.publishFailed"));
         setItem(body);
       }
+      setDirty(false);
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      window.clearTimeout(savedTimer.current);
+      savedTimer.current = window.setTimeout(() => setSaved(false), 2000);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -100,74 +126,74 @@ export default function PageBuilderPage() {
     }
   }, [item, id]);
 
-  if (loading) return <div className="jf-center">{t("pageBuilderPage.loading")}</div>;
+  if (loading && !item) {
+    return (
+      <div className="jf-center" role="status" aria-live="polite">
+        {t("pageBuilderPage.loading")}
+      </div>
+    );
+  }
 
   if (!item) {
     return (
       <div className="jf-center">
-        <div className="jf-alert jf-alert--error">{error || t("pageBuilderPage.notFound")}</div>
+        <div className="jf-alert jf-alert--error" role="alert">
+          <p>{error || t("pageBuilderPage.notFound")}</p>
+          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+            <button type="button" className="jf-btn jf-btn--primary" onClick={() => setAttempt((n) => n + 1)}>
+              {t("builder.shell.retry")}
+            </button>
+            <button type="button" className="jf-btn" onClick={() => navigate(`/admin/content/${id}`)}>
+              {t("common.back")}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   const isPage = usesBlockEditor(item.type, blockEditor);
   const previewUrl = item.slug ? `${item.slug.startsWith("/") ? item.slug : `/${item.slug}`}?preview=1` : null;
+  const saveState: BuilderSaveState = saving ? "saving" : error ? "error" : saved ? "saved" : dirty ? "dirty" : "idle";
 
   return (
-    <div className="jf-editor">
-      <header className="jf-editor__bar">
-        <button
-          type="button"
-          className="jf-btn jf-btn--onbar"
-          onClick={() => navigate(`/admin/content/${id}`)}
-        >
-          ← {t("common.back")}
-        </button>
-
-        <div className="jf-editor__title">
-          <div className="jf-editor__name">{item.title || t("pageBuilderPage.untitledPage")}</div>
-          <div className="jf-editor__sub">
-            {t("pageBuilderPage.statusLine", { status: item.status })}{item.hasWorkingRevision ? t("pageBuilderPage.draftChangesSuffix") : ""}
-          </div>
-        </div>
-
-        <div className="jf-editor__actions">
-          {isPage && (
-            <HeaderRefField
-              contentId={item.id}
-              value={headerRefFromFields(item.fields)}
-              onChange={(ref) =>
-                setItem((prev) => (prev ? { ...prev, fields: fieldsWithHeaderRef(prev.fields, ref) } : prev))
-              }
-              compact
-            />
-          )}
-          {saved && <span className="jf-editor__status jf-editor__status--ok">✓ {t("common.saved")}</span>}
-          {error && <span className="jf-editor__status jf-editor__status--error">{error}</span>}
-          {previewUrl && (
-            <a className="jf-btn jf-btn--onbar" href={previewUrl} target="_blank" rel="noreferrer">
-              {t("pageBuilderPage.preview")} ↗
-            </a>
-          )}
-          <button type="button" className="jf-btn jf-btn--onbar" disabled={saving} onClick={() => save(false)}>
-            {saving ? t("common.saving") : t("common.save")}
-          </button>
-          {item.status !== "published" || item.hasWorkingRevision ? (
-            <button type="button" className="jf-btn jf-btn--primary" disabled={saving} onClick={() => save(true)}>
-              {t("content.publish")}
+    <PageBuilder
+      value={item.blocks ?? { version: 1, blocks: [] }}
+      onChange={(blocks) => update({ blocks })}
+      isPage={isPage}
+      mergeTags={mergeTags}
+      context={isPage ? "page" : "post"}
+      shellBar={{
+        title: item.title || t("pageBuilderPage.untitledPage"),
+        subtitle: `${t("pageBuilderPage.statusLine", { status: item.status })}${item.hasWorkingRevision ? t("pageBuilderPage.draftChangesSuffix") : ""}`,
+        onExit: () => {
+          if (dirty && !window.confirm(t("builder.shell.leaveUnsaved"))) return;
+          navigate(`/admin/content/${id}`);
+        },
+        saveState,
+        saveError: error,
+        previewUrl,
+        actions: (
+          <>
+            {isPage && (
+              <HeaderRefField
+                contentId={item.id}
+                value={headerRefFromFields(item.fields)}
+                onChange={(ref) => update({ fields: fieldsWithHeaderRef(item.fields, ref) })}
+                compact
+              />
+            )}
+            <button type="button" className="jf-btn jf-btn--onbar" disabled={saving} onClick={() => save(false)}>
+              {saving ? t("common.saving") : t("common.save")}
             </button>
-          ) : null}
-        </div>
-      </header>
-
-      <div className="jf-editor__body">
-        <PageBuilder
-          value={item.blocks ?? { version: 1, blocks: [] }}
-          onChange={(blocks) => setItem((prev) => (prev ? { ...prev, blocks } : prev))}
-          isPage={isPage}
-          mergeTags={mergeTags}
-        />
-      </div>
-    </div>
+            {item.status !== "published" || item.hasWorkingRevision || dirty ? (
+              <button type="button" className="jf-btn jf-btn--primary" disabled={saving} onClick={() => save(true)}>
+                {t("content.publish")}
+              </button>
+            ) : null}
+          </>
+        ),
+      }}
+    />
   );
 }

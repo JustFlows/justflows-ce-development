@@ -29,6 +29,10 @@ import {
 } from "../../lib/page-header";
 import { MergeTagsContext } from "../../lib/merge-tags";
 import { PreviewSchemeContext, THEME_PREVIEW_SCOPE, type PreviewScheme } from "./BlockPreview";
+import BuilderShell, { type BuilderContext, type BuilderShellBar } from "./shell/BuilderShell";
+import { useBuilderPrefs } from "./shell/builder-prefs";
+import { selectionCrumbs } from "./shell/breadcrumbs";
+import { useOptionalSessionUserId } from "../SessionProvider";
 
 const PREVIEW_SCHEME_KEY = "jf-builder-preview-scheme";
 
@@ -69,6 +73,10 @@ interface PageBuilderProps {
   /** This value is a content fragment (a mega-menu region, a reusable snippet), not a whole page —
    * its root offers every allowed block directly instead of requiring a Section wrapper first. */
   flatCanvas?: boolean;
+  /** What is being edited; drives the shell's context badge and site-wide warning. */
+  context?: BuilderContext;
+  /** Top bar for a stand-alone builder route. Embedded builders leave it out. */
+  shellBar?: BuilderShellBar;
 }
 
 export default function PageBuilder({
@@ -84,8 +92,12 @@ export default function PageBuilder({
   allowedBlockTypes,
   enableKeyboardShortcut = true,
   flatCanvas = false,
+  context,
+  shellBar,
 }: PageBuilderProps) {
   const { t } = useT();
+  const [prefs, setPrefs] = useBuilderPrefs(useOptionalSessionUserId());
+  const shellContext: BuilderContext = context ?? (headerOnly ? "header" : isPage ? "page" : "post");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [previewScheme, setPreviewSchemeState] = useState<PreviewScheme>(initialPreviewScheme);
   const setPreviewScheme = (scheme: PreviewScheme) => {
@@ -306,41 +318,19 @@ export default function PageBuilder({
     [pageHeader, menus, siteDefaultSlug],
   );
 
-  const toolbar = (
-    <div className="jf-builder-toolbar">
-      <button
-        type="button"
-        className="jf-builder-toolbar__btn"
-        onClick={history.undo}
-        disabled={!history.canUndo}
-        title={t("ui.pageBuilder.undoZ")}
-      >
-        {t("ui.pageBuilder.undo")}</button>
-      <button
-        type="button"
-        className="jf-builder-toolbar__btn"
-        onClick={history.redo}
-        disabled={!history.canRedo}
-        title={t("ui.pageBuilder.redoZ")}
-      >
-        {t("ui.pageBuilder.redo")}</button>
-      <div className="jf-builder-toolbar__segmented" role="group" aria-label={t("builder.previewSchemeHint")} title={t("builder.previewSchemeHint")}>
-        {(["light", "dark"] as const).map((scheme) => (
-          <button
-            key={scheme}
-            type="button"
-            className="jf-builder-toolbar__btn"
-            aria-pressed={previewScheme === scheme}
-            onClick={() => setPreviewScheme(scheme)}
-          >
-            {scheme === "light" ? `☀ ${t("builder.previewLight")}` : `☾ ${t("builder.previewDark")}`}
-          </button>
-        ))}
-      </div>
-      <span className="jf-builder-toolbar__count">
-        {t((headerOnly ? headerBlocks.length : blocks.length) === 1 ? "builder.blockCountOne" : "builder.blockCountMany", { count: headerOnly ? headerBlocks.length : blocks.length })}
-      </span>
-    </div>
+  const breadcrumbs = useMemo(
+    () =>
+      selectionCrumbs({
+        selectedId,
+        blocks,
+        headerBlocks,
+        headerSelectedId: HEADER_SELECTED_ID,
+        headerOnly,
+        rootLabel: t(`builder.shell.context.${shellContext}`),
+        headerLabel: t("builder.shell.context.header"),
+        typeLabel: (type) => catalogMap.get(type)?.title,
+      }),
+    [selectedId, blocks, headerBlocks, headerOnly, catalogMap, shellContext, t],
   );
 
   const canvas = (
@@ -396,6 +386,8 @@ export default function PageBuilder({
         reusable={reusable}
         onReloadReusable={reloadReusable}
         onConvertToReusable={convertToReusable}
+        tab={prefs.inspectorTab}
+        onTabChange={(inspectorTab) => setPrefs({ inspectorTab })}
       />
     ) : (
       <PageJsonPanel
@@ -439,24 +431,19 @@ export default function PageBuilder({
             </aside>
           </div>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "220px 1fr 280px",
-              height: "100%",
-              minHeight: 0,
-              background: "var(--jf-surface-3)",
-            }}
-          >
-            <aside
-              style={{
-                background: "var(--jf-surface)",
-                borderRight: "1px solid var(--jf-border)",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
+          <BuilderShell
+            context={shellContext}
+            bar={shellBar}
+            prefs={prefs}
+            onPrefsChange={setPrefs}
+            history={history}
+            previewScheme={previewScheme}
+            onPreviewSchemeChange={setPreviewScheme}
+            blockCount={headerOnly ? headerBlocks.length : blocks.length}
+            breadcrumbs={breadcrumbs}
+            onSelectCrumb={setSelectedId}
+            onCanvasBackgroundClick={() => setSelectedId(null)}
+            library={
               <BlockLibrary
                 catalog={catalog}
                 onAdd={addFromLibrary}
@@ -466,51 +453,17 @@ export default function PageBuilder({
                 isPage={isPage}
                 headerOnly={headerOnly}
               />
-            </aside>
-            <main
-              style={{ overflow: "auto", padding: "1.25rem" }}
-              onClick={() => setSelectedId(null)}
-            >
-              <div style={{ maxWidth: 900, margin: "0 auto" }} onClick={(e) => e.stopPropagation()}>
-                {toolbar}
-              </div>
-              <div
-                style={{
-                  position: "relative",
-                  isolation: "isolate",
-                  maxWidth: 900,
-                  margin: "0 auto",
-                  background: "var(--jf-surface)",
-                  borderRadius: 12,
-                  boxShadow: "var(--jf-shadow-sm)",
-                  padding: "1rem",
-                  minHeight: "100%",
-                }}
-              >
-                {/**
-                 * The page's own background in the previewed scheme. A separate layer, so the
-                 * theme's scoped rules never reach the editor chrome around the blocks.
-                 */}
-                <div
-                  aria-hidden="true"
-                  className={THEME_PREVIEW_SCOPE}
-                  data-theme={previewScheme}
-                  style={{ position: "absolute", inset: 0, zIndex: -1, borderRadius: 12, margin: 0, padding: 0 }}
-                />
-                {canvas}
-              </div>
-            </main>
-            <aside
-              style={{
-                background: "var(--jf-surface)",
-                borderLeft: "1px solid var(--jf-border)",
-                overflow: "auto",
-                padding: "1rem",
-              }}
-            >
-              {inspector}
-            </aside>
-          </div>
+            }
+            inspector={inspector}
+            canvasBackdrop={
+              /**
+               * The page's own background in the previewed scheme. A separate layer, so the
+               * theme's scoped rules never reach the editor chrome around the blocks.
+               */
+              <div aria-hidden="true" className={`jf-shell__backdrop ${THEME_PREVIEW_SCOPE}`} data-theme={previewScheme} />
+            }
+            canvas={canvas}
+          />
         )}
       </BuilderDragProvider>
       </PreviewSchemeContext.Provider>

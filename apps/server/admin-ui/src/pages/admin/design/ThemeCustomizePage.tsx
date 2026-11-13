@@ -1052,7 +1052,7 @@ export default function CustomizeThemePage() {
                     {t("themeCustomize.editingFromDefaultSuffix")}
                   </div>
                 )}
-                <PageBuilder value={templateDoc} onChange={setTemplateDoc} />
+                <PageBuilder value={templateDoc} onChange={setTemplateDoc} context="template" />
               </div>
             ) : (
               <p className="jf-field__hint" style={{ padding: "1rem" }}>
@@ -1101,7 +1101,7 @@ export default function CustomizeThemePage() {
         </div>
       ) : tab === "footer" ? (
         <div className="jf-editor__body">
-          <PageBuilder value={footer} onChange={setFooter} />
+          <PageBuilder value={footer} onChange={setFooter} context="footer" />
         </div>
       ) : tab === "header" ? (
         <div className="jf-editor__body">

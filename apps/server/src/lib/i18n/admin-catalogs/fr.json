@@ -1344,6 +1344,49 @@
         "click": "Click"
       },
       "checklistItem": "Checklist item"
+    },
+    "shell": {
+      "toolbar": "Outils du constructeur",
+      "library": "Blocs",
+      "inspector": "Réglages",
+      "canvas": "Canevas",
+      "breadcrumbs": "Emplacement du bloc sélectionné",
+      "history": "Historique",
+      "breakpoint": "Largeur d’aperçu",
+      "zoom": "Zoom",
+      "unsaved": "Modifications non enregistrées",
+      "saveFailed": "Échec de l’enregistrement",
+      "retry": "Réessayer",
+      "leaveUnsaved": "Des modifications ne sont pas enregistrées. Quitter le constructeur quand même ?",
+      "breakpointLabel": {
+        "desktop": "Ordinateur",
+        "tablet": "Tablette",
+        "mobile": "Mobile"
+      },
+      "context": {
+        "page": "Page",
+        "post": "Article",
+        "header": "En-tête global",
+        "footer": "Pied de page global",
+        "template": "Modèle",
+        "reusable": "Bloc réutilisable",
+        "pattern": "Composition",
+        "fragment": "Contenu"
+      },
+      "impact": {
+        "header": "Les modifications apparaissent sur chaque page qui utilise cet en-tête.",
+        "footer": "Les modifications apparaissent sur toutes les pages.",
+        "template": "Les modifications s’appliquent à chaque page affichée avec ce modèle.",
+        "reusable": "Les modifications apparaissent partout où ce bloc est utilisé."
+      },
+      "tab": {
+        "content": "Contenu",
+        "style": "Style",
+        "layout": "Mise en page",
+        "responsive": "Adaptatif",
+        "interactions": "Interactions",
+        "advanced": "Avancé"
+      }
     }
   },
   "dashboard": {

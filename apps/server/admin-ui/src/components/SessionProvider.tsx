@@ -65,6 +65,15 @@ export function useSession(): SessionValue {
   return ctx;
 }
 
+/**
+ * The signed-in user's id, or null. Unlike `useSession` it does not require a
+ * provider, so components that also render in isolation (builders embedded in
+ * other screens, tests) can use it for per-user preferences.
+ */
+export function useOptionalSessionUserId(): string | null {
+  return useContext(SessionContext)?.session?.id ?? null;
+}
+
 /** Convenience for the common case of just needing the role. */
 export function useSessionRole(): string | null {
   return useSession().session?.role ?? null;

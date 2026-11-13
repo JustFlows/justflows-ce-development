@@ -1341,6 +1341,49 @@
         "click": "Click"
       },
       "checklistItem": "Checklist item"
+    },
+    "shell": {
+      "toolbar": "Builder-gereedschap",
+      "library": "Blokken",
+      "inspector": "Instellingen",
+      "canvas": "Canvas",
+      "breadcrumbs": "Locatie van het geselecteerde blok",
+      "history": "Geschiedenis",
+      "breakpoint": "Voorbeeldbreedte",
+      "zoom": "Zoom",
+      "unsaved": "Niet-opgeslagen wijzigingen",
+      "saveFailed": "Opslaan mislukt",
+      "retry": "Opnieuw proberen",
+      "leaveUnsaved": "Je hebt niet-opgeslagen wijzigingen. Toch de builder verlaten?",
+      "breakpointLabel": {
+        "desktop": "Desktop",
+        "tablet": "Tablet",
+        "mobile": "Mobiel"
+      },
+      "context": {
+        "page": "Pagina",
+        "post": "Bericht",
+        "header": "Algemene header",
+        "footer": "Algemene footer",
+        "template": "Sjabloon",
+        "reusable": "Herbruikbaar blok",
+        "pattern": "Patroon",
+        "fragment": "Inhoud"
+      },
+      "impact": {
+        "header": "Wijzigingen verschijnen op elke pagina die deze header gebruikt.",
+        "footer": "Wijzigingen verschijnen op elke pagina.",
+        "template": "Wijzigingen gelden voor elke pagina die dit sjabloon toont.",
+        "reusable": "Wijzigingen verschijnen overal waar dit blok staat."
+      },
+      "tab": {
+        "content": "Inhoud",
+        "style": "Stijl",
+        "layout": "Indeling",
+        "responsive": "Responsief",
+        "interactions": "Interacties",
+        "advanced": "Geavanceerd"
+      }
     }
   },
   "dashboard": {

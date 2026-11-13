@@ -1344,6 +1344,49 @@
         "click": "Click"
       },
       "checklistItem": "Checklist item"
+    },
+    "shell": {
+      "toolbar": "Herramientas del constructor",
+      "library": "Bloques",
+      "inspector": "Ajustes",
+      "canvas": "Lienzo",
+      "breadcrumbs": "Ubicación del bloque seleccionado",
+      "history": "Historial",
+      "breakpoint": "Ancho de vista previa",
+      "zoom": "Zoom",
+      "unsaved": "Cambios sin guardar",
+      "saveFailed": "No se pudo guardar",
+      "retry": "Reintentar",
+      "leaveUnsaved": "Hay cambios sin guardar. ¿Salir del constructor de todos modos?",
+      "breakpointLabel": {
+        "desktop": "Escritorio",
+        "tablet": "Tableta",
+        "mobile": "Móvil"
+      },
+      "context": {
+        "page": "Página",
+        "post": "Entrada",
+        "header": "Cabecera global",
+        "footer": "Pie de página global",
+        "template": "Plantilla",
+        "reusable": "Bloque reutilizable",
+        "pattern": "Patrón",
+        "fragment": "Contenido"
+      },
+      "impact": {
+        "header": "Los cambios aparecen en cada página que usa esta cabecera.",
+        "footer": "Los cambios aparecen en todas las páginas.",
+        "template": "Los cambios afectan a cada página que muestra esta plantilla.",
+        "reusable": "Los cambios aparecen en todos los lugares donde se usa este bloque."
+      },
+      "tab": {
+        "content": "Contenido",
+        "style": "Estilo",
+        "layout": "Diseño",
+        "responsive": "Adaptable",
+        "interactions": "Interacciones",
+        "advanced": "Avanzado"
+      }
     }
   },
   "dashboard": {

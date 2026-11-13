@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useT } from "../../i18n/I18nProvider";
-import PageBuilder from "../builder/PageBuilder";
+
+/** Loaded only when a region switches to custom blocks, so the Menus page does not ship the builder. */
+const PageBuilder = lazy(() => import("../builder/PageBuilder"));
 import type { MegaMenuRegion } from "./menu-tree";
 import {
   detectRegionMode,
@@ -145,14 +147,16 @@ export default function MegaRegionEditor({
               <div className="jf-field">
                 <span className="jf-field__label">{t("menus.mega.content")}</span>
                 <p className="jf-field__hint">{t("menus.mega.customHint")}</p>
-                <PageBuilder
-                  value={{ version: 1, blocks: region.blocks }}
-                  onChange={(doc) => onChange({ ...region, blocks: doc.blocks })}
-                  compact
-                  flatCanvas
-                  allowedBlockTypes={MEGA_MENU_SAFE_BLOCK_KINDS}
-                  enableKeyboardShortcut={false}
-                />
+                <Suspense fallback={<p className="jf-field__hint" role="status">{t("pageBuilderPage.loading")}</p>}>
+                  <PageBuilder
+                    value={{ version: 1, blocks: region.blocks }}
+                    onChange={(doc) => onChange({ ...region, blocks: doc.blocks })}
+                    compact
+                    flatCanvas
+                    allowedBlockTypes={MEGA_MENU_SAFE_BLOCK_KINDS}
+                    enableKeyboardShortcut={false}
+                  />
+                </Suspense>
               </div>
             )}
 
