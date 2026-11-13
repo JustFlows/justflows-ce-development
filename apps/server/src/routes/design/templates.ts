@@ -112,6 +112,7 @@ router.put("/:slug", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) => 
     const { blocks, revision } = await writeStoredTemplate(ctx.siteId, ctx.themeId, slug, body.blocks, {
       draft: body.draft,
       expectedRevision: body.expectedRevision,
+      actorId: req.session?.userId ?? null,
     });
     if (!body.draft) await revalidateOnUpdate("theme");
     // Advisory only — a template may legitimately reference a plugin block that

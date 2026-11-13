@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import PageBuilder from "@components/builder/PageBuilder";
 import { BuilderShellEmpty, type BuilderSaveState, type BuilderShellBar } from "@components/builder/shell/BuilderShell";
+import RevisionsDialog from "@components/builder/shell/RevisionsDialog";
+import type { BlockNode } from "@components/builder/types";
+import { getDocumentHistoryDoc, listDocumentHistory } from "../../../lib/document-history";
 import {
   DEFAULT_PAGE_HEADER,
   diffPageHeader,
@@ -19,6 +22,15 @@ interface ActiveLanguage {
 }
 
 const BASE_LOCALE = "";
+
+/** Every block in a header library, base and per-locale, for comparing versions. */
+function libraryBlocks(lib: SiteHeaderLibraryDTO | null): BlockNode[] {
+  if (!lib || !Array.isArray(lib.entries)) return [];
+  return lib.entries.flatMap((entry) => [
+    ...((entry.base?.blocks ?? []) as BlockNode[]),
+    ...Object.values(entry.overrides ?? {}).flatMap((patch) => ((patch as { blocks?: unknown })?.blocks ?? []) as BlockNode[]),
+  ]);
+}
 
 function emptyLib(): SiteHeaderLibraryDTO {
   return { version: 1, defaultId: null, entries: [] };
@@ -61,6 +73,7 @@ export default function HeaderLibraryEditor({ bar, siteNav, extraActions }: Head
   const [revision, setRevision] = useState(0);
   const [conflict, setConflict] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
+  const [revisionsOpen, setRevisionsOpen] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -245,6 +258,9 @@ export default function HeaderLibraryEditor({ bar, siteNav, extraActions }: Head
     actions: (
       <>
         {extraActions}
+        <button type="button" className="jf-btn jf-btn--onbar" disabled={loading} onClick={() => setRevisionsOpen(true)}>
+          {t("builder.shell.revisions")}
+        </button>
         <button type="button" className="jf-btn jf-btn--onbar" disabled={saving || loading} onClick={() => void save(false)}>
           {saving ? t("common.saving") : t("content.saveDraft")}
         </button>
@@ -356,15 +372,46 @@ export default function HeaderLibraryEditor({ bar, siteNav, extraActions }: Head
     </>
   );
 
+  const revisionsDialog = (
+    <RevisionsDialog
+      open={revisionsOpen}
+      onClose={() => setRevisionsOpen(false)}
+      loadItems={() =>
+        listDocumentHistory("template_part", "header", (state) =>
+          state === "published" ? t("builder.shell.statePublished") : t("builder.shell.stateDraft"),
+        )
+      }
+      loadBlocks={async (id) => libraryBlocks((await getDocumentHistoryDoc("template_part", "header", id)) as SiteHeaderLibraryDTO)}
+      currentBlocks={libraryBlocks(lib)}
+      onRestore={async (id) => {
+        const restored = (await getDocumentHistoryDoc("template_part", "header", id)) as SiteHeaderLibraryDTO | null;
+        if (!restored || !Array.isArray(restored.entries)) return;
+        setLib(restored);
+        setEntryId((prev) =>
+          restored.entries.some((e) => e.id === prev) ? prev : (restored.defaultId ?? restored.entries[0]?.id ?? ""),
+        );
+        setLocale(BASE_LOCALE);
+        setStatus("");
+        setDirty(true);
+      }}
+      restoreHint={t("builder.shell.restoreHintPart")}
+    />
+  );
+
   if (loading || !entry) {
     return (
-      <BuilderShellEmpty bar={shellBar} sitePanel={sitePanel}>
-        {loading ? <span role="status">{t("headerLibrary.loading")}</span> : <p>{t("headerLibrary.emptyState")}</p>}
-      </BuilderShellEmpty>
+      <>
+        {revisionsDialog}
+        <BuilderShellEmpty bar={shellBar} sitePanel={sitePanel}>
+          {loading ? <span role="status">{t("headerLibrary.loading")}</span> : <p>{t("headerLibrary.emptyState")}</p>}
+        </BuilderShellEmpty>
+      </>
     );
   }
 
   return (
+    <>
+    {revisionsDialog}
     <PageBuilder
       key={`${entry.id}:${locale}`}
       value={{ version: 1, blocks: effectiveConfig.blocks }}
@@ -377,5 +424,6 @@ export default function HeaderLibraryEditor({ bar, siteNav, extraActions }: Head
       shellBar={shellBar}
       sitePanel={sitePanel}
     />
+    </>
   );
 }

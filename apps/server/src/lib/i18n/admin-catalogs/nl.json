@@ -1399,7 +1399,23 @@
       "discard": "Weggooien",
       "sessionExpired": "Je sessie is verlopen. Log in een ander tabblad opnieuw in en sla dan op. Je wijzigingen blijven in deze browser bewaard.",
       "conflictPart": "Iemand anders heeft dit opgeslagen nadat je het opende. Je wijzigingen staan er nog en zijn niet opgeslagen.",
-      "overwritePartConfirm": "De nieuwere versie vervangen door de jouwe? De wijzigingen van de ander gaan dan verloren."
+      "overwritePartConfirm": "De nieuwere versie vervangen door de jouwe? De wijzigingen van de ander gaan dan verloren.",
+      "revisions": "Revisies",
+      "revisionsLoading": "Versies laden…",
+      "revisionsEmpty": "Nog geen eerdere versies. Elke keer opslaan voegt er een toe.",
+      "revisionsPick": "Kies een versie om te zien wat terugzetten zou veranderen.",
+      "revisionsSame": "Deze versie heeft dezelfde blokken als wat je nu bewerkt.",
+      "revisionsCompare": "Vergeleken met wat je nu bewerkt, zou terugzetten van deze versie:",
+      "revisionsAdded": "{count} blok(ken) toevoegen",
+      "revisionsRemoved": "{count} blok(ken) verwijderen",
+      "revisionsChanged": "{count} blok(ken) wijzigen",
+      "revisionsMoved": "{count} blok(ken) verplaatsen",
+      "revisionsRestore": "Deze versie terugzetten",
+      "restoreHintPage": "Terugzetten slaat deze versie op als concept van de pagina. De gepubliceerde pagina verandert pas als je publiceert.",
+      "restoreHintPart": "Terugzetten laadt deze versie in de editor. Sla een concept op of publiceer om hem te houden.",
+      "restoreUnsavedConfirm": "Terugzetten vervangt je niet-opgeslagen wijzigingen. Ze blijven in deze browser bewaard en zijn daarna terug te zetten. Doorgaan?",
+      "stateDraft": "Concept",
+      "statePublished": "Gepubliceerd"
     }
   },
   "dashboard": {

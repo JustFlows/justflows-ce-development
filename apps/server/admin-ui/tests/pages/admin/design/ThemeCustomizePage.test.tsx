@@ -215,3 +215,41 @@ describe("ThemeCustomizePage site part conflicts", () => {
     expect(await screen.findByText(/Someone else saved this after you opened it/)).toBeInTheDocument();
   });
 });
+
+describe("ThemeCustomizePage site part revisions", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    localStorage.clear();
+  });
+
+  it("lists footer versions and loads one into the editor without saving", async () => {
+    mockFetch();
+    mockSiteParts();
+    const base = vi.mocked(fetch).getMockImplementation()!;
+    const puts: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (init?.method === "PUT") puts.push(url);
+        if (url === "/api/document-history?kind=template_part&key=footer") {
+          return jsonResponse({ items: [{ id: "h1", revision: 2, state: "published", createdAt: "2026-11-12T08:00:00Z", createdByName: "Ada" }] });
+        }
+        if (url === "/api/document-history/h1?kind=template_part&key=footer") {
+          return jsonResponse({ doc: { version: 1, blocks: [{ id: "f1", type: "core.paragraph", version: 1, props: {} }] } });
+        }
+        return base(input);
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage("/admin/themes/customize?tab=footer");
+
+    await user.click(await screen.findByRole("button", { name: "Revisions" }));
+    await user.click(await screen.findByRole("button", { name: /Published · Ada/ }));
+    expect(await screen.findByRole("heading", { name: /Add 1 block/ })).toBeInTheDocument();
+    expect(screen.getByText(/Save a draft or publish to keep it/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Restore this version" }));
+    expect(await screen.findByText("1 block")).toBeInTheDocument();
+    expect(puts).toEqual([]);
+  });
+});

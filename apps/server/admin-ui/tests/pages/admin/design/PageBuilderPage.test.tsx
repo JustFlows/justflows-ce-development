@@ -46,6 +46,15 @@ beforeEach(() => {
         const r = patchHandler(init);
         return respond(r.status, r.body);
       }
+      if (url === "/api/content/p1/revisions") {
+        return respond(200, { items: [{ id: "rev-1", kind: "historical", createdAt: "2026-11-10T09:00:00Z", authorName: "Ada" }] });
+      }
+      if (url === "/api/content/p1/revisions/rev-1") {
+        return respond(200, { id: "rev-1", blocks: { version: 1, blocks: [{ id: "x", type: "core.paragraph", version: 1, props: {} }] } });
+      }
+      if (url === "/api/content/p1/revisions/rev-1/restore") {
+        return respond(200, { ...live, title: "About (restored)", workingRevision: { version: 3 } });
+      }
       if (url === "/api/content/p1") return respond(200, live);
       if (url.includes("/api/blocks")) return respond(200, { blocks: [] });
       return respond(200, {});
@@ -167,5 +176,33 @@ describe("PageBuilderPage saving", () => {
       await vi.advanceTimersByTimeAsync(15100);
     });
     expect(patches()).toHaveLength(2);
+  });
+});
+
+describe("PageBuilderPage revisions", () => {
+  it("restores a revision through the server with both version checks", async () => {
+    localStorage.clear();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderPage();
+    await user.click(await screen.findByRole("button", { name: "Revisions" }));
+    await user.click(await screen.findByRole("button", { name: /Ada/ }));
+    expect(await screen.findByRole("heading", { name: /Add 1 block/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Restore this version" }));
+
+    const restore = calls.find((c) => c.url.endsWith("/restore"))!;
+    expect(JSON.parse(String(restore.init!.body))).toEqual({ expectedVersion: 4, expectedWorkingVersion: 2 });
+    expect(await screen.findByRole("heading", { level: 1, name: "About (restored)" })).toBeInTheDocument();
+  });
+
+  it("asks before replacing unsaved edits and keeps them as a recovery copy", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderPage();
+    await user.click(await screen.findByRole("button", { name: "Restore them" }));
+    await user.click(screen.getByRole("button", { name: "Revisions" }));
+    await user.click(await screen.findByRole("button", { name: /Ada/ }));
+    await user.click(await screen.findByRole("button", { name: "Restore this version" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringMatching(/unsaved changes/));
+    expect(await screen.findByText(/This browser kept unsaved changes/)).toBeInTheDocument();
   });
 });

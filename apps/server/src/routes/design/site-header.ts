@@ -85,6 +85,7 @@ router.put("/", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) => {
     const { library, revision } = await writeSiteHeaderLibrary(siteId, lib, {
       draft: body.draft,
       expectedRevision: body.expectedRevision,
+      actorId: req.session?.userId ?? null,
     });
     if (!body.draft) await revalidateOnUpdate("theme");
     res.json({ library, revision });

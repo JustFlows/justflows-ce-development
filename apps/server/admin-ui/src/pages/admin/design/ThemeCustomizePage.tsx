@@ -5,6 +5,8 @@ import MediaImageField from "@components/MediaImageField";
 import PageBuilder, { type BlockDocument } from "@components/builder/PageBuilder";
 import HeaderLibraryEditor from "./HeaderLibraryEditor";
 import { BuilderShellEmpty, type BuilderSaveState, type BuilderShellBar } from "@components/builder/shell/BuilderShell";
+import RevisionsDialog from "@components/builder/shell/RevisionsDialog";
+import { docBlocks, getDocumentHistoryDoc, listDocumentHistory } from "../../../lib/document-history";
 import MenusPage from "./MenusPage";
 import { useT } from "../../../i18n/I18nProvider";
 
@@ -209,6 +211,7 @@ export default function CustomizeThemePage() {
   const [templateRevision, setTemplateRevision] = useState(0);
   /** Which part's save was refused because another editor saved first. */
   const [partConflict, setPartConflict] = useState<"footer" | "template" | null>(null);
+  const [partRevisionsOpen, setPartRevisionsOpen] = useState(false);
 
   const loadFooter = useCallback(async () => {
     try {
@@ -749,6 +752,13 @@ export default function CustomizeThemePage() {
         {savingAs ? t("common.saving") : t("themeCustomize.saveAsButton")}
       </button>
     );
+    const revisionsButton = (
+      <button type="button" className="jf-btn jf-btn--onbar" onClick={() => setPartRevisionsOpen(true)}>
+        {t("builder.shell.revisions")}
+      </button>
+    );
+    const historyState = (state: "draft" | "published") =>
+      state === "published" ? t("builder.shell.statePublished") : t("builder.shell.stateDraft");
     const baseBar = {
       title: t("themeCustomize.headerTitle", { themeName }),
       subtitle: tabSubtitle,
@@ -800,6 +810,7 @@ export default function CustomizeThemePage() {
         actions: (
           <>
             {saveAsButton}
+            {revisionsButton}
             <button type="button" className="jf-btn jf-btn--onbar" disabled={footerSaving} onClick={() => void saveFooter(false)}>
               {footerSaving ? t("common.saving") : t("content.saveDraft")}
             </button>
@@ -809,7 +820,23 @@ export default function CustomizeThemePage() {
           </>
         ),
       };
-      return <PageBuilder value={footer} onChange={setFooter} context="footer" shellBar={footerBar} sitePanel={siteNav} />;
+      return (
+        <>
+          <RevisionsDialog
+            open={partRevisionsOpen}
+            onClose={() => setPartRevisionsOpen(false)}
+            loadItems={() => listDocumentHistory("template_part", "footer", historyState)}
+            loadBlocks={async (id) => docBlocks(await getDocumentHistoryDoc("template_part", "footer", id))}
+            currentBlocks={footer.blocks}
+            onRestore={async (id) => {
+              const doc = await getDocumentHistoryDoc("template_part", "footer", id);
+              setFooter({ version: 1, blocks: docBlocks(doc) });
+            }}
+            restoreHint={t("builder.shell.restoreHintPart")}
+          />
+          <PageBuilder value={footer} onChange={setFooter} context="footer" shellBar={footerBar} sitePanel={siteNav} />
+        </>
+      );
     }
 
     const templateBar: BuilderShellBar = {
@@ -820,6 +847,7 @@ export default function CustomizeThemePage() {
       actions: (
         <>
           {saveAsButton}
+          {templateSlug && revisionsButton}
           {templateSlug && templateSlots.find((slot) => slot.slug === templateSlug)?.customised && (
             <button type="button" className="jf-btn jf-btn--onbar" disabled={templateSaving} onClick={() => void resetTemplate()}>
               {t("themeCustomize.resetToTheme")}
@@ -909,14 +937,28 @@ export default function CustomizeThemePage() {
       </>
     );
     return templateSlug ? (
-      <PageBuilder
-        key={templateSlug}
-        value={templateDoc}
-        onChange={setTemplateDoc}
-        context="template"
-        shellBar={templateBar}
-        sitePanel={templatePanel}
-      />
+      <>
+        <RevisionsDialog
+          open={partRevisionsOpen}
+          onClose={() => setPartRevisionsOpen(false)}
+          loadItems={() => listDocumentHistory("theme_template", templateSlug, historyState)}
+          loadBlocks={async (id) => docBlocks(await getDocumentHistoryDoc("theme_template", templateSlug, id))}
+          currentBlocks={templateDoc.blocks}
+          onRestore={async (id) => {
+            const doc = await getDocumentHistoryDoc("theme_template", templateSlug, id);
+            setTemplateDoc({ version: 1, blocks: docBlocks(doc) });
+          }}
+          restoreHint={t("builder.shell.restoreHintPart")}
+        />
+        <PageBuilder
+          key={templateSlug}
+          value={templateDoc}
+          onChange={setTemplateDoc}
+          context="template"
+          shellBar={templateBar}
+          sitePanel={templatePanel}
+        />
+      </>
     ) : (
       <BuilderShellEmpty bar={templateBar} sitePanel={templatePanel}>
         <p>{t("themeCustomize.pickTemplateHint")}</p>

@@ -1397,7 +1397,23 @@
       "discard": "Odrzuć",
       "sessionExpired": "Twoja sesja wygasła. Zaloguj się ponownie w innej karcie, a potem zapisz. Twoje zmiany są zachowane w tej przeglądarce.",
       "conflictPart": "Ktoś inny zapisał to po otwarciu. Twoje zmiany nadal tu są i nie zostały zapisane.",
-      "overwritePartConfirm": "Zastąpić nowszą wersję twoją? Zmiany drugiej osoby zostaną utracone."
+      "overwritePartConfirm": "Zastąpić nowszą wersję twoją? Zmiany drugiej osoby zostaną utracone.",
+      "revisions": "Rewizje",
+      "revisionsLoading": "Wczytywanie wersji…",
+      "revisionsEmpty": "Brak wcześniejszych wersji. Każdy zapis dodaje jedną.",
+      "revisionsPick": "Wybierz wersję, aby zobaczyć, co zmieniłoby jej przywrócenie.",
+      "revisionsSame": "Ta wersja ma te same bloki co to, co edytujesz.",
+      "revisionsCompare": "W porównaniu z tym, co edytujesz, przywrócenie tej wersji:",
+      "revisionsAdded": "Doda bloki: {count}",
+      "revisionsRemoved": "Usunie bloki: {count}",
+      "revisionsChanged": "Zmieni bloki: {count}",
+      "revisionsMoved": "Przeniesie bloki: {count}",
+      "revisionsRestore": "Przywróć tę wersję",
+      "restoreHintPage": "Przywrócenie zapisuje tę wersję jako szkic strony. Opublikowana strona zmieni się dopiero po publikacji.",
+      "restoreHintPart": "Przywrócenie wczytuje tę wersję do edytora. Zapisz szkic lub opublikuj, aby ją zachować.",
+      "restoreUnsavedConfirm": "Przywrócenie zastąpi niezapisane zmiany. Zostaną zachowane w tej przeglądarce i można je potem przywrócić. Kontynuować?",
+      "stateDraft": "Szkic",
+      "statePublished": "Opublikowano"
     }
   },
   "dashboard": {

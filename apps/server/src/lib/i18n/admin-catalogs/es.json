@@ -1402,7 +1402,23 @@
       "discard": "Descartar",
       "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión en otra pestaña y guarda. Tus cambios se conservan en este navegador.",
       "conflictPart": "Otra persona guardó esto después de que lo abrieras. Tus cambios siguen aquí y no se han guardado.",
-      "overwritePartConfirm": "¿Reemplazar la versión más reciente por la tuya? Los cambios de la otra persona se perderán."
+      "overwritePartConfirm": "¿Reemplazar la versión más reciente por la tuya? Los cambios de la otra persona se perderán.",
+      "revisions": "Revisiones",
+      "revisionsLoading": "Cargando versiones…",
+      "revisionsEmpty": "Aún no hay versiones anteriores. Cada guardado añade una.",
+      "revisionsPick": "Elige una versión para ver qué cambiaría al restaurarla.",
+      "revisionsSame": "Esta versión tiene los mismos bloques que lo que estás editando.",
+      "revisionsCompare": "Comparado con lo que estás editando, restaurar esta versión:",
+      "revisionsAdded": "Añadiría {count} bloque(s)",
+      "revisionsRemoved": "Quitaría {count} bloque(s)",
+      "revisionsChanged": "Cambiaría {count} bloque(s)",
+      "revisionsMoved": "Movería {count} bloque(s)",
+      "revisionsRestore": "Restaurar esta versión",
+      "restoreHintPage": "Restaurar guarda esta versión como borrador de la página. La página publicada no cambia hasta que publiques.",
+      "restoreHintPart": "Restaurar carga esta versión en el editor. Guarda un borrador o publica para conservarla.",
+      "restoreUnsavedConfirm": "Restaurar reemplaza tus cambios sin guardar. Se conservan en este navegador y puedes restaurarlos después. ¿Continuar?",
+      "stateDraft": "Borrador",
+      "statePublished": "Publicado"
     }
   },
   "dashboard": {

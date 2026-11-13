@@ -27,6 +27,7 @@ import { listThemeTemplateSlugs, loadThemeTemplate } from "./theme-files.js";
 import { templateCandidates, type TemplateQuery } from "../rendering/template-hierarchy.js";
 import { loadPluginTemplate } from "../plugins/plugin-templates.js";
 import type { BlockNode } from "../runtime/types.js";
+import { recordDocumentHistory, themeTemplateHistoryKey } from "../rendering/document-history.js";
 
 const TEMPLATE_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,80}$/;
 
@@ -73,13 +74,22 @@ export async function writeStoredTemplate(
   themeId: string,
   slug: string,
   blocks: unknown,
-  opts: { draft: boolean; expectedRevision?: number },
+  opts: { draft: boolean; expectedRevision?: number; actorId?: string | null },
 ): Promise<{ blocks: BlockNode[]; revision: number }> {
   const sanitized = sanitizeBlockDocument({ version: 1, blocks });
   const doc = { version: 1 as const, blocks: sanitized.blocks };
   const revision = opts.draft
     ? await saveThemeTemplateDraft(siteId, themeId, slug, doc, opts.expectedRevision)
     : await publishThemeTemplateDoc(siteId, themeId, slug, doc, opts.expectedRevision);
+  await recordDocumentHistory({
+    siteId,
+    kind: "theme_template",
+    key: themeTemplateHistoryKey(themeId, slug),
+    revision,
+    state: opts.draft ? "draft" : "published",
+    doc,
+    actorId: opts.actorId,
+  });
   return { blocks: sanitized.blocks as BlockNode[], revision };
 }
 
@@ -97,8 +107,17 @@ export async function saveStoredTemplate(
 ): Promise<BlockNode[]> {
   const sanitized = sanitizeBlockDocument({ version: 1, blocks });
   const doc = { version: 1 as const, blocks: sanitized.blocks };
-  if (draft) await saveThemeTemplateDraft(siteId, themeId, slug, doc);
-  else await saveThemeTemplatePublished(siteId, themeId, slug, doc);
+  const revision = draft
+    ? await saveThemeTemplateDraft(siteId, themeId, slug, doc)
+    : await saveThemeTemplatePublished(siteId, themeId, slug, doc);
+  await recordDocumentHistory({
+    siteId,
+    kind: "theme_template",
+    key: themeTemplateHistoryKey(themeId, slug),
+    revision,
+    state: draft ? "draft" : "published",
+    doc,
+  });
   return sanitized.blocks as BlockNode[];
 }
 
@@ -109,9 +128,15 @@ export async function publishStoredTemplate(
   blocks: unknown,
 ): Promise<BlockNode[]> {
   const sanitized = sanitizeBlockDocument({ version: 1, blocks });
-  await publishThemeTemplateDoc(siteId, themeId, slug, {
-    version: 1,
-    blocks: sanitized.blocks,
+  const doc = { version: 1 as const, blocks: sanitized.blocks };
+  const revision = await publishThemeTemplateDoc(siteId, themeId, slug, doc);
+  await recordDocumentHistory({
+    siteId,
+    kind: "theme_template",
+    key: themeTemplateHistoryKey(themeId, slug),
+    revision,
+    state: "published",
+    doc,
   });
   return sanitized.blocks as BlockNode[];
 }

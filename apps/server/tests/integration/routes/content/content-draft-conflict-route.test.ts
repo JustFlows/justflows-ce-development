@@ -18,9 +18,12 @@ let workingRows: Record<string, unknown>[];
 const revisionWrites: string[] = [];
 
 const fakeDb = {
-  async query<T>(sql: string): Promise<T[]> {
+  async query<T>(sql: string, params: unknown[] = []): Promise<T[]> {
     if (/FROM content WHERE id = \? AND site_id = \?/i.test(sql)) return [contentRow] as unknown as T[];
     if (/FROM revisions/i.test(sql) && /working/i.test(sql)) return workingRows as unknown as T[];
+    if (/FROM revisions/i.test(sql) && params.includes("rev-old")) {
+      return [{ ...workingRows[0], id: "rev-old", kind: "historical", version: 1 }] as unknown as T[];
+    }
     return [] as T[];
   },
   async run(sql: string): Promise<void> {
@@ -179,5 +182,28 @@ describe("POST /api/content/:id/publish draft concurrency", () => {
     expect(res.status).toBe(409);
     expect(((await res.json()) as Record<string, unknown>).code).toBe("draft_conflict");
     expect(revisionWrites).toEqual([]);
+  });
+});
+
+describe("POST /api/content/:id/revisions/:revisionId/restore draft concurrency", () => {
+  it("refuses to restore over a draft the client has not seen", async () => {
+    const res = await fetch(`${base}/api/content/page-1/revisions/rev-old/restore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expectedVersion: 4, expectedWorkingVersion: 1 }),
+    });
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as Record<string, unknown>).code).toBe("draft_conflict");
+    expect(revisionWrites).toEqual([]);
+  });
+
+  it("refuses to restore when the live version moved on", async () => {
+    const res = await fetch(`${base}/api/content/page-1/revisions/rev-old/restore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expectedVersion: 2 }),
+    });
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as Record<string, unknown>).code).toBe("version_conflict");
   });
 });

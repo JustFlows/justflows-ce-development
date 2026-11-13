@@ -55,6 +55,7 @@ import {
   slugify,
   trashContentEntry,
   unpublishRow,
+  workingRevisionConflict,
   type ContentActor,
 } from "../../lib/content/content-write.js";
 
@@ -916,6 +917,32 @@ router.post("/:id/revisions/:revisionId/restore", requireSession, async (req, re
     if (!revision || revision.kind === "working") {
       res.status(404).json({ error: "Revision not found" });
       return;
+    }
+    /**
+     * Restoring writes the draft just like a save, so it carries the same
+     * concurrency checks: never replace a draft or version the client did
+     * not see (justflows-ce#302). Omitted fields keep the old behaviour.
+     */
+    const liveVersion = Number(row.version ?? 1) || 1;
+    const expectedLive = typeof req.body?.expectedVersion === "number" ? req.body.expectedVersion : undefined;
+    if (expectedLive !== undefined && expectedLive !== liveVersion) {
+      res.status(409).json({
+        code: "version_conflict",
+        error: `Version conflict: expected ${expectedLive}, got ${liveVersion}`,
+        expectedVersion: expectedLive,
+        actualVersion: liveVersion,
+      });
+      return;
+    }
+    if (String(row.status) === "published") {
+      const rawWorking = req.body?.expectedWorkingVersion;
+      const expectedWorking =
+        typeof rawWorking === "number" && Number.isInteger(rawWorking) && rawWorking >= 0 ? rawWorking : undefined;
+      const draftConflict = workingRevisionConflict(await getWorkingRevision(id, session.siteId), expectedWorking);
+      if (draftConflict) {
+        res.status(409).json(draftConflict);
+        return;
+      }
     }
     const ctx = hookCtx(session);
     if (String(row.status) === "published") {

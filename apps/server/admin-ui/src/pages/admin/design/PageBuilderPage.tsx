@@ -16,6 +16,8 @@ import {
 } from "../../../lib/builder-recovery";
 import { useT } from "../../../i18n/I18nProvider";
 import type { BuilderSaveState } from "@components/builder/shell/BuilderShell";
+import RevisionsDialog, { type RevisionListItem } from "@components/builder/shell/RevisionsDialog";
+import type { BlockNode } from "@components/builder/types";
 
 interface ContentItem {
   id: string;
@@ -74,6 +76,7 @@ export default function PageBuilderPage() {
   const [recovery, setRecovery] = useState<RecoveryEntry | null>(null);
   const [mergeTags, setMergeTags] = useState<Record<string, string> | undefined>(undefined);
   const [blockEditor, setBlockEditor] = useState(false);
+  const [revisionsOpen, setRevisionsOpen] = useState(false);
 
   /** The latest item, for saves that start from a timer. */
   const itemRef = useRef<ContentItem | null>(null);
@@ -307,6 +310,62 @@ export default function PageBuilderPage() {
     setRecovery(null);
   }, [recovery, update]);
 
+  const loadRevisionItems = useCallback(async (): Promise<RevisionListItem[]> => {
+    const res = await fetch(`/api/content/${id}/revisions`);
+    const body = (await res.json().catch(() => ({}))) as {
+      items?: Array<{ id: string; kind?: string; createdAt: string; authorName?: string | null }>;
+      error?: string;
+    };
+    if (!res.ok) throw new Error(body.error ?? t("pageBuilderPage.loadError"));
+    return (body.items ?? [])
+      .filter((rev) => rev.kind !== "working")
+      .map((rev) => ({ id: rev.id, createdAt: rev.createdAt, authorName: rev.authorName }));
+  }, [id, t]);
+
+  const loadRevisionBlocks = useCallback(
+    async (revisionId: string): Promise<BlockNode[] | null> => {
+      const res = await fetch(`/api/content/${id}/revisions/${encodeURIComponent(revisionId)}`);
+      if (!res.ok) throw new Error(t("pageBuilderPage.loadError"));
+      const body = (await res.json()) as { blocks?: { blocks?: BlockNode[] } | BlockNode[] };
+      return Array.isArray(body.blocks) ? body.blocks : (body.blocks?.blocks ?? []);
+    },
+    [id, t],
+  );
+
+  /**
+   * Restore through the server, which writes the page's draft with the same
+   * version checks as a save. Unsaved local edits are kept as the recovery
+   * copy and offered straight back.
+   */
+  const restoreRevision = useCallback(
+    async (revisionId: string) => {
+      const current = itemRef.current;
+      if (!current) return;
+      if (editSeq.current > 0) {
+        if (!window.confirm(t("builder.shell.restoreUnsavedConfirm"))) return;
+        keepRecoveryCopy();
+      }
+      window.clearTimeout(autosaveTimer.current);
+      const res = await fetch(`/api/content/${id}/revisions/${encodeURIComponent(revisionId)}/restore`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(expectedVersions(current)),
+      });
+      if (!res.ok) {
+        const failed = await failure(res, t("pageBuilderPage.saveFailed"));
+        if (failed === "conflict") return;
+        throw failed;
+      }
+      const data = (await res.json()) as ContentItem;
+      setCurrent(data);
+      editSeq.current = 0;
+      setDirty(false);
+      const kept = readRecovery(storageKey);
+      setRecovery(kept && recoveryDiffers(kept, { title: data.title, blocks: data.blocks, fields: data.fields }) ? kept : null);
+    },
+    [id, failure, keepRecoveryCopy, setCurrent, storageKey, t],
+  );
+
   const discardRecovery = useCallback(() => {
     clearRecovery(storageKey);
     setRecovery(null);
@@ -384,6 +443,16 @@ export default function PageBuilderPage() {
   ) : undefined;
 
   return (
+    <>
+    <RevisionsDialog
+      open={revisionsOpen}
+      onClose={() => setRevisionsOpen(false)}
+      loadItems={loadRevisionItems}
+      loadBlocks={loadRevisionBlocks}
+      currentBlocks={item.blocks?.blocks ?? []}
+      onRestore={restoreRevision}
+      restoreHint={t("builder.shell.restoreHintPage")}
+    />
     <PageBuilder
       value={item.blocks ?? { version: 1, blocks: [] }}
       onChange={(blocks) => update({ blocks })}
@@ -411,6 +480,9 @@ export default function PageBuilderPage() {
                 compact
               />
             )}
+            <button type="button" className="jf-btn jf-btn--onbar" onClick={() => setRevisionsOpen(true)}>
+              {t("builder.shell.revisions")}
+            </button>
             <button type="button" className="jf-btn jf-btn--onbar" disabled={busy || Boolean(conflict)} onClick={() => void persist("manual")}>
               {saving === "manual" ? t("common.saving") : t("common.save")}
             </button>
@@ -423,5 +495,6 @@ export default function PageBuilderPage() {
         ),
       }}
     />
+    </>
   );
 }

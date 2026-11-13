@@ -132,6 +132,7 @@ templatePartsRouter.put("/:part", requireRole(...THEME_CUSTOMIZE_ROLES), async (
     const { blocks, revision } = await writeTemplatePart(siteId, part, body.blocks, {
       draft: body.draft,
       expectedRevision: body.expectedRevision,
+      actorId: req.session?.userId ?? null,
     });
     if (!body.draft) await revalidateOnUpdate("theme");
     res.json({ blocks, revision });

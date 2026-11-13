@@ -252,6 +252,7 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
   app.use("/api/error-pages", requireInstalled, errorPagesRoutes);
   app.use("/api/patterns", requireInstalled, patternsRoutes);
   app.use("/api/headers", requireInstalled, siteHeaderRoutes);
+  app.use("/api/document-history", requireInstalled, (await import("./routes/design/document-history.js")).default);
   app.use("/api/blocks", requireInstalled, blocksRoutes);
   app.use("/api/content-types", requireInstalled, contentTypesRoutes);
   app.use("/api/taxonomies", requireInstalled, (await import("./routes/content/taxonomies.js")).default);

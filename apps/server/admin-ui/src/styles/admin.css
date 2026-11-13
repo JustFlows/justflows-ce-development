@@ -4921,3 +4921,101 @@ input[type="range"] {
   margin: 0;
   flex: 1 1 18rem;
 }
+
+/* Builder revisions dialog: version list beside a change summary. */
+.jf-revisions {
+  width: min(52rem, calc(100vw - 2rem));
+  max-height: min(40rem, calc(100vh - 2rem));
+  padding: 0;
+  border: 1px solid var(--jf-border);
+  border-radius: 12px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  box-shadow: var(--jf-shadow-md, 0 12px 32px rgba(0, 0, 0, 0.2));
+}
+.jf-revisions::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+.jf-revisions__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-block-end: 1px solid var(--jf-border);
+}
+.jf-revisions__header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.jf-revisions__body {
+  display: grid;
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+  min-height: 18rem;
+}
+.jf-revisions__list {
+  border-inline-end: 1px solid var(--jf-border);
+  overflow: auto;
+  max-height: 32rem;
+}
+.jf-revisions__list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem;
+}
+.jf-revisions__list button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 100%;
+  text-align: start;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  padding: 0.45rem 0.55rem;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--jf-text);
+  cursor: pointer;
+}
+.jf-revisions__list button small {
+  color: var(--jf-text-3);
+}
+.jf-revisions__list button:hover {
+  background: var(--jf-surface-2);
+}
+.jf-revisions__list button[aria-pressed="true"] {
+  background: var(--jf-accent-soft);
+  color: var(--jf-accent);
+}
+.jf-revisions__list button:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: 1px;
+}
+.jf-revisions__list p,
+.jf-revisions__detail {
+  padding: 0.85rem 1rem;
+}
+.jf-revisions__detail {
+  overflow: auto;
+  max-height: 32rem;
+  font-size: 0.85rem;
+}
+.jf-revisions__group h3 {
+  font-size: 0.78rem;
+  margin: 0.8rem 0 0.3rem;
+}
+.jf-revisions__group ul {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+}
+@media (max-width: 640px) {
+  .jf-revisions__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .jf-revisions__list {
+    border-inline-end: 0;
+    border-block-end: 1px solid var(--jf-border);
+    max-height: 12rem;
+  }
+}

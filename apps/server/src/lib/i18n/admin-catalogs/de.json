@@ -1402,7 +1402,23 @@
       "discard": "Verwerfen",
       "sessionExpired": "Deine Sitzung ist abgelaufen. Melde dich in einem anderen Tab erneut an und speichere dann. Deine Änderungen bleiben in diesem Browser erhalten.",
       "conflictPart": "Jemand anderes hat dies gespeichert, nachdem du es geöffnet hast. Deine Änderungen sind noch da und wurden nicht gespeichert.",
-      "overwritePartConfirm": "Die neuere Version durch deine ersetzen? Die Änderungen der anderen Person gehen dabei verloren."
+      "overwritePartConfirm": "Die neuere Version durch deine ersetzen? Die Änderungen der anderen Person gehen dabei verloren.",
+      "revisions": "Revisionen",
+      "revisionsLoading": "Versionen werden geladen…",
+      "revisionsEmpty": "Noch keine früheren Versionen. Jedes Speichern fügt eine hinzu.",
+      "revisionsPick": "Wähle eine Version, um zu sehen, was das Wiederherstellen ändern würde.",
+      "revisionsSame": "Diese Version hat dieselben Blöcke wie das, was du gerade bearbeitest.",
+      "revisionsCompare": "Verglichen mit dem, was du gerade bearbeitest, würde das Wiederherstellen dieser Version:",
+      "revisionsAdded": "{count} Block/Blöcke hinzufügen",
+      "revisionsRemoved": "{count} Block/Blöcke entfernen",
+      "revisionsChanged": "{count} Block/Blöcke ändern",
+      "revisionsMoved": "{count} Block/Blöcke verschieben",
+      "revisionsRestore": "Diese Version wiederherstellen",
+      "restoreHintPage": "Wiederherstellen speichert diese Version als Entwurf der Seite. Die veröffentlichte Seite ändert sich erst, wenn du veröffentlichst.",
+      "restoreHintPart": "Wiederherstellen lädt diese Version in den Editor. Speichere einen Entwurf oder veröffentliche, um sie zu behalten.",
+      "restoreUnsavedConfirm": "Wiederherstellen ersetzt deine ungespeicherten Änderungen. Sie bleiben in diesem Browser erhalten und können danach wiederhergestellt werden. Fortfahren?",
+      "stateDraft": "Entwurf",
+      "statePublished": "Veröffentlicht"
     }
   },
   "dashboard": {

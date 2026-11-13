@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { sanitizeBlockDocument } from "@justflows/blocks";
-import { getSiteSetting, setSiteSetting } from "../settings/site-settings.js";
+import { getSiteSetting, updateSiteSettingAtomically } from "../settings/site-settings.js";
 import type { BlockNode } from "../runtime/types.js";
 
 const KEY = "reusable_blocks";
@@ -57,20 +57,26 @@ export async function saveReusableBlock(
   siteId: string,
   input: { id?: string; name?: string; blocks: unknown },
 ): Promise<ReusableBlock> {
-  const list = await listReusableBlocks(siteId);
   const id = asId(input.id) || crypto.randomUUID();
   const entry = normalize({ id, name: input.name, blocks: input.blocks, updatedAt: new Date().toISOString() });
   if (!entry) throw new Error("Invalid reusable block");
 
-  const without = list.filter((item) => item.id !== id);
-  if (without.length >= MAX_ITEMS) throw new Error(`A site may hold at most ${MAX_ITEMS} reusable blocks`);
-  await setSiteSetting(siteId, KEY, [entry, ...without]);
+  /** Atomic so two editors saving different blocks at once never drop each other's (justflows-ce#302). */
+  await updateSiteSettingAtomically<unknown[]>(siteId, KEY, (stored) => {
+    const list = Array.isArray(stored) ? stored.map(normalize).filter((item): item is ReusableBlock => item !== null) : [];
+    const without = list.filter((item) => item.id !== id);
+    if (without.length >= MAX_ITEMS) throw new Error(`A site may hold at most ${MAX_ITEMS} reusable blocks`);
+    return [entry, ...without];
+  });
   return entry;
 }
 
 export async function deleteReusableBlock(siteId: string, id: string): Promise<void> {
-  const list = await listReusableBlocks(siteId);
-  await setSiteSetting(siteId, KEY, list.filter((item) => item.id !== id));
+  await updateSiteSettingAtomically<unknown[]>(siteId, KEY, (stored) =>
+    (Array.isArray(stored) ? stored : []).filter(
+      (item) => !(item && typeof item === "object" && (item as { id?: unknown }).id === id),
+    ),
+  );
 }
 
 /**

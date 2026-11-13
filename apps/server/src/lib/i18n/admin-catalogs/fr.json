@@ -1402,7 +1402,23 @@
       "discard": "Ignorer",
       "sessionExpired": "Votre session a expiré. Reconnectez-vous dans un autre onglet, puis enregistrez. Vos modifications sont conservées dans ce navigateur.",
       "conflictPart": "Quelqu’un d’autre a enregistré ceci après son ouverture. Vos modifications sont toujours là et n’ont pas été enregistrées.",
-      "overwritePartConfirm": "Remplacer la version plus récente par la vôtre ? Les modifications de l’autre personne seront perdues."
+      "overwritePartConfirm": "Remplacer la version plus récente par la vôtre ? Les modifications de l’autre personne seront perdues.",
+      "revisions": "Révisions",
+      "revisionsLoading": "Chargement des versions…",
+      "revisionsEmpty": "Aucune version antérieure pour l’instant. Chaque enregistrement en ajoute une.",
+      "revisionsPick": "Choisissez une version pour voir ce que sa restauration changerait.",
+      "revisionsSame": "Cette version contient les mêmes blocs que ce que vous modifiez.",
+      "revisionsCompare": "Par rapport à ce que vous modifiez, restaurer cette version :",
+      "revisionsAdded": "Ajouterait {count} bloc(s)",
+      "revisionsRemoved": "Supprimerait {count} bloc(s)",
+      "revisionsChanged": "Modifierait {count} bloc(s)",
+      "revisionsMoved": "Déplacerait {count} bloc(s)",
+      "revisionsRestore": "Restaurer cette version",
+      "restoreHintPage": "La restauration enregistre cette version comme brouillon de la page. La page publiée ne change pas avant la publication.",
+      "restoreHintPart": "La restauration charge cette version dans l’éditeur. Enregistrez un brouillon ou publiez pour la conserver.",
+      "restoreUnsavedConfirm": "La restauration remplace vos modifications non enregistrées. Elles restent dans ce navigateur et peuvent être restaurées ensuite. Continuer ?",
+      "stateDraft": "Brouillon",
+      "statePublished": "Publié"
     }
   },
   "dashboard": {

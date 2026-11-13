@@ -45,6 +45,13 @@ Plugins additionally receive executable runtime context and can inspect
 `SDK_API_VERSION` from `@justflows/sdk`. `ctx.version` continues to mean the
 plugin's own version.
 
+### In development — reserved `document-history` API namespace
+
+Core now serves `/api/document-history` (version history of the header, footer,
+widget areas, and template overrides), so `document-history` is reserved and
+`apiNamespace` rejects it. A plugin that declared that namespace must pick
+another before upgrading.
+
 ### In development — pattern block editor metadata
 
 `PatternBlock` takes an optional `editor` object (`label`, `lock`) that holds

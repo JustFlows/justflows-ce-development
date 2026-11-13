@@ -10,6 +10,7 @@ import {
   saveTemplatePartPublished,
 } from "./template-parts-db.js";
 import type { BlockNode } from "../runtime/types.js";
+import { recordDocumentHistory } from "./document-history.js";
 
 /**
  * Template parts: chrome that is the same on every page and is edited as
@@ -50,8 +51,10 @@ export async function saveTemplatePart(
 ): Promise<BlockNode[]> {
   const sanitized = sanitizeBlockDocument({ version: 1, blocks });
   const doc = { version: 1 as const, blocks: sanitized.blocks };
-  if (draft) await saveTemplatePartDraft(siteId, part, doc);
-  else await saveTemplatePartPublished(siteId, part, doc);
+  const revision = draft
+    ? await saveTemplatePartDraft(siteId, part, doc)
+    : await saveTemplatePartPublished(siteId, part, doc);
+  await recordDocumentHistory({ siteId, kind: "template_part", key: part, revision, state: draft ? "draft" : "published", doc });
   return sanitized.blocks as BlockNode[];
 }
 
@@ -64,13 +67,22 @@ export async function writeTemplatePart(
   siteId: string,
   part: TemplatePart,
   blocks: unknown,
-  opts: { draft: boolean; expectedRevision?: number },
+  opts: { draft: boolean; expectedRevision?: number; actorId?: string | null },
 ): Promise<{ blocks: BlockNode[]; revision: number }> {
   const sanitized = sanitizeBlockDocument({ version: 1, blocks });
   const doc = { version: 1 as const, blocks: sanitized.blocks };
   const revision = opts.draft
     ? await saveTemplatePartDraft(siteId, part, doc, opts.expectedRevision)
     : await publishTemplatePartDoc(siteId, part, doc, opts.expectedRevision);
+  await recordDocumentHistory({
+    siteId,
+    kind: "template_part",
+    key: part,
+    revision,
+    state: opts.draft ? "draft" : "published",
+    doc,
+    actorId: opts.actorId,
+  });
   return { blocks: sanitized.blocks as BlockNode[], revision };
 }
 
@@ -95,7 +107,9 @@ export async function publishTemplatePart(
   blocks: unknown,
 ): Promise<BlockNode[]> {
   const sanitized = sanitizeBlockDocument({ version: 1, blocks });
-  await publishTemplatePartDoc(siteId, part, { version: 1, blocks: sanitized.blocks });
+  const doc = { version: 1 as const, blocks: sanitized.blocks };
+  const revision = await publishTemplatePartDoc(siteId, part, doc);
+  await recordDocumentHistory({ siteId, kind: "template_part", key: part, revision, state: "published", doc });
   return sanitized.blocks as BlockNode[];
 }
 

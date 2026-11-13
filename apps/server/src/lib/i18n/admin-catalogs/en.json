@@ -1397,7 +1397,23 @@
       "discard": "Discard",
       "sessionExpired": "Your session has expired. Sign in again in another tab, then save. Your changes are kept in this browser.",
       "conflictPart": "Someone else saved this after you opened it. Your changes are still here and have not been saved.",
-      "overwritePartConfirm": "Replace the newer version with yours? The other person’s changes will be lost."
+      "overwritePartConfirm": "Replace the newer version with yours? The other person’s changes will be lost.",
+      "revisions": "Revisions",
+      "revisionsLoading": "Loading versions…",
+      "revisionsEmpty": "No earlier versions yet. Each save adds one.",
+      "revisionsPick": "Pick a version to see what restoring it would change.",
+      "revisionsSame": "This version has the same blocks as what you are editing.",
+      "revisionsCompare": "Compared with what you are editing, restoring this version would:",
+      "revisionsAdded": "Add {count} block(s)",
+      "revisionsRemoved": "Remove {count} block(s)",
+      "revisionsChanged": "Change {count} block(s)",
+      "revisionsMoved": "Move {count} block(s)",
+      "revisionsRestore": "Restore this version",
+      "restoreHintPage": "Restoring saves this version as the page's draft. The published page does not change until you publish.",
+      "restoreHintPart": "Restoring loads this version into the editor. Save a draft or publish to keep it.",
+      "restoreUnsavedConfirm": "Restoring replaces your unsaved changes. They stay in this browser and can be restored afterwards. Continue?",
+      "stateDraft": "Draft",
+      "statePublished": "Published"
     }
   },
   "dashboard": {
