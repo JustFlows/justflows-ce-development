@@ -316,3 +316,43 @@ export function purgePluginFiles(manifest: Record<string, unknown> | undefined):
     return { ok: false, error: sanitizeProbeError(err) };
   }
 }
+
+/**
+ * Delete every other version of a plugin once an update has succeeded.
+ *
+ * `installedPath` is the build that is live now:
+ * `packages-installed/plugins/<id>/<version>/<revision>`. The installer already
+ * drops other revisions inside `<version>/`, but older `<version>/` folders were
+ * never removed, so they piled up on disk and stayed on the integrity page.
+ * Only siblings under that plugin's own `<id>/` are touched; any other layout
+ * is left alone. Copies of the row on other sites re-sync to the new path.
+ */
+export function purgeOtherPluginVersions(installedPath: string): {
+  ok: boolean;
+  removed: string[];
+  error?: string;
+} {
+  const root = path.resolve(packagesInstalledDir());
+  const resolved = path.resolve(installedPath);
+  if (!resolved.startsWith(root + path.sep)) return { ok: true, removed: [] };
+  const parts = path.relative(root, resolved).split(path.sep);
+  if (parts.length !== 4 || parts[0] !== "plugins") return { ok: true, removed: [] };
+  const [, pluginId, version] = parts;
+  if (!pluginId || !version) return { ok: true, removed: [] };
+  const pluginDir = resolvePathUnderBase(root, "plugins", pluginId);
+  if (!pluginDir) return { ok: true, removed: [] };
+
+  const removed: string[] = [];
+  try {
+    for (const entry of fs.readdirSync(pluginDir, { withFileTypes: true })) {
+      if (entry.name === version) continue;
+      const target = resolvePathUnderBase(pluginDir, entry.name);
+      if (!target) continue;
+      fs.rmSync(target, { recursive: true, force: true });
+      removed.push(entry.name);
+    }
+    return { ok: true, removed };
+  } catch (err) {
+    return { ok: false, removed, error: sanitizeProbeError(err) };
+  }
+}

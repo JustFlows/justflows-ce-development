@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import { PLUGIN_ID_RE } from "@justflows/sdk";
 import { getDb } from "../database/db.js";
+import { withRootPluginManifests } from "./plugin-root-manifest.js";
 import { getSiteId } from "../themes/themes-db.js";
 import { resolvePathUnderBase } from "../security/safe-path.js";
 import { bundledBasePathFor } from "./plugin-assets.js";
@@ -78,11 +79,12 @@ async function loadTemplateDirs(): Promise<PluginTemplateDir[]> {
   if (!siteId) return [];
 
   const db = await getDb();
-  const rows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> }>(
+  const siteRows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> }>(
     // Ordered so two plugins shipping the same slug resolve the same way every time.
     "SELECT plugin_id, manifest FROM plugins WHERE site_id = ? AND status = 'active' ORDER BY plugin_id",
     [siteId],
   );
+  const rows = await withRootPluginManifests(siteId, siteRows);
 
   const out: PluginTemplateDir[] = [];
   for (const row of rows) {

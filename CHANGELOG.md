@@ -18,6 +18,8 @@ and this project uses [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Updating a plugin deletes its older versions.** Every version ever installed stayed in `packages-installed/` and on Security → File integrity. After a successful update, a Marketplace install, or an uploaded package that replaces the plugin, the other version folders of that plugin are removed. Deleting a plugin removes all of its versions, not only the current one. A failed activation after an update keeps the previous build.
+- **Other sites always run the main site's plugin version.** Only the main site installs plugins and decides their version, but another site loaded scripts, styles, templates, admin screens and editor panels from its own copy of the plugin row. That copy was refreshed only when someone opened the site's plugin screens, so a site could keep an old version, and its files broke once the update removed that version. Other sites now take the version and install path from the main site's row. Their Extensions screen no longer shows a plugin version, since only the main site manages it.
 - **The setup key field in the setup wizard has its label again.** The help box was inside the field wrapper, so the "Setup key" label was not connected to the input for screen readers or label clicks.
 
 ## [0.4.3]

@@ -6,6 +6,7 @@ import { App, loadConfig } from "@justflows/core";
 import { PluginLoader } from "@justflows/plugin-api";
 import type { PluginModule } from "@justflows/sdk";
 import { getDb } from "../database/db.js";
+import { withRootPluginManifests } from "./plugin-root-manifest.js";
 import { getHooks } from "../runtime/hooks.js";
 import {
   mergeLoadedPluginManifest,
@@ -151,10 +152,11 @@ async function registerKnownPlugins(): Promise<void> {
   // Only active plugins. Importing a module runs its top-level code, so loading
   // every installed row meant "installed but not activated" already executed the
   // package — leaving no safe state in which to inspect one before enabling it.
-  const rows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> }>(
+  const siteRows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> }>(
     "SELECT plugin_id, manifest FROM plugins WHERE site_id = ? AND status = 'active'",
     [siteId],
   );
+  const rows = await withRootPluginManifests(siteId, siteRows);
 
   for (const row of rows) {
     if (loader.getPlugin(row.plugin_id)) continue;
@@ -198,10 +200,11 @@ async function activateActivePlugins(): Promise<void> {
   if (!siteId) return;
 
   const db = await getDb();
-  const rows = await db.query<{ plugin_id: string; manifest: unknown }>(
+  const siteRows = await db.query<{ plugin_id: string; manifest: unknown }>(
     "SELECT plugin_id, manifest FROM plugins WHERE site_id = ? AND status = 'active'",
     [siteId],
   );
+  const rows = await withRootPluginManifests(siteId, siteRows);
 
   for (const row of rows) {
     try {
@@ -457,10 +460,11 @@ async function ensureRegistered(siteId: string, pluginId: string): Promise<void>
   if (loader.getPlugin(pluginId)) return;
 
   const db = await getDb();
-  const rows = await db.query<{ manifest: string | Record<string, unknown> }>(
-    "SELECT manifest FROM plugins WHERE site_id = ? AND plugin_id = ? LIMIT 1",
+  const siteRows = await db.query<{ plugin_id: string; manifest: string | Record<string, unknown> }>(
+    "SELECT plugin_id, manifest FROM plugins WHERE site_id = ? AND plugin_id = ? LIMIT 1",
     [siteId, pluginId],
   );
+  const rows = await withRootPluginManifests(siteId, siteRows);
   const manifest =
     rows[0]?.manifest && typeof rows[0].manifest === "string"
       ? JSON.parse(rows[0].manifest)

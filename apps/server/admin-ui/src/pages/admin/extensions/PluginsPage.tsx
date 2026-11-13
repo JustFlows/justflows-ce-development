@@ -15,7 +15,8 @@ import { sendWithPermissionApproval } from "../../../lib/plugin-permission-appro
 interface Plugin {
   id: string;
   name: string;
-  version: string;
+  /** Absent on sites other than the main site, which decides the version. */
+  version?: string;
   description?: string;
   status: "active" | "inactive" | "installed" | "error";
   publisher: string;
@@ -249,7 +250,7 @@ export default function PluginsPage() {
                 <div className="jf-list__main">
                   <div className="jf-row" style={{ gap: "0.5rem" }}>
                     <strong>{p.name}</strong>
-                    <span className="jf-meta">v{p.version}</span>
+                    {p.version && <span className="jf-meta">v{p.version}</span>}
                     <span className={`jf-badge${STATUS_VARIANT[p.status]}`}>{p.status}</span>
                     {canManage && installationRoot && <ExtensionUpdateBadge state={updates} type="plugin" id={p.id} />}
                   </div>

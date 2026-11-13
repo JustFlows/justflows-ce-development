@@ -317,6 +317,7 @@ export async function insertPlugin(
       `UPDATE plugins SET version = ?, manifest = ?, updated_at = ? WHERE site_id = ? AND plugin_id = ?`,
       [plugin.version, JSON.stringify(plugin.manifest), stamp, siteId, plugin.pluginId],
     );
+    await forgetMainSitePlugins();
     return pluginToDto(
       parsePluginRow({
         ...existing,
@@ -345,6 +346,7 @@ export async function insertPlugin(
       stamp,
     ],
   );
+  await forgetMainSitePlugins();
 
   return pluginToDto(
     parsePluginRow({
@@ -384,6 +386,7 @@ export async function mergeLoadedPluginManifest(
     `UPDATE plugins SET version = ?, manifest = ?, updated_at = ? WHERE site_id = ? AND plugin_id = ?`,
     [version, JSON.stringify(manifest), now(), siteId, pluginId],
   );
+  await forgetMainSitePlugins();
 }
 
 export async function getPlugin(siteId: string, pluginId: string): Promise<PluginRow | null> {
@@ -395,10 +398,15 @@ export async function getPlugin(siteId: string, pluginId: string): Promise<Plugi
   return rows[0] ? parsePluginRow(rows[0]) : null;
 }
 
-/** Network handlers follow the main site's active plugins; drop the cached list on any change. */
+/**
+ * Network handlers follow the main site's active plugins, and other sites load
+ * the main site's manifests; drop both cached lists on any change.
+ */
 async function forgetMainSitePlugins(): Promise<void> {
   const { clearMainSitePluginCache } = await import("./plugin-network.js");
   clearMainSitePluginCache();
+  const { clearRootPluginCache } = await import("./plugin-root-manifest.js");
+  clearRootPluginCache();
 }
 
 export async function activatePlugin(siteId: string, pluginId: string): Promise<void> {

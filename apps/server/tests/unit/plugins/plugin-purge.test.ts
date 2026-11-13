@@ -8,6 +8,7 @@ import {
   appliedSchemaPasswordKey,
   appliedSchemaSettingKey,
   pluginSettingsLikePattern,
+  purgeOtherPluginVersions,
   purgePluginFiles,
 } from "../../../src/lib/plugins/plugin-purge.js";
 
@@ -82,5 +83,67 @@ describe("purgePluginFiles", () => {
   it("is a no-op for a bundled plugin with no installedPath", () => {
     expect(purgePluginFiles({ bundledPath: "/somewhere/plugins/acme.demo" }).ok).toBe(true);
     expect(purgePluginFiles(undefined).ok).toBe(true);
+  });
+});
+
+describe("purgeOtherPluginVersions", () => {
+  let root: string;
+  const savedPackagesDir = process.env.PACKAGES_DIR;
+
+  beforeEach(() => {
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "jf-purge-versions-"));
+    process.env.PACKAGES_DIR = path.join(root, "packages-installed");
+  });
+
+  afterEach(() => {
+    if (savedPackagesDir === undefined) delete process.env.PACKAGES_DIR;
+    else process.env.PACKAGES_DIR = savedPackagesDir;
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("removes older versions and keeps the live build and other plugins", () => {
+    const plugins = path.join(root, "packages-installed", "plugins");
+    const live = path.join(plugins, "acme.demo", "2.0.0", "2222222222222222");
+    const old = path.join(plugins, "acme.demo", "1.0.0", "1111111111111111");
+    const legacy = path.join(plugins, "acme.demo", "0.9.0");
+    const other = path.join(plugins, "acme.other", "1.0.0", "3333333333333333");
+    for (const dir of [live, old, legacy, other]) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(legacy, "justflows.json"), "{}");
+
+    const result = purgeOtherPluginVersions(live);
+
+    expect(result.ok).toBe(true);
+    expect(result.removed.sort()).toEqual(["0.9.0", "1.0.0"]);
+    expect(fs.existsSync(live)).toBe(true);
+    expect(fs.existsSync(path.join(plugins, "acme.demo", "1.0.0"))).toBe(false);
+    expect(fs.existsSync(legacy)).toBe(false);
+    expect(fs.existsSync(other)).toBe(true);
+  });
+
+  it("leaves paths with an unexpected layout alone", () => {
+    const plugins = path.join(root, "packages-installed", "plugins");
+    const flat = path.join(plugins, "acme.demo", "1.0.0");
+    const sibling = path.join(plugins, "acme.demo", "0.9.0");
+    fs.mkdirSync(flat, { recursive: true });
+    fs.mkdirSync(sibling, { recursive: true });
+    const outside = path.join(root, "elsewhere", "plugins", "acme.demo", "1.0.0", "abc");
+    fs.mkdirSync(outside, { recursive: true });
+
+    expect(purgeOtherPluginVersions(flat).removed).toEqual([]);
+    expect(purgeOtherPluginVersions(outside).removed).toEqual([]);
+    expect(fs.existsSync(sibling)).toBe(true);
+  });
+
+  it("leaves nothing of the plugin on disk when a delete also purges the live build", () => {
+    const plugins = path.join(root, "packages-installed", "plugins");
+    const live = path.join(plugins, "acme.demo", "0.3.0", "2222222222222222");
+    const old = path.join(plugins, "acme.demo", "0.1.0", "1111111111111111");
+    for (const dir of [live, old]) fs.mkdirSync(dir, { recursive: true });
+
+    purgeOtherPluginVersions(live);
+    expect(purgePluginFiles({ installedPath: live }).ok).toBe(true);
+
+    expect(fs.existsSync(path.join(plugins, "acme.demo"))).toBe(false);
+    expect(fs.existsSync(plugins)).toBe(true);
   });
 });

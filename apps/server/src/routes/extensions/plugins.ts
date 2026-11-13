@@ -97,6 +97,16 @@ async function readPluginSettings(
   return { schema: resolveSettingsSchema(schema, defaultLocale), values: merged, languages };
 }
 
+/**
+ * Only the main site installs plugins and decides their version, so another
+ * site's admin is not told which version runs.
+ */
+function withoutVersionOffRoot<T extends { version?: string }>(plugin: T): T | Omit<T, "version"> {
+  if (isInstallationRootRequest()) return plugin;
+  const { version: _version, ...rest } = plugin;
+  return rest;
+}
+
 // The installed extension set and its versions fingerprint the site.
 router.get("/", requireRole("administrator", "editor"), async (req, res) => {
   const session = req.session!;
@@ -106,7 +116,7 @@ router.get("/", requireRole("administrator", "editor"), async (req, res) => {
     await ensurePluginRuntime();
     const { listVisiblePlugins } = await import("../../lib/plugins/plugin-multisite.js");
     const plugins = await listVisiblePlugins(session.siteId);
-    res.json({ plugins });
+    res.json({ plugins: plugins.map(withoutVersionOffRoot) });
   } catch (err) {
     sendServerError(res, "plugins", err);
   }
@@ -199,6 +209,12 @@ router.post("/", packageUploadRequestLimit, requireRole("administrator"), admitP
       },
       status: "installed",
     });
+    /** The row now points at this build, so older versions on disk are unused. */
+    const { purgeOtherPluginVersions } = await import("../../lib/plugins/plugin-purge.js");
+    if (purgeOtherPluginVersions(result.installedPath).removed.length > 0) {
+      const { invalidateIntegrityCache } = await import("../../lib/security/extension-integrity.js");
+      invalidateIntegrityCache();
+    }
 
     auditFromRequest(req, "plugin.installed", {
       target: result.manifest.id,
@@ -284,6 +300,7 @@ router.delete("/:id", requireRole("administrator"), async (req, res) => {
   const { runtimeDeactivatePlugin, runtimeDeletePluginData, runtimeUnloadPlugin, getRuntimeHooks } =
     await import("../../lib/plugins/plugin-runtime.js");
   const {
+    purgeOtherPluginVersions,
     purgePluginFiles,
     purgePluginStorage,
     purgePluginContent,
@@ -335,7 +352,14 @@ router.delete("/:id", requireRole("administrator"), async (req, res) => {
   if (!others) await runtimeDeactivatePlugin(session.siteId, pluginId);
   const ownsPackage = isInstallationRootRequest() && !others;
   if (ownsPackage) await runtimeUnloadPlugin(pluginId).catch(() => null);
+  /** Older versions left by earlier installs go too, so nothing of the plugin stays on disk. */
+  const installedPath = typeof row?.manifest.installedPath === "string" ? row.manifest.installedPath : "";
+  if (ownsPackage && installedPath) purgeOtherPluginVersions(installedPath);
   const filesPurged = ownsPackage ? purgePluginFiles(row?.manifest) : { ok: true as const };
+  if (ownsPackage) {
+    const { invalidateIntegrityCache } = await import("../../lib/security/extension-integrity.js");
+    invalidateIntegrityCache();
+  }
   await deletePlugin(session.siteId, pluginId);
   auditFromRequest(req, "plugin.deleted", { target: pluginId });
   await getRuntimeHooks()
@@ -391,7 +415,7 @@ router.get("/:id", requireRole("administrator", "editor"), async (req, res) => {
     res.status(404).json({ error: "Plugin not found" });
     return;
   }
-  res.json({ plugin: pluginToDto(plugin) });
+  res.json({ plugin: withoutVersionOffRoot(pluginToDto(plugin)) });
 });
 
 router.get("/:id/settings", requireRole("administrator"), async (req, res) => {
