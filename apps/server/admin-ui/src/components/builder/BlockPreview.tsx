@@ -3,7 +3,7 @@ import MediaBlock from "../MediaBlock";
 import { useT } from "../../i18n/I18nProvider";
 import { cloneElement, createContext, isValidElement, useContext, useEffect, useRef, useState, type ReactElement } from "react";
 import type { BlockNode } from "./types";
-import { esc, isBlockLocked, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
+import { blockStyleDeclarations, esc, isBlockLocked, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
 import { isExtendClick, useBuilderSelection } from "./selection-context";
 import MotionPreview from "./MotionPreview";
 import { applyMergeTags, useMergeTags } from "../../lib/merge-tags";
@@ -94,28 +94,37 @@ export function BlockPreview({
   // theme's `.jf-hero { background: … }`. Do the same here — merge them onto
   // the element each case returns, not an outer wrapper — or the theme's
   // striped hero background (and friends) would still show through.
-  const chromeStyle: React.CSSProperties = {
-    ...(blockStyle.background ? { background: blockStyle.background } : {}),
-    ...(blockStyle.textColor ? { color: blockStyle.textColor } : {}),
-    ...(blockStyle.accent ? { ["--jf-block-accent" as string]: blockStyle.accent } : {}),
-    ...(blockStyle.opacity ? { opacity: Number(blockStyle.opacity) / 100 } : {}),
-    ...(blockStyle.vars as Record<string, string>),
-  };
+  /**
+   * Since justflows-ce#299 this is the full style contract (spacing, size,
+   * flex item values, colours), parsed from the same declarations the public
+   * renderer writes, so the canvas, its resize handles and the page agree.
+   */
+  const chromeStyle = declarationsToStyle(blockStyleDeclarations(blockStyle));
   const hasChrome = Object.keys(chromeStyle).length > 0;
 
   const wrap = (content: React.ReactNode, label?: string) => {
-    const inner = isValidElement(content)
-      ? cloneElement(
-          content as ReactElement<{
-            style?: React.CSSProperties;
-            "data-jf-block-preview"?: string;
-          }>,
-          {
-            "data-jf-block-preview": block.id,
-            ...(hasChrome ? { style: { ...(content.props.style ?? {}), ...chromeStyle } } : {}),
-          },
-        )
-      : content;
+    /**
+     * A DOM element takes the chrome directly. A component root (an inline
+     * field) cannot forward it, so it gets a box of its own; otherwise its
+     * spacing and colours would silently not show.
+     */
+    const inner =
+      isValidElement(content) && typeof content.type === "string"
+        ? cloneElement(
+            content as ReactElement<{
+              style?: React.CSSProperties;
+              "data-jf-block-preview"?: string;
+            }>,
+            {
+              "data-jf-block-preview": block.id,
+              ...(hasChrome ? { style: { ...((content.props as { style?: React.CSSProperties }).style ?? {}), ...chromeStyle } } : {}),
+            },
+          )
+        : (
+            <div data-jf-block-preview={block.id} style={hasChrome ? chromeStyle : undefined}>
+              {content}
+            </div>
+          );
     return (
       <div
         className={depth === 0 ? THEME_PREVIEW_SCOPE : undefined}
@@ -138,11 +147,6 @@ export function BlockPreview({
           position: "relative",
           borderRadius: 4,
           cursor: onSelect ? "pointer" : undefined,
-          maxWidth: blockStyle.maxWidth > 0 ? `min(100%, ${blockStyle.maxWidth}px)` : undefined,
-          maxHeight: blockStyle.maxHeight > 0 ? blockStyle.maxHeight : undefined,
-          overflow: blockStyle.maxHeight > 0 ? "auto" : undefined,
-          marginLeft: blockStyle.maxWidth > 0 ? "auto" : undefined,
-          marginRight: blockStyle.maxWidth > 0 ? "auto" : undefined,
         }}
       >
         {label && depth === 0 ? null : null}
@@ -1049,4 +1053,18 @@ function widgetAlign(align: string): React.CSSProperties {
   if (align === "center") return { justifyContent: "center", width: "100%" };
   if (align === "right") return { justifyContent: "flex-end", width: "100%" };
   return { justifyContent: "flex-start" };
+}
+
+/** `a:b;c:d` declarations as a React style object; custom properties keep their names. */
+export function declarationsToStyle(declarations: string): React.CSSProperties {
+  const out: Record<string, string> = {};
+  for (const part of declarations.split(";")) {
+    const at = part.indexOf(":");
+    if (at <= 0) continue;
+    const key = part.slice(0, at).trim();
+    const value = part.slice(at + 1).trim();
+    if (!key || !value) continue;
+    out[key.startsWith("--") ? key : key.replace(/-([a-z])/g, (_m, c: string) => c.toUpperCase())] = value;
+  }
+  return out as React.CSSProperties;
 }

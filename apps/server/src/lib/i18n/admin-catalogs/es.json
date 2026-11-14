@@ -1577,6 +1577,90 @@
         "cancel": "Cancelar",
         "savePattern": "Guardar patrón"
       }
+    },
+    "container": {
+      "title": "Disposición",
+      "mode": "Organizar el contenido",
+      "modes": {
+        "stack": "Pila",
+        "row": "Fila",
+        "column": "Columna",
+        "grid": "Cuadrícula"
+      },
+      "modeHint": {
+        "stack": "Los bloques van uno debajo de otro, con el espaciado del tema.",
+        "row": "Los bloques van uno al lado de otro y pasan a otra línea cuando no caben.",
+        "column": "Los bloques van uno debajo de otro, con tu espaciado y alineación.",
+        "grid": "Los bloques llenan columnas iguales, fila a fila."
+      },
+      "columns": "Columnas",
+      "wrap": "Saltos de línea",
+      "wrapValue": {
+        "wrap": "Pasar a otra línea",
+        "nowrap": "Mantener en una línea"
+      },
+      "justify": "Horizontal",
+      "justifyColumn": "Vertical",
+      "justifyValue": {
+        "start": "Inicio",
+        "center": "Centro",
+        "end": "Final",
+        "between": "Espacio entre",
+        "around": "Espacio alrededor",
+        "evenly": "Espacio uniforme"
+      },
+      "align": "Vertical",
+      "alignColumn": "Horizontal",
+      "alignValue": {
+        "start": "Inicio",
+        "center": "Centro",
+        "end": "Final",
+        "stretch": "Estirar",
+        "baseline": "Línea base del texto"
+      },
+      "gap": "Separación",
+      "stackOnPhones": "Apilar en una columna en móviles",
+      "orderHint": "Los bloques siempre conservan su orden, en pantalla y para los lectores de pantalla. Para cambiarlo, muévelos en el panel Capas.",
+      "element": "Elemento HTML",
+      "elements": {
+        "div": "Simple (div)",
+        "section": "Sección",
+        "article": "Artículo",
+        "aside": "Lateral",
+        "header": "Encabezado",
+        "footer": "Pie",
+        "nav": "Navegación"
+      },
+      "elementNotHere": "no permitido aquí",
+      "elementHint": "Indica a los lectores de pantalla y a los buscadores qué es esta parte. No cambia su aspecto.",
+      "item": {
+        "title": "En esta fila",
+        "overflowTitle": "Desbordamiento",
+        "basis": "Parte de la fila",
+        "basisValue": {
+          "auto": "Según el contenido",
+          "25": "Un cuarto",
+          "33": "Un tercio",
+          "50": "La mitad",
+          "66": "Dos tercios",
+          "75": "Tres cuartos",
+          "100": "Toda la fila"
+        },
+        "grow": "Ocupar el espacio libre",
+        "overflow": "Contenido que no cabe",
+        "overflowValue": {
+          "visible": "Mostrar",
+          "hidden": "Recortar",
+          "auto": "Desplazar"
+        }
+      },
+      "handle": {
+        "padTop": "Relleno superior",
+        "padBottom": "Relleno inferior",
+        "minHeight": "Altura mínima"
+      },
+      "readingOrder": "Los bloques aparecen en un orden distinto al de lectura. Quienes usan el teclado o un lector de pantalla siguen el orden del panel Capas.",
+      "matchReadingOrder": "Igualar el orden de lectura a la disposición"
     }
   },
   "dashboard": {

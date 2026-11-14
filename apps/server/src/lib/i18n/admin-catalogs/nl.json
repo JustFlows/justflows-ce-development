@@ -1574,6 +1574,90 @@
         "cancel": "Annuleren",
         "savePattern": "Patroon opslaan"
       }
+    },
+    "container": {
+      "title": "Indeling",
+      "mode": "Inhoud schikken",
+      "modes": {
+        "stack": "Stapel",
+        "row": "Rij",
+        "column": "Kolom",
+        "grid": "Raster"
+      },
+      "modeHint": {
+        "stack": "Blokken staan onder elkaar, met de afstand van het thema.",
+        "row": "Blokken staan naast elkaar en lopen door op een nieuwe regel als er geen ruimte is.",
+        "column": "Blokken staan onder elkaar, met jouw afstand en uitlijning.",
+        "grid": "Blokken vullen gelijke kolommen, rij voor rij."
+      },
+      "columns": "Kolommen",
+      "wrap": "Regelafbreking",
+      "wrapValue": {
+        "wrap": "Doorlopen",
+        "nowrap": "Op één regel houden"
+      },
+      "justify": "Horizontaal",
+      "justifyColumn": "Verticaal",
+      "justifyValue": {
+        "start": "Begin",
+        "center": "Midden",
+        "end": "Einde",
+        "between": "Ruimte ertussen",
+        "around": "Ruimte eromheen",
+        "evenly": "Gelijk verdeeld"
+      },
+      "align": "Verticaal",
+      "alignColumn": "Horizontaal",
+      "alignValue": {
+        "start": "Begin",
+        "center": "Midden",
+        "end": "Einde",
+        "stretch": "Uitrekken",
+        "baseline": "Tekstbasislijn"
+      },
+      "gap": "Tussenruimte",
+      "stackOnPhones": "Op telefoons onder elkaar zetten",
+      "orderHint": "Blokken houden altijd hun volgorde, op het scherm en voor schermlezers. Verander de volgorde in het paneel Lagen.",
+      "element": "HTML-element",
+      "elements": {
+        "div": "Gewoon (div)",
+        "section": "Sectie",
+        "article": "Artikel",
+        "aside": "Zijkant",
+        "header": "Kop",
+        "footer": "Voet",
+        "nav": "Navigatie"
+      },
+      "elementNotHere": "hier niet toegestaan",
+      "elementHint": "Vertelt schermlezers en zoekmachines wat dit deel is. Het verandert niets aan het uiterlijk.",
+      "item": {
+        "title": "In deze rij",
+        "overflowTitle": "Overloop",
+        "basis": "Deel van de rij",
+        "basisValue": {
+          "auto": "Passend bij inhoud",
+          "25": "Een kwart",
+          "33": "Een derde",
+          "50": "De helft",
+          "66": "Twee derde",
+          "75": "Driekwart",
+          "100": "Hele rij"
+        },
+        "grow": "Vrije ruimte opvullen",
+        "overflow": "Inhoud die niet past",
+        "overflowValue": {
+          "visible": "Tonen",
+          "hidden": "Afknippen",
+          "auto": "Scrollen"
+        }
+      },
+      "handle": {
+        "padTop": "Opvulling boven",
+        "padBottom": "Opvulling onder",
+        "minHeight": "Minimale hoogte"
+      },
+      "readingOrder": "Blokken staan in een andere volgorde dan ze worden gelezen. Toetsenbord- en schermlezergebruikers volgen de volgorde in het paneel Lagen.",
+      "matchReadingOrder": "Leesvolgorde gelijkzetten met de indeling"
     }
   },
   "dashboard": {

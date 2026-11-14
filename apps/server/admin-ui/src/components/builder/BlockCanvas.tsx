@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useT } from "../../i18n/I18nProvider";
 import type { BlockNode, BlockCatalogEntry } from "./types";
 import { BlockPreview, useThemePreviewStylesheet } from "./BlockPreview";
@@ -9,8 +9,18 @@ import { useBuilderDrag } from "./DragContext";
 import { useBlockMoveHandle } from "./useBlockMoveHandle";
 import GridEditor from "./GridEditor";
 import { GRID_BLOCK_TYPE, gridColumns, nextRow } from "./grid";
-import { compactBlockPlacement, isBlockLocked, parseBlockPlacement } from "@justflows/blocks";
+import {
+  compactBlockPlacement,
+  containerLayoutAttrs,
+  flexBasis,
+  isBlockLocked,
+  parseBlockPlacement,
+  parseBlockStyle,
+  supportsContainerLayout,
+} from "@justflows/blocks";
 import { anchorFor, isExtendClick, useBuilderSelection } from "./selection-context";
+import LayoutOverlay from "./LayoutOverlay";
+import { inspectorSections } from "./inspector-sections";
 import { inertPreviewHandlers } from "./inert-preview";
 
 const iconBtn: React.CSSProperties = {
@@ -338,7 +348,10 @@ function BlockRow({
         </div>
       </div>
 
-      <div style={{ padding: depth === 0 ? "0.5rem 0.6rem 0.6rem" : "0.25rem 0.35rem 0.35rem" }}>
+      <div style={{ position: "relative", padding: depth === 0 ? "0.5rem 0.6rem 0.6rem" : "0.25rem 0.35rem 0.35rem" }}>
+        {selectedId === block.id && !inMultiSelection && !isBlockLocked(block, "edit") && !dragPayload.type && (
+          <LayoutOverlay block={block} allow={overlayHandles(block, meta)} onChange={(props) => updateProps(block.id, props)} />
+        )}
         <BlockPreview
           block={block}
           depth={depth}
@@ -404,8 +417,14 @@ function BlockRow({
                     );
                   }
 
+                  /**
+                   * A container's layout (justflows-ce#299) uses the same classes as the public page,
+                   * so the canvas shows rows and grids as they will render. Each child's wrapper is
+                   * the layout item and carries the child's item values.
+                   */
+                  const layout = supportsContainerLayout(block.type) ? containerLayoutAttrs(block.props.containerLayout) : null;
                   const items = children.map((child, ci) => (
-                    <div key={child.id} style={isColumns ? { minWidth: 0 } : undefined}>
+                    <div key={child.id} style={isColumns ? { minWidth: 0 } : layout ? layoutItemStyle(child) : undefined}>
                       {!isColumns && (
                         <DropZone
                           parentId={block.id}
@@ -433,7 +452,13 @@ function BlockRow({
                           alwaysShow
                         />
                       )}
-                      {items}
+                      {layout ? (
+                        <div className={layout.classes.join(" ")} style={reactStyle(layout.style)} data-jf-layout-container={block.id}>
+                          {items}
+                        </div>
+                      ) : (
+                        items
+                      )}
                       {children.length > 0 && (
                         <DropZone
                           parentId={block.id}
@@ -484,6 +509,25 @@ function AddBlockSlot({
   quickAll?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  /** A click anywhere outside the picker, or Escape, closes it. */
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (e: PointerEvent) => {
+      if (root.current && !root.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      root.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    };
+    document.addEventListener("pointerdown", onPointer, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
   const entries = [...catalog.values()].filter((b) => {
     if (b.type === "core.column") return parentType === "core.columns";
     if (allowedChildTypes?.length) return allowedChildTypes.includes(b.type);
@@ -499,7 +543,7 @@ function AddBlockSlot({
       : entries.filter((b) => b.category === "sections" || b.type === "core.section").slice(0, 6);
 
   return (
-    <div style={{ position: "relative", marginTop: "0.35rem" }}>
+    <div ref={root} style={{ position: "relative", marginTop: "0.35rem" }}>
       <button
         type="button"
         onClick={(e) => {
@@ -509,6 +553,7 @@ function AddBlockSlot({
           e.stopPropagation();
           setOpen(!open);
         }}
+        aria-expanded={open}
         style={{
           width: "100%",
           padding: "0.45rem",
@@ -585,4 +630,29 @@ function AddBlockSlot({
 function subtreeHasLock(block: BlockNode, flag: "move" | "remove" | "edit"): boolean {
   if (isBlockLocked(block, flag)) return true;
   return (block.children ?? []).some((child) => subtreeHasLock(child, flag));
+}
+
+/** Declarations from `containerLayoutAttrs` as a React style object; custom properties keep their names. */
+export function reactStyle(style: Record<string, string>): React.CSSProperties {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(style)) {
+    out[key.startsWith("--") ? key : key.replace(/-([a-z])/g, (_m, c: string) => c.toUpperCase())] = value;
+  }
+  return out as React.CSSProperties;
+}
+
+/** A child's own item values (grow, share, self-alignment), on the wrapper that is the layout item. */
+export function layoutItemStyle(child: BlockNode): React.CSSProperties {
+  const style = parseBlockStyle(child.props.style);
+  const out: Record<string, string> = { minWidth: "0" };
+  if (style.grow) out["--jf-grow"] = style.grow;
+  if (style.basis) out["--jf-basis"] = flexBasis(style.basis);
+  if (style.alignSelf) out.alignSelf = style.alignSelf;
+  return out as React.CSSProperties;
+}
+
+/** Which resize handles a block offers: only what its inspector offers too. */
+function overlayHandles(block: BlockNode, meta: BlockCatalogEntry | undefined): { padding: boolean; minHeight: boolean } {
+  const sections = inspectorSections(block, meta);
+  return { padding: sections.field("padTop") && sections.field("padBottom"), minHeight: sections.field("minHeight") };
 }

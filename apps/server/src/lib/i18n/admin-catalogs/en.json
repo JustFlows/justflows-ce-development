@@ -1572,6 +1572,90 @@
         "cancel": "Cancel",
         "savePattern": "Save pattern"
       }
+    },
+    "container": {
+      "title": "Layout",
+      "mode": "Arrange contents",
+      "modes": {
+        "stack": "Stack",
+        "row": "Row",
+        "column": "Column",
+        "grid": "Grid"
+      },
+      "modeHint": {
+        "stack": "Blocks sit one below the other, as the theme spaces them.",
+        "row": "Blocks sit side by side and wrap to a new line when there is no room.",
+        "column": "Blocks sit one below the other, with your spacing and alignment.",
+        "grid": "Blocks fill equal columns, row by row."
+      },
+      "columns": "Columns",
+      "wrap": "Line breaks",
+      "wrapValue": {
+        "wrap": "Wrap",
+        "nowrap": "Keep on one line"
+      },
+      "justify": "Horizontal",
+      "justifyColumn": "Vertical",
+      "justifyValue": {
+        "start": "Start",
+        "center": "Center",
+        "end": "End",
+        "between": "Space between",
+        "around": "Space around",
+        "evenly": "Space evenly"
+      },
+      "align": "Vertical",
+      "alignColumn": "Horizontal",
+      "alignValue": {
+        "start": "Start",
+        "center": "Center",
+        "end": "End",
+        "stretch": "Stretch",
+        "baseline": "Text baseline"
+      },
+      "gap": "Gap",
+      "stackOnPhones": "Stack into one column on phones",
+      "orderHint": "Blocks always keep their order, on screen and for screen readers. To change the order, move them in the Layers panel.",
+      "element": "HTML element",
+      "elements": {
+        "div": "Plain (div)",
+        "section": "Section",
+        "article": "Article",
+        "aside": "Aside",
+        "header": "Header",
+        "footer": "Footer",
+        "nav": "Navigation"
+      },
+      "elementNotHere": "not allowed here",
+      "elementHint": "Tells screen readers and search engines what this part is. It does not change how it looks.",
+      "item": {
+        "title": "In this row",
+        "overflowTitle": "Overflow",
+        "basis": "Share of the row",
+        "basisValue": {
+          "auto": "Fit content",
+          "25": "A quarter",
+          "33": "A third",
+          "50": "Half",
+          "66": "Two thirds",
+          "75": "Three quarters",
+          "100": "Full row"
+        },
+        "grow": "Fill the free space",
+        "overflow": "Content that doesn't fit",
+        "overflowValue": {
+          "visible": "Show",
+          "hidden": "Clip",
+          "auto": "Scroll"
+        }
+      },
+      "handle": {
+        "padTop": "Padding top",
+        "padBottom": "Padding bottom",
+        "minHeight": "Minimum height"
+      },
+      "readingOrder": "Blocks are placed in a different order than they are read. Keyboard and screen-reader users follow the order in the Layers panel.",
+      "matchReadingOrder": "Match the reading order to the layout"
     }
   },
   "dashboard": {

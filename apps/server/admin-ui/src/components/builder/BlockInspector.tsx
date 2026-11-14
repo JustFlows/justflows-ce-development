@@ -8,11 +8,13 @@ import { syncColumnCount } from "./block-defaults";
 import AnimationPanel from "./AnimationPanel";
 import ThemeBlockControls from "./ThemeBlockControls";
 import BlockStylePanel from "./BlockStylePanel";
+import { ContainerLayoutPanel, FlexItemPanel } from "./LayoutControls";
+import { supportsContainerLayout } from "@justflows/blocks";
 import BlockJsonPanel from "./BlockJsonPanel";
 import GridPlacementPanel from "./GridPlacementPanel";
 import BlockLayoutPanel from "./BlockLayoutPanel";
 import ReusablePanel, { type ReusableItem } from "./ReusablePanel";
-import { GRID_BLOCK_TYPE } from "./grid";
+import { GRID_BLOCK_TYPE, gridColumns, matchReadingOrder, readingOrderDiffers } from "./grid";
 import MediaImageField from "../MediaImageField";
 import { useMergeTags } from "../../lib/merge-tags";
 import { useThemeStyleTokens } from "../../lib/theme-style-tokens";
@@ -143,6 +145,10 @@ interface BlockInspectorProps {
   parentListStyle?: string;
   /** Column count of the grid parent, when there is one. */
   parentColumns?: number;
+  /** The parent's `containerLayout`, so a block in a row gets its item controls. */
+  parentLayout?: unknown;
+  /** Elements the ancestors render as, outermost first; see `ContainerLayoutPanel`. */
+  ancestorElements?: readonly string[];
   reusable?: ReusableItem[];
   onReloadReusable?: () => void;
   onConvertToReusable?: (ref: string) => void;
@@ -177,6 +183,8 @@ export default function BlockInspector({
   parentType = null,
   parentListStyle,
   parentColumns = 12,
+  parentLayout,
+  ancestorElements,
   reusable = [],
   onReloadReusable,
   onConvertToReusable,
@@ -601,6 +609,7 @@ export default function BlockInspector({
   if (compact) return <div>{fields}</div>;
 
   const styleSections = onlySections(sections, ["appearance", "colors"]);
+  const isContainer = supportsContainerLayout(block.type);
   const layoutSections = onlySections(sections, ["spacing", "size"]);
   const showThemeControls = !catalogEntry?.schema?.style || Boolean(p.style && typeof p.style === "object");
   const panels: Record<InspectorTab, React.ReactNode> = {
@@ -620,9 +629,25 @@ export default function BlockInspector({
         </>
       ) : null,
     layout:
-      parentType === GRID_BLOCK_TYPE || layoutSections.spacing || layoutSections.size ? (
+      isContainer || block.type === GRID_BLOCK_TYPE || parentType === GRID_BLOCK_TYPE || layoutSections.spacing || layoutSections.size ? (
         <>
+          {isContainer && <ContainerLayoutPanel block={block} onChange={onChange} ancestorElements={ancestorElements} />}
+          {block.type === GRID_BLOCK_TYPE && readingOrderDiffers(block.children ?? [], gridColumns(block)) && (
+            <div className="jf-inspector-lock__notice" role="note">
+              <p>{t("builder.container.readingOrder")}</p>
+              {onSyncBlock && (
+                <button
+                  type="button"
+                  className="jf-btn jf-btn--ghost jf-btn--sm"
+                  onClick={() => onSyncBlock({ ...block, children: matchReadingOrder(block.children ?? [], gridColumns(block)) })}
+                >
+                  {t("builder.container.matchReadingOrder")}
+                </button>
+              )}
+            </div>
+          )}
           {parentType === GRID_BLOCK_TYPE && <GridPlacementPanel block={block} columns={parentColumns} onChange={onChange} />}
+          {layoutSections.size && <FlexItemPanel block={block} onChange={onChange} parentLayout={parentLayout} />}
           <BlockLayoutPanel block={block} onChange={onChange} sections={layoutSections} />
         </>
       ) : null,

@@ -79,7 +79,10 @@ export {
 export type { BlockPlacement } from "./layout.js";
 export {
   ALIGN_SELF,
+  BASIS_PRESETS,
   DEFAULT_BLOCK_STYLE,
+  GROW_VALUES,
+  OVERFLOW_VALUES,
   RADIUS_PRESETS,
   SHADOW_PRESETS,
   SPACE_STEPS,
@@ -87,6 +90,7 @@ export {
   WIDTH_PRESETS,
   blockStyleDeclarations,
   compactBlockStyle,
+  flexBasis,
   isDefaultBlockStyle,
   parseBlockStyle,
   sanitizeBlockStyleProp,
@@ -150,7 +154,9 @@ export {
   CONTAINER_ALIGN,
   CONTAINER_DIRECTIONS,
   CONTAINER_DISPLAYS,
+  CONTAINER_ELEMENTS,
   CONTAINER_JUSTIFY,
+  CONTAINER_STACK,
   CONTAINER_WRAPS,
   OVERRIDE_BREAKPOINTS,
   STYLE_REF_RE,
@@ -195,3 +201,14 @@ export {
   serializeBlockClipboard,
 } from "./block-clipboard.js";
 export type { BlockClipboardParse, BlockClipboardPayload, ClipboardBlock } from "./block-clipboard.js";
+export {
+  CONTAINER_ELEMENT_TYPES,
+  CONTAINER_LAYOUT_CSS,
+  CONTAINER_LAYOUT_TARGETS,
+  applyContainerLayout,
+  containerElementAllowed,
+  containerLayoutAttrs,
+  containerLayoutCss,
+  supportsContainerLayout,
+} from "./container-layout.js";
+export type { ContainerLayoutAttrs } from "./container-layout.js";

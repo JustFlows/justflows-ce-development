@@ -1577,6 +1577,90 @@
         "cancel": "Annuler",
         "savePattern": "Enregistrer le modèle"
       }
+    },
+    "container": {
+      "title": "Disposition",
+      "mode": "Disposer le contenu",
+      "modes": {
+        "stack": "Pile",
+        "row": "Ligne",
+        "column": "Colonne",
+        "grid": "Grille"
+      },
+      "modeHint": {
+        "stack": "Les blocs s’empilent, avec l’espacement du thème.",
+        "row": "Les blocs se placent côte à côte et passent à la ligne quand la place manque.",
+        "column": "Les blocs s’empilent, avec votre espacement et votre alignement.",
+        "grid": "Les blocs remplissent des colonnes égales, ligne par ligne."
+      },
+      "columns": "Colonnes",
+      "wrap": "Retour à la ligne",
+      "wrapValue": {
+        "wrap": "Passer à la ligne",
+        "nowrap": "Garder sur une ligne"
+      },
+      "justify": "Horizontal",
+      "justifyColumn": "Vertical",
+      "justifyValue": {
+        "start": "Début",
+        "center": "Centre",
+        "end": "Fin",
+        "between": "Espace entre",
+        "around": "Espace autour",
+        "evenly": "Espacement égal"
+      },
+      "align": "Vertical",
+      "alignColumn": "Horizontal",
+      "alignValue": {
+        "start": "Début",
+        "center": "Centre",
+        "end": "Fin",
+        "stretch": "Étirer",
+        "baseline": "Ligne de base du texte"
+      },
+      "gap": "Espacement",
+      "stackOnPhones": "Empiler en une colonne sur téléphone",
+      "orderHint": "Les blocs gardent toujours leur ordre, à l’écran et pour les lecteurs d’écran. Pour changer l’ordre, déplacez-les dans le panneau Calques.",
+      "element": "Élément HTML",
+      "elements": {
+        "div": "Simple (div)",
+        "section": "Section",
+        "article": "Article",
+        "aside": "Encart",
+        "header": "En-tête",
+        "footer": "Pied",
+        "nav": "Navigation"
+      },
+      "elementNotHere": "non autorisé ici",
+      "elementHint": "Indique aux lecteurs d’écran et aux moteurs de recherche ce qu’est cette partie. L’apparence ne change pas.",
+      "item": {
+        "title": "Dans cette ligne",
+        "overflowTitle": "Débordement",
+        "basis": "Part de la ligne",
+        "basisValue": {
+          "auto": "Selon le contenu",
+          "25": "Un quart",
+          "33": "Un tiers",
+          "50": "La moitié",
+          "66": "Deux tiers",
+          "75": "Trois quarts",
+          "100": "Toute la ligne"
+        },
+        "grow": "Remplir l’espace libre",
+        "overflow": "Contenu qui ne tient pas",
+        "overflowValue": {
+          "visible": "Afficher",
+          "hidden": "Couper",
+          "auto": "Faire défiler"
+        }
+      },
+      "handle": {
+        "padTop": "Marge intérieure haute",
+        "padBottom": "Marge intérieure basse",
+        "minHeight": "Hauteur minimale"
+      },
+      "readingOrder": "Les blocs sont placés dans un autre ordre que l’ordre de lecture. Les personnes qui utilisent le clavier ou un lecteur d’écran suivent l’ordre du panneau Calques.",
+      "matchReadingOrder": "Aligner l’ordre de lecture sur la disposition"
     }
   },
   "dashboard": {

@@ -5435,3 +5435,136 @@ input[type="range"] {
   justify-content: flex-end;
   gap: 0.5rem;
 }
+
+/* Layout controls and canvas overlays (justflows-ce#299). */
+.jf-layout-modes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+.jf-layout-modes__option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.2rem;
+  border: 1px solid var(--jf-border);
+  border-radius: 6px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.jf-layout-modes__option.is-active {
+  border-color: var(--jf-accent);
+  background: var(--jf-accent-soft);
+  color: var(--jf-accent);
+  font-weight: 650;
+}
+.jf-layout-modes__option:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: 1px;
+}
+.jf-layout-modes__icon {
+  display: grid;
+  gap: 2px;
+  width: 1.4rem;
+  height: 1rem;
+}
+.jf-layout-modes__icon::before,
+.jf-layout-modes__icon::after {
+  content: "";
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.55;
+}
+.jf-layout-modes__icon--stack,
+.jf-layout-modes__icon--column {
+  grid-template-rows: 1fr 1fr;
+}
+.jf-layout-modes__icon--row {
+  grid-template-columns: 1fr 1fr;
+}
+.jf-layout-modes__icon--grid {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  background: linear-gradient(currentColor, currentColor) right bottom / calc(50% - 1px) calc(50% - 1px) no-repeat,
+    linear-gradient(currentColor, currentColor) left bottom / calc(50% - 1px) calc(50% - 1px) no-repeat;
+  color: inherit;
+}
+.jf-block-panel__check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  margin: 0.35rem 0;
+}
+.jf-layout-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.jf-layout-overlay__pad {
+  position: absolute;
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--jf-accent) 18%, transparent) 0 4px,
+    transparent 4px 8px
+  );
+}
+.jf-layout-overlay__content {
+  position: absolute;
+  outline: 1px dashed color-mix(in srgb, var(--jf-accent) 70%, transparent);
+  outline-offset: -1px;
+}
+.jf-layout-overlay__track {
+  position: absolute;
+  inset-block: 0;
+  background: color-mix(in srgb, var(--jf-accent) 8%, transparent);
+  border-inline: 1px dashed color-mix(in srgb, var(--jf-accent) 45%, transparent);
+}
+.jf-layout-overlay__handle {
+  position: absolute;
+  width: 28px;
+  height: 10px;
+  margin-left: -14px;
+  margin-top: -5px;
+  border-radius: 5px;
+  border: 2px solid var(--jf-surface);
+  background: var(--jf-accent);
+  box-shadow: 0 0 0 1px var(--jf-accent);
+  cursor: ns-resize;
+  pointer-events: auto;
+  touch-action: none;
+}
+.jf-layout-overlay__handle--minHeight {
+  width: 40px;
+  margin-left: -20px;
+  background: var(--jf-surface);
+}
+.jf-layout-overlay__handle:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: 3px;
+}
+.jf-layout-overlay__value {
+  position: absolute;
+  inset-inline-start: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: var(--jf-text);
+  color: var(--jf-surface);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+@media (forced-colors: active) {
+  .jf-layout-overlay__handle {
+    forced-color-adjust: none;
+    background: Highlight;
+    border-color: Canvas;
+  }
+}

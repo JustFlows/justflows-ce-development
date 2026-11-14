@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { injectRootAttrs, withBlockAnimation } from "./animation.js";
+import { applyContainerLayout } from "./container-layout.js";
 import { blockScopeClass, sanitizeBlockClassName, scopeBlockCss } from "./safe-css.js";
 import { isDefaultPlacement, isPlacementShaped, parseBlockPlacement, placementStyleVars } from "./layout.js";
 import { blockStyleDeclarations, parseBlockStyle } from "./block-style.js";
@@ -69,7 +70,8 @@ export function withBlockChrome(html: string, node: BlockChromeNode): string {
   if (!html.trim()) return html;
   const props = asRecord(node.props);
 
-  let out = withBlockAnimation(html, props);
+  /** Layout first: it may swap the root element that the attributes below are added to. */
+  let out = withBlockAnimation(applyContainerLayout(html, node), props);
 
   const classes: string[] = [];
   const custom = sanitizeBlockClassName(props["className"]);

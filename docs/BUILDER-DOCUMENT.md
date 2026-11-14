@@ -167,15 +167,47 @@ issues in document order and never changes the input:
 ## Additive Builder 2.0 values
 
 These keys live in `props` and are sanitized on every block type. An invalid
-value is dropped rather than stored. The schemas are enforced now. The
-renderer and the editor controls arrive with the tickets named below.
+value is dropped rather than stored. `containerLayout` is rendered and
+editable. The renderer and editor controls for the others arrive with the
+tickets named below.
 
 ### `containerLayout` (#299)
 
-`{ display?: "flex" | "grid", direction?: "row" | "column", wrap?, justify?, align?, gap?: SpaceStep, columns?: 1–12 }`
+`{ display?: "flex" | "grid", direction?: "row" | "column", wrap?, justify?, align?, gap?: SpaceStep, columns?: 1–12, element?, stack?: "mobile" | "never" }`
 
 Every field is an allowlisted keyword, a spacing scale step, or a bounded
 integer. Arbitrary CSS and absolute positioning are not representable.
+
+- **Containers.** Sections, containers, groups and columns accept a layout
+  (`CONTAINER_LAYOUT_TARGETS`). A section lays out its `jf-section__inner`
+  wrapper; the others use their root element. On any other type the value is
+  stored but ignored. Without `display`, a container renders exactly as before.
+  No migration is needed.
+- **Rendering.** `withBlockChrome` calls `applyContainerLayout` on every render
+  path. It adds `jf-cl` classes and a few declarations: gap, justify, align and
+  wrap, plus `--jf-cl-cols` and `--jf-cl-gap`. `CONTAINER_LAYOUT_CSS` is part of
+  `/theme.css`, so it works on every theme and in the builder's scoped preview.
+  The canvas calls the same `containerLayoutAttrs`.
+- **Phones.** Rows and grids stack into one column at or below 600px unless
+  `stack` is `"never"`. Stacking keeps source order.
+- **Reading order.** There is no reverse direction and no `order`, so visual
+  order is source order. Explicit placement in `core.grid` can still differ;
+  the builder then says so and offers to reorder the blocks to match.
+- **Elements.** `element` swaps the root `div` of a group or container for
+  `section`, `article`, `aside`, `header`, `footer` or `nav`. `main` is not
+  offered. The editor refuses a `header` or `footer` inside another one
+  (`containerElementAllowed`).
+
+A block inside a row uses three `style` fields:
+
+- `grow` (`"1"` fills the free space).
+- `basis` (`25`, `33`, `50`, `66`, `75` or `100` percent of the row, minus its
+  share of the gaps, so equal shares fill one line).
+- `overflow` (`hidden` or `auto`).
+
+`grow` and `basis` are written as `--jf-grow` and `--jf-basis`, which only a
+row reads, and a stacked row drops the basis on phones. `overflow` is written
+directly as `overflow` and applies to any block.
 
 ### `styleRef` (#301)
 

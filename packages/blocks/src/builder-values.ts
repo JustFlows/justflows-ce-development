@@ -12,8 +12,8 @@
  * as it did before they existed.
  *
  * The schemas are defined and sanitized now so stored data is safe from the
- * first save. The renderer and editor controls that act on them arrive with
- * the responsive (#300), layout (#299), and global style (#301) tickets.
+ * first save. `containerLayout` renders through `container-layout.ts` (#299);
+ * the others arrive with the responsive (#300) and global style (#301) tickets.
  */
 
 import { ALIGN_SELF, SPACE_STEPS, TEXT_ALIGN, WIDTH_PRESETS, type SpaceStep } from "./block-style.js";
@@ -24,6 +24,13 @@ export const CONTAINER_DIRECTIONS = ["row", "column"] as const;
 export const CONTAINER_WRAPS = ["wrap", "nowrap"] as const;
 export const CONTAINER_JUSTIFY = ["start", "center", "end", "between", "around", "evenly"] as const;
 export const CONTAINER_ALIGN = ["start", "center", "end", "stretch", "baseline"] as const;
+/**
+ * HTML elements a container may render as (justflows-ce#299). `main` is left
+ * out: a page has exactly one, and the theme provides it.
+ */
+export const CONTAINER_ELEMENTS = ["div", "section", "article", "aside", "header", "footer", "nav"] as const;
+/** When a row or grid falls back to one column: on phones (the default) or never. */
+export const CONTAINER_STACK = ["mobile", "never"] as const;
 
 /** How a container block lays out its children. Every field is optional. */
 export interface ContainerLayout {
@@ -36,6 +43,10 @@ export interface ContainerLayout {
   gap?: SpaceStep;
   /** Grid track count when `display` is `grid`. */
   columns?: number;
+  /** The element the container renders as; see `CONTAINER_ELEMENTS`. */
+  element?: (typeof CONTAINER_ELEMENTS)[number];
+  /** A row or grid stacks into one column on phones unless this is `never`. */
+  stack?: (typeof CONTAINER_STACK)[number];
 }
 
 /**
@@ -127,6 +138,10 @@ export function sanitizeContainerLayout(raw: unknown): ContainerLayout | undefin
   if (gap) out.gap = gap;
   const columns = boundedInt(input["columns"], 1, GRID_MAX_COLUMNS);
   if (columns !== undefined) out.columns = columns;
+  const element = oneOf(input["element"], CONTAINER_ELEMENTS);
+  if (element) out.element = element;
+  const stack = oneOf(input["stack"], CONTAINER_STACK);
+  if (stack) out.stack = stack;
   return compact(out);
 }
 

@@ -52,6 +52,7 @@ import {
   type BlockAction,
 } from "./block-actions";
 import BlockActionsMenu from "./BlockActionsMenu";
+import { ancestorElementsOf } from "./LayoutControls";
 import MultiSelectionInspector from "./MultiSelectionInspector";
 import SaveSelectionDialog, { type SaveKind } from "./SaveSelectionDialog";
 import { blocksFromClipboard, canPasteBlocks, readClipboardText, writeBlockClipboard } from "./builder-clipboard";
@@ -731,6 +732,8 @@ export default function PageBuilder({
         parentType={selectedParent?.type ?? null}
         parentListStyle={selectedParent?.type === "core.list" ? String(selectedParent.props.listStyle ?? "bullet") : undefined}
         parentColumns={selectedParent?.type === GRID_BLOCK_TYPE ? gridColumns(selectedParent) : 12}
+        parentLayout={selectedParent?.props.containerLayout}
+        ancestorElements={ancestorElementsOf(selectedInHeader ? headerBlocks : blocks, selectedBlock.id)}
         reusable={reusable}
         onReloadReusable={reloadReusable}
         onConvertToReusable={convertToReusable}

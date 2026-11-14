@@ -1577,6 +1577,90 @@
         "cancel": "Abbrechen",
         "savePattern": "Vorlage speichern"
       }
+    },
+    "container": {
+      "title": "Anordnung",
+      "mode": "Inhalt anordnen",
+      "modes": {
+        "stack": "Stapel",
+        "row": "Zeile",
+        "column": "Spalte",
+        "grid": "Raster"
+      },
+      "modeHint": {
+        "stack": "Blöcke stehen untereinander, mit den Abständen des Themes.",
+        "row": "Blöcke stehen nebeneinander und brechen in eine neue Zeile um, wenn kein Platz ist.",
+        "column": "Blöcke stehen untereinander, mit deinen Abständen und deiner Ausrichtung.",
+        "grid": "Blöcke füllen gleich breite Spalten, Zeile für Zeile."
+      },
+      "columns": "Spalten",
+      "wrap": "Zeilenumbruch",
+      "wrapValue": {
+        "wrap": "Umbrechen",
+        "nowrap": "In einer Zeile halten"
+      },
+      "justify": "Horizontal",
+      "justifyColumn": "Vertikal",
+      "justifyValue": {
+        "start": "Anfang",
+        "center": "Mitte",
+        "end": "Ende",
+        "between": "Abstand dazwischen",
+        "around": "Abstand rundum",
+        "evenly": "Gleichmäßig verteilt"
+      },
+      "align": "Vertikal",
+      "alignColumn": "Horizontal",
+      "alignValue": {
+        "start": "Anfang",
+        "center": "Mitte",
+        "end": "Ende",
+        "stretch": "Strecken",
+        "baseline": "Textgrundlinie"
+      },
+      "gap": "Abstand",
+      "stackOnPhones": "Auf Handys untereinander stapeln",
+      "orderHint": "Blöcke behalten immer ihre Reihenfolge, auf dem Bildschirm und für Screenreader. Ändere die Reihenfolge im Ebenen-Panel.",
+      "element": "HTML-Element",
+      "elements": {
+        "div": "Einfach (div)",
+        "section": "Abschnitt",
+        "article": "Artikel",
+        "aside": "Randbereich",
+        "header": "Kopfbereich",
+        "footer": "Fußbereich",
+        "nav": "Navigation"
+      },
+      "elementNotHere": "hier nicht erlaubt",
+      "elementHint": "Sagt Screenreadern und Suchmaschinen, was dieser Teil ist. Am Aussehen ändert es nichts.",
+      "item": {
+        "title": "In dieser Zeile",
+        "overflowTitle": "Überlauf",
+        "basis": "Anteil an der Zeile",
+        "basisValue": {
+          "auto": "Passend zum Inhalt",
+          "25": "Ein Viertel",
+          "33": "Ein Drittel",
+          "50": "Die Hälfte",
+          "66": "Zwei Drittel",
+          "75": "Drei Viertel",
+          "100": "Ganze Zeile"
+        },
+        "grow": "Freien Platz füllen",
+        "overflow": "Inhalt, der nicht passt",
+        "overflowValue": {
+          "visible": "Anzeigen",
+          "hidden": "Abschneiden",
+          "auto": "Scrollen"
+        }
+      },
+      "handle": {
+        "padTop": "Innenabstand oben",
+        "padBottom": "Innenabstand unten",
+        "minHeight": "Mindesthöhe"
+      },
+      "readingOrder": "Die Blöcke stehen in einer anderen Reihenfolge, als sie gelesen werden. Tastatur- und Screenreader-Nutzer folgen der Reihenfolge im Ebenen-Panel.",
+      "matchReadingOrder": "Lesereihenfolge an die Anordnung anpassen"
     }
   },
   "dashboard": {

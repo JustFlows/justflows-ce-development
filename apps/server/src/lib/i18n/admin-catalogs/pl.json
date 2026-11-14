@@ -1572,6 +1572,90 @@
         "cancel": "Anuluj",
         "savePattern": "Zapisz wzorzec"
       }
+    },
+    "container": {
+      "title": "Układ",
+      "mode": "Rozmieść zawartość",
+      "modes": {
+        "stack": "Stos",
+        "row": "Wiersz",
+        "column": "Kolumna",
+        "grid": "Siatka"
+      },
+      "modeHint": {
+        "stack": "Bloki są jeden pod drugim, z odstępami motywu.",
+        "row": "Bloki są obok siebie i przechodzą do nowej linii, gdy brakuje miejsca.",
+        "column": "Bloki są jeden pod drugim, z Twoimi odstępami i wyrównaniem.",
+        "grid": "Bloki wypełniają równe kolumny, wiersz po wierszu."
+      },
+      "columns": "Kolumny",
+      "wrap": "Łamanie wierszy",
+      "wrapValue": {
+        "wrap": "Zawijaj",
+        "nowrap": "Trzymaj w jednej linii"
+      },
+      "justify": "W poziomie",
+      "justifyColumn": "W pionie",
+      "justifyValue": {
+        "start": "Początek",
+        "center": "Środek",
+        "end": "Koniec",
+        "between": "Odstęp między",
+        "around": "Odstęp wokół",
+        "evenly": "Równe odstępy"
+      },
+      "align": "W pionie",
+      "alignColumn": "W poziomie",
+      "alignValue": {
+        "start": "Początek",
+        "center": "Środek",
+        "end": "Koniec",
+        "stretch": "Rozciągnij",
+        "baseline": "Linia bazowa tekstu"
+      },
+      "gap": "Odstęp",
+      "stackOnPhones": "Ułóż w jedną kolumnę na telefonach",
+      "orderHint": "Bloki zawsze zachowują kolejność, na ekranie i dla czytników ekranu. Aby ją zmienić, przenieś je w panelu Warstwy.",
+      "element": "Element HTML",
+      "elements": {
+        "div": "Zwykły (div)",
+        "section": "Sekcja",
+        "article": "Artykuł",
+        "aside": "Panel boczny",
+        "header": "Nagłówek",
+        "footer": "Stopka",
+        "nav": "Nawigacja"
+      },
+      "elementNotHere": "niedozwolone tutaj",
+      "elementHint": "Mówi czytnikom ekranu i wyszukiwarkom, czym jest ta część. Nie zmienia wyglądu.",
+      "item": {
+        "title": "W tym wierszu",
+        "overflowTitle": "Przepełnienie",
+        "basis": "Część wiersza",
+        "basisValue": {
+          "auto": "Dopasuj do treści",
+          "25": "Ćwierć",
+          "33": "Jedna trzecia",
+          "50": "Połowa",
+          "66": "Dwie trzecie",
+          "75": "Trzy czwarte",
+          "100": "Cały wiersz"
+        },
+        "grow": "Wypełnij wolne miejsce",
+        "overflow": "Treść, która się nie mieści",
+        "overflowValue": {
+          "visible": "Pokaż",
+          "hidden": "Przytnij",
+          "auto": "Przewijaj"
+        }
+      },
+      "handle": {
+        "padTop": "Dopełnienie u góry",
+        "padBottom": "Dopełnienie u dołu",
+        "minHeight": "Minimalna wysokość"
+      },
+      "readingOrder": "Bloki są ułożone w innej kolejności niż kolejność czytania. Osoby korzystające z klawiatury i czytników ekranu idą za kolejnością w panelu Warstwy.",
+      "matchReadingOrder": "Dopasuj kolejność czytania do układu"
     }
   },
   "dashboard": {
