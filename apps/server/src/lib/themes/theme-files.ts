@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { sanitizeTemplateDefaults, type TemplateDefaults } from "@justflows/blocks";
 import path from "node:path";
 import { getJfRoot } from "../runtime/jf-root.js";
 import { resolvePathUnderBase } from "../security/safe-path.js";
@@ -439,6 +440,20 @@ export function loadThemeTemplate(
   if (slug === "front-page") return loadThemeDemoHome(themeId, installedPath);
   if (slug === "home") return loadThemeDemoBlog(themeId, installedPath);
   return null;
+}
+
+/** A theme template with its `templateDefaults`, when the file declares any (justflows-ce#301). */
+export function loadThemeTemplateDoc(
+  themeId: string,
+  slug: string,
+  installedPath?: string | null,
+): { blocks: BlockNode[]; templateDefaults?: TemplateDefaults } | null {
+  const blocks = loadThemeTemplate(themeId, slug, installedPath);
+  if (!blocks) return null;
+  const dir = TEMPLATE_SLUG_RE.test(slug) ? themeSubdir(themeId, "templates", installedPath) : null;
+  const raw = dir ? readJsonFile<{ templateDefaults?: unknown }>(dir, `${slug}.json`) : null;
+  const templateDefaults = sanitizeTemplateDefaults(raw?.templateDefaults);
+  return templateDefaults ? { blocks, templateDefaults } : { blocks };
 }
 
 /** The template slugs a theme actually ships a file for (`templates/*.json`). */

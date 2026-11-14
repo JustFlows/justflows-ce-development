@@ -53,6 +53,7 @@ import {
 } from "./block-actions";
 import BlockActionsMenu from "./BlockActionsMenu";
 import { ancestorElementsOf } from "./LayoutControls";
+import { TemplateDefaultsContext, type TemplateContextValue } from "./template-defaults-context";
 import MultiSelectionInspector from "./MultiSelectionInspector";
 import SaveSelectionDialog, { type SaveKind } from "./SaveSelectionDialog";
 import { blocksFromClipboard, canPasteBlocks, readClipboardText, writeBlockClipboard } from "./builder-clipboard";
@@ -104,6 +105,10 @@ interface PageBuilderProps {
   shellBar?: BuilderShellBar;
   /** Site navigation and document controls shown beside the block library. */
   sitePanel?: ReactNode;
+  /** Global styles and presets panel (justflows-ce#301). */
+  stylesPanel?: ReactNode;
+  /** The template this document renders through and its style defaults, when wrapped by one. */
+  templateContext?: TemplateContextValue | null;
 }
 
 export default function PageBuilder({
@@ -122,6 +127,8 @@ export default function PageBuilder({
   context,
   shellBar,
   sitePanel,
+  stylesPanel,
+  templateContext = null,
 }: PageBuilderProps) {
   const { t } = useT();
   const [prefs, setPrefs] = useBuilderPrefs(useOptionalSessionUserId());
@@ -756,6 +763,7 @@ export default function PageBuilder({
 
   return (
     <InlineFieldsContext.Provider value={inlineFields}>
+    <TemplateDefaultsContext.Provider value={templateContext}>
     <MergeTagsContext.Provider value={mergeTags}>
       <PreviewSchemeContext.Provider value={previewScheme}>
       <BuilderDragProvider
@@ -815,6 +823,7 @@ export default function PageBuilder({
               />
             }
             sitePanel={sitePanel}
+            stylesPanel={stylesPanel}
             layers={
               <Navigator
                 blocks={headerOnly ? headerBlocks : blocks}
@@ -856,6 +865,7 @@ export default function PageBuilder({
       </BuilderDragProvider>
       </PreviewSchemeContext.Provider>
     </MergeTagsContext.Provider>
+    </TemplateDefaultsContext.Provider>
     </InlineFieldsContext.Provider>
   );
 }

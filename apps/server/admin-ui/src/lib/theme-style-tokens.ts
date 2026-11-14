@@ -8,6 +8,9 @@ export interface ThemeStyleToken {
   description?: string;
   type: string;
   value: string;
+  /** The theme's own value, and whether the site changed it (justflows-ce#301). */
+  defaultValue?: string;
+  overridden?: boolean;
   presets?: { label: string; value: string }[];
   min?: number;
   max?: number;

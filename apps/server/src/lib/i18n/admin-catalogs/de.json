@@ -1462,7 +1462,8 @@
       "statePublished": "Veröffentlicht",
       "layers": "Ebenen",
       "previewWidth": "Vorschaubreite in Pixeln",
-      "canvasWidth": "{width}px · {breakpoint}"
+      "canvasWidth": "{width}px · {breakpoint}",
+      "styles": "Stile"
     },
     "drop": {
       "rejectNesting": "{child} kann nicht in {parent} stehen.",
@@ -1705,6 +1706,64 @@
       "inherit": "Übernehmen ({value})",
       "reset": "Zurücksetzen",
       "resetField": "{field} für {breakpoint} zurücksetzen"
+    },
+    "sources": {
+      "themeDefault": "Theme-Standard",
+      "siteToken": "Für diese Website geändert",
+      "theme": "Vom Theme",
+      "local": "An diesem Block gesetzt",
+      "localOverPreset": "An diesem Block gesetzt, über der Vorlage „{name}“",
+      "preset": "Aus der Vorlage „{name}“",
+      "breakpoint": "Gesetzt für {breakpoint}",
+      "resetField": "{field} auf die Ebene darunter zurücksetzen",
+      "resetToTheme": "{field} auf den Wert des Themes zurücksetzen",
+      "template": "Aus dem Template „{name}“. Bearbeite das Template, um es zu ändern."
+    },
+    "presets": {
+      "title": "Stilvorlage",
+      "use": "Vorlage",
+      "none": "Keine",
+      "missing": "Fehlende Vorlage: {id}",
+      "missingHint": "Dieser Block verweist auf eine Vorlage, die es nicht mehr gibt. Er wird ohne sie dargestellt.",
+      "using": "Nutzt die Vorlage „{name}“. Bearbeite die Vorlage unter Stile, um jeden Block zu ändern, der sie nutzt.",
+      "usingWithLocal": "Nutzt die Vorlage „{name}“, mit den eigenen Werten dieses Blocks darüber.",
+      "detach": "Lösen (Werte behalten)",
+      "updateFromBlock": "Werte dieses Blocks in „{name}“ übernehmen",
+      "saveAs": "Stil als Vorlage speichern…",
+      "name": "Name der Vorlage",
+      "create": "Vorlage anlegen",
+      "library": "Stilvorlagen",
+      "libraryHint": "Benannte Sätze aus Abständen, Größe, Ecken, Schatten und Farben. Ändert man einen, ändert sich jeder Block, der ihn nutzt, auf jeder Seite.",
+      "empty": "Noch keine Vorlagen. Gestalte einen Block und wähle im Reiter Stil „Stil als Vorlage speichern“.",
+      "edit": "Bearbeiten",
+      "done": "Fertig",
+      "usageLoading": "Verwendung wird geprüft…",
+      "usageNone": "Noch nirgends verwendet.",
+      "usage": "Verwendet von {count}: {where}",
+      "usageTemplates": "{count} Templates",
+      "usageReusable": "{count} wiederverwendbare Blöcke",
+      "usagePatterns": "{count} Muster",
+      "deleteConfirm": "Vorlage „{name}“ löschen?",
+      "deleteUsedConfirm": "Vorlage „{name}“ löschen? Sie wird von {count} Elementen verwendet, die ihre Gestaltung verlieren."
+    },
+    "globalStyles": {
+      "title": "Globale Stile",
+      "impact": "Diese gelten für jede Seite, Kopf- und Fußbereich, Templates und wiederverwendbare Blöcke. Änderungen siehst du hier sofort; live gehen sie beim Veröffentlichen.",
+      "draftState": "Unveröffentlichte Änderungen",
+      "publishedState": "Alles veröffentlicht",
+      "revert": "Auf Veröffentlichtes zurücksetzen",
+      "unpublished": "unveröffentlicht",
+      "changedCount": "{count} geändert",
+      "saveError": "Stile konnten nicht gespeichert werden",
+      "readOnly": "Nur Administratoren und Redakteure können globale Stile ändern."
+    },
+    "templateDefaults": {
+      "title": "Vorgaben für Inhalte",
+      "hint": "Ausgangsstile für Inhalte, die das Template {template} umschließt, je Blocktyp. Eigene Werte eines Blocks gewinnen weiterhin.",
+      "empty": "Noch keine Vorgaben. Wähle unten einen Blocktyp.",
+      "add": "Blocktyp hinzufügen",
+      "addPlaceholder": "Blocktyp wählen…",
+      "remove": "Vorgaben für {type} entfernen"
     }
   },
   "dashboard": {

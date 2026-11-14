@@ -12,6 +12,13 @@ import {
 import { useEffect, useState } from "react";
 import { useT } from "../../i18n/I18nProvider";
 import type { BlockNode } from "./types";
+import { resolveStyleValue, setBreakpointValue, type BreakpointSource, type StylePreset } from "@justflows/blocks";
+
+/** Whether a preset sets this field at all. */
+function isPresetValue(presetStyle: BlockStyle, key: keyof BlockStyle): boolean {
+  const value = presetStyle[key];
+  return key === "vars" ? Object.keys(value as Record<string, string>).length > 0 : value !== "" && value !== 0;
+}
 import { readComputedBlockValues, type ComputedBlockValues } from "./computed-block-values";
 import type { InspectorSections } from "./inspector-sections";
 
@@ -57,13 +64,60 @@ export default function BlockLayoutPanel({
   block,
   onChange,
   sections = ALL_SECTIONS,
+  preset = null,
+  previewing = "desktop",
+  templateLayer = null,
 }: {
   block: BlockNode;
   onChange: (props: Record<string, unknown>) => void;
   sections?: Pick<InspectorSections, "spacing" | "size" | "appearance" | "colors" | "field">;
+  /** The preset the block uses, so a value it supplies is labelled as such (justflows-ce#301). */
+  preset?: StylePreset | null;
+  /** The breakpoint the canvas previews, so an override there is labelled and can be reset. */
+  previewing?: BreakpointSource;
+  /** The template's default style for this block type, named after the template (justflows-ce#301). */
+  templateLayer?: { name: string; style: Record<string, unknown> } | null;
 }) {
   const { t } = useT();
   const style = parseBlockStyle(block.props.style);
+  const presetStyle = preset ? parseBlockStyle(preset.style) : null;
+
+  /**
+   * Where a field's value comes from, and a reset for that layer only: a
+   * breakpoint override resets to inheriting, a local value to the preset or
+   * theme beneath it. Preset and theme values are read-only here.
+   */
+  const sourceNote = (key: keyof BlockStyle, label: string) => {
+    const resolved = resolveStyleValue(block.props, key, preset, previewing, templateLayer?.style);
+    let text: string;
+    let reset: (() => void) | null = null;
+    if (resolved.layer === "breakpoint-override") {
+      text = t("builder.sources.breakpoint", { breakpoint: t(`builder.shell.breakpointLabel.${resolved.breakpoint}`) });
+      reset = () => onChange(setBreakpointValue(block.props, resolved.breakpoint!, "style", key, undefined));
+    } else if (resolved.layer === "local") {
+      text = preset && presetStyle && isPresetValue(presetStyle, key) ? t("builder.sources.localOverPreset", { name: preset.name }) : t("builder.sources.local");
+      reset = () => set({ [key]: typeof style[key] === "number" ? 0 : "" } as Partial<BlockStyle>);
+    } else if (resolved.layer === "style-preset") {
+      text = t("builder.sources.preset", { name: preset!.name });
+    } else if (resolved.layer === "template-default") {
+      text = t("builder.sources.template", { name: templateLayer!.name });
+    } else {
+      text = t("builder.sources.theme");
+    }
+    return (
+      <span className={`jf-responsive__source${resolved.layer === "local" || resolved.layer === "breakpoint-override" ? " jf-responsive__source--own" : ""}`}>
+        {text}
+        {reset && (
+          <>
+            {" · "}
+            <button type="button" className="jf-source-reset" aria-label={t("builder.sources.resetField", { field: label })} onClick={reset}>
+              {t("builder.responsive.reset")}
+            </button>
+          </>
+        )}
+      </span>
+    );
+  };
   const [computed, setComputed] = useState<ComputedBlockValues>(EMPTY_COMPUTED);
 
   useEffect(() => {
@@ -97,19 +151,22 @@ export default function BlockLayoutPanel({
   }
 
   const spaceField = (label: string, key: keyof BlockStyle) => (
-    <label className="jf-block-panel__field jf-block-panel__field--inline">
-      {label}
-      <select
-        value={String(style[key])}
-        onChange={(e) => set({ [key]: e.target.value } as Partial<BlockStyle>)}
-      >
-        {SPACE_STEPS.map((step) => (
-          <option key={step} value={step}>
-            {SPACE_LABELS[step] ?? step}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="jf-source-field">
+      <label className="jf-block-panel__field jf-block-panel__field--inline">
+        {label}
+        <select
+          value={String(style[key])}
+          onChange={(e) => set({ [key]: e.target.value } as Partial<BlockStyle>)}
+        >
+          {SPACE_STEPS.map((step) => (
+            <option key={step} value={step}>
+              {step === "" && presetStyle && presetStyle[key] ? `${t("builder.layout.auto")} · ${SPACE_LABELS[String(presetStyle[key])] ?? presetStyle[key]}` : (SPACE_LABELS[step] ?? step)}
+            </option>
+          ))}
+        </select>
+      </label>
+      {sourceNote(key, label)}
+    </div>
   );
 
   const choiceField = (
@@ -118,23 +175,26 @@ export default function BlockLayoutPanel({
     options: readonly string[],
     inherited = "",
   ) => (
-    <label className="jf-block-panel__field jf-block-panel__field--inline">
-      {label}
-      <select
-        value={String(style[key])}
-        onChange={(e) => set({ [key]: e.target.value } as Partial<BlockStyle>)}
-      >
-        {options.map((value) => (
-          <option key={value} value={value}>
-            {value === ""
-              ? inherited
-                ? `${t("builder.layout.auto")} · ${inherited}`
-                : "—"
-              : t(`builder.layout.value.${value}`)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="jf-source-field">
+      <label className="jf-block-panel__field jf-block-panel__field--inline">
+        {label}
+        <select
+          value={String(style[key])}
+          onChange={(e) => set({ [key]: e.target.value } as Partial<BlockStyle>)}
+        >
+          {options.map((value) => (
+            <option key={value} value={value}>
+              {value === ""
+                ? inherited
+                  ? `${t("builder.layout.auto")} · ${inherited}`
+                  : "—"
+                : t(`builder.layout.value.${value}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+      {sourceNote(key, label)}
+    </div>
   );
 
   // Uses the generic `.jf-field` markup, not `.jf-block-panel__field`, so the
@@ -211,6 +271,7 @@ export default function BlockLayoutPanel({
             </button>
           ) : null}
         </div>
+        {sourceNote(key, label)}
       </div>
     );
   };

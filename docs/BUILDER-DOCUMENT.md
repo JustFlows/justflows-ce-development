@@ -211,9 +211,32 @@ directly as `overflow` and applies to any block.
 
 ### `styleRef` (#301)
 
-The id of a named style preset (`^[a-z][a-z0-9-]{0,63}$`). A preset is a site- or
-theme-level set of token values. The block stores only the reference, never a
-copy of the values.
+The id of a named style preset (`^[a-z][a-z0-9-]{0,63}$`). The block stores
+only the reference, never a copy of the values.
+
+- **Presets.** A preset is `{ id, name, style }`, where `style` holds the same
+  bounded `BlockStyle` values a block can hold locally (`sanitizeStylePreset`).
+  A site keeps a published list and an optional draft list in the
+  `block_style_presets` and `block_style_presets_draft` settings, saved
+  atomically. `/api/style-presets` lists both (`items` is the draft when
+  there is one), upserts and deletes in the draft, reports usage, and
+  publishes or discards the draft. Changing the library needs the theme
+  customize roles; referencing a preset is ordinary content editing.
+- **Rendering.** `stylePresetsCss` writes one rule per preset, `.jf-sp-<id>`,
+  sorted by id with declarations in `blockStyleDeclarations` order, so the
+  output is deterministic. It is part of `/theme.css` after the theme's tokens
+  and before plugin and custom CSS; a preview serves the draft list.
+  `withBlockChrome` gives a block with a `styleRef` that class. Its own
+  `style` values stay inline, so they win over the preset. A missing preset
+  renders nothing: the block falls back to the theme.
+- **Usage.** `stylePresetUsage` counts content by type and lists template
+  parts, templates, reusable blocks and patterns that reference the preset,
+  with one bounded `LIKE` per table. The builder shows it before a delete.
+- **Management API and MCP.** `/api/manage/v1/style-presets` mirrors the
+  admin routes (`content:read` to list and see usage, `settings:manage` to
+  save, delete, publish and discard), and the assistant has
+  `style_presets_list`, `style_presets_save`, `style_presets_delete`,
+  `style_presets_usage`, `style_presets_publish` and `style_presets_discard`.
 
 ### `breakpoints` (#300)
 
@@ -275,7 +298,30 @@ copy of the values.
 
 A later layer wins. Resetting a layer removes only that layer's value and
 reveals the one beneath it. The inspector shows which layer supplied each
-value.
+value:
+
+- `resolveStyleValue(props, field, preset, bp)` in `@justflows/blocks` tells
+  local, preset and breakpoint values apart; what is left comes from the theme.
+- `/api/themes/style-tokens` adds `defaultValue` and `overridden` per token,
+  and `/api/themes/customize` returns `defaults`, so the editor can say
+  whether an inherited value is the theme's own (`theme-default`) or a change
+  made for this site (`global-token`), and reset it to the theme's value.
+- `template-default` comes from the template a document renders through.
+  A template document carries `templateDefaults`, a map of block type to
+  compact `BlockStyle` values (`sanitizeTemplateDefaults`, at most 50 types).
+  Theme template files may ship it too. At render, `applyTemplateDefaults`
+  merges each default beneath the matching blocks' own `style` before the
+  chrome is written, so the content document is never changed and a block's
+  own values win; the merged value is inline, so it also beats a preset's
+  class. The public renderer applies it when a page or the front page renders
+  through a template with defaults (`TemplateRenderOpts.contentBlocks`), and
+  the builder applies the same function on the canvas. The builder learns the
+  template through `GET /api/templates/resolve?contentType=&slug=`, which
+  returns the resolved slug and its defaults (drafts included). Templates read
+  and write `templateDefaults` on `GET`/`PUT /api/templates/:slug` and the
+  management API's `/templates/:slug`; a `PUT` that omits the key keeps the
+  stored defaults, `null` clears them. The theme builder's template panel
+  edits them with the same controls a block has.
 
 ## Migrations and deprecation
 

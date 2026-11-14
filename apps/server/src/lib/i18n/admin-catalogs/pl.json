@@ -1457,7 +1457,8 @@
       "statePublished": "Opublikowano",
       "layers": "Warstwy",
       "previewWidth": "Szerokość podglądu w pikselach",
-      "canvasWidth": "{width} px · {breakpoint}"
+      "canvasWidth": "{width} px · {breakpoint}",
+      "styles": "Style"
     },
     "drop": {
       "rejectNesting": "Bloku {child} nie można umieścić w {parent}.",
@@ -1700,6 +1701,64 @@
       "inherit": "Dziedzicz ({value})",
       "reset": "Przywróć",
       "resetField": "Przywróć {field} dla: {breakpoint}"
+    },
+    "sources": {
+      "themeDefault": "Domyślne motywu",
+      "siteToken": "Zmienione dla tej witryny",
+      "theme": "Z motywu",
+      "local": "Ustawione w tym bloku",
+      "localOverPreset": "Ustawione w tym bloku, ponad szablonem stylu „{name}”",
+      "preset": "Z szablonu stylu „{name}”",
+      "breakpoint": "Ustawione dla: {breakpoint}",
+      "resetField": "Przywróć {field} do warstwy poniżej",
+      "resetToTheme": "Przywróć {field} do wartości motywu",
+      "template": "Z szablonu „{name}”. Edytuj szablon, aby to zmienić."
+    },
+    "presets": {
+      "title": "Szablon stylu",
+      "use": "Szablon",
+      "none": "Brak",
+      "missing": "Brak szablonu: {id}",
+      "missingHint": "Ten blok wskazuje szablon stylu, który już nie istnieje. Jest wyświetlany bez niego.",
+      "using": "Używa szablonu „{name}”. Edytuj go w sekcji Style, aby zmienić każdy blok, który go używa.",
+      "usingWithLocal": "Używa szablonu „{name}”, z własnymi wartościami tego bloku na wierzchu.",
+      "detach": "Odłącz (zachowaj wartości)",
+      "updateFromBlock": "Przenieś wartości tego bloku do „{name}”",
+      "saveAs": "Zapisz styl jako szablon…",
+      "name": "Nazwa szablonu",
+      "create": "Utwórz szablon",
+      "library": "Szablony stylów",
+      "libraryHint": "Nazwane zestawy odstępów, rozmiaru, narożników, cieni i kolorów. Zmiana jednego zmienia każdy blok, który go używa, na każdej stronie.",
+      "empty": "Nie ma jeszcze szablonów. Nadaj blokowi styl i wybierz „Zapisz styl jako szablon” na karcie Styl.",
+      "edit": "Edytuj",
+      "done": "Gotowe",
+      "usageLoading": "Sprawdzanie użycia…",
+      "usageNone": "Jeszcze nigdzie nieużywany.",
+      "usage": "Używany przez {count}: {where}",
+      "usageTemplates": "Szablony stron: {count}",
+      "usageReusable": "Bloki wielokrotnego użytku: {count}",
+      "usagePatterns": "Wzorce: {count}",
+      "deleteConfirm": "Usunąć szablon „{name}”?",
+      "deleteUsedConfirm": "Usunąć szablon „{name}”? Używa go {count} elementów, które stracą jego styl."
+    },
+    "globalStyles": {
+      "title": "Style globalne",
+      "impact": "Dotyczą każdej strony, nagłówka, stopki, szablonów i bloków wielokrotnego użytku. Zmiany widać tutaj od razu, a publikują się po opublikowaniu.",
+      "draftState": "Nieopublikowane zmiany",
+      "publishedState": "Wszystko opublikowane",
+      "revert": "Wróć do opublikowanego",
+      "unpublished": "nieopublikowane",
+      "changedCount": "Zmieniono: {count}",
+      "saveError": "Nie udało się zapisać stylów",
+      "readOnly": "Tylko administratorzy i redaktorzy mogą zmieniać style globalne."
+    },
+    "templateDefaults": {
+      "title": "Domyślne wartości treści",
+      "hint": "Początkowe style treści, którą obejmuje szablon {template}, według typu bloku. Własne wartości bloku nadal mają pierwszeństwo.",
+      "empty": "Brak domyślnych wartości. Wybierz typ bloku poniżej.",
+      "add": "Dodaj typ bloku",
+      "addPlaceholder": "Wybierz typ bloku…",
+      "remove": "Usuń domyślne wartości dla: {type}"
     }
   },
   "dashboard": {

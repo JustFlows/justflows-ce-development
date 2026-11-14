@@ -3,6 +3,7 @@
 import { injectRootAttrs, withBlockAnimation } from "./animation.js";
 import { CONTAINER_LAYOUT_TARGETS, applyContainerLayout, supportsContainerLayout } from "./container-layout.js";
 import { breakpointCss } from "./responsive.js";
+import { presetRefOf, stylePresetClass } from "./style-presets.js";
 import { blockScopeClass, sanitizeBlockClassName, scopeBlockCss } from "./safe-css.js";
 import { isDefaultPlacement, isPlacementShaped, parseBlockPlacement, placementStyleVars } from "./layout.js";
 import { blockStyleDeclarations, parseBlockStyle } from "./block-style.js";
@@ -77,6 +78,9 @@ export function withBlockChrome(html: string, node: BlockChromeNode): string {
   const classes: string[] = [];
   const custom = sanitizeBlockClassName(props["className"]);
   if (custom) classes.push(custom);
+  /** A named style preset (justflows-ce#301): one class, defined in /theme.css. */
+  const presetClass = stylePresetClass(presetRefOf(props));
+  if (presetClass) classes.push(presetClass);
 
   const scope = blockScopeClass(node.id);
   const customCss = scope ? scopeBlockCss(props["css"], `.${scope}`) : "";

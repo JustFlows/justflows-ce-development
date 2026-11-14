@@ -276,6 +276,14 @@ export const MANAGE_API_OPENAPI = {
       put: op("Create or replace a reusable block", "settings:manage"),
     },
     "/reusable-blocks/{id}": { delete: op("Delete a reusable block", "settings:manage") },
+    "/style-presets": {
+      get: op("List style presets (the draft when there is one, and the published list)", "content:read"),
+      put: op("Create or replace a style preset in the draft", "settings:manage"),
+    },
+    "/style-presets/{id}": { delete: op("Delete a style preset from the draft", "settings:manage") },
+    "/style-presets/{id}/usage": { get: op("Where a style preset is used", "content:read") },
+    "/style-presets/publish": { post: op("Publish the style preset draft", "settings:manage") },
+    "/style-presets/discard": { post: op("Discard the style preset draft", "settings:manage") },
     "/patterns": {
       get: op("List site, theme and plugin block patterns", "content:read"),
       put: op("Save a site block pattern", "settings:manage"),

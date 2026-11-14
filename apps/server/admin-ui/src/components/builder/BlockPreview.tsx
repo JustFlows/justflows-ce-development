@@ -3,8 +3,9 @@ import MediaBlock from "../MediaBlock";
 import { useT } from "../../i18n/I18nProvider";
 import { cloneElement, createContext, isValidElement, useContext, useEffect, useRef, useState, type ReactElement } from "react";
 import type { BlockNode } from "./types";
-import { blockStyleDeclarations, esc, isBlockLocked, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
+import { blockStyleDeclarations, esc, isBlockLocked, presetRefOf, stylePresetClass, styleWithTemplateDefault, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
 import { isExtendClick, useBuilderSelection } from "./selection-context";
+import { useTemplateContext } from "./template-defaults-context";
 import MotionPreview from "./MotionPreview";
 import { applyMergeTags, useMergeTags } from "../../lib/merge-tags";
 import { ImagePickerPopover, MediaPickerPopover, readEditableText } from "./InlineEditable";
@@ -53,6 +54,15 @@ export function useThemePreviewStylesheet(): void {
   }, []);
 }
 
+/** Reload the canvas theme sheet after a draft token or preset change, so the canvas shows the server's truth. */
+export function reloadThemePreviewStylesheet(): void {
+  const link = document.getElementById(THEME_PREVIEW_LINK_ID) as HTMLLinkElement | null;
+  if (!link) return;
+  const url = new URL(link.href, window.location.href);
+  url.searchParams.set("_", String(Date.now()));
+  link.href = url.toString();
+}
+
 interface BlockPreviewProps {
   block: BlockNode;
   depth?: number;
@@ -87,7 +97,9 @@ export function BlockPreview({
     kind?: "image" | "video" | "audio" | "file";
     prop?: string;
   } | null>(null);
-  const blockStyle = parseBlockStyle(p.style);
+  /** The template's default for this type sits beneath the block's own style, as on the page (justflows-ce#301). */
+  const templateContext = useTemplateContext();
+  const blockStyle = parseBlockStyle(styleWithTemplateDefault(p, templateContext?.defaults, block.type));
 
   // Per-instance colours (Layout panel) and theme-token overrides (Theme
   // styling panel). The server writes these onto the block's *own* root
@@ -102,6 +114,8 @@ export function BlockPreview({
    */
   const chromeStyle = declarationsToStyle(blockStyleDeclarations(blockStyle));
   const hasChrome = Object.keys(chromeStyle).length > 0;
+  /** A named preset is a class defined in the theme sheet, same as on the page (justflows-ce#301). */
+  const presetClass = stylePresetClass(presetRefOf(p));
 
   const wrap = (content: React.ReactNode, label?: string) => {
     /**
@@ -114,15 +128,19 @@ export function BlockPreview({
         ? cloneElement(
             content as ReactElement<{
               style?: React.CSSProperties;
+              className?: string;
               "data-jf-block-preview"?: string;
             }>,
             {
               "data-jf-block-preview": block.id,
+              ...(presetClass
+                ? { className: [(content.props as { className?: string }).className, presetClass].filter(Boolean).join(" ") }
+                : {}),
               ...(hasChrome ? { style: { ...((content.props as { style?: React.CSSProperties }).style ?? {}), ...chromeStyle } } : {}),
             },
           )
         : (
-            <div data-jf-block-preview={block.id} style={hasChrome ? chromeStyle : undefined}>
+            <div data-jf-block-preview={block.id} className={presetClass || undefined} style={hasChrome ? chromeStyle : undefined}>
               {content}
             </div>
           );

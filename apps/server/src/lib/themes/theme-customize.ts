@@ -9,7 +9,8 @@ import { loadThemeStyles } from "./theme-files.js";
 import { getActiveTheme, themeInstalledPath } from "./themes-db.js";
 import { sanitizeCustomCss } from "../rendering/safe-css.js";
 import { sanitizeFaviconUrl } from "../media/favicon.js";
-import { functionalBlockCss, blockAnimationCss, blockVisibilityCss, containerLayoutCss } from "@justflows/blocks";
+import { functionalBlockCss, blockAnimationCss, blockVisibilityCss, containerLayoutCss, stylePresetsCss } from "@justflows/blocks";
+import { listStylePresets } from "./style-presets.js";
 import { coreWidgetCss, widgetLayoutCss } from "../rendering/widget-layout-css.js";
 
 export type CustomizeControlType =
@@ -848,12 +849,14 @@ export async function getEffectiveThemeCss(preview = false): Promise<string> {
   const darkVars = modsToDarkCssVariables({}, mods);
   const additionalCss = sanitizeCustomCss(mods.advanced?.additionalCss ?? "");
   const pluginCss = await collectPluginCss(siteId, preview);
+  const presetsCss = stylePresetsCss(await listStylePresets(siteId, { draft: preview }));
 
   return assembleThemeCss(
     loadThemeStyles(themeId, installedPath),
     buildThemeStylesheet(vars, "", darkVars),
     additionalCss,
     pluginCss,
+    presetsCss,
   );
 }
 
@@ -901,15 +904,18 @@ async function collectPluginCss(siteId: string, preview: boolean): Promise<strin
  * 3. Block animations, device visibility and container layout — platform
  *    defaults layered over the theme, so `data-jf-anim`, `data-jf-devices` and
  *    the `jf-cl-*` layout classes work on any theme.
- * 4. Plugin styles — an activated plugin's stylesheet, over the theme so its
+ * 4. Style presets — the site's named presets (justflows-ce#301), after the
+ *    tokens they reference and under plugin and custom CSS.
+ * 5. Plugin styles — an activated plugin's stylesheet, over the theme so its
  *    components render, under Additional CSS so the site owner keeps the last word.
- * 5. Additional CSS — the editor typed it last, so it wins last.
+ * 6. Additional CSS — the editor typed it last, so it wins last.
  */
 export function assembleThemeCss(
   themeStyles: string,
   tokens: string,
   additionalCss: string,
   pluginCss = "",
+  presetsCss = "",
 ): string {
   const parts = [
     `/* Widget areas */\n${widgetLayoutCss()}\n${coreWidgetCss()}`,
@@ -919,6 +925,7 @@ export function assembleThemeCss(
     `/* Block animations */\n${blockAnimationCss()}`,
     `/* Device visibility */\n${blockVisibilityCss()}`,
     `/* Container layout */\n${containerLayoutCss()}`,
+    presetsCss.trim() ? `/* Style presets */\n${presetsCss.trim()}` : "",
     pluginCss.trim() ? `/* Plugin styles */\n${pluginCss.trim()}` : "",
     additionalCss.trim() ? `/* Custom CSS */\n${additionalCss.trim()}` : "",
   ];

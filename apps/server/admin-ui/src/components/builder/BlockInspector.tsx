@@ -11,6 +11,10 @@ import BlockStylePanel from "./BlockStylePanel";
 import { ContainerLayoutPanel, FlexItemPanel } from "./LayoutControls";
 import { supportsContainerLayout, type BreakpointSource, type OverrideBreakpoint } from "@justflows/blocks";
 import ResponsivePanel from "./ResponsivePanel";
+import StylePresetPanel from "./StylePresetPanel";
+import { useTemplateContext } from "./template-defaults-context";
+import { useStylePresets } from "../../lib/style-presets";
+import { presetRefOf } from "@justflows/blocks";
 import BlockJsonPanel from "./BlockJsonPanel";
 import GridPlacementPanel from "./GridPlacementPanel";
 import BlockLayoutPanel from "./BlockLayoutPanel";
@@ -205,6 +209,7 @@ export default function BlockInspector({
   const selectTab = (next: InspectorTab) => (onTabChange ? onTabChange(next) : setLocalTab(next));
   const mergeTags = useMergeTags();
   const { blockControls } = useThemeStyleTokens();
+  const { presets } = useStylePresets();
   const p = block.props;
   const schemeStyle = typeof p.style === "string" ? p.style : "buttons";
   const schemeSingle = schemeStyle === "toggle" || schemeStyle === "switch";
@@ -617,6 +622,11 @@ export default function BlockInspector({
 
   const styleSections = onlySections(sections, ["appearance", "colors"]);
   const isContainer = supportsContainerLayout(block.type);
+  const preset = presets.find((p) => p.id === presetRefOf(block.props)) ?? null;
+  const templateContext = useTemplateContext();
+  const templateLayer = templateContext?.defaults[block.type]
+    ? { name: templateContext.slug, style: templateContext.defaults[block.type]! }
+    : null;
   const layoutSections = onlySections(sections, ["spacing", "size"]);
   const showThemeControls = !catalogEntry?.schema?.style || Boolean(p.style && typeof p.style === "object");
   const panels: Record<InspectorTab, React.ReactNode> = {
@@ -631,8 +641,9 @@ export default function BlockInspector({
     style:
       showThemeControls || styleSections.appearance || styleSections.colors ? (
         <>
+          <StylePresetPanel block={block} onChange={onChange} />
           {showThemeControls && <ThemeBlockControls block={block} onChange={onChange} showAll={sections.themeVariables} />}
-          <BlockLayoutPanel block={block} onChange={onChange} sections={styleSections} />
+          <BlockLayoutPanel block={block} onChange={onChange} sections={styleSections} preset={preset} previewing={previewing} templateLayer={templateLayer} />
         </>
       ) : null,
     layout:
@@ -655,7 +666,7 @@ export default function BlockInspector({
           )}
           {parentType === GRID_BLOCK_TYPE && <GridPlacementPanel block={block} columns={parentColumns} onChange={onChange} />}
           {layoutSections.size && <FlexItemPanel block={block} onChange={onChange} parentLayout={parentLayout} />}
-          <BlockLayoutPanel block={block} onChange={onChange} sections={layoutSections} />
+          <BlockLayoutPanel block={block} onChange={onChange} sections={layoutSections} preset={preset} previewing={previewing} templateLayer={templateLayer} />
         </>
       ) : null,
     responsive: (

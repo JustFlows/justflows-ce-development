@@ -1462,7 +1462,8 @@
       "statePublished": "Publié",
       "layers": "Calques",
       "previewWidth": "Largeur d’aperçu en pixels",
-      "canvasWidth": "{width} px · {breakpoint}"
+      "canvasWidth": "{width} px · {breakpoint}",
+      "styles": "Styles"
     },
     "drop": {
       "rejectNesting": "{child} ne peut pas aller dans {parent}.",
@@ -1705,6 +1706,64 @@
       "inherit": "Hériter ({value})",
       "reset": "Réinitialiser",
       "resetField": "Réinitialiser {field} pour {breakpoint}"
+    },
+    "sources": {
+      "themeDefault": "Valeur du thème",
+      "siteToken": "Modifié pour ce site",
+      "theme": "Depuis le thème",
+      "local": "Défini sur ce bloc",
+      "localOverPreset": "Défini sur ce bloc, par-dessus le préréglage « {name} »",
+      "preset": "Depuis le préréglage « {name} »",
+      "breakpoint": "Défini pour {breakpoint}",
+      "resetField": "Réinitialiser {field} au niveau inférieur",
+      "resetToTheme": "Réinitialiser {field} à la valeur du thème",
+      "template": "Depuis le modèle « {name} ». Modifiez le modèle pour le changer."
+    },
+    "presets": {
+      "title": "Préréglage de style",
+      "use": "Préréglage",
+      "none": "Aucun",
+      "missing": "Préréglage manquant : {id}",
+      "missingHint": "Ce bloc renvoie à un préréglage qui n’existe plus. Il s’affiche sans.",
+      "using": "Utilise le préréglage « {name} ». Modifiez-le dans Styles pour changer tous les blocs qui l’utilisent.",
+      "usingWithLocal": "Utilise le préréglage « {name} », avec les valeurs propres de ce bloc par-dessus.",
+      "detach": "Détacher (garder les valeurs)",
+      "updateFromBlock": "Reporter les valeurs de ce bloc dans « {name} »",
+      "saveAs": "Enregistrer le style comme préréglage…",
+      "name": "Nom du préréglage",
+      "create": "Créer le préréglage",
+      "library": "Préréglages de style",
+      "libraryHint": "Des ensembles nommés d’espacement, de taille, de coins, d’ombres et de couleurs. En modifier un change chaque bloc qui l’utilise, sur chaque page.",
+      "empty": "Aucun préréglage pour l’instant. Stylisez un bloc, puis choisissez « Enregistrer le style comme préréglage » dans son onglet Style.",
+      "edit": "Modifier",
+      "done": "Terminé",
+      "usageLoading": "Vérification de l’utilisation…",
+      "usageNone": "Pas encore utilisé.",
+      "usage": "Utilisé par {count} : {where}",
+      "usageTemplates": "{count} modèles",
+      "usageReusable": "{count} blocs réutilisables",
+      "usagePatterns": "{count} compositions",
+      "deleteConfirm": "Supprimer le préréglage « {name} » ?",
+      "deleteUsedConfirm": "Supprimer le préréglage « {name} » ? {count} éléments l’utilisent et perdront sa mise en forme."
+    },
+    "globalStyles": {
+      "title": "Styles globaux",
+      "impact": "Ils s’appliquent à chaque page, à l’en-tête, au pied de page, aux modèles et aux blocs réutilisables. Les changements s’affichent ici et sont publiés quand vous publiez.",
+      "draftState": "Modifications non publiées",
+      "publishedState": "Tout est publié",
+      "revert": "Revenir à la version publiée",
+      "unpublished": "non publié",
+      "changedCount": "{count} modifié(s)",
+      "saveError": "Impossible d’enregistrer les styles",
+      "readOnly": "Seuls les administrateurs et les éditeurs peuvent modifier les styles globaux."
+    },
+    "templateDefaults": {
+      "title": "Valeurs par défaut du contenu",
+      "hint": "Styles de départ pour le contenu que le modèle {template} entoure, par type de bloc. Les valeurs propres d’un bloc l’emportent toujours.",
+      "empty": "Aucune valeur par défaut pour l’instant. Choisissez un type de bloc ci-dessous.",
+      "add": "Ajouter un type de bloc",
+      "addPlaceholder": "Choisir un type de bloc…",
+      "remove": "Retirer les valeurs par défaut pour {type}"
     }
   },
   "dashboard": {

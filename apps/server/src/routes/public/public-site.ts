@@ -121,7 +121,7 @@ import { cacheSiteId } from "../../lib/cache/site-cache-key.js";
 import { getJfCache } from "../../lib/cache/jf-cache.js";
 import { getRuntimeBlockRegistry } from "../../lib/rendering/runtime-blocks.js";
 import type { BlockNode } from "../../lib/runtime/types.js";
-import { withBlockChrome } from "@justflows/blocks";
+import { applyTemplateDefaults, withBlockChrome } from "@justflows/blocks";
 import {
   BLOG_POST_LIST_BLOCK_TYPE,
   registerBlogPostListBlock,
@@ -1302,6 +1302,13 @@ interface TemplateRenderOpts {
   blogCtx?: BlogPostListRenderContext;
   commentCtx?: CommentsRenderContext;
   preview?: boolean;
+  /**
+   * The content's own blocks and how to render them, so a template's style
+   * defaults can be applied beneath their values (justflows-ce#301). The body
+   * is rendered again only when the template actually has defaults.
+   */
+  contentBlocks?: BlockNode[];
+  renderContent?: (blocks: BlockNode[]) => Promise<string>;
 }
 
 /** The page context fields widget areas need: the site, its locale, and preview. */
@@ -1436,13 +1443,18 @@ async function renderThemeTemplateHtml(
 ): Promise<string | null> {
   const tpl = await resolvePublicTemplate(query, opts.preview ?? false);
   if (!tpl) return null;
+  let ctxForTemplate = templateCtx;
+  if (tpl.templateDefaults && opts.contentBlocks?.length && opts.renderContent) {
+    const styled = applyTemplateDefaults(opts.contentBlocks, tpl.templateDefaults);
+    if (styled !== opts.contentBlocks) ctxForTemplate = { ...templateCtx, contentBodyHtml: await opts.renderContent(styled) };
+  }
   let bodyHtml = withSiteWidgets(
     await renderBlocksHtml(
       tpl.blocks,
       opts.submittedFormId,
       opts.blogCtx,
       opts.commentCtx,
-      templateCtx,
+      ctxForTemplate,
     ),
     withHeader,
   );
@@ -1844,6 +1856,21 @@ async function renderHomeHtml(
     submittedFormId: submittedFormIdFrom(req),
     blogCtx,
     preview,
+    ...(home
+      ? {
+          contentBlocks: home.blocks.blocks,
+          renderContent: async (blocks: BlockNode[]) =>
+            withSiteWidgets(
+              applyFootnotes(
+                await applyContentRender(
+                  await renderBlocksHtml(await applyContentBlocks(blocks, home, ctx.locale), submittedFormIdFrom(req), blogCtx),
+                  home,
+                ),
+              ),
+              withHeader,
+            ),
+        }
+      : {}),
   };
   const templateHtml = await renderThemeTemplateHtml(
     {
@@ -2164,6 +2191,27 @@ export async function renderSinglePageHtml(
     blogCtx,
     commentCtx,
     preview,
+    /** Account and auth pages post-process their body, so they keep the first render. */
+    ...(pageContent.type !== "account" && pageContent.type !== "auth"
+      ? {
+          contentBlocks: pageContent.blocks.blocks,
+          renderContent: async (blocks: BlockNode[]) =>
+            withSiteWidgets(
+              applyFootnotes(
+                await applyContentRender(
+                  await renderBlocksHtml(
+                    await applyContentBlocks(blocks, pageContent, pageCtx.locale),
+                    submittedFormIdFrom(req),
+                    blogCtx,
+                    commentCtx,
+                  ),
+                  pageContent,
+                ),
+              ),
+              withHeader,
+            ),
+        }
+      : {}),
   };
   const templateHtml = await renderThemeTemplateHtml(
     {

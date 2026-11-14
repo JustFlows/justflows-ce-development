@@ -1462,7 +1462,8 @@
       "statePublished": "Publicado",
       "layers": "Capas",
       "previewWidth": "Ancho de la vista previa en píxeles",
-      "canvasWidth": "{width} px · {breakpoint}"
+      "canvasWidth": "{width} px · {breakpoint}",
+      "styles": "Estilos"
     },
     "drop": {
       "rejectNesting": "{child} no puede ir dentro de {parent}.",
@@ -1705,6 +1706,64 @@
       "inherit": "Heredar ({value})",
       "reset": "Restablecer",
       "resetField": "Restablecer {field} en {breakpoint}"
+    },
+    "sources": {
+      "themeDefault": "Valor del tema",
+      "siteToken": "Cambiado para este sitio",
+      "theme": "Del tema",
+      "local": "Definido en este bloque",
+      "localOverPreset": "Definido en este bloque, sobre el ajuste «{name}»",
+      "preset": "Del ajuste «{name}»",
+      "breakpoint": "Definido para {breakpoint}",
+      "resetField": "Restablecer {field} a la capa inferior",
+      "resetToTheme": "Restablecer {field} al valor del tema",
+      "template": "De la plantilla «{name}». Edita la plantilla para cambiarlo."
+    },
+    "presets": {
+      "title": "Ajuste de estilo",
+      "use": "Ajuste",
+      "none": "Ninguno",
+      "missing": "Ajuste no encontrado: {id}",
+      "missingHint": "Este bloque apunta a un ajuste que ya no existe. Se muestra sin él.",
+      "using": "Usa el ajuste «{name}». Edítalo en Estilos para cambiar todos los bloques que lo usan.",
+      "usingWithLocal": "Usa el ajuste «{name}», con los valores propios de este bloque encima.",
+      "detach": "Desvincular (conservar valores)",
+      "updateFromBlock": "Pasar los valores de este bloque a «{name}»",
+      "saveAs": "Guardar estilo como ajuste…",
+      "name": "Nombre del ajuste",
+      "create": "Crear ajuste",
+      "library": "Ajustes de estilo",
+      "libraryHint": "Conjuntos con nombre de espaciado, tamaño, esquinas, sombras y colores. Cambiar uno cambia todos los bloques que lo usan, en todas las páginas.",
+      "empty": "Aún no hay ajustes. Da estilo a un bloque y elige «Guardar estilo como ajuste» en su pestaña Estilo.",
+      "edit": "Editar",
+      "done": "Listo",
+      "usageLoading": "Comprobando dónde se usa…",
+      "usageNone": "Todavía no se usa.",
+      "usage": "Usado por {count}: {where}",
+      "usageTemplates": "{count} plantillas",
+      "usageReusable": "{count} bloques reutilizables",
+      "usagePatterns": "{count} patrones",
+      "deleteConfirm": "¿Eliminar el ajuste «{name}»?",
+      "deleteUsedConfirm": "¿Eliminar el ajuste «{name}»? Lo usan {count} elementos, que perderán su estilo."
+    },
+    "globalStyles": {
+      "title": "Estilos globales",
+      "impact": "Se aplican a todas las páginas, el encabezado, el pie, las plantillas y los bloques reutilizables. Los cambios se ven aquí y se publican cuando publicas.",
+      "draftState": "Cambios sin publicar",
+      "publishedState": "Todo publicado",
+      "revert": "Volver a lo publicado",
+      "unpublished": "sin publicar",
+      "changedCount": "{count} cambiados",
+      "saveError": "No se pudieron guardar los estilos",
+      "readOnly": "Solo administradores y editores pueden cambiar los estilos globales."
+    },
+    "templateDefaults": {
+      "title": "Valores por defecto del contenido",
+      "hint": "Estilos iniciales para el contenido que envuelve la plantilla {template}, por tipo de bloque. Los valores propios de un bloque siguen ganando.",
+      "empty": "Aún no hay valores por defecto. Elige un tipo de bloque abajo.",
+      "add": "Añadir un tipo de bloque",
+      "addPlaceholder": "Elige un tipo de bloque…",
+      "remove": "Quitar los valores por defecto de {type}"
     }
   },
   "dashboard": {

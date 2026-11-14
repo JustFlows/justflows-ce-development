@@ -1457,7 +1457,8 @@
       "statePublished": "Published",
       "layers": "Layers",
       "previewWidth": "Preview width in pixels",
-      "canvasWidth": "{width}px · {breakpoint}"
+      "canvasWidth": "{width}px · {breakpoint}",
+      "styles": "Styles"
     },
     "drop": {
       "rejectNesting": "{child} can't go inside {parent}.",
@@ -1700,6 +1701,64 @@
       "inherit": "Inherit ({value})",
       "reset": "Reset",
       "resetField": "Reset {field} for {breakpoint}"
+    },
+    "sources": {
+      "themeDefault": "Theme default",
+      "siteToken": "Changed for this site",
+      "theme": "From the theme",
+      "local": "Set on this block",
+      "localOverPreset": "Set on this block, over the preset “{name}”",
+      "preset": "From the preset “{name}”",
+      "breakpoint": "Set for {breakpoint}",
+      "resetField": "Reset {field} to the layer beneath",
+      "resetToTheme": "Reset {field} to the theme's value",
+      "template": "From the template “{name}”. Edit the template to change it."
+    },
+    "presets": {
+      "title": "Style preset",
+      "use": "Preset",
+      "none": "None",
+      "missing": "Missing preset: {id}",
+      "missingHint": "This block refers to a preset that no longer exists. It renders without it.",
+      "using": "Uses the preset “{name}”. Edit the preset under Styles to change every block that uses it.",
+      "usingWithLocal": "Uses the preset “{name}”, with this block's own values on top.",
+      "detach": "Detach (keep values)",
+      "updateFromBlock": "Move this block's values into “{name}”",
+      "saveAs": "Save style as preset…",
+      "name": "Preset name",
+      "create": "Create preset",
+      "library": "Style presets",
+      "libraryHint": "Named sets of spacing, size, corners, shadows and colours. Changing one changes every block that uses it, on every page.",
+      "empty": "No presets yet. Style a block, then choose “Save style as preset” in its Style tab.",
+      "edit": "Edit",
+      "done": "Done",
+      "usageLoading": "Checking where it is used…",
+      "usageNone": "Not used anywhere yet.",
+      "usage": "Used by {count}: {where}",
+      "usageTemplates": "{count} templates",
+      "usageReusable": "{count} reusable blocks",
+      "usagePatterns": "{count} patterns",
+      "deleteConfirm": "Delete the preset “{name}”?",
+      "deleteUsedConfirm": "Delete the preset “{name}”? It is used by {count} items, which will lose its styling."
+    },
+    "globalStyles": {
+      "title": "Global styles",
+      "impact": "These apply to every page, the header, the footer, templates and reusable blocks. Changes preview here and go live when you publish.",
+      "draftState": "Unpublished changes",
+      "publishedState": "Everything published",
+      "revert": "Revert to published",
+      "unpublished": "unpublished",
+      "changedCount": "{count} changed",
+      "saveError": "Could not save styles",
+      "readOnly": "Only administrators and editors can change global styles."
+    },
+    "templateDefaults": {
+      "title": "Content defaults",
+      "hint": "Starting styles for the content the {template} template wraps, by block type. A block's own values still win.",
+      "empty": "No defaults yet. Pick a block type below.",
+      "add": "Add a block type",
+      "addPlaceholder": "Choose a block type…",
+      "remove": "Remove the defaults for {type}"
     }
   },
   "dashboard": {

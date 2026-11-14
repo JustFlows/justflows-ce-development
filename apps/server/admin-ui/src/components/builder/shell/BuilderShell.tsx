@@ -76,6 +76,8 @@ export interface BuilderShellProps {
   sitePanel?: ReactNode;
   /** The layers tree for the document (navigator). */
   layers?: ReactNode;
+  /** Global styles and presets (justflows-ce#301). */
+  stylesPanel?: ReactNode;
   /** Right panel content (the inspector). */
   inspector: ReactNode;
   /** Canvas content, already wrapped in the theme preview scope. */
@@ -111,6 +113,7 @@ export default function BuilderShell({
   library,
   sitePanel,
   layers,
+  stylesPanel,
   inspector,
   canvas,
   canvasBackdrop,
@@ -276,7 +279,7 @@ export default function BuilderShell({
             <LeftPanelTabs
               active={prefs.leftTab}
               onChange={(leftTab) => onPrefsChange({ leftTab })}
-              panels={{ library, ...(sitePanel ? { site: sitePanel } : {}), ...(layers ? { layers } : {}) }}
+              panels={{ library, ...(sitePanel ? { site: sitePanel } : {}), ...(layers ? { layers } : {}), ...(stylesPanel ? { styles: stylesPanel } : {}) }}
             />
           ) : (
             library
@@ -395,8 +398,9 @@ function LeftPanelTabs({
     site: t("builder.shell.site"),
     library: t("builder.shell.library"),
     layers: t("builder.shell.layers"),
+    styles: t("builder.shell.styles"),
   };
-  const order: LeftPanelTab[] = ["site", "library", "layers"];
+  const order: LeftPanelTab[] = ["site", "library", "layers", "styles"];
   const tabs = order.filter((id) => panels[id] !== undefined);
   const current = tabs.includes(active) ? active : (tabs.includes("library") ? "library" : tabs[0]!);
   /** Arrow keys move between tabs, as the WAI-ARIA tabs pattern expects. */

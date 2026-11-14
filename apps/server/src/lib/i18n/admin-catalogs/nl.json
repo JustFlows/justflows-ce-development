@@ -1459,7 +1459,8 @@
       "statePublished": "Gepubliceerd",
       "layers": "Lagen",
       "previewWidth": "Voorbeeldbreedte in pixels",
-      "canvasWidth": "{width}px · {breakpoint}"
+      "canvasWidth": "{width}px · {breakpoint}",
+      "styles": "Stijlen"
     },
     "drop": {
       "rejectNesting": "{child} kan niet in {parent}.",
@@ -1702,6 +1703,64 @@
       "inherit": "Overnemen ({value})",
       "reset": "Herstellen",
       "resetField": "{field} herstellen voor {breakpoint}"
+    },
+    "sources": {
+      "themeDefault": "Themastandaard",
+      "siteToken": "Gewijzigd voor deze site",
+      "theme": "Van het thema",
+      "local": "Ingesteld op dit blok",
+      "localOverPreset": "Ingesteld op dit blok, boven de preset “{name}”",
+      "preset": "Van de preset “{name}”",
+      "breakpoint": "Ingesteld voor {breakpoint}",
+      "resetField": "{field} terugzetten naar de laag eronder",
+      "resetToTheme": "{field} terugzetten naar de waarde van het thema",
+      "template": "Van het sjabloon “{name}”. Bewerk het sjabloon om dit te wijzigen."
+    },
+    "presets": {
+      "title": "Stijlpreset",
+      "use": "Preset",
+      "none": "Geen",
+      "missing": "Ontbrekende preset: {id}",
+      "missingHint": "Dit blok verwijst naar een preset die niet meer bestaat. Het wordt zonder weergegeven.",
+      "using": "Gebruikt de preset “{name}”. Bewerk de preset onder Stijlen om elk blok dat hem gebruikt te wijzigen.",
+      "usingWithLocal": "Gebruikt de preset “{name}”, met de eigen waarden van dit blok erbovenop.",
+      "detach": "Loskoppelen (waarden behouden)",
+      "updateFromBlock": "Waarden van dit blok in “{name}” zetten",
+      "saveAs": "Stijl opslaan als preset…",
+      "name": "Naam van de preset",
+      "create": "Preset maken",
+      "library": "Stijlpresets",
+      "libraryHint": "Benoemde sets van afstand, grootte, hoeken, schaduwen en kleuren. Wijzig er één en elk blok dat hem gebruikt verandert mee, op elke pagina.",
+      "empty": "Nog geen presets. Geef een blok een stijl en kies “Stijl opslaan als preset” op het tabblad Stijl.",
+      "edit": "Bewerken",
+      "done": "Klaar",
+      "usageLoading": "Gebruik wordt gecontroleerd…",
+      "usageNone": "Nog nergens gebruikt.",
+      "usage": "Gebruikt door {count}: {where}",
+      "usageTemplates": "{count} sjablonen",
+      "usageReusable": "{count} herbruikbare blokken",
+      "usagePatterns": "{count} patronen",
+      "deleteConfirm": "Preset “{name}” verwijderen?",
+      "deleteUsedConfirm": "Preset “{name}” verwijderen? Hij wordt door {count} items gebruikt, die hun opmaak verliezen."
+    },
+    "globalStyles": {
+      "title": "Globale stijlen",
+      "impact": "Deze gelden voor elke pagina, de header, de footer, sjablonen en herbruikbare blokken. Wijzigingen zie je hier direct; ze gaan live als je publiceert.",
+      "draftState": "Niet-gepubliceerde wijzigingen",
+      "publishedState": "Alles is gepubliceerd",
+      "revert": "Terug naar gepubliceerd",
+      "unpublished": "niet gepubliceerd",
+      "changedCount": "{count} gewijzigd",
+      "saveError": "Stijlen konden niet worden opgeslagen",
+      "readOnly": "Alleen beheerders en redacteuren kunnen globale stijlen wijzigen."
+    },
+    "templateDefaults": {
+      "title": "Standaardwaarden voor inhoud",
+      "hint": "Beginstijlen voor de inhoud die het sjabloon {template} omsluit, per bloktype. De eigen waarden van een blok winnen nog steeds.",
+      "empty": "Nog geen standaardwaarden. Kies hieronder een bloktype.",
+      "add": "Bloktype toevoegen",
+      "addPlaceholder": "Kies een bloktype…",
+      "remove": "Standaardwaarden voor {type} verwijderen"
     }
   },
   "dashboard": {

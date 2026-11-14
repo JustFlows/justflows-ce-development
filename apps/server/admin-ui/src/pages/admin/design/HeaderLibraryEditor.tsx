@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import PageBuilder from "@components/builder/PageBuilder";
+import GlobalStylesPanel from "@components/builder/GlobalStylesPanel";
 import { BuilderShellEmpty, type BuilderSaveState, type BuilderShellBar } from "@components/builder/shell/BuilderShell";
 import RevisionsDialog from "@components/builder/shell/RevisionsDialog";
 import type { BlockNode } from "@components/builder/types";
@@ -423,6 +424,7 @@ export default function HeaderLibraryEditor({ bar, siteNav, extraActions }: Head
       onHeaderChange={onConfigChange}
       shellBar={shellBar}
       sitePanel={sitePanel}
+      stylesPanel={<GlobalStylesPanel />}
     />
     </>
   );

@@ -5627,3 +5627,105 @@ input[type="range"] {
   color: var(--jf-text-3);
   margin-inline-start: -0.15rem;
 }
+
+/* Global styles panel, presets, and value sources (justflows-ce#301). */
+.jf-global-styles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0.1rem 1rem;
+  overflow: auto;
+  min-height: 0;
+}
+.jf-global-styles__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.jf-global-styles__state {
+  flex: 1;
+  font-size: 0.75rem;
+  color: var(--jf-text-3);
+}
+.jf-global-styles__count {
+  margin-inline-start: auto;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--jf-accent);
+}
+.jf-global-styles__field .jf-responsive__row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.jf-global-styles__locked {
+  padding: 0.5rem;
+}
+.jf-global-styles__presets {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--jf-border);
+  padding-top: 0.5rem;
+}
+.jf-presets__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.jf-presets__item {
+  border: 1px solid var(--jf-border);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  background: var(--jf-surface);
+}
+.jf-presets__row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.jf-presets__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.jf-presets__id {
+  font-size: 0.7rem;
+  color: var(--jf-text-3);
+}
+.jf-presets__editor {
+  margin-top: 0.5rem;
+  border-top: 1px dashed var(--jf-border);
+  padding-top: 0.5rem;
+}
+.jf-presets__actions {
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.jf-presets__name input {
+  width: 100%;
+}
+.jf-source-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.jf-source-reset {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: inherit;
+  color: var(--jf-accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.jf-source-reset:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}

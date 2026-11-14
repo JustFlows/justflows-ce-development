@@ -66,11 +66,15 @@ export default function ThemeBlockControls({
     // so an editor sees the live value even when this block adds no override.
     const themeValue = c.value ?? "";
     const presetLabel = c.presets?.find((p) => p.value === themeValue)?.label;
+    /** Says whether the inherited value is the theme's own or a change made for this site. */
+    const sourceLabel = c.overridden ? t("builder.sources.siteToken") : t("builder.sources.themeDefault");
     const themeHint =
       !current && themeValue ? (
         <span style={themeHintStyle}>
-          {inherit}: <span className="jf-input--mono">{presetLabel ?? themeValue}</span>
+          {sourceLabel}: <span className="jf-input--mono">{presetLabel ?? themeValue}</span>
         </span>
+      ) : current ? (
+        <span style={themeHintStyle}>{t("builder.sources.local")}</span>
       ) : null;
 
     if (c.presets && c.presets.length > 0) {

@@ -18,6 +18,8 @@ import { useT } from "../../../i18n/I18nProvider";
 import type { BuilderSaveState } from "@components/builder/shell/BuilderShell";
 import RevisionsDialog, { type RevisionListItem } from "@components/builder/shell/RevisionsDialog";
 import type { BlockNode } from "@components/builder/types";
+import GlobalStylesPanel from "@components/builder/GlobalStylesPanel";
+import type { TemplateContextValue } from "@components/builder/template-defaults-context";
 
 interface ContentItem {
   id: string;
@@ -371,6 +373,32 @@ export default function PageBuilderPage() {
     setRecovery(null);
   }, [storageKey]);
 
+  /**
+   * The template this content renders through, for its style defaults
+   * (justflows-ce#301). Declared before the early returns below, as every hook must be.
+   */
+  const [templateContext, setTemplateContext] = useState<TemplateContextValue | null>(null);
+  const contentType = item?.type;
+  const contentSlug = item?.slug;
+  useEffect(() => {
+    if (!contentType) return;
+    let alive = true;
+    const params = new URLSearchParams({ contentType, slug: contentSlug ?? "" });
+    fetch(`/api/templates/resolve?${params}`)
+      .then((r) => (r.ok ? r.json() : { template: null }))
+      .then((data: { template?: { slug: string; templateDefaults?: Record<string, Record<string, unknown>> } | null }) => {
+        if (!alive) return;
+        const tpl = data?.template;
+        setTemplateContext(tpl && tpl.templateDefaults && Object.keys(tpl.templateDefaults).length ? { slug: tpl.slug, defaults: tpl.templateDefaults } : null);
+      })
+      .catch(() => {
+        if (alive) setTemplateContext(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [contentType, contentSlug]);
+
   if (loading && !item) {
     return (
       <div className="jf-center" role="status" aria-live="polite">
@@ -459,6 +487,8 @@ export default function PageBuilderPage() {
       isPage={isPage}
       mergeTags={mergeTags}
       context={isPage ? "page" : "post"}
+      stylesPanel={<GlobalStylesPanel />}
+      templateContext={templateContext}
       shellBar={{
         title: item.title || t("pageBuilderPage.untitledPage"),
         subtitle: `${t("pageBuilderPage.statusLine", { status: item.status })}${item.hasWorkingRevision ? t("pageBuilderPage.draftChangesSuffix") : ""}`,

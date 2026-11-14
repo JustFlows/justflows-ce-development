@@ -3,6 +3,9 @@ import { useSearchParams } from "react-router-dom";
 import { Link, useNavigate } from "../../../admin-router";
 import MediaImageField from "@components/MediaImageField";
 import PageBuilder, { type BlockDocument } from "@components/builder/PageBuilder";
+import GlobalStylesPanel from "@components/builder/GlobalStylesPanel";
+import TemplateDefaultsPanel from "@components/builder/TemplateDefaultsPanel";
+import type { TemplateDefaults } from "@justflows/blocks";
 import HeaderLibraryEditor from "./HeaderLibraryEditor";
 import { BuilderShellEmpty, type BuilderSaveState, type BuilderShellBar } from "@components/builder/shell/BuilderShell";
 import RevisionsDialog from "@components/builder/shell/RevisionsDialog";
@@ -205,6 +208,8 @@ export default function CustomizeThemePage() {
   const [templateSlug, setTemplateSlug] = useState<string | null>(null);
   const [templateDoc, setTemplateDoc] = useState<BlockDocument>({ version: 1, blocks: [] });
   const [templateFromDefault, setTemplateFromDefault] = useState(false);
+  /** The open template's style defaults for the content it wraps (justflows-ce#301). */
+  const [templateDefaults, setTemplateDefaults] = useState<TemplateDefaults>({});
   const [templateSaving, setTemplateSaving] = useState(false);
   /** Revisions the editor loaded, sent back so a save never overwrites someone else's newer one. */
   const [footerRevision, setFooterRevision] = useState(0);
@@ -250,9 +255,11 @@ export default function CustomizeThemePage() {
         draft?: unknown[];
         fromThemeDefault?: boolean;
         revision?: number;
+        templateDefaults?: TemplateDefaults;
       };
       const blocks = (data.draft?.length ? data.draft : data.blocks) ?? [];
       setTemplateDoc({ version: 1, blocks: blocks as BlockDocument["blocks"] });
+      setTemplateDefaults(data.templateDefaults ?? {});
       setTemplateFromDefault(Boolean(data.fromThemeDefault));
       setTemplateRevision(data.revision ?? 0);
     } catch {
@@ -604,7 +611,7 @@ export default function CustomizeThemePage() {
       const res = await fetch(`/api/templates/${encodeURIComponent(templateSlug)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blocks: templateDoc.blocks, draft: !publish, expectedRevision }),
+        body: JSON.stringify({ blocks: templateDoc.blocks, draft: !publish, expectedRevision, templateDefaults }),
       });
       const data = (await res.json()) as { error?: string; revision?: number };
       if (res.status === 409) {
@@ -834,7 +841,7 @@ export default function CustomizeThemePage() {
             }}
             restoreHint={t("builder.shell.restoreHintPart")}
           />
-          <PageBuilder value={footer} onChange={setFooter} context="footer" shellBar={footerBar} sitePanel={siteNav} />
+          <PageBuilder value={footer} onChange={setFooter} context="footer" shellBar={footerBar} sitePanel={siteNav} stylesPanel={<GlobalStylesPanel />} />
         </>
       );
     }
@@ -903,6 +910,10 @@ export default function CustomizeThemePage() {
               </div>
             </div>
 
+            {templateSlug && (
+              <TemplateDefaultsPanel value={templateDefaults} onChange={setTemplateDefaults} templateLabel={slotLabel(t, templateSlug)} />
+            )}
+
             {creatableSlots.length > 0 && (
               <div className="jf-field">
                 <label className="jf-field__label" htmlFor="jf-add-template">
@@ -957,6 +968,7 @@ export default function CustomizeThemePage() {
           context="template"
           shellBar={templateBar}
           sitePanel={templatePanel}
+          stylesPanel={<GlobalStylesPanel />}
         />
       </>
     ) : (

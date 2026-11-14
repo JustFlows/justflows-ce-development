@@ -223,3 +223,23 @@ export {
   setBreakpointValue,
 } from "./responsive.js";
 export type { BreakpointQuery, BreakpointSource, BreakpointTargets, ResolvedValue } from "./responsive.js";
+export {
+  STYLE_PRESETS_MAX,
+  STYLE_PRESET_NAME_MAX,
+  presetRefOf,
+  resolveStyleValue,
+  sanitizeStylePreset,
+  sanitizeStylePresets,
+  stylePresetClass,
+  stylePresetsCss,
+} from "./style-presets.js";
+export type { StylePreset, StyleValueLayer, StyleValueResolution } from "./style-presets.js";
+export {
+  TEMPLATE_DEFAULTS_MAX_TYPES,
+  applyTemplateDefaults,
+  sanitizeTemplateDefaults,
+  styleWithTemplateDefault,
+  templateDefaultFor,
+  templateDefaultSets,
+} from "./template-defaults.js";
+export type { TemplateDefaults } from "./template-defaults.js";
