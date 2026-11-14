@@ -10,7 +10,8 @@ process.env.APP_SECRET = "test-secret-that-is-at-least-32-characters-long";
 
 let role = "editor";
 const audits: unknown[] = [];
-const store = {
+type StoredPreset = { id: string; name: string; style: Record<string, unknown> };
+const store: { items: StoredPreset[]; published: StoredPreset[]; hasDraft: boolean } = {
   items: [{ id: "card", name: "Card", style: { radius: "md" } }],
   published: [{ id: "card", name: "Card", style: { radius: "md" } }],
   hasDraft: false,
