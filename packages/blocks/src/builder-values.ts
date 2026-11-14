@@ -16,7 +16,7 @@
  * the others arrive with the responsive (#300) and global style (#301) tickets.
  */
 
-import { ALIGN_SELF, SPACE_STEPS, TEXT_ALIGN, WIDTH_PRESETS, type SpaceStep } from "./block-style.js";
+import { ALIGN_SELF, FONT_SIZE_PRESETS, SPACE_STEPS, TEXT_ALIGN, WIDTH_PRESETS, type SpaceStep } from "./block-style.js";
 import { GRID_MAX_COLUMNS } from "./layout.js";
 
 export const CONTAINER_DISPLAYS = ["flex", "grid"] as const;
@@ -69,6 +69,7 @@ export const BREAKPOINT_STYLE_FIELDS = [
   "minHeight",
   "alignSelf",
   "textAlign",
+  "fontSize",
 ] as const;
 export type BreakpointStyleField = (typeof BREAKPOINT_STYLE_FIELDS)[number];
 
@@ -168,6 +169,8 @@ function sanitizeBreakpointStyle(raw: unknown): BreakpointOverride["style"] {
   if (alignSelf) out.alignSelf = alignSelf;
   const textAlign = oneOf(input["textAlign"], TEXT_ALIGN);
   if (textAlign) out.textAlign = textAlign;
+  const fontSize = oneOf(input["fontSize"], FONT_SIZE_PRESETS);
+  if (fontSize) out.fontSize = fontSize;
   return compact(out);
 }
 

@@ -231,10 +231,30 @@ copy of the values.
   (mobile ≤ 600px, tablet ≤ 1024px). Themes cannot add breakpoints or media
   queries.
 - Overridable fields are allowlisted: `BREAKPOINT_STYLE_FIELDS` (spacing,
-  width, max width, min height, alignment), `BREAKPOINT_LAYOUT_FIELDS`, grid
-  placement, and a bounded `order` (−20 to 20). Colours and effects are not
-  responsive.
+  width, max width, min height, alignment, text alignment, text size),
+  `BREAKPOINT_LAYOUT_FIELDS`, grid placement, and a bounded `order` (−20 to
+  20). Colours and effects are not responsive.
 - Hiding per breakpoint keeps using `devices`.
+- **Rendering.** `withBlockChrome` calls `breakpointCss` and writes the result
+  in the block's `<style>` under its scope class (`.jf-b-<id>`), next to its
+  custom CSS. Output is deterministic: tablet then mobile, fields in a fixed
+  order. Rules use `!important` because the base values are inline styles.
+  Layout overrides act only on a block that already has a `containerLayout`,
+  and target its children wrapper; `alignSelf`, grid placement and `order`
+  target the element that is the item in its parent's layout.
+- **Builder canvas.** The canvas emits the same rules through the same
+  function, as `@container jf-canvas` queries on the preview elements, and
+  `/theme.css?scope=…&widths=canvas` rewrites the theme's width-only media
+  queries to the same container (`widthMediaToContainer`). So the Tablet and
+  Mobile previews and a custom width show the theme's real responsive rules
+  without resizing the admin window. Media queries that test anything other
+  than width (print, colour scheme, hover) stay media queries.
+- **Editing.** Previewing at a width and writing an override are separate: the
+  toolbar only changes the canvas; the Responsive tab writes `breakpoints`.
+  `resolveResponsiveValue` gives the value in effect at a breakpoint and the
+  breakpoint that set it; `setBreakpointValue` sets or clears one field and
+  prunes empty objects, so a reset removes only that override.
+- `BREAKPOINTS_SCHEMA_VERSION` is 1. A change to this shape ships a migration.
 - A document without `breakpoints` keeps today's behaviour. That includes the
   automatic tablet widening of narrow grid items (`placementStyleVars`) and
   full-width grid items on phones. An explicit override replaces that automatic

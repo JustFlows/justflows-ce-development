@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: MIT
-import { useId, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { breakpointForWidth } from "@justflows/blocks";
 import { useT } from "../../../i18n/I18nProvider";
 import {
   BREAKPOINT_WIDTH,
   BUILDER_BREAKPOINTS,
   BUILDER_ZOOM_LEVELS,
+  PREVIEW_WIDTH_MAX,
+  PREVIEW_WIDTH_MIN,
+  clampPreviewWidth,
   type BuilderPrefs,
   type BuilderZoom,
   type LeftPanelTab,
@@ -80,6 +84,8 @@ export interface BuilderShellProps {
   canvasBackdrop?: ReactNode;
   /** Clicking empty canvas space clears the selection. */
   onCanvasBackgroundClick: () => void;
+  /** The canvas's measured content width in CSS pixels, whenever it changes. */
+  onCanvasWidthChange?: (width: number) => void;
 }
 
 /**
@@ -109,12 +115,32 @@ export default function BuilderShell({
   canvas,
   canvasBackdrop,
   onCanvasBackgroundClick,
+  onCanvasWidthChange,
 }: BuilderShellProps) {
   const { t } = useT();
   const leftId = useId();
   const rightId = useId();
   const contextNoteId = useId();
-  const frameWidth = BREAKPOINT_WIDTH[prefs.breakpoint];
+  /** The canvas content width to preview at; the frame adds its own padding around it. */
+  const frameWidth = prefs.previewWidth ?? BREAKPOINT_WIDTH[prefs.breakpoint];
+  const frame = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState(0);
+  const [widthDraft, setWidthDraft] = useState("");
+  useEffect(() => {
+    const el = frame.current;
+    if (!el) return;
+    const read = () => {
+      const cs = getComputedStyle(el);
+      const width = Math.round(el.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0));
+      setMeasured(width);
+      onCanvasWidthChange?.(width);
+    };
+    read();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(read);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [onCanvasWidthChange]);
   const impactKey = SITE_WIDE_IMPACT[context];
   const siteWide = Boolean(impactKey);
 
@@ -162,13 +188,42 @@ export default function BuilderShell({
               key={bp}
               type="button"
               className="jf-builder-toolbar__btn"
-              aria-pressed={prefs.breakpoint === bp}
-              onClick={() => onPrefsChange({ breakpoint: bp })}
+              aria-pressed={prefs.previewWidth === null && prefs.breakpoint === bp}
+              onClick={() => onPrefsChange({ breakpoint: bp, previewWidth: null })}
             >
               {t(`builder.shell.breakpointLabel.${bp}`)}
             </button>
           ))}
         </div>
+
+        <label className="jf-shell__width">
+          <span className="jf-sr-only">{t("builder.shell.previewWidth")}</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={PREVIEW_WIDTH_MIN}
+            max={PREVIEW_WIDTH_MAX}
+            step={10}
+            value={widthDraft || String(frameWidth ?? measured ?? "")}
+            aria-describedby={`${contextNoteId}-width`}
+            onChange={(e) => setWidthDraft(e.target.value)}
+            onBlur={() => {
+              if (widthDraft) onPrefsChange({ previewWidth: clampPreviewWidth(Number(widthDraft)) });
+              setWidthDraft("");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+              if (e.key === "Escape") {
+                setWidthDraft("");
+                e.currentTarget.blur();
+              }
+            }}
+          />
+        </label>
+        <span className="jf-shell__unit" aria-hidden="true">px</span>
+        <span id={`${contextNoteId}-width`} className="jf-shell__measure" aria-live="polite">
+          {measured > 0 && t("builder.shell.canvasWidth", { width: measured, breakpoint: t(`builder.shell.breakpointLabel.${breakpointForWidth(measured)}`) })}
+        </span>
 
         <label className="jf-shell__zoom">
           <span className="jf-sr-only">{t("builder.shell.zoom")}</span>
@@ -248,10 +303,11 @@ export default function BuilderShell({
             </ol>
           </nav>
           <div
+            ref={frame}
             className="jf-shell__frame"
-            data-breakpoint={prefs.breakpoint}
+            data-breakpoint={prefs.previewWidth ? "custom" : prefs.breakpoint}
             style={{
-              maxWidth: frameWidth ? `${frameWidth}px` : undefined,
+              maxWidth: frameWidth ? `calc(${frameWidth}px + 2rem)` : undefined,
               zoom: prefs.zoom === 100 ? undefined : prefs.zoom / 100,
             }}
             onClick={(e) => e.stopPropagation()}

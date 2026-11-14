@@ -1460,7 +1460,9 @@
       "restoreUnsavedConfirm": "Restaurar reemplaza tus cambios sin guardar. Se conservan en este navegador y puedes restaurarlos después. ¿Continuar?",
       "stateDraft": "Borrador",
       "statePublished": "Publicado",
-      "layers": "Capas"
+      "layers": "Capas",
+      "previewWidth": "Ancho de la vista previa en píxeles",
+      "canvasWidth": "{width} px · {breakpoint}"
     },
     "drop": {
       "rejectNesting": "{child} no puede ir dentro de {parent}.",
@@ -1661,6 +1663,48 @@
       },
       "readingOrder": "Los bloques aparecen en un orden distinto al de lectura. Quienes usan el teclado o un lector de pantalla siguen el orden del panel Capas.",
       "matchReadingOrder": "Igualar el orden de lectura a la disposición"
+    },
+    "responsive": {
+      "title": "Ajustes por tamaño de pantalla",
+      "editing": "Tamaño de pantalla que editar",
+      "hint": "Escritorio usa los ajustes normales del bloque. Tableta hereda de escritorio y móvil de tableta, hasta que definas un valor aquí.",
+      "previewMismatch": "Estás editando {breakpoint}, pero la vista previa es {previewing}.",
+      "previewAt": "Ver en {breakpoint}",
+      "warningsTitle": "Revisa antes de publicar",
+      "warning": {
+        "hidden": "Este bloque está oculto en este ancho.",
+        "order": "Un orden propio muestra este bloque en otro lugar del que se lee. Quienes usan el teclado o un lector de pantalla siguen el panel Capas.",
+        "tinyText": "El texto muy pequeño puede costar leerlo en el móvil.",
+        "tooWide": "El ancho máximo supera esta pantalla; el contenido puede desplazarse en horizontal.",
+        "nowrap": "Una fila en una sola línea puede desbordarse en este ancho.",
+        "tall": "Esta altura mínima supera la pantalla de un móvil.",
+        "bigSpacing": "Un espaciado muy grande ocupa mucho de una pantalla pequeña."
+      },
+      "spacing": "Espaciado",
+      "size": "Tamaño",
+      "text": "Texto",
+      "item": "En su disposición",
+      "fontSize": "Tamaño del texto",
+      "fontSizeValue": {
+        "xs": "XS",
+        "sm": "S",
+        "base": "M",
+        "lg": "L",
+        "xl": "XL",
+        "2xl": "2XL",
+        "3xl": "3XL",
+        "4xl": "4XL"
+      },
+      "span": "Columnas que ocupa",
+      "col": "Columna inicial",
+      "order": "Orden",
+      "direction": "Dirección",
+      "setHere": "Definido para este tamaño",
+      "inherited": "{value} · de {from}",
+      "notSet": "Sin definir",
+      "inherit": "Heredar ({value})",
+      "reset": "Restablecer",
+      "resetField": "Restablecer {field} en {breakpoint}"
     }
   },
   "dashboard": {

@@ -1460,7 +1460,9 @@
       "restoreUnsavedConfirm": "La restauration remplace vos modifications non enregistrées. Elles restent dans ce navigateur et peuvent être restaurées ensuite. Continuer ?",
       "stateDraft": "Brouillon",
       "statePublished": "Publié",
-      "layers": "Calques"
+      "layers": "Calques",
+      "previewWidth": "Largeur d’aperçu en pixels",
+      "canvasWidth": "{width} px · {breakpoint}"
     },
     "drop": {
       "rejectNesting": "{child} ne peut pas aller dans {parent}.",
@@ -1661,6 +1663,48 @@
       },
       "readingOrder": "Les blocs sont placés dans un autre ordre que l’ordre de lecture. Les personnes qui utilisent le clavier ou un lecteur d’écran suivent l’ordre du panneau Calques.",
       "matchReadingOrder": "Aligner l’ordre de lecture sur la disposition"
+    },
+    "responsive": {
+      "title": "Réglages par taille d’écran",
+      "editing": "Taille d’écran à modifier",
+      "hint": "Le bureau utilise les réglages normaux du bloc. La tablette hérite du bureau et le mobile de la tablette, tant que vous ne définissez pas de valeur ici.",
+      "previewMismatch": "Vous modifiez {breakpoint} mais l’aperçu est en {previewing}.",
+      "previewAt": "Aperçu en {breakpoint}",
+      "warningsTitle": "À vérifier avant de publier",
+      "warning": {
+        "hidden": "Ce bloc est masqué à cette largeur.",
+        "order": "Un ordre personnalisé affiche ce bloc ailleurs que là où il est lu. Les personnes au clavier ou avec un lecteur d’écran suivent toujours le panneau Calques.",
+        "tinyText": "Un texte très petit peut être difficile à lire sur téléphone.",
+        "tooWide": "La largeur maximale dépasse cet écran ; le contenu risque de défiler horizontalement.",
+        "nowrap": "Une ligne sans retour peut déborder à cette largeur.",
+        "tall": "Cette hauteur minimale dépasse un écran de téléphone.",
+        "bigSpacing": "Un très grand espacement occupe une grande partie d’un petit écran."
+      },
+      "spacing": "Espacement",
+      "size": "Taille",
+      "text": "Texte",
+      "item": "Dans la disposition",
+      "fontSize": "Taille du texte",
+      "fontSizeValue": {
+        "xs": "XS",
+        "sm": "S",
+        "base": "M",
+        "lg": "L",
+        "xl": "XL",
+        "2xl": "2XL",
+        "3xl": "3XL",
+        "4xl": "4XL"
+      },
+      "span": "Colonnes occupées",
+      "col": "Colonne de départ",
+      "order": "Ordre",
+      "direction": "Direction",
+      "setHere": "Défini pour cette taille",
+      "inherited": "{value} · depuis {from}",
+      "notSet": "Non défini",
+      "inherit": "Hériter ({value})",
+      "reset": "Réinitialiser",
+      "resetField": "Réinitialiser {field} pour {breakpoint}"
     }
   },
   "dashboard": {

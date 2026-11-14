@@ -24,6 +24,21 @@ export const GROW_VALUES = ["", "0", "1"] as const;
 /** A block's share of a row, in percent of the row, before growing. */
 export const BASIS_PRESETS = ["", "auto", "25", "33", "50", "66", "75", "100"] as const;
 export const OVERFLOW_VALUES = ["", "hidden", "auto"] as const;
+/**
+ * Text size steps (justflows-ce#300). Each reads a `--jf-text-<step>` token a
+ * theme may define, with a fixed fallback, so the scale follows the theme.
+ */
+export const FONT_SIZE_PRESETS = ["", "xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl"] as const;
+const FONT_SIZE_FALLBACK: Record<string, string> = {
+  xs: "0.75rem",
+  sm: "0.875rem",
+  base: "1rem",
+  lg: "1.125rem",
+  xl: "1.25rem",
+  "2xl": "1.5rem",
+  "3xl": "1.875rem",
+  "4xl": "2.25rem",
+};
 
 /** Exact fractions, so three thirds or two halves fill a row exactly. */
 const BASIS_PERCENT: Record<string, number> = { "25": 25, "33": 100 / 3, "50": 50, "66": 200 / 3, "75": 75, "100": 100 };
@@ -75,6 +90,8 @@ export interface BlockStyle {
   basis: string;
   /** Clip (`hidden`) or scroll (`auto`) content that does not fit. */
   overflow: string;
+  /** Text size step; see `FONT_SIZE_PRESETS`. */
+  fontSize: string;
   /**
    * Per-instance overrides of theme CSS custom properties, e.g.
    * `{ "--brand-gradient": "linear-gradient(…)" }`. Set by the block
@@ -105,6 +122,7 @@ export const DEFAULT_BLOCK_STYLE: BlockStyle = {
   grow: "",
   basis: "",
   overflow: "",
+  fontSize: "",
   vars: {},
 };
 
@@ -199,6 +217,7 @@ export function parseBlockStyle(raw: unknown): BlockStyle {
     grow: pick(input["grow"], GROW_VALUES),
     basis: pick(input["basis"], BASIS_PRESETS),
     overflow: pick(input["overflow"], OVERFLOW_VALUES),
+    fontSize: pick(input["fontSize"], FONT_SIZE_PRESETS),
     vars: parseStyleVars(input["vars"]),
   };
 }
@@ -225,6 +244,7 @@ export function isDefaultBlockStyle(style: BlockStyle): boolean {
     !style.grow &&
     !style.basis &&
     !style.overflow &&
+    !style.fontSize &&
     Object.keys(style.vars).length === 0
   );
 }
@@ -286,6 +306,7 @@ export function blockStyleDeclarations(style: BlockStyle): string {
   if (style.minHeight > 0) out.push(`min-height:${style.minHeight}vh`);
   if (style.alignSelf) out.push(`justify-self:${style.alignSelf}`, `align-self:${style.alignSelf}`);
   if (style.textAlign) out.push(`text-align:${style.textAlign}`);
+  if (style.fontSize) out.push(`font-size:var(--jf-text-${style.fontSize},${FONT_SIZE_FALLBACK[style.fontSize]})`);
   if (style.radius) out.push(`border-radius:${RADIUS_VALUES[style.radius] ?? "0"}`);
   if (style.shadow) out.push(`box-shadow:${SHADOW_VALUES[style.shadow] ?? "none"}`);
   // Colours: the direct property covers the common case (a section/hero box),

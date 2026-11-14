@@ -73,7 +73,8 @@ export async function serveThemeCss(
     if (scope) {
       const { pluginPerPageStylesText } = await import("../../lib/plugins/plugin-assets.js");
       const perPage = [await pluginPerPageStylesText(), await themePerPageStylesText()].filter(Boolean).join("\n");
-      css = scopeThemeCss(perPage ? `${perPage}\n${css}` : css, scope);
+      /** `?widths=canvas`: width media queries follow the builder canvas, not the window (justflows-ce#300). */
+      css = scopeThemeCss(perPage ? `${perPage}\n${css}` : css, scope, req.query.widths === "canvas" ? "jf-canvas" : undefined);
     }
     res.setHeader("Content-Type", "text/css; charset=utf-8");
     res.setHeader(

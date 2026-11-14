@@ -127,7 +127,31 @@ function splitTopLevel(input: string, sep: string): string[] {
   return parts;
 }
 
-function scopeRules(css: string, scope: string): string {
+/** A single width feature, such as `(max-width: 900px)` or `(min-width:48em)`. */
+const WIDTH_FEATURE = /^\(\s*(?:min|max)-width\s*:\s*[\d.]+(?:px|em|rem)\s*\)$/i;
+
+/**
+ * `@media` → `@container <name>` when the query only tests the viewport
+ * width (optionally with `screen`/`all`). Anything else (print, colour
+ * scheme, hover, reduced motion) stays a media query. Comma lists become
+ * `or`. Returns `null` when the query must stay as it is.
+ */
+export function widthMediaToContainer(query: string, name: string): string | null {
+  const parts = query.split(",").map((part) => part.trim());
+  if (!parts.length || parts.some((p) => !p)) return null;
+  const converted: string[] = [];
+  for (const part of parts) {
+    const tokens = part
+      .replace(/^(?:only\s+)?(?:screen|all)\s+and\s+/i, "")
+      .split(/\s+and\s+/i)
+      .map((t) => t.trim());
+    if (!tokens.length || !tokens.every((t) => WIDTH_FEATURE.test(t))) return null;
+    converted.push(tokens.length === 1 ? tokens[0]! : `(${tokens.join(" and ")})`);
+  }
+  return `@container ${name} ${converted.length === 1 ? converted[0]!.replace(/^\((\(.*\))\)$/, "$1") : converted.join(" or ")}`;
+}
+
+function scopeRules(css: string, scope: string, container?: string): string {
   const out: string[] = [];
   let i = 0;
   const n = css.length;
@@ -161,7 +185,8 @@ function scopeRules(css: string, scope: string): string {
         if (PASSTHROUGH_AT_RULES.has(name)) {
           out.push(`${head} {${body}}`);
         } else if (NESTED_AT_RULES.has(name)) {
-          out.push(`${head} {${scopeRules(body, scope)}}`);
+          const asContainer = container && name === "media" ? widthMediaToContainer(head.slice("@media".length).trim(), container) : null;
+          out.push(`${asContainer ?? head} {${scopeRules(body, scope, container)}}`);
         } else {
           out.push(`${head} {${body}}`);
         }
@@ -196,7 +221,15 @@ export function isSafeScopeSelector(scope: string): boolean {
   return SAFE_SCOPE.test(scope);
 }
 
-export function scopeThemeCss(css: string, scope: string): string {
+const SAFE_CONTAINER = /^[a-z][a-z0-9-]{0,40}$/;
+
+/**
+ * `container` names the builder canvas's query container (justflows-ce#300):
+ * width-only media queries then follow the canvas width instead of the
+ * admin window, so tablet and mobile previews show the theme's own
+ * responsive rules.
+ */
+export function scopeThemeCss(css: string, scope: string, container?: string): string {
   if (!isSafeScopeSelector(scope)) return css;
-  return scopeRules(css, scope);
+  return scopeRules(css, scope, container && SAFE_CONTAINER.test(container) ? container : undefined);
 }

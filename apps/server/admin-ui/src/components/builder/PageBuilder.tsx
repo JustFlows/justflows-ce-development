@@ -1,6 +1,6 @@
 import { useT } from "../../i18n/I18nProvider";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { BLOCK_CLIPBOARD_MIME, isBlockLocked, type EditorLockFlag } from "@justflows/blocks";
+import { BLOCK_CLIPBOARD_MIME, breakpointForWidth, isBlockLocked, type EditorLockFlag } from "@justflows/blocks";
 import type { BlockDocument, BlockCatalogEntry, BlockNode } from "./types";
 import BlockLibrary from "./BlockLibrary";
 import BlockInspector from "./BlockInspector";
@@ -137,6 +137,8 @@ export default function PageBuilder({
     [],
   );
   const [menu, setMenu] = useState<MenuAnchor | null>(null);
+  /** Measured canvas width, so the Responsive tab starts at the breakpoint being previewed. */
+  const [canvasWidth, setCanvasWidth] = useState(0);
   const [saveDialog, setSaveDialog] = useState<SaveKind | null>(null);
   const announceRef = useRef<(status: DropStatus) => void>(() => {});
   const canManageLocks = useOptionalCapability("content:locks:manage");
@@ -734,6 +736,8 @@ export default function PageBuilder({
         parentColumns={selectedParent?.type === GRID_BLOCK_TYPE ? gridColumns(selectedParent) : 12}
         parentLayout={selectedParent?.props.containerLayout}
         ancestorElements={ancestorElementsOf(selectedInHeader ? headerBlocks : blocks, selectedBlock.id)}
+        previewing={canvasWidth > 0 ? breakpointForWidth(canvasWidth) : "desktop"}
+        onPreviewBreakpoint={(bp) => setPrefs({ breakpoint: bp, previewWidth: null })}
         reusable={reusable}
         onReloadReusable={reloadReusable}
         onConvertToReusable={convertToReusable}
@@ -798,6 +802,7 @@ export default function PageBuilder({
             breadcrumbs={breadcrumbs}
             onSelectCrumb={setSelectedId}
             onCanvasBackgroundClick={() => setSelectedId(null)}
+            onCanvasWidthChange={setCanvasWidth}
             library={
               <BlockLibrary
                 catalog={catalog}

@@ -9,7 +9,8 @@ import AnimationPanel from "./AnimationPanel";
 import ThemeBlockControls from "./ThemeBlockControls";
 import BlockStylePanel from "./BlockStylePanel";
 import { ContainerLayoutPanel, FlexItemPanel } from "./LayoutControls";
-import { supportsContainerLayout } from "@justflows/blocks";
+import { supportsContainerLayout, type BreakpointSource, type OverrideBreakpoint } from "@justflows/blocks";
+import ResponsivePanel from "./ResponsivePanel";
 import BlockJsonPanel from "./BlockJsonPanel";
 import GridPlacementPanel from "./GridPlacementPanel";
 import BlockLayoutPanel from "./BlockLayoutPanel";
@@ -149,6 +150,10 @@ interface BlockInspectorProps {
   parentLayout?: unknown;
   /** Elements the ancestors render as, outermost first; see `ContainerLayoutPanel`. */
   ancestorElements?: readonly string[];
+  /** The breakpoint the canvas is previewing, for the Responsive tab. */
+  previewing?: BreakpointSource;
+  /** Switch the canvas preview to a breakpoint. */
+  onPreviewBreakpoint?: (bp: OverrideBreakpoint) => void;
   reusable?: ReusableItem[];
   onReloadReusable?: () => void;
   onConvertToReusable?: (ref: string) => void;
@@ -185,6 +190,8 @@ export default function BlockInspector({
   parentColumns = 12,
   parentLayout,
   ancestorElements,
+  previewing = "desktop",
+  onPreviewBreakpoint,
   reusable = [],
   onReloadReusable,
   onConvertToReusable,
@@ -651,7 +658,19 @@ export default function BlockInspector({
           <BlockLayoutPanel block={block} onChange={onChange} sections={layoutSections} />
         </>
       ) : null,
-    responsive: sections.advanced ? <BlockStylePanel block={block} onChange={onChange} part="devices" /> : null,
+    responsive: (
+      <>
+        <ResponsivePanel
+          block={block}
+          onChange={onChange}
+          previewing={previewing}
+          onPreview={onPreviewBreakpoint}
+          parentType={parentType}
+          parentLayout={parentLayout}
+        />
+        {sections.advanced && <BlockStylePanel block={block} onChange={onChange} part="devices" />}
+      </>
+    ),
     interactions: sections.animation ? (
       <AnimationPanel
         blockId={block.id}

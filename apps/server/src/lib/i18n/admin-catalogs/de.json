@@ -1460,7 +1460,9 @@
       "restoreUnsavedConfirm": "Wiederherstellen ersetzt deine ungespeicherten Änderungen. Sie bleiben in diesem Browser erhalten und können danach wiederhergestellt werden. Fortfahren?",
       "stateDraft": "Entwurf",
       "statePublished": "Veröffentlicht",
-      "layers": "Ebenen"
+      "layers": "Ebenen",
+      "previewWidth": "Vorschaubreite in Pixeln",
+      "canvasWidth": "{width}px · {breakpoint}"
     },
     "drop": {
       "rejectNesting": "{child} kann nicht in {parent} stehen.",
@@ -1661,6 +1663,48 @@
       },
       "readingOrder": "Die Blöcke stehen in einer anderen Reihenfolge, als sie gelesen werden. Tastatur- und Screenreader-Nutzer folgen der Reihenfolge im Ebenen-Panel.",
       "matchReadingOrder": "Lesereihenfolge an die Anordnung anpassen"
+    },
+    "responsive": {
+      "title": "Anpassungen je Bildschirmgröße",
+      "editing": "Zu bearbeitende Bildschirmgröße",
+      "hint": "Desktop nutzt die normalen Einstellungen des Blocks. Tablet erbt von Desktop und Mobil von Tablet, bis du hier einen Wert setzt.",
+      "previewMismatch": "Du bearbeitest {breakpoint}, siehst aber {previewing}.",
+      "previewAt": "Vorschau als {breakpoint}",
+      "warningsTitle": "Vor dem Veröffentlichen prüfen",
+      "warning": {
+        "hidden": "Dieser Block ist bei dieser Breite ausgeblendet.",
+        "order": "Eine eigene Reihenfolge zeigt diesen Block an einer anderen Stelle, als er gelesen wird. Tastatur- und Screenreader-Nutzer folgen weiter dem Ebenen-Panel.",
+        "tinyText": "Sehr kleiner Text ist auf Handys schwer lesbar.",
+        "tooWide": "Die maximale Breite ist breiter als dieser Bildschirm; der Inhalt kann seitlich scrollen.",
+        "nowrap": "Eine Zeile ohne Umbruch kann bei dieser Breite überlaufen.",
+        "tall": "Diese Mindesthöhe ist höher als ein Handybildschirm.",
+        "bigSpacing": "Sehr große Abstände nehmen viel Platz auf kleinen Bildschirmen ein."
+      },
+      "spacing": "Abstände",
+      "size": "Größe",
+      "text": "Text",
+      "item": "In der Anordnung",
+      "fontSize": "Textgröße",
+      "fontSizeValue": {
+        "xs": "XS",
+        "sm": "S",
+        "base": "M",
+        "lg": "L",
+        "xl": "XL",
+        "2xl": "2XL",
+        "3xl": "3XL",
+        "4xl": "4XL"
+      },
+      "span": "Spalten breit",
+      "col": "Startspalte",
+      "order": "Reihenfolge",
+      "direction": "Richtung",
+      "setHere": "Für diese Größe gesetzt",
+      "inherited": "{value} · von {from}",
+      "notSet": "Nicht gesetzt",
+      "inherit": "Übernehmen ({value})",
+      "reset": "Zurücksetzen",
+      "resetField": "{field} für {breakpoint} zurücksetzen"
     }
   },
   "dashboard": {

@@ -1455,7 +1455,9 @@
       "restoreUnsavedConfirm": "Przywrócenie zastąpi niezapisane zmiany. Zostaną zachowane w tej przeglądarce i można je potem przywrócić. Kontynuować?",
       "stateDraft": "Szkic",
       "statePublished": "Opublikowano",
-      "layers": "Warstwy"
+      "layers": "Warstwy",
+      "previewWidth": "Szerokość podglądu w pikselach",
+      "canvasWidth": "{width} px · {breakpoint}"
     },
     "drop": {
       "rejectNesting": "Bloku {child} nie można umieścić w {parent}.",
@@ -1656,6 +1658,48 @@
       },
       "readingOrder": "Bloki są ułożone w innej kolejności niż kolejność czytania. Osoby korzystające z klawiatury i czytników ekranu idą za kolejnością w panelu Warstwy.",
       "matchReadingOrder": "Dopasuj kolejność czytania do układu"
+    },
+    "responsive": {
+      "title": "Ustawienia dla rozmiarów ekranu",
+      "editing": "Edytowany rozmiar ekranu",
+      "hint": "Komputer używa zwykłych ustawień bloku. Tablet dziedziczy z komputera, a telefon z tabletu, dopóki nie ustawisz tu wartości.",
+      "previewMismatch": "Edytujesz {breakpoint}, ale podgląd to {previewing}.",
+      "previewAt": "Podgląd: {breakpoint}",
+      "warningsTitle": "Sprawdź przed publikacją",
+      "warning": {
+        "hidden": "Ten blok jest ukryty przy tej szerokości.",
+        "order": "Własna kolejność pokazuje ten blok w innym miejscu, niż jest czytany. Osoby korzystające z klawiatury i czytników ekranu nadal idą za panelem Warstwy.",
+        "tinyText": "Bardzo mały tekst może być trudny do odczytania na telefonie.",
+        "tooWide": "Maksymalna szerokość jest większa niż ten ekran; treść może przewijać się w bok.",
+        "nowrap": "Wiersz w jednej linii może się nie zmieścić przy tej szerokości.",
+        "tall": "Ta minimalna wysokość jest większa niż ekran telefonu.",
+        "bigSpacing": "Bardzo duże odstępy zajmują dużą część małego ekranu."
+      },
+      "spacing": "Odstępy",
+      "size": "Rozmiar",
+      "text": "Tekst",
+      "item": "W układzie",
+      "fontSize": "Rozmiar tekstu",
+      "fontSizeValue": {
+        "xs": "XS",
+        "sm": "S",
+        "base": "M",
+        "lg": "L",
+        "xl": "XL",
+        "2xl": "2XL",
+        "3xl": "3XL",
+        "4xl": "4XL"
+      },
+      "span": "Zajmowane kolumny",
+      "col": "Kolumna początkowa",
+      "order": "Kolejność",
+      "direction": "Kierunek",
+      "setHere": "Ustawione dla tego rozmiaru",
+      "inherited": "{value} · z: {from}",
+      "notSet": "Nie ustawiono",
+      "inherit": "Dziedzicz ({value})",
+      "reset": "Przywróć",
+      "resetField": "Przywróć {field} dla: {breakpoint}"
     }
   },
   "dashboard": {

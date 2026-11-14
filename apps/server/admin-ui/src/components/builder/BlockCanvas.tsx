@@ -10,6 +10,7 @@ import { useBlockMoveHandle } from "./useBlockMoveHandle";
 import GridEditor from "./GridEditor";
 import { GRID_BLOCK_TYPE, gridColumns, nextRow } from "./grid";
 import {
+  breakpointCss,
   compactBlockPlacement,
   containerLayoutAttrs,
   flexBasis,
@@ -74,6 +75,7 @@ export function PageCanvas({
   return (
     <div
       {...inertPreviewHandlers}
+      className="jf-canvas-root"
       style={{
         minHeight: !compact && blocks.length === 0 ? 320 : undefined,
         width: compact ? "100%" : undefined,
@@ -349,6 +351,7 @@ function BlockRow({
       </div>
 
       <div style={{ position: "relative", padding: depth === 0 ? "0.5rem 0.6rem 0.6rem" : "0.25rem 0.35rem 0.35rem" }}>
+        {block.props.breakpoints ? <style>{canvasBreakpointCss(block)}</style> : null}
         {selectedId === block.id && !inMultiSelection && !isBlockLocked(block, "edit") && !dragPayload.type && (
           <LayoutOverlay block={block} allow={overlayHandles(block, meta)} onChange={(props) => updateProps(block.id, props)} />
         )}
@@ -424,7 +427,11 @@ function BlockRow({
                    */
                   const layout = supportsContainerLayout(block.type) ? containerLayoutAttrs(block.props.containerLayout) : null;
                   const items = children.map((child, ci) => (
-                    <div key={child.id} style={isColumns ? { minWidth: 0 } : layout ? layoutItemStyle(child) : undefined}>
+                    <div
+                      key={child.id}
+                      data-jf-layout-item={child.id}
+                      style={isColumns ? { minWidth: 0 } : layout ? layoutItemStyle(child) : undefined}
+                    >
                       {!isColumns && (
                         <DropZone
                           parentId={block.id}
@@ -655,4 +662,27 @@ export function layoutItemStyle(child: BlockNode): React.CSSProperties {
 function overlayHandles(block: BlockNode, meta: BlockCatalogEntry | undefined): { padding: boolean; minHeight: boolean } {
   const sections = inspectorSections(block, meta);
   return { padding: sections.field("padTop") && sections.field("padBottom"), minHeight: sections.field("minHeight") };
+}
+
+/** Attribute selector for a block id; ids never hold quotes, but escape anyway. */
+function attr(name: string, id: string): string {
+  return `[${name}="${id.replace(/["\\]/g, "\\$&")}"]`;
+}
+
+/**
+ * The block's breakpoint overrides as container queries on the canvas
+ * (justflows-ce#300). Same function and values as the public renderer; only
+ * the selectors and the query kind differ, so preview and page agree.
+ */
+export function canvasBreakpointCss(block: BlockNode): string {
+  return breakpointCss(
+    block.props.breakpoints,
+    supportsContainerLayout(block.type) ? block.props.containerLayout : undefined,
+    {
+      block: attr("data-jf-block-preview", block.id),
+      layout: attr("data-jf-layout-container", block.id),
+      item: attr("data-jf-layout-item", block.id),
+    },
+    { kind: "container", name: "jf-canvas" },
+  );
 }

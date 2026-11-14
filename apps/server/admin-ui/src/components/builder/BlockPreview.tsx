@@ -42,7 +42,8 @@ export function useThemePreviewStylesheet(): void {
       const link = document.createElement("link");
       link.id = THEME_PREVIEW_LINK_ID;
       link.rel = "stylesheet";
-      link.href = `/theme.css?preview=1&scope=.${THEME_PREVIEW_SCOPE}`;
+      /** `widths=canvas`: the theme's width media queries follow the canvas (justflows-ce#300). */
+      link.href = `/theme.css?preview=1&scope=.${THEME_PREVIEW_SCOPE}&widths=canvas`;
       document.head.appendChild(link);
     }
     return () => {

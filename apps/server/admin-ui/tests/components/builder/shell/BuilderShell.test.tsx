@@ -67,7 +67,8 @@ describe("BuilderShell", () => {
     await user.selectOptions(screen.getByRole("combobox", { name: "Zoom" }), "75");
     const frame = container.querySelector<HTMLElement>(".jf-shell__frame")!;
     expect(frame.dataset.breakpoint).toBe("mobile");
-    expect(frame.style.maxWidth).toBe("390px");
+    /** The content box is exactly the preset width; the frame adds its own padding around it. */
+    expect(frame.style.maxWidth).toBe("calc(390px + 2rem)");
     expect(screen.getByRole("button", { name: "Mobile" })).toHaveAttribute("aria-pressed", "true");
     unmount();
 

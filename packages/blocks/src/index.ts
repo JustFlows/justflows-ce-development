@@ -81,6 +81,7 @@ export {
   ALIGN_SELF,
   BASIS_PRESETS,
   DEFAULT_BLOCK_STYLE,
+  FONT_SIZE_PRESETS,
   GROW_VALUES,
   OVERFLOW_VALUES,
   RADIUS_PRESETS,
@@ -212,3 +213,13 @@ export {
   supportsContainerLayout,
 } from "./container-layout.js";
 export type { ContainerLayoutAttrs } from "./container-layout.js";
+export {
+  BREAKPOINTS_SCHEMA_VERSION,
+  BREAKPOINT_MAX_WIDTH,
+  breakpointCss,
+  breakpointForWidth,
+  effectiveOverride,
+  resolveResponsiveValue,
+  setBreakpointValue,
+} from "./responsive.js";
+export type { BreakpointQuery, BreakpointSource, BreakpointTargets, ResolvedValue } from "./responsive.js";

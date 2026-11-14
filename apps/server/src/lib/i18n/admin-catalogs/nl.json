@@ -1457,7 +1457,9 @@
       "restoreUnsavedConfirm": "Terugzetten vervangt je niet-opgeslagen wijzigingen. Ze blijven in deze browser bewaard en zijn daarna terug te zetten. Doorgaan?",
       "stateDraft": "Concept",
       "statePublished": "Gepubliceerd",
-      "layers": "Lagen"
+      "layers": "Lagen",
+      "previewWidth": "Voorbeeldbreedte in pixels",
+      "canvasWidth": "{width}px · {breakpoint}"
     },
     "drop": {
       "rejectNesting": "{child} kan niet in {parent}.",
@@ -1658,6 +1660,48 @@
       },
       "readingOrder": "Blokken staan in een andere volgorde dan ze worden gelezen. Toetsenbord- en schermlezergebruikers volgen de volgorde in het paneel Lagen.",
       "matchReadingOrder": "Leesvolgorde gelijkzetten met de indeling"
+    },
+    "responsive": {
+      "title": "Aanpassingen per schermformaat",
+      "editing": "Schermformaat om te bewerken",
+      "hint": "Desktop gebruikt de gewone instellingen van het blok. Tablet erft van desktop en mobiel van tablet, tot je hier een waarde instelt.",
+      "previewMismatch": "Je bewerkt {breakpoint}, maar bekijkt {previewing}.",
+      "previewAt": "Bekijken op {breakpoint}",
+      "warningsTitle": "Controleer voor het publiceren",
+      "warning": {
+        "hidden": "Dit blok is verborgen op deze breedte.",
+        "order": "Een eigen volgorde toont dit blok op een andere plek dan waar het wordt gelezen. Toetsenbord- en schermlezergebruikers volgen nog steeds het paneel Lagen.",
+        "tinyText": "Extra kleine tekst is op telefoons soms moeilijk te lezen.",
+        "tooWide": "De maximale breedte is breder dan dit scherm; de inhoud kan zijwaarts scrollen.",
+        "nowrap": "Een rij op één regel kan op deze breedte buiten beeld lopen.",
+        "tall": "Deze minimale hoogte is hoger dan een telefoonscherm.",
+        "bigSpacing": "Heel grote afstand neemt veel van een klein scherm in beslag."
+      },
+      "spacing": "Afstand",
+      "size": "Grootte",
+      "text": "Tekst",
+      "item": "In de indeling",
+      "fontSize": "Tekstgrootte",
+      "fontSizeValue": {
+        "xs": "XS",
+        "sm": "S",
+        "base": "M",
+        "lg": "L",
+        "xl": "XL",
+        "2xl": "2XL",
+        "3xl": "3XL",
+        "4xl": "4XL"
+      },
+      "span": "Kolommen breed",
+      "col": "Beginkolom",
+      "order": "Volgorde",
+      "direction": "Richting",
+      "setHere": "Ingesteld voor dit formaat",
+      "inherited": "{value} · van {from}",
+      "notSet": "Niet ingesteld",
+      "inherit": "Overnemen ({value})",
+      "reset": "Herstellen",
+      "resetField": "{field} herstellen voor {breakpoint}"
     }
   },
   "dashboard": {

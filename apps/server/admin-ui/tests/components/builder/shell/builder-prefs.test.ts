@@ -16,7 +16,7 @@ describe("parseBuilderPrefs", () => {
   it("keeps valid values", () => {
     expect(
       parseBuilderPrefs({ leftOpen: false, leftTab: "site", rightOpen: false, breakpoint: "mobile", zoom: 75, inspectorTab: "layout" }),
-    ).toEqual({ leftOpen: false, leftTab: "site", rightOpen: false, breakpoint: "mobile", zoom: 75, inspectorTab: "layout" });
+    ).toEqual({ leftOpen: false, leftTab: "site", rightOpen: false, previewWidth: null, breakpoint: "mobile", zoom: 75, inspectorTab: "layout" });
   });
 });
 

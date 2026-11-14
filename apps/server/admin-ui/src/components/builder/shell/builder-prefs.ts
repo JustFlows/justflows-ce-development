@@ -16,6 +16,10 @@ export const BREAKPOINT_WIDTH: Record<BuilderBreakpoint, number | null> = {
   mobile: 390,
 };
 
+/** Bounds for a custom preview width (justflows-ce#300). */
+export const PREVIEW_WIDTH_MIN = 320;
+export const PREVIEW_WIDTH_MAX = 1920;
+
 export const BUILDER_ZOOM_LEVELS = [50, 75, 100] as const;
 export type BuilderZoom = (typeof BUILDER_ZOOM_LEVELS)[number];
 
@@ -35,6 +39,8 @@ export interface BuilderPrefs {
   leftTab: LeftPanelTab;
   rightOpen: boolean;
   breakpoint: BuilderBreakpoint;
+  /** A custom canvas width in CSS pixels; `null` uses the breakpoint preset. */
+  previewWidth: number | null;
   zoom: BuilderZoom;
   inspectorTab: InspectorTab;
 }
@@ -44,9 +50,17 @@ export const DEFAULT_BUILDER_PREFS: BuilderPrefs = {
   leftTab: "library",
   rightOpen: true,
   breakpoint: "desktop",
+  previewWidth: null,
   zoom: 100,
   inspectorTab: "content",
 };
+
+/** A stored custom width, or `null` when absent or out of bounds. */
+export function clampPreviewWidth(raw: unknown): number | null {
+  if (typeof raw !== "number" || !Number.isFinite(raw)) return null;
+  const n = Math.round(raw);
+  return n >= PREVIEW_WIDTH_MIN && n <= PREVIEW_WIDTH_MAX ? n : null;
+}
 
 function oneOf<T>(value: unknown, allowed: readonly T[], fallback: T): T {
   return (allowed as readonly unknown[]).includes(value) ? (value as T) : fallback;
@@ -61,6 +75,7 @@ export function parseBuilderPrefs(raw: unknown): BuilderPrefs {
     leftTab: oneOf(input.leftTab, LEFT_PANEL_TABS, DEFAULT_BUILDER_PREFS.leftTab),
     rightOpen: typeof input.rightOpen === "boolean" ? input.rightOpen : DEFAULT_BUILDER_PREFS.rightOpen,
     breakpoint: oneOf(input.breakpoint, BUILDER_BREAKPOINTS, DEFAULT_BUILDER_PREFS.breakpoint),
+    previewWidth: clampPreviewWidth(input.previewWidth),
     zoom: oneOf(input.zoom, BUILDER_ZOOM_LEVELS, DEFAULT_BUILDER_PREFS.zoom),
     inspectorTab: oneOf(input.inspectorTab, INSPECTOR_TABS, DEFAULT_BUILDER_PREFS.inspectorTab),
   };

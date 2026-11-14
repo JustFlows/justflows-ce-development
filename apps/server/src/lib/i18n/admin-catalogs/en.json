@@ -1455,7 +1455,9 @@
       "restoreUnsavedConfirm": "Restoring replaces your unsaved changes. They stay in this browser and can be restored afterwards. Continue?",
       "stateDraft": "Draft",
       "statePublished": "Published",
-      "layers": "Layers"
+      "layers": "Layers",
+      "previewWidth": "Preview width in pixels",
+      "canvasWidth": "{width}px · {breakpoint}"
     },
     "drop": {
       "rejectNesting": "{child} can't go inside {parent}.",
@@ -1656,6 +1658,48 @@
       },
       "readingOrder": "Blocks are placed in a different order than they are read. Keyboard and screen-reader users follow the order in the Layers panel.",
       "matchReadingOrder": "Match the reading order to the layout"
+    },
+    "responsive": {
+      "title": "Breakpoint overrides",
+      "editing": "Breakpoint to edit",
+      "hint": "Desktop uses the block's normal settings. Tablet inherits from desktop and mobile from tablet, until you set a value here.",
+      "previewMismatch": "You are editing {breakpoint} but previewing {previewing}.",
+      "previewAt": "Preview at {breakpoint}",
+      "warningsTitle": "Check before publishing",
+      "warning": {
+        "hidden": "This block is hidden at this width.",
+        "order": "A custom order shows this block in a different place than it is read. Keyboard and screen-reader users still follow the Layers panel.",
+        "tinyText": "Extra-small text can be hard to read on phones.",
+        "tooWide": "The maximum width is wider than this screen; content may scroll sideways.",
+        "nowrap": "A row kept on one line may overflow at this width.",
+        "tall": "A minimum height this tall fills more than a phone screen.",
+        "bigSpacing": "Very large spacing takes up much of a small screen."
+      },
+      "spacing": "Spacing",
+      "size": "Size",
+      "text": "Text",
+      "item": "In its layout",
+      "fontSize": "Text size",
+      "fontSizeValue": {
+        "xs": "XS",
+        "sm": "S",
+        "base": "M",
+        "lg": "L",
+        "xl": "XL",
+        "2xl": "2XL",
+        "3xl": "3XL",
+        "4xl": "4XL"
+      },
+      "span": "Columns spanned",
+      "col": "Start column",
+      "order": "Order",
+      "direction": "Direction",
+      "setHere": "Set for this breakpoint",
+      "inherited": "{value} · from {from}",
+      "notSet": "Not set",
+      "inherit": "Inherit ({value})",
+      "reset": "Reset",
+      "resetField": "Reset {field} for {breakpoint}"
     }
   },
   "dashboard": {

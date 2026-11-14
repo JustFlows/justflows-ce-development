@@ -5568,3 +5568,62 @@ input[type="range"] {
     border-color: Canvas;
   }
 }
+
+/* Responsive preview (justflows-ce#300): the canvas is the query container for the theme's width rules. */
+.jf-shell__frame,
+.jf-canvas-root {
+  container: jf-canvas / inline-size;
+}
+.jf-shell__width {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--jf-text-3);
+}
+.jf-shell__width input {
+  width: 4.6rem;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+  border: 1px solid var(--jf-border-strong);
+  background: var(--jf-surface);
+  color: var(--jf-text);
+}
+.jf-shell__measure {
+  font-size: 0.72rem;
+  color: var(--jf-text-3);
+  white-space: nowrap;
+}
+.jf-responsive__bps {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+.jf-responsive__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem 0.5rem;
+  align-items: end;
+  margin-bottom: 0.45rem;
+}
+.jf-responsive__source {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  color: var(--jf-text-3);
+}
+.jf-responsive__source--own {
+  color: var(--jf-accent);
+  font-weight: 650;
+}
+.jf-responsive__warnings {
+  margin: 0 0 0.75rem;
+  padding-inline-start: 1.1rem;
+  font-size: 0.78rem;
+  color: var(--jf-warning, #b45309);
+}
+.jf-shell__unit {
+  font-size: 0.72rem;
+  color: var(--jf-text-3);
+  margin-inline-start: -0.15rem;
+}
