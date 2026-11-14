@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { safeMediaSrc } from "@justflows/blocks";
-import { loadImageLibrary, uploadImage, type MediaLibraryItem } from "../lib/media-library";
+import { loadMediaLibrary, MEDIA_ACCEPT, uploadMedia, type MediaKind, type MediaLibraryItem } from "../lib/media-library";
 import { useT } from "../i18n/I18nProvider";
 
 type MediaItem = MediaLibraryItem;
@@ -12,6 +12,7 @@ export default function MediaImageField({
   value,
   onChange,
   square = false,
+  kind = "image",
 }: {
   id: string;
   label: string;
@@ -19,6 +20,11 @@ export default function MediaImageField({
   value: string;
   onChange: (url: string) => void;
   square?: boolean;
+  /**
+   * What the field holds. `image` (default) shows thumbnails; `video`,
+   * `audio` and `file` list filenames and only accept that kind of upload.
+   */
+  kind?: MediaKind;
 }) {
   const { t } = useT();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -32,7 +38,7 @@ export default function MediaImageField({
     setLibraryOpen(true);
     if (library) return;
     try {
-      setLibrary(await loadImageLibrary());
+      setLibrary(await loadMediaLibrary(kind));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setLibrary([]);
@@ -44,7 +50,7 @@ export default function MediaImageField({
     setBusy(true);
     setError("");
     try {
-      const url = await uploadImage(file, t);
+      const url = await uploadMedia(file, t);
       onChange(url);
       setLibraryOpen(false);
       setLibrary((prev) => (prev ? [{ url, filename: file.name }, ...prev] : prev));
@@ -70,16 +76,18 @@ export default function MediaImageField({
         className={`jf-media-field__preview${square ? " jf-media-field__preview--square" : ""}`}
         data-empty={!value || undefined}
       >
-        {value ? (
+        {value && kind === "image" ? (
           <img src={safeMediaSrc(value)} alt="" />
+        ) : value ? (
+          <span className="jf-media-field__name">{decodeURIComponent(value.split("/").pop() || value)}</span>
         ) : (
-          <span className="jf-field__hint">{t("mediaField.noImageSelected")}</span>
+          <span className="jf-field__hint">{kind === "image" ? t("mediaField.noImageSelected") : t("mediaField.noFileSelected")}</span>
         )}
       </div>
 
       <div className="jf-row">
         <button type="button" className="jf-btn jf-btn--sm" onClick={openLibrary} disabled={busy}>
-          {value ? t("mediaField.select") : t("mediaField.selectImage")}
+          {value ? t("mediaField.select") : kind === "image" ? t("mediaField.selectImage") : t("mediaField.selectFile")}
         </button>
         <button
           type="button"
@@ -99,7 +107,7 @@ export default function MediaImageField({
       <input
         ref={fileRef}
         type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/svg+xml,image/x-icon,.ico,.svg"
+        accept={kind === "image" ? "image/jpeg,image/png,image/gif,image/webp,image/avif,image/svg+xml,image/x-icon,.ico,.svg" : MEDIA_ACCEPT[kind]}
         hidden
         onChange={(e) => void handleUpload(e.target.files?.[0])}
       />
@@ -112,7 +120,7 @@ export default function MediaImageField({
             <p className="jf-field__hint" style={{ gridColumn: "1 / -1" }}>{t("common.loading")}</p>
           ) : library.length === 0 ? (
             <p className="jf-field__hint" style={{ gridColumn: "1 / -1" }}>
-              {t("mediaField.noImagesYet")}
+              {kind === "image" ? t("mediaField.noImagesYet") : t("mediaField.noFilesYet")}
             </p>
           ) : (
             library.map((item) => (
@@ -124,7 +132,7 @@ export default function MediaImageField({
                 title={item.filename}
                 onClick={() => pick(item.url)}
               >
-                <img src={safeMediaSrc(item.url)} alt="" />
+                {kind === "image" ? <img src={safeMediaSrc(item.url)} alt="" /> : <span className="jf-media-library__name">{item.filename}</span>}
               </button>
             ))
           )}

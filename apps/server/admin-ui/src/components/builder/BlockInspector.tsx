@@ -2,7 +2,7 @@ import SocialLinksEditor from "./SocialLinksEditor";
 import { FUNCTIONAL_TYPES } from "./FunctionalBlock";
 import TableEditor from "./TableEditor";
 import { useT } from "../../i18n/I18nProvider";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { BlockNode, BlockCatalogEntry, BlockSchemaField } from "./types";
 import { syncColumnCount } from "./block-defaults";
 import AnimationPanel from "./AnimationPanel";
@@ -336,7 +336,7 @@ export default function BlockInspector({
         {textArea("subheading", t("builder.inspector.field.subheading"), 2)}
         {textInput("buttonLabel", t("builder.inspector.field.buttonLabel"))}
         <InternalLinkField value={(p.buttonUrl as string) ?? ""} onChange={(url) => set("buttonUrl", url)} label={t("builder.inspector.field.buttonUrl")} placeholder={t("builder.inspector.placeholder.internalLink")} />
-        {textInput("backgroundImage", t("builder.inspector.field.backgroundImageUrl"))}
+        <MediaImageField id={`block-${block.id}-backgroundImage`} label={t("builder.inspector.field.backgroundImage")} value={(p.backgroundImage as string) ?? ""} onChange={(url) => set("backgroundImage", url)} />
         {select("align", t("builder.inspector.field.alignment"), [
           { value: "left", label: t("builder.layout.value.left") },
           { value: "center", label: t("builder.layout.value.center") },
@@ -378,6 +378,9 @@ export default function BlockInspector({
       fields = <>
         {Object.entries(catalogEntry?.schema ?? {}).map(([name, field]) => name === "poster" ? (
           <MediaImageField key={name} id={`block-${block.id}-poster`} label={t("builder.media.poster")} value={(p.poster as string) ?? ""} onChange={(url) => set("poster", url)} />
+        ) : name === "src" ? (
+          /** The source is picked from, or uploaded to, the media library like an image; a URL can still be pasted. */
+          <MediaImageField key={name} id={`block-${block.id}-src`} label={t("builder.media.source")} kind={block.type === "core.video" ? "video" : block.type === "core.audio" ? "audio" : "file"} value={(p.src as string) ?? ""} onChange={(url) => set("src", url)} />
         ) : (
           <SchemaField key={name} name={name} field={{ ...field, label: t(`builder.media.${name}`) }} value={p[name]} onChange={(value) => set(name, value)} />
         ))}
@@ -603,6 +606,16 @@ export default function BlockInspector({
             <SocialLinksEditor key={name} value={p.links ?? field.default} onChange={(links) => set("links", links)} />
           ) : name === "poster" ? (
             <MediaImageField key={name} id={`block-${block.id}-poster`} label={t("builder.media.poster")} value={(p.poster as string) ?? ""} onChange={(url) => set("poster", url)} />
+          ) : name === "src" && "mediaType" in (catalogEntry?.schema ?? {}) ? (
+            /** Cover and Media & Text: an image or a video, depending on the chosen media type. */
+            <MediaImageField
+              key={`${name}-${p.mediaType === "video" ? "video" : "image"}`}
+              id={`block-${block.id}-src`}
+              label={p.mediaType === "video" ? t("builder.media.source") : t("builder.inspector.field.image")}
+              kind={p.mediaType === "video" ? "video" : "image"}
+              value={(p.src as string) ?? ""}
+              onChange={(url) => set("src", url)}
+            />
           ) : (
             <SchemaField key={name} name={name} field={{ ...field, label: t(`builder.functional.fields.${name}`), optionLabels: field.options ? Object.fromEntries(field.options.map(option => [option, t(`builder.functional.options.${option}`)])) : field.optionLabels }} value={p[name]} onChange={(value) => set(name, value)} />
           ))}
@@ -956,6 +969,12 @@ function SchemaField({ name, field, value, onChange }: {
   const help = field.help ? <span style={fieldHint}>{field.help}</span> : null;
   const hasChoices = Boolean(field.optionsUrl) || (Array.isArray(field.options) && field.options.length > 0);
   const { options, loading, failed } = useSchemaOptions(field);
+  const id = useId();
+
+  /** One image: picked from or uploaded to the media library, with a URL as fallback. */
+  if (kind === "media") {
+    return <MediaImageField id={id} label={label} description={field.help} value={typeof value === "string" ? value : ""} onChange={onChange} />;
+  }
 
   if (kind === "images") {
     return <ImagesField label={label} help={field.help} value={value} onChange={onChange} />;

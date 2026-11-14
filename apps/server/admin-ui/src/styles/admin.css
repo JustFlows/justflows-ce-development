@@ -3050,6 +3050,23 @@ select.jf-input {
   outline-offset: 1px;
 }
 
+/** Video, audio and file pickers list filenames instead of thumbnails. */
+.jf-media-field__name,
+.jf-media-library__name {
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.jf-media-library__name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0.25rem;
+  color: var(--jf-text-2);
+}
+
 /* Media detail dialog + focal-point picker (#103) */
 .jf-media-detail__backdrop {
   position: fixed;

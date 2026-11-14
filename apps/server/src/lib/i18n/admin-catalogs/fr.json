@@ -833,7 +833,6 @@
         "subheading": "Sous-titre",
         "buttonLabel": "Texte du bouton",
         "buttonUrl": "URL du bouton",
-        "backgroundImageUrl": "URL de l’image d’arrière-plan",
         "text": "Texte",
         "style": "Style",
         "headingText": "Texte du titre",
@@ -868,7 +867,8 @@
         "sections": "Sections",
         "policies": "Politiques",
         "intro": "Intro",
-        "icon": "Icône"
+        "icon": "Icône",
+        "backgroundImage": "Image d’arrière-plan"
       },
       "option": {
         "backgroundMuted": "Atténué",
@@ -1221,7 +1221,8 @@
       "label": "Link label",
       "download": "Download file",
       "autoplayHelp": "Browsers usually require muted playback for autoplay. The editor preview always shows controls and does not autoplay.",
-      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser."
+      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser.",
+      "source": "Fichier média"
     },
     "functional": {
       "fields": {
@@ -2135,7 +2136,10 @@
     "remove": "Supprimer",
     "mediaLibraryAriaLabel": "Médiathèque",
     "noImagesYet": "Pas encore d’images. Téléversez-en une, ou ajoutez des fichiers dans Médias.",
-    "pasteUrl": "Coller une URL"
+    "pasteUrl": "Coller une URL",
+    "selectFile": "Choisir un fichier",
+    "noFileSelected": "Aucun fichier sélectionné",
+    "noFilesYet": "Aucun fichier de ce type pour l’instant. Téléversez-en un ou ajoutez des fichiers dans Médias."
   },
   "auth": {
     "forgotPassword": {

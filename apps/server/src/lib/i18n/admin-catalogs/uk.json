@@ -997,7 +997,6 @@
         "attribution": "Атрибуція",
         "average05": "Середній (0–5)",
         "background": "Фон",
-        "backgroundImageUrl": "Фонове зображення URL",
         "buttonLabel": "Мітка кнопки",
         "buttonUrl": "Кнопка URL",
         "caption": "Підпис",
@@ -1037,7 +1036,8 @@
         "url": "URL",
         "variant": "Варіант",
         "width": "Ширина",
-        "widthPx": "Ширина (px)"
+        "widthPx": "Ширина (px)",
+        "backgroundImage": "Фонове зображення"
       },
       "images": {
         "addFromMediaLibrary": "Додати з медіатеки",
@@ -1216,7 +1216,8 @@
       "label": "Link label",
       "download": "Download file",
       "autoplayHelp": "Browsers usually require muted playback for autoplay. The editor preview always shows controls and does not autoplay.",
-      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser."
+      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser.",
+      "source": "Медіафайл"
     },
     "functional": {
       "fields": {
@@ -2772,7 +2773,10 @@
     "remove": "видалити",
     "mediaLibraryAriaLabel": "Медіатека",
     "noImagesYet": "Ще немає зображень. Завантажте один або додайте файли в Media.",
-    "pasteUrl": "Вставте URL"
+    "pasteUrl": "Вставте URL",
+    "selectFile": "Вибрати файл",
+    "noFileSelected": "Файл не вибрано",
+    "noFilesYet": "Файлів такого типу ще немає. Завантажте файл або додайте файли в розділі «Медіа»."
   },
   "marketplace": {
     "title": "Каталог розширень",

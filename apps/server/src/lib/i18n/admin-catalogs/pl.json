@@ -997,7 +997,6 @@
         "attribution": "Atrybucja",
         "average05": "Średnia (0–5)",
         "background": "Tło",
-        "backgroundImageUrl": "Obraz tła URL",
         "buttonLabel": "Etykieta przycisku",
         "buttonUrl": "Przycisk URL",
         "caption": "Podpis",
@@ -1037,7 +1036,8 @@
         "url": "URL",
         "variant": "Wariant",
         "width": "Szerokość",
-        "widthPx": "Szerokość (px)"
+        "widthPx": "Szerokość (px)",
+        "backgroundImage": "Obraz tła"
       },
       "images": {
         "addFromMediaLibrary": "Dodaj z biblioteki multimediów",
@@ -1216,7 +1216,8 @@
       "label": "Link label",
       "download": "Download file",
       "autoplayHelp": "Browsers usually require muted playback for autoplay. The editor preview always shows controls and does not autoplay.",
-      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser."
+      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser.",
+      "source": "Plik multimedialny"
     },
     "functional": {
       "fields": {
@@ -2772,7 +2773,10 @@
     "remove": "Usuń",
     "mediaLibraryAriaLabel": "Biblioteka multimediów",
     "noImagesYet": "Nie ma jeszcze żadnych obrazów. Prześlij jeden lub dodaj pliki w Mediach.",
-    "pasteUrl": "Wklej URL"
+    "pasteUrl": "Wklej URL",
+    "selectFile": "Wybierz plik",
+    "noFileSelected": "Nie wybrano pliku",
+    "noFilesYet": "Nie ma jeszcze plików tego rodzaju. Prześlij plik albo dodaj pliki w Mediach."
   },
   "marketplace": {
     "title": "Katalog rozszerzeń",

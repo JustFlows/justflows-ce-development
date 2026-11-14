@@ -997,7 +997,6 @@
         "attribution": "Указание авторства",
         "average05": "Средний показатель (0-5)",
         "background": "Фон",
-        "backgroundImageUrl": "URL фонового изображения",
         "buttonLabel": "Подпись кнопки",
         "buttonUrl": "Кнопка URL",
         "caption": "Подпись",
@@ -1037,7 +1036,8 @@
         "url": "URL",
         "variant": "Вариант",
         "width": "Ширина",
-        "widthPx": "Ширина (пикселей)"
+        "widthPx": "Ширина (пикселей)",
+        "backgroundImage": "Фоновое изображение"
       },
       "images": {
         "addFromMediaLibrary": "Добавить из медиатеки",
@@ -1216,7 +1216,8 @@
       "label": "Link label",
       "download": "Download file",
       "autoplayHelp": "Browsers usually require muted playback for autoplay. The editor preview always shows controls and does not autoplay.",
-      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser."
+      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser.",
+      "source": "Медиафайл"
     },
     "functional": {
       "fields": {
@@ -2772,7 +2773,10 @@
     "remove": "Удалить",
     "mediaLibraryAriaLabel": "Библиотека средств массовой информации",
     "noImagesYet": "Пока нет изображений. Загрузить один или добавить файлы в Media.",
-    "pasteUrl": "Вставить URL"
+    "pasteUrl": "Вставить URL",
+    "selectFile": "Выбрать файл",
+    "noFileSelected": "Файл не выбран",
+    "noFilesYet": "Файлов такого типа пока нет. Загрузите файл или добавьте файлы в разделе «Медиа»."
   },
   "marketplace": {
     "title": "Каталог расширений",

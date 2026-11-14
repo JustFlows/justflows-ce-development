@@ -487,6 +487,10 @@ A plugin block can also declare search keywords, allowed parents, starting
 props, one-click actions, how it previews, container layout support and prop
 migrations. See [Block editor contract](BLOCK-CONTRACT.md).
 
+Declare an image prop as `{ type: "media" }`, not `url`. Its settings field
+then picks from or uploads to the media library, with a pasted URL as a
+fallback. Use `images` for a list of images and `url` only for links.
+
 ## Built-in Search block
 
 `core.search` is a first-party GET search form with `label`, `contentType`,

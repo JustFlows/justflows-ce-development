@@ -830,7 +830,6 @@
         "subheading": "Subkop",
         "buttonLabel": "Knoplabel",
         "buttonUrl": "Knop-URL",
-        "backgroundImageUrl": "URL van achtergrondafbeelding",
         "text": "Tekst",
         "style": "Stijl",
         "headingText": "Koptekst",
@@ -865,7 +864,8 @@
         "sections": "Secties",
         "policies": "Beleid",
         "intro": "Inleiding",
-        "icon": "Pictogram"
+        "icon": "Pictogram",
+        "backgroundImage": "Achtergrondafbeelding"
       },
       "option": {
         "backgroundMuted": "Gedempt",
@@ -1218,7 +1218,8 @@
       "label": "Link label",
       "download": "Download file",
       "autoplayHelp": "Browsers usually require muted playback for autoplay. The editor preview always shows controls and does not autoplay.",
-      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser."
+      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser.",
+      "source": "Mediabestand"
     },
     "functional": {
       "fields": {
@@ -2132,7 +2133,10 @@
     "remove": "Verwijderen",
     "mediaLibraryAriaLabel": "Mediabibliotheek",
     "noImagesYet": "Nog geen afbeeldingen. Upload er een, of voeg bestanden toe in Media.",
-    "pasteUrl": "URL plakken"
+    "pasteUrl": "URL plakken",
+    "selectFile": "Bestand kiezen",
+    "noFileSelected": "Geen bestand gekozen",
+    "noFilesYet": "Nog geen bestanden van dit soort. Upload er een, of voeg bestanden toe in Media."
   },
   "auth": {
     "forgotPassword": {

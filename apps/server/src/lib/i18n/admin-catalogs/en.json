@@ -997,7 +997,6 @@
         "attribution": "Attribution",
         "average05": "Average (0–5)",
         "background": "Background",
-        "backgroundImageUrl": "Background image URL",
         "buttonLabel": "Button label",
         "buttonUrl": "Button URL",
         "caption": "Caption",
@@ -1037,7 +1036,8 @@
         "url": "URL",
         "variant": "Variant",
         "width": "Width",
-        "widthPx": "Width (px)"
+        "widthPx": "Width (px)",
+        "backgroundImage": "Background image"
       },
       "images": {
         "addFromMediaLibrary": "Add from media library",
@@ -1216,7 +1216,8 @@
       "label": "Link label",
       "download": "Download file",
       "autoplayHelp": "Browsers usually require muted playback for autoplay. The editor preview always shows controls and does not autoplay.",
-      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser."
+      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser.",
+      "source": "Media file"
     },
     "functional": {
       "fields": {
@@ -2772,7 +2773,10 @@
     "remove": "Remove",
     "mediaLibraryAriaLabel": "Media library",
     "noImagesYet": "No images yet. Upload one, or add files in Media.",
-    "pasteUrl": "Paste URL"
+    "pasteUrl": "Paste URL",
+    "selectFile": "Select file",
+    "noFileSelected": "No file selected",
+    "noFilesYet": "No files of this kind yet. Upload one, or add files in Media."
   },
   "marketplace": {
     "title": "Marketplace",

@@ -833,7 +833,6 @@
         "subheading": "Unterüberschrift",
         "buttonLabel": "Button-Beschriftung",
         "buttonUrl": "Button-URL",
-        "backgroundImageUrl": "URL des Hintergrundbilds",
         "text": "Text",
         "style": "Stil",
         "headingText": "Überschriftentext",
@@ -868,7 +867,8 @@
         "sections": "Abschnitte",
         "policies": "Richtlinien",
         "intro": "Intro",
-        "icon": "Symbol"
+        "icon": "Symbol",
+        "backgroundImage": "Hintergrundbild"
       },
       "option": {
         "backgroundMuted": "Gedämpft",
@@ -1221,7 +1221,8 @@
       "label": "Link label",
       "download": "Download file",
       "autoplayHelp": "Browsers usually require muted playback for autoplay. The editor preview always shows controls and does not autoplay.",
-      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser."
+      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser.",
+      "source": "Mediendatei"
     },
     "functional": {
       "fields": {
@@ -2135,7 +2136,10 @@
     "remove": "Entfernen",
     "mediaLibraryAriaLabel": "Mediathek",
     "noImagesYet": "Noch keine Bilder. Laden Sie eines hoch oder fügen Sie Dateien unter Medien hinzu.",
-    "pasteUrl": "URL einfügen"
+    "pasteUrl": "URL einfügen",
+    "selectFile": "Datei auswählen",
+    "noFileSelected": "Keine Datei ausgewählt",
+    "noFilesYet": "Noch keine Dateien dieser Art. Lade eine hoch oder füge Dateien unter Medien hinzu."
   },
   "auth": {
     "forgotPassword": {
