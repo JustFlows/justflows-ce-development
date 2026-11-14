@@ -119,7 +119,7 @@ describe("a block whose extension is off", () => {
     select("g1");
     expect(await screen.findByRole("heading", { name: "This block’s plugin or theme is not active" })).toBeInTheDocument();
     expect(screen.getByText("acme")).toBeInTheDocument();
-    expect(screen.getByText("3 settings, 1 blocks inside")).toBeInTheDocument();
+    expect(screen.getByText("3 settings, 1 block inside")).toBeInTheDocument();
 
     /** Remove the other block: the unavailable one stays byte for byte. */
     select("p1");
@@ -152,8 +152,8 @@ describe("a block whose extension is off", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false);
     fireEvent.change(screen.getByLabelText("Replace with"), { target: { value: "acme.card" } });
     fireEvent.click(screen.getByRole("button", { name: "Replace" }));
-    expect(confirm.mock.calls[0]![0]).toMatch(/1 stored settings that the new block does not have/);
-    expect(confirm.mock.calls[0]![0]).toMatch(/1 blocks inside it will be removed/);
+    expect(confirm.mock.calls[0]![0]).toMatch(/1 stored setting that the new block does not have/);
+    expect(confirm.mock.calls[0]![0]).toMatch(/1 block inside it will be removed/);
     expect(latest.blocks[0]).toEqual(gone);
 
     confirm.mockReturnValueOnce(true);
@@ -169,7 +169,7 @@ describe("a block whose extension is off", () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     const panel = (await screen.findByRole("heading", { name: "This block’s plugin or theme is not active" })).closest("section")!;
     fireEvent.click(within(panel).getByRole("button", { name: "Remove block" }));
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("the 1 blocks inside it"));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("the 1 block inside it"));
     await waitFor(() => expect(latest.blocks).toEqual([]));
   });
 });

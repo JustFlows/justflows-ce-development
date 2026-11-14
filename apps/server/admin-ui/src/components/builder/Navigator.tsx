@@ -183,12 +183,18 @@ export default function Navigator({ blocks, catalog, selectedId, onSelect, onCha
       selection.extend(id, { shiftKey: false, metaKey: e.metaKey, ctrlKey: e.ctrlKey });
       return;
     }
-    if (e.altKey && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+    /**
+     * Left and right follow the tree's writing direction, so "in" and "out"
+     * stay the same way round in a right-to-left interface (justflows-ce#307).
+     */
+    const rtl = e.currentTarget instanceof Element && getComputedStyle(e.currentTarget).direction === "rtl";
+    const key = rtl && e.key === "ArrowLeft" ? "ArrowRight" : rtl && e.key === "ArrowRight" ? "ArrowLeft" : e.key;
+    if (e.altKey && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
       e.preventDefault();
-      applyMove(row, e.key === "ArrowUp" ? "up" : e.key === "ArrowDown" ? "down" : e.key === "ArrowRight" ? "indent" : "outdent");
+      applyMove(row, key === "ArrowUp" ? "up" : key === "ArrowDown" ? "down" : key === "ArrowRight" ? "indent" : "outdent");
       return;
     }
-    switch (e.key) {
+    switch (key) {
       case "ArrowDown":
         e.preventDefault();
         if (rows[i + 1]) focusRow(rows[i + 1]!.node.id);

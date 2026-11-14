@@ -130,7 +130,7 @@ export default function BlockRecoveryPanel({
         <dt>{t("builder.recovery.id")}</dt>
         <dd><code>{block.id}</code></dd>
         <dt>{t("builder.recovery.stored")}</dt>
-        <dd>{t("builder.recovery.storedCounts", { settings, blocks: inside })}</dd>
+        <dd>{t("builder.recovery.storedSettings", { count: settings })}, {t("builder.recovery.storedBlocks", { count: inside })}</dd>
       </dl>
 
       <div className="jf-recovery__actions">

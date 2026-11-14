@@ -122,7 +122,7 @@ import { cacheSiteId } from "../../lib/cache/site-cache-key.js";
 import { getJfCache } from "../../lib/cache/jf-cache.js";
 import { getRuntimeBlockRegistry } from "../../lib/rendering/runtime-blocks.js";
 import type { BlockNode } from "../../lib/runtime/types.js";
-import { applyTemplateDefaults, withBlockChrome } from "@justflows/blocks";
+import { applyTemplateDefaults, textDirection, withBlockChrome } from "@justflows/blocks";
 import {
   BLOG_POST_LIST_BLOCK_TYPE,
   registerBlogPostListBlock,
@@ -1271,6 +1271,8 @@ async function renderPage(view: string, data: Record<string, unknown>): Promise<
   ]);
   const documentHtml = await ejs.renderFile(path.join(templateDir, "layout.ejs"), {
     ...pageData,
+    /** Writing direction of the page's language, for `<html dir>` (justflows-ce#307). */
+    dir: textDirection(String((pageData as { locale?: unknown }).locale ?? data.locale ?? "en")),
     body,
     headExtra,
     analyticsHead,

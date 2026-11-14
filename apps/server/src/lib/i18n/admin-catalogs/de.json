@@ -662,7 +662,10 @@
     "pageJson": {
       "title": "Seiten-JSON",
       "hint": "Nichts ist ausgewählt, daher ist dies die ganze Seite. Wählen Sie einen Block auf der Arbeitsfläche aus, um ihn einzeln zu bearbeiten.",
-      "count": "{count} Blöcke",
+      "count": {
+        "one": "{count} Block",
+        "other": "{count} Blöcke"
+      },
       "apply": "Übernehmen",
       "reload": "Verwerfen",
       "applied": "Übernommen",
@@ -734,8 +737,14 @@
       "linkedTitle": "Verknüpfter wiederverwendbarer Block",
       "usageLoading": "Verwendung wird geprüft…",
       "usageNone": "Noch nirgends sonst verwendet.",
-      "usage": "An {count} Stellen verwendet. Eine veröffentlichte Änderung aktualisiert alle.",
-      "usageHidden": "An {count} Stellen verwendet, {hidden} davon kannst du nicht öffnen. Eine veröffentlichte Änderung aktualisiert alle.",
+      "usage": {
+        "one": "An {count} Stelle verwendet. Eine veröffentlichte Änderung aktualisiert sie.",
+        "other": "An {count} Stellen verwendet. Eine veröffentlichte Änderung aktualisiert alle."
+      },
+      "usageHidden": {
+        "one": "An {count} Stelle verwendet, {hidden} davon kannst du nicht öffnen. Eine veröffentlichte Änderung aktualisiert sie.",
+        "other": "An {count} Stellen verwendet, {hidden} davon kannst du nicht öffnen. Eine veröffentlichte Änderung aktualisiert alle."
+      },
       "hasDraft": "Die Quelle hat unveröffentlichte Änderungen. Die Arbeitsfläche zeigt sie; Besucher sehen sie erst nach dem Veröffentlichen.",
       "editSource": "Quelle bearbeiten…",
       "detach": "Lösen (lokale Kopie erstellen)",
@@ -752,18 +761,30 @@
       "inPart": "Bereich „{part}“",
       "inTemplate": "Template „{slug}“",
       "inMenu": "Menü „{slug}“",
-      "inReusable": "{count} andere wiederverwendbare Blöcke",
-      "inPatterns": "{count} Muster",
+      "inReusable": {
+        "one": "{count} anderer wiederverwendbarer Block",
+        "other": "{count} andere wiederverwendbare Blöcke"
+      },
+      "inPatterns": {
+        "one": "{count} Muster",
+        "other": "{count} Muster"
+      },
       "usageTruncated": "Nur die ersten Treffer; es können mehr sein.",
       "stateDraft": "unveröffentlichte Änderungen",
       "statePublished": "veröffentlicht, Version {revision}",
-      "publishConfirm": "Diese Änderungen veröffentlichen? Sie erscheinen an allen {count} Stellen, die diesen Block verwenden.",
+      "publishConfirm": {
+        "one": "Diese Änderungen veröffentlichen? Sie erscheinen an der {count} Stelle, die diesen Block verwendet.",
+        "other": "Diese Änderungen veröffentlichen? Sie erscheinen an allen {count} Stellen, die diesen Block verwenden."
+      },
       "publishConfirmUnused": "Diese Änderungen veröffentlichen?",
       "discard": "Änderungen verwerfen",
       "discardConfirm": "Die unveröffentlichten Änderungen verwerfen? Die veröffentlichte Version bleibt.",
       "rename": "Umbenennen",
       "deleteConfirm": "Den wiederverwendbaren Block „{name}“ löschen?",
-      "deleteUsedConfirm": "„{name}“ wird an {count} Stellen verwendet. Löschen entfernt ihn überall. Trotzdem löschen?",
+      "deleteUsedConfirm": {
+        "one": "„{name}“ wird an {count} Stelle verwendet. Löschen entfernt ihn dort. Trotzdem löschen?",
+        "other": "„{name}“ wird an {count} Stellen verwendet. Löschen entfernt ihn überall. Trotzdem löschen?"
+      },
       "deleteFailed": "Der wiederverwendbare Block konnte nicht gelöscht werden",
       "restoreHint": "Lädt diese Version in den Editor. Speichere den Entwurf und veröffentliche, um sie zu verwenden."
     },
@@ -786,7 +807,10 @@
       "search": "Vorlagen suchen…",
       "category": "Kategorie",
       "manage": "Verwalten",
-      "results": "{count} Vorlagen",
+      "results": {
+        "one": "{count} Vorlage",
+        "other": "{count} Vorlagen"
+      },
       "noResults": "Keine Vorlagen entsprechen diesen Filtern.",
       "loadDirectory": "Verzeichnis laden",
       "choose": "Wählen Sie eine Vorlage, um sie in Seitenbreite anzusehen.",
@@ -1206,8 +1230,6 @@
       "linkText": "Linktext",
       "linkTextPlaceholder": "Standardmäßig der Dateiname"
     },
-    "blockCountOne": "{count} Block",
-    "blockCountMany": "{count} Blöcke",
     "previewLight": "Hell",
     "previewDark": "Dunkel",
     "previewSchemeHint": "Website im hellen oder dunklen Modus ansehen",
@@ -1496,10 +1518,22 @@
       "revisionsPick": "Wähle eine Version, um zu sehen, was das Wiederherstellen ändern würde.",
       "revisionsSame": "Diese Version hat dieselben Blöcke wie das, was du gerade bearbeitest.",
       "revisionsCompare": "Verglichen mit dem, was du gerade bearbeitest, würde das Wiederherstellen dieser Version:",
-      "revisionsAdded": "{count} Block/Blöcke hinzufügen",
-      "revisionsRemoved": "{count} Block/Blöcke entfernen",
-      "revisionsChanged": "{count} Block/Blöcke ändern",
-      "revisionsMoved": "{count} Block/Blöcke verschieben",
+      "revisionsAdded": {
+        "one": "{count} Block hinzufügen",
+        "other": "{count} Blöcke hinzufügen"
+      },
+      "revisionsRemoved": {
+        "one": "{count} Block entfernen",
+        "other": "{count} Blöcke entfernen"
+      },
+      "revisionsChanged": {
+        "one": "{count} Block ändern",
+        "other": "{count} Blöcke ändern"
+      },
+      "revisionsMoved": {
+        "one": "{count} Block verschieben",
+        "other": "{count} Blöcke verschieben"
+      },
       "revisionsRestore": "Diese Version wiederherstellen",
       "restoreHintPage": "Wiederherstellen speichert diese Version als Entwurf der Seite. Die veröffentlichte Seite ändert sich erst, wenn du veröffentlichst.",
       "restoreHintPart": "Wiederherstellen lädt diese Version in den Editor. Speichere einen Entwurf oder veröffentliche, um sie zu behalten.",
@@ -1509,7 +1543,8 @@
       "layers": "Ebenen",
       "previewWidth": "Vorschaubreite in Pixeln",
       "canvasWidth": "{width}px · {breakpoint}",
-      "styles": "Stile"
+      "styles": "Stile",
+      "checks": "Prüfungen"
     },
     "drop": {
       "rejectNesting": "{child} kann nicht in {parent} stehen.",
@@ -1553,7 +1588,10 @@
     },
     "actions": {
       "menu": "Blockaktionen",
-      "blocks": "{count} Blöcke",
+      "blocks": {
+        "one": "{count} Block",
+        "other": "{count} Blöcke"
+      },
       "more": "Weitere Aktionen für {block}",
       "duplicate": "Duplizieren",
       "copy": "Kopieren",
@@ -1788,11 +1826,23 @@
       "usageLoading": "Verwendung wird geprüft…",
       "usageNone": "Noch nirgends verwendet.",
       "usage": "Verwendet von {count}: {where}",
-      "usageTemplates": "{count} Templates",
-      "usageReusable": "{count} wiederverwendbare Blöcke",
-      "usagePatterns": "{count} Muster",
+      "usageTemplates": {
+        "one": "{count} Template",
+        "other": "{count} Templates"
+      },
+      "usageReusable": {
+        "one": "{count} wiederverwendbarer Block",
+        "other": "{count} wiederverwendbare Blöcke"
+      },
+      "usagePatterns": {
+        "one": "{count} Muster",
+        "other": "{count} Muster"
+      },
       "deleteConfirm": "Vorlage „{name}“ löschen?",
-      "deleteUsedConfirm": "Vorlage „{name}“ löschen? Sie wird von {count} Elementen verwendet, die ihre Gestaltung verlieren."
+      "deleteUsedConfirm": {
+        "one": "Vorlage „{name}“ löschen? Sie wird von {count} Element verwendet, das seine Gestaltung verliert.",
+        "other": "Vorlage „{name}“ löschen? Sie wird von {count} Elementen verwendet, die ihre Gestaltung verlieren."
+      }
     },
     "globalStyles": {
       "title": "Globale Stile",
@@ -1877,7 +1927,6 @@
       "deprecatedSince": "veraltet seit {since}",
       "id": "Block-ID",
       "stored": "Gespeichert",
-      "storedCounts": "{settings} Einstellungen, {blocks} Blöcke darin",
       "copy": "Daten kopieren",
       "download": "Daten herunterladen",
       "copied": "Blockdaten kopiert.",
@@ -1888,12 +1937,110 @@
       "replace": "Ersetzen",
       "remove": "Block entfernen",
       "replaceConfirm": "Diesen Block durch {title} ersetzen? Er behält seine ID und jede Einstellung, die {title} auch hat.",
-      "replaceDrops": "{count} gespeicherte Einstellungen, die der neue Block nicht hat, werden entfernt.",
-      "replaceDropsChildren": "{count} Blöcke darin werden entfernt, weil der neue Block keine anderen Blöcke enthalten kann.",
+      "replaceDrops": {
+        "one": "{count} gespeicherte Einstellung, die der neue Block nicht hat, wird entfernt.",
+        "other": "{count} gespeicherte Einstellungen, die der neue Block nicht hat, werden entfernt."
+      },
+      "replaceDropsChildren": {
+        "one": "{count} Block darin wird entfernt, weil der neue Block keine anderen Blöcke enthalten kann.",
+        "other": "{count} Blöcke darin werden entfernt, weil der neue Block keine anderen Blöcke enthalten kann."
+      },
       "downloadFirst": "Lade die Daten zuerst herunter, falls du sie später noch brauchst.",
       "removeConfirm": "Diesen Block von der Seite entfernen? Lade seine Daten zuerst herunter, falls du sie später noch brauchst.",
-      "removeConfirmChildren": "Diesen Block und die {count} Blöcke darin entfernen? Lade seine Daten zuerst herunter, falls du sie später noch brauchst.",
-      "keptHint": "Beim Speichern der Seite bleibt dieser Block genau so, wie er gespeichert ist."
+      "removeConfirmChildren": {
+        "one": "Diesen Block und den {count} Block darin entfernen? Lade seine Daten zuerst herunter, falls du sie später noch brauchst.",
+        "other": "Diesen Block und die {count} Blöcke darin entfernen? Lade seine Daten zuerst herunter, falls du sie später noch brauchst."
+      },
+      "keptHint": "Beim Speichern der Seite bleibt dieser Block genau so, wie er gespeichert ist.",
+      "storedSettings": {
+        "one": "{count} Einstellung",
+        "other": "{count} Einstellungen"
+      },
+      "storedBlocks": {
+        "one": "{count} Block darin",
+        "other": "{count} Blöcke darin"
+      }
+    },
+    "blockCount": {
+      "one": "{count} Block",
+      "other": "{count} Blöcke"
+    },
+    "checks": {
+      "title": "Barrierefreiheitsprüfungen",
+      "disclaimer": "Diese Prüfungen finden häufige Probleme in dem, was du hier einstellst. Sie sehen nicht alles, was ein Theme, ein Plugin oder Besucher ändern, und beweisen daher nicht, dass eine Seite barrierefrei ist.",
+      "none": "Keine Probleme in dem gefunden, was diese Prüfungen ansehen.",
+      "errors": {
+        "one": "{count} Problem",
+        "other": "{count} Probleme"
+      },
+      "warnings": {
+        "one": "{count} zu prüfen",
+        "other": "{count} zu prüfen"
+      },
+      "unavailable": {
+        "one": "{count} nicht geprüft",
+        "other": "{count} nicht geprüft"
+      },
+      "problemCount": {
+        "one": "{count} Problem",
+        "other": "{count} Probleme"
+      },
+      "imageAlt": "Kein Alternativtext. Beschreibe das Bild, oder lass ihn nur leer, wenn es rein dekorativ ist.",
+      "linkText": "Dieser Link oder Button hat keinen Text, daher können Screenreader nicht sagen, wohin er führt.",
+      "linkTextItem": "Link {item} hat keinen Text, daher können Screenreader nicht sagen, wohin er führt.",
+      "linkTarget": "Dieser Button hat Text, aber keinen Link, und tut daher nichts.",
+      "headingEmpty": "Diese Überschrift ist leer.",
+      "headingSkip": "Die Überschriftenebene springt von {from} auf {to}. Übersprungene Ebenen machen die Gliederung schwer verständlich.",
+      "headingLevelOne": "Ebene 1 ist meist der Seitentitel. Nutze Ebene 2 für Abschnitte.",
+      "contrast": "Der Textkontrast beträgt {ratio}:1. Normaler Text braucht mindestens 4,5:1.",
+      "contrastUnknown": "Der Kontrast lässt sich hier nicht prüfen, weil eine der Farben aus dem Theme kommt.",
+      "hiddenOnMobile": "Diese Überschrift oder dieser Button ist auf Smartphones ausgeblendet.",
+      "readingOrder": "Die Reihenfolge auf dem Bildschirm weicht von der Lesereihenfolge ab. Screenreader und Tastatur folgen der Reihenfolge in Ebenen.",
+      "iconLabel": "Dieses Symbol ist nicht dekorativ, hat aber keine Beschriftung und wird daher mit seinem Symbolnamen vorgelesen.",
+      "tableHeader": "Diese Tabelle hat keine Kopfzeile. Datentabellen brauchen eine, damit ihre Spalten verständlich sind.",
+      "contentUnchecked": "Der Inhalt dieses Blocks lässt sich hier nicht prüfen."
+    },
+    "keyboard": {
+      "open": "Tastenkürzel",
+      "title": "Tastenkürzel",
+      "close": "Schließen",
+      "or": "oder",
+      "intro": "Alles, was mit Maus oder Touch geht, geht auch mit der Tastatur. Strg ist ⌘ auf einem Mac.",
+      "area": {
+        "canvas": "Arbeitsfläche",
+        "layers": "Ebenen",
+        "library": "Blöcke",
+        "text": "Text und Medien",
+        "layout": "Layout",
+        "general": "Allgemein"
+      },
+      "path": {
+        "selectBlock": "Block auswählen (mit Tab zu seinem Namen)",
+        "actionsMenu": "Aktionsmenü des Blocks öffnen",
+        "duplicate": "Duplizieren",
+        "group": "Gruppieren",
+        "ungroup": "Gruppierung aufheben",
+        "remove": "Löschen",
+        "copyPaste": "Kopieren, Ausschneiden und Einfügen",
+        "undoRedo": "Rückgängig und Wiederholen",
+        "clearSelection": "Nur einen Block ausgewählt lassen",
+        "moveBlock": "Nach oben oder unten verschieben",
+        "nestBlock": "In den Block darüber verschieben oder aus dem Container heraus",
+        "extendSelection": "Blöcke zur Auswahl hinzufügen",
+        "renameBlock": "Umbenennen",
+        "moveTo": "In einen anderen Container verschieben",
+        "addBlock": "Den fokussierten Block hinzufügen",
+        "editText": "Textbearbeitung beenden oder abbrechen",
+        "replaceMedia": "Ausgewähltes Bild oder ausgewählte Datei ersetzen",
+        "resizeSpacing": "Abstand und Höhe mit einem fokussierten Griff ändern",
+        "gridPlacement": "Element im Raster platzieren und Größe festlegen",
+        "cancelDrag": "Ziehen abbrechen",
+        "shortcuts": "Diese Liste anzeigen"
+      },
+      "how": {
+        "moveTo": "„Verschieben nach…“ in Ebenen",
+        "gridPlacement": "Felder für die Rasterplatzierung im Tab Layout"
+      }
     }
   },
   "dashboard": {

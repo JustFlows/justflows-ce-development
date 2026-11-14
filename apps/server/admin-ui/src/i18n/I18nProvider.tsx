@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { interpolate } from "./translate";
+import { interpolate, lookupMessage } from "./translate";
 import { EMBEDDED_EN } from "./embedded-en";
 import { getAdminSsrPayload, initialJson } from "../ssr-data";
 
@@ -99,10 +99,14 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback(
     (key: string, vars?: Record<string, string | number>) => {
-      const msg = messages[key] ?? fallback[key] ?? EMBEDDED_EN[key] ?? key;
+      const msg =
+        lookupMessage(messages, key, locale, vars) ??
+        lookupMessage(fallback, key, "en", vars) ??
+        lookupMessage(EMBEDDED_EN, key, "en", vars) ??
+        key;
       return interpolate(msg, vars);
     },
-    [messages, fallback],
+    [messages, fallback, locale],
   );
 
   const value = useMemo(() => ({ locale, setLocale, t, loading }), [locale, setLocale, t, loading]);

@@ -21,6 +21,30 @@ function flatten(object: Record<string, unknown>, prefix = ""): Record<string, s
   return result;
 }
 
+const PLURAL_FORMS = new Set(["zero", "one", "two", "few", "many", "other"]);
+
+/** Plural group bases (`builder.blockCount` for `builder.blockCount.one` …) in a flattened catalog. */
+function pluralGroups(messages: Record<string, string>): Map<string, string[]> {
+  const groups = new Map<string, string[]>();
+  for (const key of Object.keys(messages)) {
+    const dot = key.lastIndexOf(".");
+    const form = key.slice(dot + 1);
+    if (!PLURAL_FORMS.has(form)) continue;
+    const base = key.slice(0, dot);
+    groups.set(base, [...(groups.get(base) ?? []), form]);
+  }
+  for (const [base, forms] of groups) if (!forms.includes("other")) groups.delete(base);
+  return groups;
+}
+
+/** The plural forms a language uses for whole numbers, plus `other` as the fallback. */
+function requiredForms(locale: string): string[] {
+  const rules = new Intl.PluralRules(locale);
+  const forms = new Set<string>(["other"]);
+  for (let n = 0; n <= 200; n++) forms.add(rules.select(n));
+  return [...forms].sort();
+}
+
 function placeholders(value: string): string[] {
   return [...new Set([...value.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map((m) => m[1]))].sort();
 }
@@ -55,10 +79,33 @@ describe("translation catalogs", () => {
     for (const locale of locales) {
       it(`${domain}/${locale} has every key and preserves interpolation variables`, () => {
         const messages = readCatalog(domain, locale);
-        expect(Object.keys(messages).sort()).toEqual(Object.keys(en).sort());
+        /**
+         * Plural groups are compared as groups: each language has exactly the
+         * forms its own plural rules need (justflows-ce#307), and every form
+         * keeps the English placeholders, except that a form for one item may
+         * leave out `{count}` ("one block").
+         */
+        const enGroups = pluralGroups(en);
+        const groups = pluralGroups(messages);
+        const plain = (catalog: Record<string, string>, own: Map<string, string[]>) =>
+          Object.keys(catalog).filter((key) => !own.has(key.slice(0, key.lastIndexOf(".")))).sort();
+        expect(plain(messages, groups)).toEqual(plain(en, enGroups));
+        expect([...groups.keys()].sort()).toEqual([...enGroups.keys()].sort());
+        for (const [base, forms] of groups) {
+          expect(forms.sort(), `${base} in ${locale}`).toEqual(requiredForms(locale));
+          const expected = placeholders(en[`${base}.other`]!);
+          for (const form of forms) {
+            const value = messages[`${base}.${form}`]!;
+            expect(value.trim(), `${base}.${form}`).not.toBe("");
+            const own = placeholders(value);
+            if (form === "one" || form === "zero") expect(expected, `${base}.${form}`).toEqual(expect.arrayContaining(own));
+            else expect(own, `${base}.${form}`).toEqual(expected);
+          }
+        }
         for (const [key, value] of Object.entries(messages)) {
+          if (groups.has(key.slice(0, key.lastIndexOf(".")))) continue;
           expect(value.trim(), key).not.toBe("");
-          expect(placeholders(value), key).toEqual(placeholders(en[key]));
+          expect(placeholders(value), key).toEqual(placeholders(en[key]!));
         }
       });
     }
@@ -67,7 +114,7 @@ describe("translation catalogs", () => {
   it("resolves static keys, key constants, and finite dynamic keys used by the admin UI", () => {
     const missing = new Set<string>();
     const namespaces = new Set(Object.keys(english).map((key) => key.split(".")[0]));
-    const check = (key: string) => { if (!(key in english)) missing.add(key); };
+    const check = (key: string) => { if (!(key in english) && !(`${key}.other` in english)) missing.add(key); };
     for (const file of files) {
       const source = program.getSourceFile(file)!;
       const visit = (node: ts.Node) => {
@@ -90,9 +137,12 @@ describe("translation catalogs", () => {
             else expect(Object.keys(english).some((key) => key.startsWith(argument.head.text)), argument.getText(source)).toBe(true);
           }
           const variables = node.arguments[1];
-          if (argument && ts.isStringLiteral(argument) && english[argument.text] && variables && ts.isObjectLiteralExpression(variables)) {
+          const message = argument && ts.isStringLiteral(argument) ? english[argument.text] ?? english[`${argument.text}.other`] : undefined;
+          if (argument && ts.isStringLiteral(argument) && message && variables && ts.isObjectLiteralExpression(variables)) {
             const names = variables.properties.map((property) => property.name?.getText(source)).filter(Boolean).sort();
-            expect(names, argument.text).toEqual(placeholders(english[argument.text]));
+            expect(names, argument.text).toEqual(placeholders(message));
+            /** A plural group picks its form from `count`, so callers must pass it. */
+            if (!english[argument.text]) expect(names, `${argument.text} needs count`).toContain("count");
           }
         }
         ts.forEachChild(node, visit);

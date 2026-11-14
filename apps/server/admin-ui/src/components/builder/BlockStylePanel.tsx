@@ -98,7 +98,7 @@ export default function BlockStylePanel({
         <p className="jf-block-panel__error">{t("builder.style.classNameInvalid")}</p>
       )}
 
-      {showDevices && <div className="jf-block-panel__field">
+      {showDevices && <div className="jf-block-panel__field" data-jf-field="devices">
         {part === "all" && <span>{t("builder.style.devices")}</span>}
         <div className="jf-filterbar" style={{ marginTop: "0.35rem" }}>
           {DEVICE_BUCKETS.map((d) => (

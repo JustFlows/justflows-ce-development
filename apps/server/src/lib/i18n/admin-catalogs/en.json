@@ -579,7 +579,10 @@
       "search": "Search patterns…",
       "category": "Category",
       "manage": "Manage",
-      "results": "{count} patterns",
+      "results": {
+        "one": "{count} pattern",
+        "other": "{count} patterns"
+      },
       "noResults": "No patterns match these filters.",
       "loadDirectory": "Load directory",
       "choose": "Choose a pattern to preview it at page width.",
@@ -692,7 +695,10 @@
     "pageJson": {
       "title": "Page JSON",
       "hint": "Nothing is selected, so this is the whole page. Select a block on the canvas to edit it on its own.",
-      "count": "{count} blocks",
+      "count": {
+        "one": "{count} block",
+        "other": "{count} blocks"
+      },
       "apply": "Apply",
       "reload": "Discard",
       "applied": "Applied",
@@ -764,8 +770,14 @@
       "linkedTitle": "Linked reusable block",
       "usageLoading": "Checking where it is used…",
       "usageNone": "Not used anywhere else yet.",
-      "usage": "Used in {count} places. Publishing a change updates all of them.",
-      "usageHidden": "Used in {count} places, {hidden} of which you can't open. Publishing a change updates all of them.",
+      "usage": {
+        "one": "Used in {count} place. Publishing a change updates it.",
+        "other": "Used in {count} places. Publishing a change updates all of them."
+      },
+      "usageHidden": {
+        "one": "Used in {count} place, {hidden} of which you can't open. Publishing a change updates it.",
+        "other": "Used in {count} places, {hidden} of which you can't open. Publishing a change updates all of them."
+      },
       "hasDraft": "The source has unpublished changes. The canvas shows them; visitors don't see them until they are published.",
       "editSource": "Edit the source…",
       "detach": "Detach (make a local copy)",
@@ -782,18 +794,30 @@
       "inPart": "part “{part}”",
       "inTemplate": "template “{slug}”",
       "inMenu": "menu “{slug}”",
-      "inReusable": "{count} other reusable blocks",
-      "inPatterns": "{count} patterns",
+      "inReusable": {
+        "one": "{count} other reusable block",
+        "other": "{count} other reusable blocks"
+      },
+      "inPatterns": {
+        "one": "{count} pattern",
+        "other": "{count} patterns"
+      },
       "usageTruncated": "Showing the first matches only; there may be more.",
       "stateDraft": "unpublished changes",
       "statePublished": "published, version {revision}",
-      "publishConfirm": "Publish these changes? They appear in all {count} places that use this reusable block.",
+      "publishConfirm": {
+        "one": "Publish these changes? They appear in the {count} place that uses this reusable block.",
+        "other": "Publish these changes? They appear in all {count} places that use this reusable block."
+      },
       "publishConfirmUnused": "Publish these changes?",
       "discard": "Discard changes",
       "discardConfirm": "Discard the unpublished changes? The published version stays.",
       "rename": "Rename",
       "deleteConfirm": "Delete the reusable block “{name}”?",
-      "deleteUsedConfirm": "“{name}” is used in {count} places. Deleting it removes it from all of them. Delete anyway?",
+      "deleteUsedConfirm": {
+        "one": "“{name}” is used in {count} place. Deleting it removes it from there. Delete anyway?",
+        "other": "“{name}” is used in {count} places. Deleting it removes it from all of them. Delete anyway?"
+      },
       "deleteFailed": "Could not delete the reusable block",
       "restoreHint": "Loads this version into the editor. Save the draft and publish to use it."
     },
@@ -1201,8 +1225,6 @@
         "external": "Loads third-party content on the published page; the builder does not run it."
       }
     },
-    "blockCountOne": "{count} block",
-    "blockCountMany": "{count} blocks",
     "previewLight": "Light",
     "previewDark": "Dark",
     "previewSchemeHint": "Preview the site in light or dark mode",
@@ -1491,10 +1513,22 @@
       "revisionsPick": "Pick a version to see what restoring it would change.",
       "revisionsSame": "This version has the same blocks as what you are editing.",
       "revisionsCompare": "Compared with what you are editing, restoring this version would:",
-      "revisionsAdded": "Add {count} block(s)",
-      "revisionsRemoved": "Remove {count} block(s)",
-      "revisionsChanged": "Change {count} block(s)",
-      "revisionsMoved": "Move {count} block(s)",
+      "revisionsAdded": {
+        "one": "Add {count} block",
+        "other": "Add {count} blocks"
+      },
+      "revisionsRemoved": {
+        "one": "Remove {count} block",
+        "other": "Remove {count} blocks"
+      },
+      "revisionsChanged": {
+        "one": "Change {count} block",
+        "other": "Change {count} blocks"
+      },
+      "revisionsMoved": {
+        "one": "Move {count} block",
+        "other": "Move {count} blocks"
+      },
       "revisionsRestore": "Restore this version",
       "restoreHintPage": "Restoring saves this version as the page's draft. The published page does not change until you publish.",
       "restoreHintPart": "Restoring loads this version into the editor. Save a draft or publish to keep it.",
@@ -1504,7 +1538,8 @@
       "layers": "Layers",
       "previewWidth": "Preview width in pixels",
       "canvasWidth": "{width}px · {breakpoint}",
-      "styles": "Styles"
+      "styles": "Styles",
+      "checks": "Checks"
     },
     "drop": {
       "rejectNesting": "{child} can't go inside {parent}.",
@@ -1548,7 +1583,10 @@
     },
     "actions": {
       "menu": "Block actions",
-      "blocks": "{count} blocks",
+      "blocks": {
+        "one": "{count} block",
+        "other": "{count} blocks"
+      },
       "more": "More actions for {block}",
       "duplicate": "Duplicate",
       "copy": "Copy",
@@ -1783,11 +1821,23 @@
       "usageLoading": "Checking where it is used…",
       "usageNone": "Not used anywhere yet.",
       "usage": "Used by {count}: {where}",
-      "usageTemplates": "{count} templates",
-      "usageReusable": "{count} reusable blocks",
-      "usagePatterns": "{count} patterns",
+      "usageTemplates": {
+        "one": "{count} template",
+        "other": "{count} templates"
+      },
+      "usageReusable": {
+        "one": "{count} reusable block",
+        "other": "{count} reusable blocks"
+      },
+      "usagePatterns": {
+        "one": "{count} pattern",
+        "other": "{count} patterns"
+      },
       "deleteConfirm": "Delete the preset “{name}”?",
-      "deleteUsedConfirm": "Delete the preset “{name}”? It is used by {count} items, which will lose its styling."
+      "deleteUsedConfirm": {
+        "one": "Delete the preset “{name}”? It is used by {count} item, which will lose its styling.",
+        "other": "Delete the preset “{name}”? It is used by {count} items, which will lose its styling."
+      }
     },
     "globalStyles": {
       "title": "Global styles",
@@ -1872,7 +1922,6 @@
       "deprecatedSince": "deprecated since {since}",
       "id": "Block id",
       "stored": "Stored",
-      "storedCounts": "{settings} settings, {blocks} blocks inside",
       "copy": "Copy data",
       "download": "Download data",
       "copied": "Block data copied.",
@@ -1883,12 +1932,110 @@
       "replace": "Replace",
       "remove": "Remove block",
       "replaceConfirm": "Replace this block with {title}? It keeps its id and every setting {title} also has.",
-      "replaceDrops": "{count} stored settings that the new block does not have will be removed.",
-      "replaceDropsChildren": "{count} blocks inside it will be removed, because the new block cannot hold other blocks.",
+      "replaceDrops": {
+        "one": "{count} stored setting that the new block does not have will be removed.",
+        "other": "{count} stored settings that the new block does not have will be removed."
+      },
+      "replaceDropsChildren": {
+        "one": "{count} block inside it will be removed, because the new block cannot hold other blocks.",
+        "other": "{count} blocks inside it will be removed, because the new block cannot hold other blocks."
+      },
       "downloadFirst": "Download the data first if you may need it later.",
       "removeConfirm": "Remove this block from the page? Download its data first if you may need it later.",
-      "removeConfirmChildren": "Remove this block and the {count} blocks inside it? Download its data first if you may need it later.",
-      "keptHint": "Saving the page keeps this block exactly as stored."
+      "removeConfirmChildren": {
+        "one": "Remove this block and the {count} block inside it? Download its data first if you may need it later.",
+        "other": "Remove this block and the {count} blocks inside it? Download its data first if you may need it later."
+      },
+      "keptHint": "Saving the page keeps this block exactly as stored.",
+      "storedSettings": {
+        "one": "{count} setting",
+        "other": "{count} settings"
+      },
+      "storedBlocks": {
+        "one": "{count} block inside",
+        "other": "{count} blocks inside"
+      }
+    },
+    "blockCount": {
+      "one": "{count} block",
+      "other": "{count} blocks"
+    },
+    "checks": {
+      "title": "Accessibility checks",
+      "disclaimer": "These checks find common problems in what you set here. They can't see everything a theme, plugin or visitor changes, so they don't prove a page is accessible.",
+      "none": "No problems found in what these checks look at.",
+      "errors": {
+        "one": "{count} problem",
+        "other": "{count} problems"
+      },
+      "warnings": {
+        "one": "{count} to review",
+        "other": "{count} to review"
+      },
+      "unavailable": {
+        "one": "{count} not checked",
+        "other": "{count} not checked"
+      },
+      "problemCount": {
+        "one": "{count} problem",
+        "other": "{count} problems"
+      },
+      "imageAlt": "No alt text. Describe the image, or leave it empty only if it is decorative.",
+      "linkText": "This link or button has no text, so screen readers can't say where it goes.",
+      "linkTextItem": "Link {item} has no text, so screen readers can't say where it goes.",
+      "linkTarget": "This button has text but no link, so it does nothing.",
+      "headingEmpty": "This heading is empty.",
+      "headingSkip": "Heading level jumps from {from} to {to}. Skipped levels make the page outline hard to follow.",
+      "headingLevelOne": "Level 1 is usually the page title. Use level 2 for sections.",
+      "contrast": "Text contrast is {ratio}:1. Normal text needs at least 4.5:1.",
+      "contrastUnknown": "Contrast can't be checked here, because one of the colours comes from the theme.",
+      "hiddenOnMobile": "This heading or button is hidden on phones.",
+      "readingOrder": "The order on screen differs from the reading order. Screen readers and the keyboard follow the order in Layers.",
+      "iconLabel": "This icon is not decorative but has no label, so it is announced by its icon name.",
+      "tableHeader": "This table has no header row. Data tables need one so their columns can be understood.",
+      "contentUnchecked": "This block's content can't be checked here."
+    },
+    "keyboard": {
+      "open": "Shortcuts",
+      "title": "Keyboard shortcuts",
+      "close": "Close",
+      "or": "or",
+      "intro": "Everything you can do with a mouse or touch can be done with the keyboard. Ctrl is ⌘ on a Mac.",
+      "area": {
+        "canvas": "Canvas",
+        "layers": "Layers",
+        "library": "Blocks",
+        "text": "Text and media",
+        "layout": "Layout",
+        "general": "General"
+      },
+      "path": {
+        "selectBlock": "Select a block (Tab to its name)",
+        "actionsMenu": "Open the block's actions menu",
+        "duplicate": "Duplicate",
+        "group": "Group",
+        "ungroup": "Ungroup",
+        "remove": "Delete",
+        "copyPaste": "Copy, cut and paste",
+        "undoRedo": "Undo and redo",
+        "clearSelection": "Keep only one block selected",
+        "moveBlock": "Move up or down",
+        "nestBlock": "Move into the block above, or out of its container",
+        "extendSelection": "Add blocks to the selection",
+        "renameBlock": "Rename",
+        "moveTo": "Move to another container",
+        "addBlock": "Add the focused block",
+        "editText": "Finish or cancel editing text",
+        "replaceMedia": "Replace a selected image or file",
+        "resizeSpacing": "Change spacing and height with a focused handle",
+        "gridPlacement": "Place and size an item in a grid",
+        "cancelDrag": "Cancel a drag",
+        "shortcuts": "Show this list"
+      },
+      "how": {
+        "moveTo": "“Move to…” in Layers",
+        "gridPlacement": "Grid placement fields in the Layout tab"
+      }
     }
   },
   "dashboard": {

@@ -78,6 +78,11 @@ export interface BuilderShellProps {
   layers?: ReactNode;
   /** Global styles and presets (justflows-ce#301). */
   stylesPanel?: ReactNode;
+  /** Accessibility checks for the document (justflows-ce#307), and how many problems they found. */
+  checksPanel?: ReactNode;
+  checksCount?: number;
+  /** Open the keyboard shortcuts dialog (justflows-ce#307). */
+  onShowShortcuts?: () => void;
   /** Right panel content (the inspector). */
   inspector: ReactNode;
   /** Canvas content, already wrapped in the theme preview scope. */
@@ -114,6 +119,9 @@ export default function BuilderShell({
   sitePanel,
   layers,
   stylesPanel,
+  checksPanel,
+  checksCount = 0,
+  onShowShortcuts,
   inspector,
   canvas,
   canvasBackdrop,
@@ -257,8 +265,14 @@ export default function BuilderShell({
         </div>
 
         <span className="jf-builder-toolbar__count">
-          {t(blockCount === 1 ? "builder.blockCountOne" : "builder.blockCountMany", { count: blockCount })}
+          {t("builder.blockCount", { count: blockCount })}
         </span>
+
+        {onShowShortcuts && (
+          <button type="button" className="jf-builder-toolbar__btn" aria-haspopup="dialog" aria-keyshortcuts="Shift+?" onClick={onShowShortcuts}>
+            <span aria-hidden="true">⌨</span> {t("builder.keyboard.open")}
+          </button>
+        )}
 
         <button
           type="button"
@@ -279,7 +293,8 @@ export default function BuilderShell({
             <LeftPanelTabs
               active={prefs.leftTab}
               onChange={(leftTab) => onPrefsChange({ leftTab })}
-              panels={{ library, ...(sitePanel ? { site: sitePanel } : {}), ...(layers ? { layers } : {}), ...(stylesPanel ? { styles: stylesPanel } : {}) }}
+              panels={{ library, ...(sitePanel ? { site: sitePanel } : {}), ...(layers ? { layers } : {}), ...(stylesPanel ? { styles: stylesPanel } : {}), ...(checksPanel ? { checks: checksPanel } : {}) }}
+              checksCount={checksCount}
             />
           ) : (
             library
@@ -386,9 +401,11 @@ function LeftPanelTabs({
   active,
   onChange,
   panels,
+  checksCount = 0,
 }: {
   active: LeftPanelTab;
   onChange: (tab: LeftPanelTab) => void;
+  checksCount?: number;
   /** The panels offered, in tab order; a missing panel is not shown. */
   panels: Partial<Record<LeftPanelTab, ReactNode>>;
 }) {
@@ -399,8 +416,9 @@ function LeftPanelTabs({
     library: t("builder.shell.library"),
     layers: t("builder.shell.layers"),
     styles: t("builder.shell.styles"),
+    checks: t("builder.shell.checks"),
   };
-  const order: LeftPanelTab[] = ["site", "library", "layers", "styles"];
+  const order: LeftPanelTab[] = ["site", "library", "layers", "styles", "checks"];
   const tabs = order.filter((id) => panels[id] !== undefined);
   const current = tabs.includes(active) ? active : (tabs.includes("library") ? "library" : tabs[0]!);
   /** Arrow keys move between tabs, as the WAI-ARIA tabs pattern expects. */
@@ -434,6 +452,9 @@ function LeftPanelTabs({
             onKeyDown={onKey}
           >
             {labels[id]}
+            {id === "checks" && checksCount > 0 && (
+              <span className="jf-shell__tab-count" aria-label={t("builder.checks.problemCount", { count: checksCount })}>{checksCount}</span>
+            )}
           </button>
         ))}
       </div>

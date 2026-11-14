@@ -662,7 +662,10 @@
     "pageJson": {
       "title": "JSON de la page",
       "hint": "Rien n'est sélectionné : voici la page entière. Sélectionnez un bloc sur le canevas pour le modifier seul.",
-      "count": "{count} blocs",
+      "count": {
+        "one": "{count} bloc",
+        "other": "{count} blocs"
+      },
       "apply": "Appliquer",
       "reload": "Abandonner",
       "applied": "Appliqué",
@@ -734,8 +737,14 @@
       "linkedTitle": "Bloc réutilisable lié",
       "usageLoading": "Vérification de l’utilisation…",
       "usageNone": "Utilisé nulle part ailleurs pour l’instant.",
-      "usage": "Utilisé à {count} endroits. Publier une modification les met tous à jour.",
-      "usageHidden": "Utilisé à {count} endroits, dont {hidden} que vous ne pouvez pas ouvrir. Publier une modification les met tous à jour.",
+      "usage": {
+        "one": "Utilisé à {count} endroit. Publier une modification le met à jour.",
+        "other": "Utilisé à {count} endroits. Publier une modification les met tous à jour."
+      },
+      "usageHidden": {
+        "one": "Utilisé à {count} endroit, dont {hidden} que vous ne pouvez pas ouvrir. Publier une modification le met à jour.",
+        "other": "Utilisé à {count} endroits, dont {hidden} que vous ne pouvez pas ouvrir. Publier une modification les met tous à jour."
+      },
       "hasDraft": "La source a des modifications non publiées. Le canevas les montre ; les visiteurs ne les voient qu’après publication.",
       "editSource": "Modifier la source…",
       "detach": "Détacher (créer une copie locale)",
@@ -752,18 +761,30 @@
       "inPart": "partie « {part} »",
       "inTemplate": "modèle « {slug} »",
       "inMenu": "menu « {slug} »",
-      "inReusable": "{count} autres blocs réutilisables",
-      "inPatterns": "{count} compositions",
+      "inReusable": {
+        "one": "{count} autre bloc réutilisable",
+        "other": "{count} autres blocs réutilisables"
+      },
+      "inPatterns": {
+        "one": "{count} composition",
+        "other": "{count} compositions"
+      },
       "usageTruncated": "Seuls les premiers résultats sont affichés ; il peut y en avoir d’autres.",
       "stateDraft": "modifications non publiées",
       "statePublished": "publié, version {revision}",
-      "publishConfirm": "Publier ces modifications ? Elles apparaîtront aux {count} endroits qui utilisent ce bloc réutilisable.",
+      "publishConfirm": {
+        "one": "Publier ces modifications ? Elles apparaîtront à l’endroit ({count}) qui utilise ce bloc réutilisable.",
+        "other": "Publier ces modifications ? Elles apparaîtront aux {count} endroits qui utilisent ce bloc réutilisable."
+      },
       "publishConfirmUnused": "Publier ces modifications ?",
       "discard": "Abandonner les modifications",
       "discardConfirm": "Abandonner les modifications non publiées ? La version publiée reste.",
       "rename": "Renommer",
       "deleteConfirm": "Supprimer le bloc réutilisable « {name} » ?",
-      "deleteUsedConfirm": "« {name} » est utilisé à {count} endroits. Le supprimer le retire partout. Supprimer quand même ?",
+      "deleteUsedConfirm": {
+        "one": "« {name} » est utilisé à {count} endroit. Le supprimer l’en retire. Supprimer quand même ?",
+        "other": "« {name} » est utilisé à {count} endroits. Le supprimer le retire partout. Supprimer quand même ?"
+      },
       "deleteFailed": "Impossible de supprimer le bloc réutilisable",
       "restoreHint": "Charge cette version dans l’éditeur. Enregistrez le brouillon et publiez pour l’utiliser."
     },
@@ -786,7 +807,10 @@
       "search": "Rechercher des modèles…",
       "category": "Catégorie",
       "manage": "Gérer",
-      "results": "{count} modèles",
+      "results": {
+        "one": "{count} modèle",
+        "other": "{count} modèles"
+      },
       "noResults": "Aucun modèle ne correspond à ces filtres.",
       "loadDirectory": "Charger le catalogue",
       "choose": "Choisissez un modèle pour le prévisualiser en pleine largeur.",
@@ -1206,8 +1230,6 @@
       "linkText": "Texte du lien",
       "linkTextPlaceholder": "Par défaut, le nom du fichier"
     },
-    "blockCountOne": "{count} bloc",
-    "blockCountMany": "{count} blocs",
     "previewLight": "Clair",
     "previewDark": "Sombre",
     "previewSchemeHint": "Afficher le site en mode clair ou sombre",
@@ -1496,10 +1518,22 @@
       "revisionsPick": "Choisissez une version pour voir ce que sa restauration changerait.",
       "revisionsSame": "Cette version contient les mêmes blocs que ce que vous modifiez.",
       "revisionsCompare": "Par rapport à ce que vous modifiez, restaurer cette version :",
-      "revisionsAdded": "Ajouterait {count} bloc(s)",
-      "revisionsRemoved": "Supprimerait {count} bloc(s)",
-      "revisionsChanged": "Modifierait {count} bloc(s)",
-      "revisionsMoved": "Déplacerait {count} bloc(s)",
+      "revisionsAdded": {
+        "one": "Ajouterait {count} bloc",
+        "other": "Ajouterait {count} blocs"
+      },
+      "revisionsRemoved": {
+        "one": "Supprimerait {count} bloc",
+        "other": "Supprimerait {count} blocs"
+      },
+      "revisionsChanged": {
+        "one": "Modifierait {count} bloc",
+        "other": "Modifierait {count} blocs"
+      },
+      "revisionsMoved": {
+        "one": "Déplacerait {count} bloc",
+        "other": "Déplacerait {count} blocs"
+      },
       "revisionsRestore": "Restaurer cette version",
       "restoreHintPage": "La restauration enregistre cette version comme brouillon de la page. La page publiée ne change pas avant la publication.",
       "restoreHintPart": "La restauration charge cette version dans l’éditeur. Enregistrez un brouillon ou publiez pour la conserver.",
@@ -1509,7 +1543,8 @@
       "layers": "Calques",
       "previewWidth": "Largeur d’aperçu en pixels",
       "canvasWidth": "{width} px · {breakpoint}",
-      "styles": "Styles"
+      "styles": "Styles",
+      "checks": "Vérifications"
     },
     "drop": {
       "rejectNesting": "{child} ne peut pas aller dans {parent}.",
@@ -1553,7 +1588,10 @@
     },
     "actions": {
       "menu": "Actions du bloc",
-      "blocks": "{count} blocs",
+      "blocks": {
+        "one": "{count} bloc",
+        "other": "{count} blocs"
+      },
       "more": "Plus d’actions pour {block}",
       "duplicate": "Dupliquer",
       "copy": "Copier",
@@ -1788,11 +1826,23 @@
       "usageLoading": "Vérification de l’utilisation…",
       "usageNone": "Pas encore utilisé.",
       "usage": "Utilisé par {count} : {where}",
-      "usageTemplates": "{count} modèles",
-      "usageReusable": "{count} blocs réutilisables",
-      "usagePatterns": "{count} compositions",
+      "usageTemplates": {
+        "one": "{count} modèle",
+        "other": "{count} modèles"
+      },
+      "usageReusable": {
+        "one": "{count} bloc réutilisable",
+        "other": "{count} blocs réutilisables"
+      },
+      "usagePatterns": {
+        "one": "{count} composition",
+        "other": "{count} compositions"
+      },
       "deleteConfirm": "Supprimer le préréglage « {name} » ?",
-      "deleteUsedConfirm": "Supprimer le préréglage « {name} » ? {count} éléments l’utilisent et perdront sa mise en forme."
+      "deleteUsedConfirm": {
+        "one": "Supprimer le préréglage « {name} » ? {count} élément l’utilise et perdra sa mise en forme.",
+        "other": "Supprimer le préréglage « {name} » ? {count} éléments l’utilisent et perdront sa mise en forme."
+      }
     },
     "globalStyles": {
       "title": "Styles globaux",
@@ -1877,7 +1927,6 @@
       "deprecatedSince": "obsolète depuis {since}",
       "id": "Identifiant du bloc",
       "stored": "Enregistré",
-      "storedCounts": "{settings} réglages, {blocks} blocs à l’intérieur",
       "copy": "Copier les données",
       "download": "Télécharger les données",
       "copied": "Données du bloc copiées.",
@@ -1888,12 +1937,110 @@
       "replace": "Remplacer",
       "remove": "Supprimer le bloc",
       "replaceConfirm": "Remplacer ce bloc par {title} ? Il garde son identifiant et chaque réglage que {title} possède aussi.",
-      "replaceDrops": "{count} réglages enregistrés que le nouveau bloc n’a pas seront supprimés.",
-      "replaceDropsChildren": "{count} blocs à l’intérieur seront supprimés, car le nouveau bloc ne peut pas contenir d’autres blocs.",
+      "replaceDrops": {
+        "one": "{count} réglage enregistré que le nouveau bloc n’a pas sera supprimé.",
+        "other": "{count} réglages enregistrés que le nouveau bloc n’a pas seront supprimés."
+      },
+      "replaceDropsChildren": {
+        "one": "{count} bloc à l’intérieur sera supprimé, car le nouveau bloc ne peut pas contenir d’autres blocs.",
+        "other": "{count} blocs à l’intérieur seront supprimés, car le nouveau bloc ne peut pas contenir d’autres blocs."
+      },
       "downloadFirst": "Téléchargez d’abord les données si vous pourriez en avoir besoin plus tard.",
       "removeConfirm": "Supprimer ce bloc de la page ? Téléchargez d’abord ses données si vous pourriez en avoir besoin plus tard.",
-      "removeConfirmChildren": "Supprimer ce bloc et les {count} blocs qu’il contient ? Téléchargez d’abord ses données si vous pourriez en avoir besoin plus tard.",
-      "keptHint": "L’enregistrement de la page conserve ce bloc exactement tel qu’il est stocké."
+      "removeConfirmChildren": {
+        "one": "Supprimer ce bloc et le {count} bloc qu’il contient ? Téléchargez d’abord ses données si vous pourriez en avoir besoin plus tard.",
+        "other": "Supprimer ce bloc et les {count} blocs qu’il contient ? Téléchargez d’abord ses données si vous pourriez en avoir besoin plus tard."
+      },
+      "keptHint": "L’enregistrement de la page conserve ce bloc exactement tel qu’il est stocké.",
+      "storedSettings": {
+        "one": "{count} réglage",
+        "other": "{count} réglages"
+      },
+      "storedBlocks": {
+        "one": "{count} bloc à l’intérieur",
+        "other": "{count} blocs à l’intérieur"
+      }
+    },
+    "blockCount": {
+      "one": "{count} bloc",
+      "other": "{count} blocs"
+    },
+    "checks": {
+      "title": "Vérifications d’accessibilité",
+      "disclaimer": "Ces vérifications repèrent des problèmes courants dans ce que vous réglez ici. Elles ne voient pas tout ce qu’un thème, une extension ou un visiteur modifie : elles ne prouvent donc pas qu’une page est accessible.",
+      "none": "Aucun problème trouvé dans ce que ces vérifications examinent.",
+      "errors": {
+        "one": "{count} problème",
+        "other": "{count} problèmes"
+      },
+      "warnings": {
+        "one": "{count} à revoir",
+        "other": "{count} à revoir"
+      },
+      "unavailable": {
+        "one": "{count} non vérifié",
+        "other": "{count} non vérifiés"
+      },
+      "problemCount": {
+        "one": "{count} problème",
+        "other": "{count} problèmes"
+      },
+      "imageAlt": "Pas de texte alternatif. Décrivez l’image, ou laissez-le vide seulement si elle est décorative.",
+      "linkText": "Ce lien ou ce bouton n’a pas de texte : les lecteurs d’écran ne peuvent pas dire où il mène.",
+      "linkTextItem": "Le lien {item} n’a pas de texte : les lecteurs d’écran ne peuvent pas dire où il mène.",
+      "linkTarget": "Ce bouton a un texte mais pas de lien : il ne fait rien.",
+      "headingEmpty": "Ce titre est vide.",
+      "headingSkip": "Le niveau de titre passe de {from} à {to}. Les niveaux sautés rendent le plan de la page difficile à suivre.",
+      "headingLevelOne": "Le niveau 1 est généralement le titre de la page. Utilisez le niveau 2 pour les sections.",
+      "contrast": "Le contraste du texte est de {ratio}:1. Un texte normal demande au moins 4,5:1.",
+      "contrastUnknown": "Le contraste ne peut pas être vérifié ici, car l’une des couleurs vient du thème.",
+      "hiddenOnMobile": "Ce titre ou ce bouton est masqué sur les téléphones.",
+      "readingOrder": "L’ordre à l’écran diffère de l’ordre de lecture. Les lecteurs d’écran et le clavier suivent l’ordre des Calques.",
+      "iconLabel": "Cette icône n’est pas décorative mais n’a pas de libellé : elle est annoncée par son nom d’icône.",
+      "tableHeader": "Ce tableau n’a pas de ligne d’en-tête. Les tableaux de données en ont besoin pour que leurs colonnes soient comprises.",
+      "contentUnchecked": "Le contenu de ce bloc ne peut pas être vérifié ici."
+    },
+    "keyboard": {
+      "open": "Raccourcis",
+      "title": "Raccourcis clavier",
+      "close": "Fermer",
+      "or": "ou",
+      "intro": "Tout ce qui se fait à la souris ou au toucher se fait aussi au clavier. Ctrl correspond à ⌘ sur Mac.",
+      "area": {
+        "canvas": "Canevas",
+        "layers": "Calques",
+        "library": "Blocs",
+        "text": "Texte et médias",
+        "layout": "Mise en page",
+        "general": "Général"
+      },
+      "path": {
+        "selectBlock": "Sélectionner un bloc (Tab jusqu’à son nom)",
+        "actionsMenu": "Ouvrir le menu d’actions du bloc",
+        "duplicate": "Dupliquer",
+        "group": "Grouper",
+        "ungroup": "Dégrouper",
+        "remove": "Supprimer",
+        "copyPaste": "Copier, couper et coller",
+        "undoRedo": "Annuler et rétablir",
+        "clearSelection": "Ne garder qu’un bloc sélectionné",
+        "moveBlock": "Monter ou descendre",
+        "nestBlock": "Placer dans le bloc au-dessus, ou sortir du conteneur",
+        "extendSelection": "Ajouter des blocs à la sélection",
+        "renameBlock": "Renommer",
+        "moveTo": "Déplacer vers un autre conteneur",
+        "addBlock": "Ajouter le bloc ciblé",
+        "editText": "Terminer ou annuler la modification du texte",
+        "replaceMedia": "Remplacer une image ou un fichier sélectionné",
+        "resizeSpacing": "Modifier l’espacement et la hauteur avec une poignée ciblée",
+        "gridPlacement": "Placer et dimensionner un élément dans une grille",
+        "cancelDrag": "Annuler un glisser",
+        "shortcuts": "Afficher cette liste"
+      },
+      "how": {
+        "moveTo": "« Déplacer vers… » dans Calques",
+        "gridPlacement": "Champs de placement dans la grille, onglet Mise en page"
+      }
     }
   },
   "dashboard": {

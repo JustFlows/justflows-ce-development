@@ -10,6 +10,8 @@ export type {
 export { coreBlocks } from "./core/index.js";
 export { sanitizeRichText, sanitizeHtmlBlock, sanitizePlainText, extractPlainText, sanitizePluginPreviewHtml } from "./sanitize.js";
 export { codeLanguageClass } from "./code-language.js";
+export { textDirection, type TextDirection } from "./text-direction.js";
+export { checkAccessibility, contrastRatio, parseColor, type AccessibilityCheckCode, type AccessibilityCheckOptions, type AccessibilityFixTab, type AccessibilityIssue, type AccessibilitySeverity } from "./accessibility-checks.js";
 export { renderMath } from "./math.js";
 export { sanitizeBlockDocument } from "./sanitize-document.js";
 export { esc, safeHref, safeMediaSrc, sanitizeHref, sanitizeMediaSrc } from "./safe-url.js";

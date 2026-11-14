@@ -34,6 +34,8 @@ interface ContentItem {
   hasWorkingRevision?: boolean;
   workingRevision?: { version?: number; updatedByName?: string | null } | null;
   translationGroupId?: string | null;
+  /** The entry's language, so the canvas writes in its direction (justflows-ce#307). */
+  locale?: string;
   excerpt?: string | null;
   publishedAt?: string | null;
   blocks?: BlockDocument;
@@ -501,6 +503,7 @@ export default function PageBuilderPage() {
       onChange={(blocks) => update({ blocks })}
       isPage={isPage}
       mergeTags={mergeTags}
+      contentLocale={item.locale}
       context={isPage ? "page" : "post"}
       stylesPanel={<GlobalStylesPanel />}
       templateContext={templateContext}

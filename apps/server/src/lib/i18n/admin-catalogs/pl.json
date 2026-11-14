@@ -579,7 +579,12 @@
       "search": "Wyszukaj wzorce…",
       "category": "Kategoria",
       "manage": "Zarządzaj",
-      "results": "Wzory {count}",
+      "results": {
+        "one": "{count} wzorzec",
+        "few": "{count} wzorce",
+        "many": "{count} wzorców",
+        "other": "{count} wzorce"
+      },
       "noResults": "Żadne wzorce nie pasują do tych filtrów.",
       "loadDirectory": "Załaduj katalog",
       "choose": "Wybierz wzór, aby wyświetlić jego podgląd na szerokości strony.",
@@ -692,7 +697,12 @@
     "pageJson": {
       "title": "Strona JSON",
       "hint": "Nic nie jest zaznaczone, więc to jest cała strona. Wybierz blok na płótnie, aby go samodzielnie edytować.",
-      "count": "Bloki {count}",
+      "count": {
+        "one": "{count} blok",
+        "few": "{count} bloki",
+        "many": "{count} bloków",
+        "other": "{count} bloki"
+      },
       "apply": "Zastosuj",
       "reload": "Odrzuć",
       "applied": "Zastosowano",
@@ -764,8 +774,18 @@
       "linkedTitle": "Połączony blok wielokrotnego użytku",
       "usageLoading": "Sprawdzanie użycia…",
       "usageNone": "Jeszcze nigdzie indziej nieużywany.",
-      "usage": "Używany w {count} miejscach. Opublikowana zmiana aktualizuje je wszystkie.",
-      "usageHidden": "Używany w {count} miejscach, z których {hidden} nie możesz otworzyć. Opublikowana zmiana aktualizuje je wszystkie.",
+      "usage": {
+        "one": "Używany w {count} miejscu. Opublikowana zmiana je zaktualizuje.",
+        "few": "Używany w {count} miejscach. Opublikowana zmiana aktualizuje je wszystkie.",
+        "many": "Używany w {count} miejscach. Opublikowana zmiana aktualizuje je wszystkie.",
+        "other": "Używany w {count} miejscach. Opublikowana zmiana aktualizuje je wszystkie."
+      },
+      "usageHidden": {
+        "one": "Używany w {count} miejscu, z czego {hidden} nie możesz otworzyć. Opublikowana zmiana je zaktualizuje.",
+        "few": "Używany w {count} miejscach, z których {hidden} nie możesz otworzyć. Opublikowana zmiana aktualizuje je wszystkie.",
+        "many": "Używany w {count} miejscach, z których {hidden} nie możesz otworzyć. Opublikowana zmiana aktualizuje je wszystkie.",
+        "other": "Używany w {count} miejscach, z których {hidden} nie możesz otworzyć. Opublikowana zmiana aktualizuje je wszystkie."
+      },
       "hasDraft": "Źródło ma nieopublikowane zmiany. Obszar roboczy je pokazuje; odwiedzający zobaczą je dopiero po publikacji.",
       "editSource": "Edytuj źródło…",
       "detach": "Odłącz (utwórz kopię lokalną)",
@@ -782,18 +802,38 @@
       "inPart": "część „{part}”",
       "inTemplate": "szablon „{slug}”",
       "inMenu": "menu „{slug}”",
-      "inReusable": "Inne bloki wielokrotnego użytku: {count}",
-      "inPatterns": "Wzorce: {count}",
+      "inReusable": {
+        "one": "Inne bloki wielokrotnego użytku: {count}",
+        "few": "Inne bloki wielokrotnego użytku: {count}",
+        "many": "Inne bloki wielokrotnego użytku: {count}",
+        "other": "Inne bloki wielokrotnego użytku: {count}"
+      },
+      "inPatterns": {
+        "one": "Wzorce: {count}",
+        "few": "Wzorce: {count}",
+        "many": "Wzorce: {count}",
+        "other": "Wzorce: {count}"
+      },
       "usageTruncated": "Pokazano tylko pierwsze wyniki; może być ich więcej.",
       "stateDraft": "nieopublikowane zmiany",
       "statePublished": "opublikowany, wersja {revision}",
-      "publishConfirm": "Opublikować te zmiany? Pojawią się we wszystkich {count} miejscach, które używają tego bloku.",
+      "publishConfirm": {
+        "one": "Opublikować te zmiany? Pojawią się w {count} miejscu, które używa tego bloku.",
+        "few": "Opublikować te zmiany? Pojawią się we wszystkich {count} miejscach, które używają tego bloku.",
+        "many": "Opublikować te zmiany? Pojawią się we wszystkich {count} miejscach, które używają tego bloku.",
+        "other": "Opublikować te zmiany? Pojawią się we wszystkich {count} miejscach, które używają tego bloku."
+      },
       "publishConfirmUnused": "Opublikować te zmiany?",
       "discard": "Odrzuć zmiany",
       "discardConfirm": "Odrzucić nieopublikowane zmiany? Opublikowana wersja pozostaje.",
       "rename": "Zmień nazwę",
       "deleteConfirm": "Usunąć blok wielokrotnego użytku „{name}”?",
-      "deleteUsedConfirm": "„{name}” jest używany w {count} miejscach. Usunięcie usunie go ze wszystkich. Usunąć mimo to?",
+      "deleteUsedConfirm": {
+        "one": "„{name}” jest używany w {count} miejscu. Usunięcie usunie go stamtąd. Usunąć mimo to?",
+        "few": "„{name}” jest używany w {count} miejscach. Usunięcie usunie go ze wszystkich. Usunąć mimo to?",
+        "many": "„{name}” jest używany w {count} miejscach. Usunięcie usunie go ze wszystkich. Usunąć mimo to?",
+        "other": "„{name}” jest używany w {count} miejscach. Usunięcie usunie go ze wszystkich. Usunąć mimo to?"
+      },
       "deleteFailed": "Nie udało się usunąć bloku wielokrotnego użytku",
       "restoreHint": "Wczytuje tę wersję do edytora. Zapisz szkic i opublikuj, aby jej użyć."
     },
@@ -1201,8 +1241,6 @@
         "external": "Wczytuje treści zewnętrzne na opublikowanej stronie; kreator ich nie uruchamia."
       }
     },
-    "blockCountOne": "Blok {count}",
-    "blockCountMany": "Bloki {count}",
     "previewLight": "Jasny",
     "previewDark": "Ciemny",
     "previewSchemeHint": "Podgląd strony w trybie jasnym lub ciemnym",
@@ -1491,10 +1529,30 @@
       "revisionsPick": "Wybierz wersję, aby zobaczyć, co zmieniłoby jej przywrócenie.",
       "revisionsSame": "Ta wersja ma te same bloki co to, co edytujesz.",
       "revisionsCompare": "W porównaniu z tym, co edytujesz, przywrócenie tej wersji:",
-      "revisionsAdded": "Doda bloki: {count}",
-      "revisionsRemoved": "Usunie bloki: {count}",
-      "revisionsChanged": "Zmieni bloki: {count}",
-      "revisionsMoved": "Przeniesie bloki: {count}",
+      "revisionsAdded": {
+        "one": "Doda bloki: {count}",
+        "few": "Doda bloki: {count}",
+        "many": "Doda bloki: {count}",
+        "other": "Doda bloki: {count}"
+      },
+      "revisionsRemoved": {
+        "one": "Usunie bloki: {count}",
+        "few": "Usunie bloki: {count}",
+        "many": "Usunie bloki: {count}",
+        "other": "Usunie bloki: {count}"
+      },
+      "revisionsChanged": {
+        "one": "Zmieni bloki: {count}",
+        "few": "Zmieni bloki: {count}",
+        "many": "Zmieni bloki: {count}",
+        "other": "Zmieni bloki: {count}"
+      },
+      "revisionsMoved": {
+        "one": "Przeniesie bloki: {count}",
+        "few": "Przeniesie bloki: {count}",
+        "many": "Przeniesie bloki: {count}",
+        "other": "Przeniesie bloki: {count}"
+      },
       "revisionsRestore": "Przywróć tę wersję",
       "restoreHintPage": "Przywrócenie zapisuje tę wersję jako szkic strony. Opublikowana strona zmieni się dopiero po publikacji.",
       "restoreHintPart": "Przywrócenie wczytuje tę wersję do edytora. Zapisz szkic lub opublikuj, aby ją zachować.",
@@ -1504,7 +1562,8 @@
       "layers": "Warstwy",
       "previewWidth": "Szerokość podglądu w pikselach",
       "canvasWidth": "{width} px · {breakpoint}",
-      "styles": "Style"
+      "styles": "Style",
+      "checks": "Kontrole"
     },
     "drop": {
       "rejectNesting": "Bloku {child} nie można umieścić w {parent}.",
@@ -1548,7 +1607,12 @@
     },
     "actions": {
       "menu": "Akcje bloku",
-      "blocks": "Bloki: {count}",
+      "blocks": {
+        "one": "{count} blok",
+        "few": "{count} bloki",
+        "many": "{count} bloków",
+        "other": "{count} bloki"
+      },
       "more": "Więcej akcji dla: {block}",
       "duplicate": "Duplikuj",
       "copy": "Kopiuj",
@@ -1783,11 +1847,31 @@
       "usageLoading": "Sprawdzanie użycia…",
       "usageNone": "Jeszcze nigdzie nieużywany.",
       "usage": "Używany przez {count}: {where}",
-      "usageTemplates": "Szablony stron: {count}",
-      "usageReusable": "Bloki wielokrotnego użytku: {count}",
-      "usagePatterns": "Wzorce: {count}",
+      "usageTemplates": {
+        "one": "Szablony stron: {count}",
+        "few": "Szablony stron: {count}",
+        "many": "Szablony stron: {count}",
+        "other": "Szablony stron: {count}"
+      },
+      "usageReusable": {
+        "one": "Bloki wielokrotnego użytku: {count}",
+        "few": "Bloki wielokrotnego użytku: {count}",
+        "many": "Bloki wielokrotnego użytku: {count}",
+        "other": "Bloki wielokrotnego użytku: {count}"
+      },
+      "usagePatterns": {
+        "one": "Wzorce: {count}",
+        "few": "Wzorce: {count}",
+        "many": "Wzorce: {count}",
+        "other": "Wzorce: {count}"
+      },
       "deleteConfirm": "Usunąć szablon „{name}”?",
-      "deleteUsedConfirm": "Usunąć szablon „{name}”? Używa go {count} elementów, które stracą jego styl."
+      "deleteUsedConfirm": {
+        "one": "Usunąć szablon „{name}”? Używa go {count} element, który straci jego styl.",
+        "few": "Usunąć szablon „{name}”? Używają go {count} elementy, które stracą jego styl.",
+        "many": "Usunąć szablon „{name}”? Używa go {count} elementów, które stracą jego styl.",
+        "other": "Usunąć szablon „{name}”? Używają go {count} elementy, które stracą jego styl."
+      }
     },
     "globalStyles": {
       "title": "Style globalne",
@@ -1872,7 +1956,6 @@
       "deprecatedSince": "przestarzały od {since}",
       "id": "Id bloku",
       "stored": "Zapisane",
-      "storedCounts": "Ustawienia: {settings}, bloki w środku: {blocks}",
       "copy": "Kopiuj dane",
       "download": "Pobierz dane",
       "copied": "Skopiowano dane bloku.",
@@ -1883,12 +1966,130 @@
       "replace": "Zastąp",
       "remove": "Usuń blok",
       "replaceConfirm": "Zastąpić ten blok blokiem {title}? Zachowa swój id i każde ustawienie, które ma także {title}.",
-      "replaceDrops": "Zapisane ustawienia, których nowy blok nie ma, zostaną usunięte (liczba: {count}).",
-      "replaceDropsChildren": "Bloki w środku zostaną usunięte, bo nowy blok nie może zawierać innych bloków (liczba: {count}).",
+      "replaceDrops": {
+        "one": "Zapisane ustawienia, których nowy blok nie ma, zostaną usunięte (liczba: {count}).",
+        "few": "Zapisane ustawienia, których nowy blok nie ma, zostaną usunięte (liczba: {count}).",
+        "many": "Zapisane ustawienia, których nowy blok nie ma, zostaną usunięte (liczba: {count}).",
+        "other": "Zapisane ustawienia, których nowy blok nie ma, zostaną usunięte (liczba: {count})."
+      },
+      "replaceDropsChildren": {
+        "one": "Bloki w środku zostaną usunięte, bo nowy blok nie może zawierać innych bloków (liczba: {count}).",
+        "few": "Bloki w środku zostaną usunięte, bo nowy blok nie może zawierać innych bloków (liczba: {count}).",
+        "many": "Bloki w środku zostaną usunięte, bo nowy blok nie może zawierać innych bloków (liczba: {count}).",
+        "other": "Bloki w środku zostaną usunięte, bo nowy blok nie może zawierać innych bloków (liczba: {count})."
+      },
       "downloadFirst": "Najpierw pobierz dane, jeśli mogą być później potrzebne.",
       "removeConfirm": "Usunąć ten blok ze strony? Najpierw pobierz jego dane, jeśli mogą być później potrzebne.",
-      "removeConfirmChildren": "Usunąć ten blok wraz z blokami w środku (liczba: {count})? Najpierw pobierz jego dane, jeśli mogą być później potrzebne.",
-      "keptHint": "Zapisanie strony zachowuje ten blok dokładnie w zapisanej postaci."
+      "removeConfirmChildren": {
+        "one": "Usunąć ten blok wraz z blokami w środku (liczba: {count})? Najpierw pobierz jego dane, jeśli mogą być później potrzebne.",
+        "few": "Usunąć ten blok wraz z blokami w środku (liczba: {count})? Najpierw pobierz jego dane, jeśli mogą być później potrzebne.",
+        "many": "Usunąć ten blok wraz z blokami w środku (liczba: {count})? Najpierw pobierz jego dane, jeśli mogą być później potrzebne.",
+        "other": "Usunąć ten blok wraz z blokami w środku (liczba: {count})? Najpierw pobierz jego dane, jeśli mogą być później potrzebne."
+      },
+      "keptHint": "Zapisanie strony zachowuje ten blok dokładnie w zapisanej postaci.",
+      "storedSettings": {
+        "one": "{count} ustawienie",
+        "few": "{count} ustawienia",
+        "many": "{count} ustawień",
+        "other": "{count} ustawienia"
+      },
+      "storedBlocks": {
+        "one": "{count} blok w środku",
+        "few": "{count} bloki w środku",
+        "many": "{count} bloków w środku",
+        "other": "{count} bloki w środku"
+      }
+    },
+    "blockCount": {
+      "one": "{count} blok",
+      "few": "{count} bloki",
+      "many": "{count} bloków",
+      "other": "{count} bloki"
+    },
+    "checks": {
+      "title": "Kontrole dostępności",
+      "disclaimer": "Te kontrole wykrywają częste problemy w tym, co tu ustawiasz. Nie widzą wszystkiego, co zmienia motyw, wtyczka lub odwiedzający, więc nie dowodzą, że strona jest dostępna.",
+      "none": "Nie znaleziono problemów w tym, co sprawdzają te kontrole.",
+      "errors": {
+        "one": "{count} problem",
+        "few": "{count} problemy",
+        "many": "{count} problemów",
+        "other": "{count} problemy"
+      },
+      "warnings": {
+        "one": "Do sprawdzenia: {count}",
+        "few": "Do sprawdzenia: {count}",
+        "many": "Do sprawdzenia: {count}",
+        "other": "Do sprawdzenia: {count}"
+      },
+      "unavailable": {
+        "one": "Nie sprawdzono: {count}",
+        "few": "Nie sprawdzono: {count}",
+        "many": "Nie sprawdzono: {count}",
+        "other": "Nie sprawdzono: {count}"
+      },
+      "problemCount": {
+        "one": "{count} problem",
+        "few": "{count} problemy",
+        "many": "{count} problemów",
+        "other": "{count} problemy"
+      },
+      "imageAlt": "Brak tekstu alternatywnego. Opisz obraz albo zostaw pole puste tylko wtedy, gdy obraz jest dekoracyjny.",
+      "linkText": "Ten link lub przycisk nie ma tekstu, więc czytniki ekranu nie powiedzą, dokąd prowadzi.",
+      "linkTextItem": "Link {item} nie ma tekstu, więc czytniki ekranu nie powiedzą, dokąd prowadzi.",
+      "linkTarget": "Ten przycisk ma tekst, ale nie ma linku, więc nic nie robi.",
+      "headingEmpty": "Ten nagłówek jest pusty.",
+      "headingSkip": "Poziom nagłówka przeskakuje z {from} na {to}. Pominięte poziomy utrudniają śledzenie struktury strony.",
+      "headingLevelOne": "Poziom 1 to zwykle tytuł strony. Dla sekcji używaj poziomu 2.",
+      "contrast": "Kontrast tekstu wynosi {ratio}:1. Zwykły tekst potrzebuje co najmniej 4,5:1.",
+      "contrastUnknown": "Nie można tu sprawdzić kontrastu, bo jeden z kolorów pochodzi z motywu.",
+      "hiddenOnMobile": "Ten nagłówek lub przycisk jest ukryty na telefonach.",
+      "readingOrder": "Kolejność na ekranie różni się od kolejności czytania. Czytniki ekranu i klawiatura idą za kolejnością w Warstwach.",
+      "iconLabel": "Ta ikona nie jest dekoracyjna, ale nie ma etykiety, więc jest odczytywana nazwą ikony.",
+      "tableHeader": "Ta tabela nie ma wiersza nagłówka. Tabele z danymi go potrzebują, by ich kolumny były zrozumiałe.",
+      "contentUnchecked": "Nie można tu sprawdzić zawartości tego bloku."
+    },
+    "keyboard": {
+      "open": "Skróty",
+      "title": "Skróty klawiszowe",
+      "close": "Zamknij",
+      "or": "lub",
+      "intro": "Wszystko, co da się zrobić myszą lub dotykiem, da się też zrobić klawiaturą. Ctrl to ⌘ na Macu.",
+      "area": {
+        "canvas": "Płótno",
+        "layers": "Warstwy",
+        "library": "Bloki",
+        "text": "Tekst i multimedia",
+        "layout": "Układ",
+        "general": "Ogólne"
+      },
+      "path": {
+        "selectBlock": "Zaznacz blok (Tab do jego nazwy)",
+        "actionsMenu": "Otwórz menu akcji bloku",
+        "duplicate": "Duplikuj",
+        "group": "Grupuj",
+        "ungroup": "Rozgrupuj",
+        "remove": "Usuń",
+        "copyPaste": "Kopiuj, wytnij i wklej",
+        "undoRedo": "Cofnij i ponów",
+        "clearSelection": "Zostaw zaznaczony tylko jeden blok",
+        "moveBlock": "Przenieś w górę lub w dół",
+        "nestBlock": "Przenieś do bloku powyżej lub poza kontener",
+        "extendSelection": "Dodaj bloki do zaznaczenia",
+        "renameBlock": "Zmień nazwę",
+        "moveTo": "Przenieś do innego kontenera",
+        "addBlock": "Dodaj blok z fokusem",
+        "editText": "Zakończ lub anuluj edycję tekstu",
+        "replaceMedia": "Zastąp zaznaczony obraz lub plik",
+        "resizeSpacing": "Zmień odstępy i wysokość uchwytem z fokusem",
+        "gridPlacement": "Umieść element w siatce i ustaw jego rozmiar",
+        "cancelDrag": "Anuluj przeciąganie",
+        "shortcuts": "Pokaż tę listę"
+      },
+      "how": {
+        "moveTo": "„Przenieś do…” w Warstwach",
+        "gridPlacement": "Pola położenia w siatce na karcie Układ"
+      }
     }
   },
   "dashboard": {

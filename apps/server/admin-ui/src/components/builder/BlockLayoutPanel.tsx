@@ -220,7 +220,7 @@ export default function BlockLayoutPanel({
     const swatch = /^#[0-9a-fA-F]{6}$/.test(current) ? current : inherited || "#ffffff";
     const isNone = current === "transparent" || current === "none";
     return (
-      <div className="jf-field" style={{ marginBottom: "0.6rem" }}>
+      <div className="jf-field" style={{ marginBottom: "0.6rem" }} data-jf-field={key}>
         <label className="jf-field__label" htmlFor={id}>
           {label}
         </label>

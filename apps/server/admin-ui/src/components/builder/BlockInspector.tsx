@@ -272,7 +272,7 @@ export default function BlockInspector({
 
   const textArea = (key: string, label: string, rows = 3, withTags = false) => (
     <>
-      <label style={fieldLabel}>
+      <label style={fieldLabel} data-jf-field={key}>
         {label}
         <textarea rows={rows} style={fieldInput} value={(p[key] as string) ?? ""} onChange={(e) => set(key, e.target.value)} />
       </label>
@@ -282,7 +282,7 @@ export default function BlockInspector({
 
   const textInput = (key: string, label: string, placeholder = "", withTags = false) => (
     <>
-      <label style={fieldLabel}>
+      <label style={fieldLabel} data-jf-field={key}>
         {label}
         <input type="text" style={fieldInput} placeholder={placeholder} value={(p[key] as string) ?? ""} onChange={(e) => set(key, e.target.value)} />
       </label>
@@ -291,7 +291,7 @@ export default function BlockInspector({
   );
 
   const select = (key: string, label: string, options: { value: string; label: string }[]) => (
-    <label style={fieldLabel}>
+    <label style={fieldLabel} data-jf-field={key}>
       {label}
       <select style={fieldInput} value={String(p[key] ?? options[0]?.value)} onChange={(e) => set(key, e.target.value)}>
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -351,7 +351,7 @@ export default function BlockInspector({
         {textInput("heading", t("builder.inspector.field.heading"))}
         {textArea("subheading", t("builder.inspector.field.subheading"), 2)}
         {textInput("buttonLabel", t("builder.inspector.field.buttonLabel"))}
-        <InternalLinkField value={(p.buttonUrl as string) ?? ""} onChange={(url) => set("buttonUrl", url)} label={t("builder.inspector.field.buttonUrl")} placeholder={t("builder.inspector.placeholder.internalLink")} />
+        <InternalLinkField field="buttonUrl" value={(p.buttonUrl as string) ?? ""} onChange={(url) => set("buttonUrl", url)} label={t("builder.inspector.field.buttonUrl")} placeholder={t("builder.inspector.placeholder.internalLink")} />
         <MediaImageField id={`block-${block.id}-backgroundImage`} label={t("builder.inspector.field.backgroundImage")} value={(p.backgroundImage as string) ?? ""} onChange={(url) => set("backgroundImage", url)} />
         {select("align", t("builder.inspector.field.alignment"), [
           { value: "left", label: t("builder.layout.value.left") },
@@ -369,7 +369,7 @@ export default function BlockInspector({
         {textInput("heading", t("builder.inspector.field.heading"))}
         {textArea("text", t("builder.inspector.field.text"), 2)}
         {textInput("buttonLabel", t("builder.inspector.field.buttonLabel"))}
-        <InternalLinkField value={(p.buttonUrl as string) ?? ""} onChange={(url) => set("buttonUrl", url)} label={t("builder.inspector.field.buttonUrl")} />
+        <InternalLinkField field="buttonUrl" value={(p.buttonUrl as string) ?? ""} onChange={(url) => set("buttonUrl", url)} label={t("builder.inspector.field.buttonUrl")} />
         {select("variant", t("builder.inspector.field.style"), [
           { value: "primary", label: t("builder.inspector.option.primary") },
           { value: "dark", label: t("builder.inspector.option.backgroundDark") },
@@ -381,7 +381,7 @@ export default function BlockInspector({
     case "core.heading":
       fields = <>
         {textInput("text", t("builder.inspector.field.headingText"), "", true)}
-        <label style={fieldLabel}>{t("builder.inspector.field.level")}
+        <label style={fieldLabel} data-jf-field="level">{t("builder.inspector.field.level")}
           <select style={fieldInput} value={(p.level as number) ?? 2} onChange={(e) => set("level", Number(e.target.value))}>
             {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>H{n}</option>)}
           </select>
@@ -435,7 +435,7 @@ export default function BlockInspector({
     case "core.button":
       fields = <>
         {textInput("label", t("builder.inspector.field.label"))}
-        <InternalLinkField value={(p.url as string) ?? ""} onChange={(url) => set("url", url)} label={t("builder.inspector.field.url")} />
+        <InternalLinkField field="url" value={(p.url as string) ?? ""} onChange={(url) => set("url", url)} label={t("builder.inspector.field.url")} />
         {select("variant", t("builder.inspector.field.variant"), [
           { value: "primary", label: t("builder.inspector.option.primary") },
           { value: "secondary", label: t("builder.inspector.option.secondary") },
@@ -444,7 +444,7 @@ export default function BlockInspector({
       </>;
       break;
     case "core.link-list":
-      fields = <LinkListEditor items={(p.items as LinkItem[]) ?? []} heading={(p.heading as string) ?? ""} onChange={onChange} p={p} />;
+      fields = <div data-jf-field="items"><LinkListEditor items={(p.items as LinkItem[]) ?? []} heading={(p.heading as string) ?? ""} onChange={onChange} p={p} /></div>;
       break;
     case "core.spacer":
       fields = (
@@ -1001,8 +1001,16 @@ function MultiChoice({ options, value, onChange }: {
   );
 }
 
-/** One plugin block prop, rendered from its schema entry. */
-function SchemaField({ name, field, value, onChange }: {
+/** One plugin block prop, rendered from its schema entry, marked for the accessibility checks (justflows-ce#307). */
+function SchemaField(props: { name: string; field: BlockSchemaField; value: unknown; onChange: (value: unknown) => void }) {
+  return (
+    <div data-jf-field={props.name} style={{ display: "contents" }}>
+      <SchemaFieldControl {...props} />
+    </div>
+  );
+}
+
+function SchemaFieldControl({ name, field, value, onChange }: {
   name: string;
   field: BlockSchemaField;
   value: unknown;
@@ -1096,7 +1104,9 @@ let internalLinkCache: InternalLinkOption[] | null = null;
  * so an internal link can be chosen by title instead of hand-typed and mistyped.
  * Stores a plain root-relative path (e.g. "/about"), same as a typed one.
  */
-function InternalLinkField({ value, onChange, label, placeholder }: {
+function InternalLinkField({ value, onChange, label, placeholder, field }: {
+  /** The prop it edits, so checks can point at it (justflows-ce#307). */
+  field?: string;
   value: string;
   onChange: (value: string) => void;
   label?: string;
@@ -1135,7 +1145,7 @@ function InternalLinkField({ value, onChange, label, placeholder }: {
   }
 
   return (
-    <label style={fieldLabel}>
+    <label style={fieldLabel} data-jf-field={field}>
       {resolvedLabel}
       <div style={{ display: "flex", gap: "0.35rem" }}>
         <input

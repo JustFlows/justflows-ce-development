@@ -6022,3 +6022,187 @@ input[type="range"] {
   flex: 1;
   min-width: 0;
 }
+
+/** Accessibility checks panel (justflows-ce#307). */
+.jf-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+}
+.jf-checks__title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.jf-checks__note,
+.jf-checks__empty {
+  margin: 0;
+  color: var(--jf-text-2);
+  font-size: 0.78rem;
+}
+.jf-checks__heading {
+  margin: 0.4rem 0 0.3rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.jf-checks__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.jf-checks__show {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--jf-border);
+  border-inline-start-width: 4px;
+  border-radius: 6px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.jf-checks__item[data-severity="error"] .jf-checks__show { border-inline-start-color: var(--jf-danger); }
+.jf-checks__item[data-severity="warning"] .jf-checks__show { border-inline-start-color: var(--jf-warning); }
+.jf-checks__item[data-severity="unavailable"] .jf-checks__show { border-inline-start-style: dashed; }
+.jf-checks__block {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--jf-text-2);
+}
+.jf-checks__message {
+  font-size: 0.8rem;
+}
+.jf-shell__tab-count {
+  display: inline-block;
+  min-width: 1.2rem;
+  margin-inline-start: 0.3rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--jf-danger);
+  color: #fff;
+  font-size: 0.68rem;
+  line-height: 1.2rem;
+  text-align: center;
+}
+
+/** Larger canvas buttons on touch screens (justflows-ce#307). */
+@media (pointer: coarse) {
+  .jf-canvas-btn {
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+  }
+}
+
+/**
+ * Windows high contrast and other forced-colours modes drop background
+ * colours, so selection, drop targets and focus need outlines in system
+ * colours (justflows-ce#307).
+ */
+@media (forced-colors: active) {
+  [data-selected="true"] {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px;
+  }
+  .jf-canvas-root :focus-visible,
+  .jf-shell :focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px;
+  }
+  .jf-checks__show,
+  .jf-recovery,
+  .jf-plugin-preview,
+  .jf-preview-stand-in {
+    border: 1px solid CanvasText;
+  }
+  .jf-shell__tab-count {
+    forced-color-adjust: none;
+    background: Mark;
+    color: MarkText;
+  }
+}
+
+/** Keyboard shortcuts dialog (justflows-ce#307). */
+.jf-shortcuts {
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 4rem);
+  overflow: auto;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--jf-border);
+  border-radius: 10px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+}
+.jf-shortcuts::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+.jf-shortcuts__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.jf-shortcuts__head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.jf-shortcuts__intro {
+  color: var(--jf-text-2);
+  font-size: 0.85rem;
+}
+.jf-shortcuts__area h3 {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.jf-shortcuts__area dl {
+  margin: 0;
+}
+.jf-shortcuts__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem 1rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--jf-border);
+  font-size: 0.85rem;
+}
+.jf-shortcuts__row dd {
+  margin: 0;
+  text-align: end;
+}
+.jf-shortcuts__chord {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.jf-shortcuts__or {
+  margin: 0 0.35rem;
+  color: var(--jf-text-3);
+  font-size: 0.75rem;
+}
+.jf-shortcuts kbd {
+  min-width: 1.6rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--jf-border-strong);
+  border-radius: 4px;
+  background: var(--jf-surface-2);
+  font: 600 0.75rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .jf-shortcuts__row {
+    grid-template-columns: 1fr;
+  }
+  .jf-shortcuts__row dd {
+    text-align: start;
+  }
+}

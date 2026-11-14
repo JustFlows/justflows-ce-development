@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { BLOCK_CLIPBOARD_MIME, breakpointForWidth, isBlockLocked, type EditorLockFlag } from "@justflows/blocks";
 import type { BlockDocument, BlockCatalogEntry, BlockNode } from "./types";
 import BlockLibrary from "./BlockLibrary";
+import ChecksPanel, { focusInspectorField, useAccessibilityIssues } from "./ChecksPanel";
+import KeyboardShortcutsDialog from "./KeyboardShortcutsDialog";
 import BlockInspector from "./BlockInspector";
 import Navigator from "./Navigator";
 import { CORE_INLINE_FIELDS, InlineFieldsContext } from "./inline-field";
@@ -82,6 +84,12 @@ export type { BlockDocument, BlockNode } from "./types";
 interface PageBuilderProps {
   value: BlockDocument;
   onChange: (doc: BlockDocument) => void;
+  /**
+   * Language of the content being edited. The canvas takes its `lang` and
+   * writing direction from it, so right-to-left content reads and aligns as
+   * on the page (justflows-ce#307). Omitted: the admin's own.
+   */
+  contentLocale?: string;
   compact?: boolean;
   enableHeader?: boolean;
   header?: PageHeaderConfig;
@@ -127,6 +135,7 @@ interface PageBuilderProps {
 export default function PageBuilder({
   value,
   onChange,
+  contentLocale,
   compact = false,
   enableHeader = false,
   header,
@@ -243,6 +252,8 @@ export default function PageBuilder({
   );
   const blocks = Array.isArray(value?.blocks) ? value.blocks : [];
   const headerBlocks = Array.isArray(pageHeader.blocks) ? (pageHeader.blocks as BlockNode[]) : [];
+  /** Accessibility checks over what this builder edits (justflows-ce#307). */
+  const accessibilityIssues = useAccessibilityIssues(headerOnly ? headerBlocks : blocks, catalogMap);
   /** Ids that still exist after an undo, a remote reload, or a delete. */
   const selectedIds = useMemo(
     () =>
@@ -620,6 +631,24 @@ export default function PageBuilder({
    * the way of text editing: anything typed in a field, an inline editor, a
    * menu, or a dialog is left alone.
    */
+  /**
+   * `?` opens the keyboard shortcuts from anywhere in the builder, except
+   * while typing (justflows-ce#307).
+   */
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  useEffect(() => {
+    if (compact) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "?" || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+      const target = e.target;
+      if (target instanceof Element && target.closest("input, textarea, select, [contenteditable='true'], [role='dialog'], dialog")) return;
+      e.preventDefault();
+      setShortcutsOpen(true);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [compact]);
+
   const shortcutState = useRef({ runAction, pasteBlocks, actionIds, selectedNodes, multi: selectedIds.length > 1, setSelectedId, selectedId });
   shortcutState.current = { runAction, pasteBlocks, actionIds, selectedNodes, multi: selectedIds.length > 1, setSelectedId, selectedId };
   useEffect(() => {
@@ -766,6 +795,7 @@ export default function PageBuilder({
       {!headerOnly && (() => {
         const pageCanvas = (
           <PageCanvas
+            contentLocale={contentLocale}
             blocks={blocks}
             catalog={catalogMap}
             selectedId={selectedId}
@@ -870,6 +900,7 @@ export default function PageBuilder({
         onSelect={setSelectedId}
       >
         <AnnounceBridge target={announceRef} />
+        {shortcutsOpen && <KeyboardShortcutsDialog onClose={() => setShortcutsOpen(false)} />}
         <BuilderSelectionContext.Provider value={selectionContext}>
         {compact ? (
           <div
@@ -919,6 +950,19 @@ export default function PageBuilder({
             }
             sitePanel={sitePanel}
             stylesPanel={stylesPanel}
+            checksPanel={
+              <ChecksPanel
+                issues={accessibilityIssues}
+                catalog={catalogMap}
+                onShow={(blockId, tab, field) => {
+                  setSelectedId(blockId);
+                  setPrefs({ inspectorTab: tab, rightOpen: true });
+                  if (field) void focusInspectorField(field, () => document.querySelector(".jf-shell__right"));
+                }}
+              />
+            }
+            checksCount={accessibilityIssues.filter((issue) => issue.severity === "error").length}
+            onShowShortcuts={() => setShortcutsOpen(true)}
             layers={
               <Navigator
                 blocks={headerOnly ? headerBlocks : blocks}

@@ -18,13 +18,23 @@ import {
   parseBlockPlacement,
   parseBlockStyle,
   supportsContainerLayout,
+  textDirection,
 } from "@justflows/blocks";
 import { anchorFor, isExtendClick, useBuilderSelection } from "./selection-context";
 import LayoutOverlay from "./LayoutOverlay";
 import { inspectorSections } from "./inspector-sections";
 import { inertPreviewHandlers } from "./inert-preview";
 
+/**
+ * Canvas toolbar buttons are at least 24 by 24 pixels (WCAG 2.2 target size),
+ * and larger on touch screens through `.jf-canvas-btn` (justflows-ce#307).
+ */
 const iconBtn: React.CSSProperties = {
+  minWidth: 24,
+  minHeight: 24,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
   background: "var(--jf-surface-3)",
   border: "none",
   borderRadius: 4,
@@ -35,6 +45,8 @@ const iconBtn: React.CSSProperties = {
 };
 
 interface PageCanvasProps {
+  /** Language of the content; sets the canvas's `lang` and `dir` (justflows-ce#307). */
+  contentLocale?: string;
   blocks: BlockNode[];
   catalog: Map<string, BlockCatalogEntry>;
   selectedId: string | null;
@@ -66,6 +78,7 @@ export function PageCanvas({
   addLabel,
   emptyLabel,
   rootQuickAll = false,
+  contentLocale,
 }: PageCanvasProps) {
   const { t } = useT();
   const { dragging } = useBuilderDrag();
@@ -76,6 +89,8 @@ export function PageCanvas({
     <div
       {...inertPreviewHandlers}
       className="jf-canvas-root"
+      lang={contentLocale || undefined}
+      dir={contentLocale ? textDirection(contentLocale) : undefined}
       style={{
         minHeight: !compact && blocks.length === 0 ? 320 : undefined,
         width: compact ? "100%" : undefined,
@@ -287,17 +302,36 @@ function BlockRow({
         >
           ⠿
         </span>
-        <span
+        {/**
+          * The block's name is a button, so the keyboard reaches every block on
+          * the canvas and Enter or Space selects it, as a click does
+          * (justflows-ce#307).
+          */}
+        <button
+          type="button"
+          className="jf-canvas-block__name"
+          aria-pressed={isSelected}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (selection && isExtendClick(e) && selection.extend(block.id, e)) return;
+            onSelect(isSelected && !inMultiSelection ? null : block.id);
+          }}
           style={{
             fontSize: "0.65rem",
             fontWeight: 700,
             color: "var(--jf-text-3)",
             textTransform: "uppercase",
             letterSpacing: "0.04em",
+            background: "none",
+            border: "none",
+            padding: "0.15rem 0.2rem",
+            minHeight: 24,
+            cursor: "pointer",
+            fontFamily: "inherit",
           }}
         >
           {meta?.icon} {block.editor?.label || meta?.title || block.type}
-        </span>
+        </button>
         {locked && (
           <span className="jf-canvas-block__lock" title={t("builder.navigator.badge.locked")}>
             <span aria-hidden="true">🔒</span>
@@ -313,7 +347,7 @@ function BlockRow({
             aria-label={t("builder.canvas.moveBlockUp")}
             onClick={() => move(-1)}
             disabled={index === 0 || moveLocked}
-            style={iconBtn}
+            className="jf-canvas-btn" style={iconBtn}
           >
             ↑
           </button>
@@ -322,7 +356,7 @@ function BlockRow({
             aria-label={t("builder.canvas.moveBlockDown")}
             onClick={() => move(1)}
             disabled={index === total - 1 || moveLocked}
-            style={iconBtn}
+            className="jf-canvas-btn" style={iconBtn}
           >
             ↓
           </button>
@@ -332,7 +366,7 @@ function BlockRow({
             title={removeLocked ? t("builder.actions.blocked.lockedRemove") : undefined}
             onClick={remove}
             disabled={removeLocked}
-            style={{ ...iconBtn, color: "var(--jf-danger)" }}
+            className="jf-canvas-btn" style={{ ...iconBtn, color: "var(--jf-danger)" }}
           >
             ✕
           </button>
@@ -344,7 +378,7 @@ function BlockRow({
               <button
                 key={action.id}
                 type="button"
-                style={iconBtn}
+                className="jf-canvas-btn" style={iconBtn}
                 disabled={isBlockLocked(block, "edit")}
                 title={isBlockLocked(block, "edit") ? t("builder.actions.blocked.lockedEdit") : undefined}
                 onClick={() => updateProps(block.id, { ...block.props, ...action.props })}
@@ -358,7 +392,7 @@ function BlockRow({
               aria-label={t("builder.actions.more", { block: block.editor?.label || meta?.title || block.type })}
               aria-haspopup="menu"
               onClick={(e) => selection.openMenu(block.id, anchorFor(e.currentTarget))}
-              style={iconBtn}
+              className="jf-canvas-btn" style={iconBtn}
             >
               ⋯
             </button>
