@@ -92,13 +92,26 @@ export interface MediaItem {
   uploadedAt: unknown;
 }
 
-export async function listMediaItems(siteId: string, limit: number): Promise<MediaItem[]> {
+/** Media kinds the library can be filtered to, by MIME type prefix. */
+export const MEDIA_LIST_KINDS = ["image", "video", "audio"] as const;
+export type MediaListKind = (typeof MEDIA_LIST_KINDS)[number];
+
+export function isMediaListKind(value: unknown): value is MediaListKind {
+  return typeof value === "string" && (MEDIA_LIST_KINDS as readonly string[]).includes(value);
+}
+
+/**
+ * The newest media items, optionally only one kind. Filtering happens in the
+ * query, so a picker for videos still finds them on a site whose recent
+ * uploads are all images.
+ */
+export async function listMediaItems(siteId: string, limit: number, kind?: MediaListKind): Promise<MediaItem[]> {
   const bounded = Math.max(1, Math.min(Number.isFinite(limit) ? Math.floor(limit) : 40, 200));
   const rows = await (
     await getDb()
   ).query<Record<string, unknown>>(
-    "SELECT id, filename, mime_type, size_bytes, url, alt_text, caption, width, height, focal_x, focal_y, variants_generated_at, derivative_bytes, uploaded_at FROM media WHERE site_id = ? AND trashed_at IS NULL ORDER BY uploaded_at DESC LIMIT ?",
-    [siteId, bounded],
+    `SELECT id, filename, mime_type, size_bytes, url, alt_text, caption, width, height, focal_x, focal_y, variants_generated_at, derivative_bytes, uploaded_at FROM media WHERE site_id = ? AND trashed_at IS NULL${kind ? " AND mime_type LIKE ?" : ""} ORDER BY uploaded_at DESC LIMIT ?`,
+    kind ? [siteId, `${kind}/%`, bounded] : [siteId, bounded],
   );
   // camelCase mapping done here rather than via `AS` — an unquoted alias folds
   // to lowercase on PostgreSQL.

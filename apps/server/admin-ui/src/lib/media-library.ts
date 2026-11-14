@@ -36,7 +36,8 @@ export const uploadImage = uploadMedia;
 
 /** Recent library items of one kind (or every file), newest first. */
 export async function loadMediaLibrary(kind: MediaKind): Promise<MediaLibraryItem[]> {
-  const res = await fetch("/api/media?limit=80");
+  /** The server filters by kind; the check here keeps older servers without `kind` correct. */
+  const res = await fetch(kind === "file" ? "/api/media?limit=80" : `/api/media?limit=80&kind=${kind}`);
   const body = (await res.json()) as { items?: Array<Record<string, unknown>> };
   return (body.items ?? [])
     .filter((item) => matchesKind(item, kind))

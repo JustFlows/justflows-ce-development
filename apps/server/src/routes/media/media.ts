@@ -12,6 +12,7 @@ import { sendServerError } from "../../lib/http/send-error.js";
 import { param } from "../../lib/http/params.js";
 import {
   getMediaItem,
+  isMediaListKind,
   listMediaItems,
   storeMediaUpload,
   trashMediaItem,
@@ -80,7 +81,8 @@ router.get("/", requireRole(...MEDIA_WRITE_ROLES), async (req, res) => {
     return;
   }
   try {
-    const items = await listMediaItems(session.siteId, Number(req.query.limit ?? "40"));
+    const kind = isMediaListKind(req.query.kind) ? req.query.kind : undefined;
+    const items = await listMediaItems(session.siteId, Number(req.query.limit ?? "40"), kind);
     res.json({ items });
   } catch (err) {
     sendServerError(res, "media", err);
