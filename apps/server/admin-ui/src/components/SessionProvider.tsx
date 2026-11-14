@@ -93,3 +93,19 @@ export function useCapability(capability: string): boolean {
   // Compatibility with cached SSR data and older hosts during rolling updates.
   return session.role === "administrator";
 }
+
+/**
+ * `useCapability` and the role for components that also render without a
+ * session provider (embedded builders, tests). Without a session they answer
+ * false and null, so nothing is granted by accident.
+ */
+export function useOptionalCapability(capability: string): boolean {
+  const session = useContext(SessionContext)?.session;
+  if (!session) return false;
+  if (session.capabilities) return session.capabilities.includes(capability);
+  return session.role === "administrator";
+}
+
+export function useOptionalSessionRole(): string | null {
+  return useContext(SessionContext)?.session?.role ?? null;
+}

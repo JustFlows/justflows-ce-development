@@ -1470,7 +1470,8 @@
         "self": "Un bloque no se puede soltar sobre sí mismo.",
         "descendant": "Un bloque no se puede mover dentro de su propio contenido.",
         "region": "Aquí no se pueden mover bloques a esa zona.",
-        "missing": "Ese bloque ya no existe."
+        "missing": "Ese bloque ya no existe.",
+        "locked": "Este bloque está bloqueado en su sitio."
       },
       "noTarget": "No se movió: suelta sobre una zona de destino.",
       "moved": "{block} movido.",
@@ -1482,7 +1483,7 @@
     "navigator": {
       "title": "Capas",
       "search": "Buscar un bloque",
-      "keysHint": "Flechas para recorrer, Intro para seleccionar, Alt+flechas para mover, F2 para renombrar.",
+      "keysHint": "Flechas para recorrer, Intro para seleccionar, Mayús+flechas para ampliar la selección, Alt+flechas para mover, F2 para renombrar, Mayús+F10 para acciones.",
       "empty": "Aún no hay bloques.",
       "noMatches": "Ningún bloque coincide.",
       "root": "Nivel superior",
@@ -1499,6 +1500,82 @@
         "locked": "Bloqueado",
         "unavailable": "Tipo de bloque no disponible: puede que su plugin esté desactivado",
         "dynamic": "Muestra contenido de la página o del sitio"
+      }
+    },
+    "actions": {
+      "menu": "Acciones del bloque",
+      "blocks": "{count} bloques",
+      "more": "Más acciones para {block}",
+      "duplicate": "Duplicar",
+      "copy": "Copiar",
+      "cut": "Cortar",
+      "paste": "Pegar",
+      "delete": "Eliminar",
+      "group": "Agrupar",
+      "ungroup": "Desagrupar",
+      "resetStyle": "Restablecer estilo",
+      "saveReusable": "Guardar como bloque reutilizable…",
+      "savePattern": "Guardar como patrón…",
+      "locks": "Bloqueos",
+      "lock": {
+        "move": "Impedir mover",
+        "remove": "Impedir eliminar",
+        "edit": "Impedir editar"
+      },
+      "lockedByPolicy": "Solo quien puede gestionar bloqueos puede cambiarlos.",
+      "blocked": {
+        "empty": "Selecciona primero un bloque.",
+        "mixedParents": "Selecciona bloques contiguos dentro del mismo contenedor.",
+        "lockedRemove": "Un bloque seleccionado, o algo que contiene, está protegido contra la eliminación.",
+        "lockedMove": "Un bloque seleccionado está bloqueado en su sitio.",
+        "lockedEdit": "Un bloque seleccionado está protegido contra la edición.",
+        "nesting": "El resultado no estaría permitido en este contenedor.",
+        "notGroup": "Solo se puede desagrupar un Grupo o un Contenedor.",
+        "noStyle": "No hay ningún estilo propio que restablecer.",
+        "clipboardEmpty": "Todavía no se ha copiado nada.",
+        "permission": "Solo administradores y editores pueden guardar en la biblioteca.",
+        "unsupported": "No disponible en este editor."
+      },
+      "done": {
+        "duplicate": "{what} duplicado.",
+        "copy": "{what} copiado.",
+        "cut": "{what} cortado.",
+        "paste": "{what} pegado.",
+        "delete": "{what} eliminado. Deshacer lo recupera.",
+        "group": "{what} agrupado.",
+        "ungroup": "{what} desagrupado.",
+        "resetStyle": "Estilo de {what} restablecido.",
+        "saveReusable": "{what} guardado como bloque reutilizable y vinculado aquí.",
+        "savePattern": "Patrón {what} guardado.",
+        "locked": "{what} bloqueado.",
+        "unlocked": "{what} desbloqueado."
+      },
+      "pasteFailed": {
+        "empty": "No hay nada que pegar.",
+        "too-large": "Es demasiado para pegarlo de una vez.",
+        "nesting": "Estos bloques no pueden ir aquí. Selecciona un contenedor adecuado y vuelve a pegar."
+      },
+      "selectRefused": {
+        "parent": "La selección múltiple solo funciona con bloques del mismo contenedor.",
+        "context": "Los bloques del encabezado y de la página no se pueden seleccionar juntos."
+      },
+      "editLocked": "Este bloque está protegido contra la edición. Pide a alguien que pueda gestionar bloqueos que lo desbloquee.",
+      "editLockedManage": "Este bloque está protegido contra la edición. Desbloquéalo desde el menú del bloque para cambiarlo.",
+      "multi": {
+        "title": "{count} bloques seleccionados",
+        "menuHint": "Haz clic derecho o pulsa Mayús+F10 para ver todas las acciones.",
+        "sharedStyle": "Estilo compartido",
+        "styleSubset": "Los cambios de estilo se aplican a {count} de {total} bloques. Se omiten los bloques bloqueados y los que tienen su propio ajuste de estilo.",
+        "noSharedStyle": "Estos bloques no tienen ajustes de estilo en común."
+      },
+      "save": {
+        "reusableTitle": "Guardar como bloque reutilizable",
+        "reusableHint": "La selección se guarda en la biblioteca y aquí se sustituye por una copia vinculada. Edita el bloque guardado y todas las páginas se actualizan.",
+        "patternTitle": "Guardar como patrón",
+        "patternHint": "Se añade una copia de la selección a la biblioteca de patrones. Esta página no cambia.",
+        "nameRequired": "Ponle un nombre al patrón.",
+        "cancel": "Cancelar",
+        "savePattern": "Guardar patrón"
       }
     }
   },

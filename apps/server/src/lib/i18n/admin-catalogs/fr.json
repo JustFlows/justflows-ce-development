@@ -1470,7 +1470,8 @@
         "self": "Un bloc ne peut pas être déposé sur lui-même.",
         "descendant": "Un bloc ne peut pas être déplacé dans son propre contenu.",
         "region": "Les blocs ne peuvent pas être déplacés vers cette zone ici.",
-        "missing": "Ce bloc n’existe plus."
+        "missing": "Ce bloc n’existe plus.",
+        "locked": "Ce bloc est verrouillé à sa place."
       },
       "noTarget": "Non déplacé : relâchez au-dessus d’une zone de dépôt.",
       "moved": "{block} déplacé.",
@@ -1482,7 +1483,7 @@
     "navigator": {
       "title": "Calques",
       "search": "Trouver un bloc",
-      "keysHint": "Flèches pour parcourir, Entrée pour sélectionner, Alt+flèches pour déplacer, F2 pour renommer.",
+      "keysHint": "Flèches pour parcourir, Entrée pour sélectionner, Maj+flèches pour étendre la sélection, Alt+flèches pour déplacer, F2 pour renommer, Maj+F10 pour les actions.",
       "empty": "Aucun bloc pour l’instant.",
       "noMatches": "Aucun bloc ne correspond.",
       "root": "Niveau supérieur",
@@ -1499,6 +1500,82 @@
         "locked": "Verrouillé",
         "unavailable": "Type de bloc indisponible : son extension est peut-être désactivée",
         "dynamic": "Affiche du contenu de la page ou du site"
+      }
+    },
+    "actions": {
+      "menu": "Actions du bloc",
+      "blocks": "{count} blocs",
+      "more": "Plus d’actions pour {block}",
+      "duplicate": "Dupliquer",
+      "copy": "Copier",
+      "cut": "Couper",
+      "paste": "Coller",
+      "delete": "Supprimer",
+      "group": "Grouper",
+      "ungroup": "Dissocier",
+      "resetStyle": "Réinitialiser le style",
+      "saveReusable": "Enregistrer comme bloc réutilisable…",
+      "savePattern": "Enregistrer comme modèle…",
+      "locks": "Verrous",
+      "lock": {
+        "move": "Empêcher le déplacement",
+        "remove": "Empêcher la suppression",
+        "edit": "Empêcher la modification"
+      },
+      "lockedByPolicy": "Seules les personnes autorisées à gérer les verrous peuvent les modifier.",
+      "blocked": {
+        "empty": "Sélectionnez d’abord un bloc.",
+        "mixedParents": "Sélectionnez des blocs côte à côte dans le même conteneur.",
+        "lockedRemove": "Un bloc sélectionné, ou un élément qu’il contient, est protégé contre la suppression.",
+        "lockedMove": "Un bloc sélectionné est verrouillé à sa place.",
+        "lockedEdit": "Un bloc sélectionné est protégé contre la modification.",
+        "nesting": "Le résultat ne serait pas autorisé dans ce conteneur.",
+        "notGroup": "Seul un Groupe ou un Conteneur peut être dissocié.",
+        "noStyle": "Aucun style personnalisé à réinitialiser.",
+        "clipboardEmpty": "Rien n’a encore été copié.",
+        "permission": "Seuls les administrateurs et les éditeurs peuvent enregistrer dans la bibliothèque.",
+        "unsupported": "Non disponible dans cet éditeur."
+      },
+      "done": {
+        "duplicate": "{what} dupliqué.",
+        "copy": "{what} copié.",
+        "cut": "{what} coupé.",
+        "paste": "{what} collé.",
+        "delete": "{what} supprimé. Annuler le rétablit.",
+        "group": "{what} groupé.",
+        "ungroup": "{what} dissocié.",
+        "resetStyle": "Style de {what} réinitialisé.",
+        "saveReusable": "{what} enregistré comme bloc réutilisable et lié ici.",
+        "savePattern": "Modèle {what} enregistré.",
+        "locked": "{what} verrouillé.",
+        "unlocked": "{what} déverrouillé."
+      },
+      "pasteFailed": {
+        "empty": "Rien à coller.",
+        "too-large": "C’est trop volumineux pour être collé en une fois.",
+        "nesting": "Ces blocs ne peuvent pas aller ici. Sélectionnez un conteneur adapté et collez à nouveau."
+      },
+      "selectRefused": {
+        "parent": "La sélection multiple ne fonctionne que pour des blocs du même conteneur.",
+        "context": "Les blocs de l’en-tête et de la page ne peuvent pas être sélectionnés ensemble."
+      },
+      "editLocked": "Ce bloc est protégé contre la modification. Demandez à une personne autorisée à gérer les verrous de le déverrouiller.",
+      "editLockedManage": "Ce bloc est protégé contre la modification. Déverrouillez-le depuis le menu du bloc pour le modifier.",
+      "multi": {
+        "title": "{count} blocs sélectionnés",
+        "menuHint": "Clic droit ou Maj+F10 pour toutes les actions.",
+        "sharedStyle": "Style commun",
+        "styleSubset": "Les changements de style s’appliquent à {count} blocs sur {total}. Les blocs verrouillés et ceux qui ont leur propre réglage de style sont ignorés.",
+        "noSharedStyle": "Ces blocs n’ont aucun réglage de style en commun."
+      },
+      "save": {
+        "reusableTitle": "Enregistrer comme bloc réutilisable",
+        "reusableHint": "La sélection est enregistrée dans la bibliothèque et remplacée ici par une copie liée. Modifiez le bloc enregistré et toutes les pages suivent.",
+        "patternTitle": "Enregistrer comme modèle",
+        "patternHint": "Une copie de la sélection est ajoutée à la bibliothèque de modèles. Cette page ne change pas.",
+        "nameRequired": "Donnez un nom au modèle.",
+        "cancel": "Annuler",
+        "savePattern": "Enregistrer le modèle"
       }
     }
   },

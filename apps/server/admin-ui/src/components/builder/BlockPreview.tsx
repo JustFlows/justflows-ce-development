@@ -3,7 +3,8 @@ import MediaBlock from "../MediaBlock";
 import { useT } from "../../i18n/I18nProvider";
 import { cloneElement, createContext, isValidElement, useContext, useEffect, useRef, useState, type ReactElement } from "react";
 import type { BlockNode } from "./types";
-import { esc, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
+import { esc, isBlockLocked, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
+import { isExtendClick, useBuilderSelection } from "./selection-context";
 import MotionPreview from "./MotionPreview";
 import { applyMergeTags, useMergeTags } from "../../lib/merge-tags";
 import { ImagePickerPopover, MediaPickerPopover, readEditableText } from "./InlineEditable";
@@ -75,8 +76,9 @@ export function BlockPreview({
   const tags = useMergeTags();
   const text = (value: unknown) => applyMergeTags(String(value ?? ""), tags);
   const isSelected = selectedId === block.id;
-  /** Declared inline fields are editable while their block is selected. */
-  const active = Boolean(isSelected && onUpdateProps);
+  const selection = useBuilderSelection();
+  /** Declared inline fields are editable while their block is selected, unless it is edit-locked. */
+  const active = Boolean(isSelected && onUpdateProps && !isBlockLocked(block, "edit"));
   const commitProps = (next: Record<string, unknown>) => onUpdateProps?.(block.id, next);
   const [mediaPicker, setMediaPicker] = useState<{
     top: number;
@@ -122,6 +124,7 @@ export function BlockPreview({
           onSelect
             ? (e) => {
                 e.stopPropagation();
+                if (selection && isExtendClick(e) && selection.extend(block.id, e)) return;
                 onSelect(block.id);
               }
             : undefined

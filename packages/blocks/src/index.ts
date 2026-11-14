@@ -182,3 +182,16 @@ export {
   resolveInlineFields,
 } from "./inline.js";
 export type { BlockInlineFields, InlineFieldMode, InlineFieldSpec, InlineFormat } from "./inline.js";
+export { blockLockFlags, blockLockViolations, isBlockLocked } from "./block-locks.js";
+export type { BlockLockRule, BlockLockViolation } from "./block-locks.js";
+export {
+  BLOCK_CLIPBOARD_FORMAT,
+  BLOCK_CLIPBOARD_MAX_CHARS,
+  BLOCK_CLIPBOARD_MAX_NODES,
+  BLOCK_CLIPBOARD_MIME,
+  looksLikeBlockClipboard,
+  parseBlockClipboard,
+  plainTextToBlocks,
+  serializeBlockClipboard,
+} from "./block-clipboard.js";
+export type { BlockClipboardParse, BlockClipboardPayload, ClipboardBlock } from "./block-clipboard.js";

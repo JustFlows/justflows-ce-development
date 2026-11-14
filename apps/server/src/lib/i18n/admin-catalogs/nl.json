@@ -1467,7 +1467,8 @@
         "self": "Een blok kan niet op zichzelf worden neergezet.",
         "descendant": "Een blok kan niet in zijn eigen inhoud worden verplaatst.",
         "region": "Blokken kunnen hier niet naar dat gebied worden verplaatst.",
-        "missing": "Dat blok bestaat niet meer."
+        "missing": "Dat blok bestaat niet meer.",
+        "locked": "Dit blok zit vast op zijn plek."
       },
       "noTarget": "Niet verplaatst: laat los boven een neerzetvak.",
       "moved": "{block} verplaatst.",
@@ -1479,7 +1480,7 @@
     "navigator": {
       "title": "Lagen",
       "search": "Zoek een blok",
-      "keysHint": "Pijltjes om te bladeren, Enter om te selecteren, Alt+pijltjes om te verplaatsen, F2 om te hernoemen.",
+      "keysHint": "Pijltjes om te bladeren, Enter om te selecteren, Shift+pijltjes om meer te selecteren, Alt+pijltjes om te verplaatsen, F2 om te hernoemen, Shift+F10 voor acties.",
       "empty": "Nog geen blokken.",
       "noMatches": "Geen blokken gevonden.",
       "root": "Bovenste niveau",
@@ -1496,6 +1497,82 @@
         "locked": "Vergrendeld",
         "unavailable": "Bloktype niet beschikbaar: de plug-in staat mogelijk uit",
         "dynamic": "Toont inhoud van de pagina of site"
+      }
+    },
+    "actions": {
+      "menu": "Blokacties",
+      "blocks": "{count} blokken",
+      "more": "Meer acties voor {block}",
+      "duplicate": "Dupliceren",
+      "copy": "Kopiëren",
+      "cut": "Knippen",
+      "paste": "Plakken",
+      "delete": "Verwijderen",
+      "group": "Groeperen",
+      "ungroup": "Groep opheffen",
+      "resetStyle": "Stijl herstellen",
+      "saveReusable": "Opslaan als herbruikbaar blok…",
+      "savePattern": "Opslaan als patroon…",
+      "locks": "Vergrendelingen",
+      "lock": {
+        "move": "Verplaatsen voorkomen",
+        "remove": "Verwijderen voorkomen",
+        "edit": "Bewerken voorkomen"
+      },
+      "lockedByPolicy": "Alleen wie vergrendelingen mag beheren, kan dit wijzigen.",
+      "blocked": {
+        "empty": "Selecteer eerst een blok.",
+        "mixedParents": "Selecteer blokken die naast elkaar in dezelfde container staan.",
+        "lockedRemove": "Een geselecteerd blok, of iets erin, is vergrendeld tegen verwijderen.",
+        "lockedMove": "Een geselecteerd blok zit vast op zijn plek.",
+        "lockedEdit": "Een geselecteerd blok is vergrendeld tegen bewerken.",
+        "nesting": "Het resultaat is in deze container niet toegestaan.",
+        "notGroup": "Alleen een Groep of Container kan worden opgeheven.",
+        "noStyle": "Er is geen eigen stijl om te herstellen.",
+        "clipboardEmpty": "Er is nog niets gekopieerd.",
+        "permission": "Alleen beheerders en redacteuren kunnen in de bibliotheek opslaan.",
+        "unsupported": "Niet beschikbaar in deze editor."
+      },
+      "done": {
+        "duplicate": "{what} gedupliceerd.",
+        "copy": "{what} gekopieerd.",
+        "cut": "{what} geknipt.",
+        "paste": "{what} geplakt.",
+        "delete": "{what} verwijderd. Ongedaan maken zet het terug.",
+        "group": "{what} gegroepeerd.",
+        "ungroup": "Groep {what} opgeheven.",
+        "resetStyle": "Stijl van {what} hersteld.",
+        "saveReusable": "{what} opgeslagen als herbruikbaar blok en hier gekoppeld.",
+        "savePattern": "Patroon {what} opgeslagen.",
+        "locked": "{what} vergrendeld.",
+        "unlocked": "{what} ontgrendeld."
+      },
+      "pasteFailed": {
+        "empty": "Er is niets om te plakken.",
+        "too-large": "Dat is te veel om in één keer te plakken.",
+        "nesting": "Deze blokken kunnen hier niet staan. Selecteer een passende container en plak opnieuw."
+      },
+      "selectRefused": {
+        "parent": "Meerdere blokken selecteren kan alleen binnen dezelfde container.",
+        "context": "Blokken in de header en op de pagina kunnen niet samen worden geselecteerd."
+      },
+      "editLocked": "Dit blok is vergrendeld tegen bewerken. Vraag iemand die vergrendelingen beheert om het te ontgrendelen.",
+      "editLockedManage": "Dit blok is vergrendeld tegen bewerken. Ontgrendel het via het blokmenu om het te wijzigen.",
+      "multi": {
+        "title": "{count} blokken geselecteerd",
+        "menuHint": "Klik met rechts of druk op Shift+F10 voor alle acties.",
+        "sharedStyle": "Gedeelde stijl",
+        "styleSubset": "Stijlwijzigingen gelden voor {count} van {total} blokken. Vergrendelde blokken en blokken met een eigen stijlinstelling worden overgeslagen.",
+        "noSharedStyle": "Deze blokken hebben geen stijlinstellingen gemeen."
+      },
+      "save": {
+        "reusableTitle": "Opslaan als herbruikbaar blok",
+        "reusableHint": "De selectie wordt in de bibliotheek opgeslagen en hier vervangen door een gekoppelde kopie. Bewerk het opgeslagen blok en elke pagina volgt.",
+        "patternTitle": "Opslaan als patroon",
+        "patternHint": "Een kopie van de selectie wordt aan de patroonbibliotheek toegevoegd. Deze pagina verandert niet.",
+        "nameRequired": "Geef het patroon een naam.",
+        "cancel": "Annuleren",
+        "savePattern": "Patroon opslaan"
       }
     }
   },

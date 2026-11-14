@@ -27,7 +27,7 @@ import { resolveContentLocale } from "../i18n/languages-db.js";
 import { invalidateContentCache } from "./content-public.js";
 import { getRuntimeHooks } from "../plugins/plugin-runtime.js";
 import { isHookAbortError } from "@justflows/core";
-import { sanitizeBlockDocument } from "@justflows/blocks";
+import { blockLockViolations, sanitizeBlockDocument, type BlockLockViolation } from "@justflows/blocks";
 import { defaultBlocksForContentType, isEmptyBlockDocument } from "./default-content-blocks.js";
 import { getContentTypeBySlug } from "./content-types-db.js";
 import { auditLog } from "../security/audit-log.js";
@@ -94,6 +94,33 @@ export function workingRevisionConflict(
   };
 }
 export type PatchContentInput = z.infer<typeof PatchContentSchema>;
+
+/**
+ * The block locks a write would break (justflows-ce#298), compared against
+ * what the editor last saved: the draft of a published entry when there is
+ * one, else the entry itself. Callers skip this for actors holding
+ * `content:locks:manage`.
+ */
+export async function lockViolationsForWrite(
+  row: Record<string, unknown>,
+  nextBlocks: unknown,
+  siteId: string,
+): Promise<BlockLockViolation[]> {
+  if (nextBlocks === undefined) return [];
+  const working = await getWorkingRevision(String(row.id), siteId);
+  const base = working ? revisionToSnapshot(working) : rowToSnapshot(row);
+  return blockLockViolations(sanitizeBlockDocument(base.blocks).blocks, sanitizeBlockDocument(nextBlocks).blocks);
+}
+
+/** The 403 body for a write that breaks block locks. */
+export function blockLockedBody(violations: BlockLockViolation[]): Record<string, unknown> {
+  return {
+    code: "block_locked",
+    error: "This change moves, removes, or edits a locked block. Ask someone who can manage locks to unlock it.",
+    violations: violations.slice(0, 20),
+  };
+}
+
 
 export type ContentActor = { siteId: string; userId: string; role: string };
 

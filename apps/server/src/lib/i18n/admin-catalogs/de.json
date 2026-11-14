@@ -1470,7 +1470,8 @@
         "self": "Ein Block kann nicht auf sich selbst abgelegt werden.",
         "descendant": "Ein Block kann nicht in seinen eigenen Inhalt verschoben werden.",
         "region": "Blöcke können hier nicht in diesen Bereich verschoben werden.",
-        "missing": "Dieser Block existiert nicht mehr."
+        "missing": "Dieser Block existiert nicht mehr.",
+        "locked": "Dieser Block ist an seinem Platz gesperrt."
       },
       "noTarget": "Nicht verschoben: über einer Ablagefläche loslassen.",
       "moved": "{block} verschoben.",
@@ -1482,7 +1483,7 @@
     "navigator": {
       "title": "Ebenen",
       "search": "Block suchen",
-      "keysHint": "Pfeile zum Blättern, Enter zum Auswählen, Alt+Pfeile zum Verschieben, F2 zum Umbenennen.",
+      "keysHint": "Pfeile zum Blättern, Enter zum Auswählen, Umschalt+Pfeile für Mehrfachauswahl, Alt+Pfeile zum Verschieben, F2 zum Umbenennen, Umschalt+F10 für Aktionen.",
       "empty": "Noch keine Blöcke.",
       "noMatches": "Keine passenden Blöcke.",
       "root": "Oberste Ebene",
@@ -1499,6 +1500,82 @@
         "locked": "Gesperrt",
         "unavailable": "Blocktyp nicht verfügbar: Das Plugin ist eventuell deaktiviert",
         "dynamic": "Zeigt Inhalte der Seite oder Website"
+      }
+    },
+    "actions": {
+      "menu": "Blockaktionen",
+      "blocks": "{count} Blöcke",
+      "more": "Weitere Aktionen für {block}",
+      "duplicate": "Duplizieren",
+      "copy": "Kopieren",
+      "cut": "Ausschneiden",
+      "paste": "Einfügen",
+      "delete": "Löschen",
+      "group": "Gruppieren",
+      "ungroup": "Gruppierung aufheben",
+      "resetStyle": "Stil zurücksetzen",
+      "saveReusable": "Als wiederverwendbaren Block speichern…",
+      "savePattern": "Als Vorlage speichern…",
+      "locks": "Sperren",
+      "lock": {
+        "move": "Verschieben verhindern",
+        "remove": "Entfernen verhindern",
+        "edit": "Bearbeiten verhindern"
+      },
+      "lockedByPolicy": "Nur wer Sperren verwalten darf, kann diese ändern.",
+      "blocked": {
+        "empty": "Wähle zuerst einen Block aus.",
+        "mixedParents": "Wähle Blöcke, die nebeneinander im selben Container stehen.",
+        "lockedRemove": "Ein ausgewählter Block oder etwas darin ist gegen Entfernen gesperrt.",
+        "lockedMove": "Ein ausgewählter Block ist an seinem Platz gesperrt.",
+        "lockedEdit": "Ein ausgewählter Block ist gegen Bearbeiten gesperrt.",
+        "nesting": "Das Ergebnis ist in diesem Container nicht erlaubt.",
+        "notGroup": "Nur eine Gruppe oder ein Container kann aufgelöst werden.",
+        "noStyle": "Kein eigener Stil zum Zurücksetzen.",
+        "clipboardEmpty": "Noch nichts kopiert.",
+        "permission": "Nur Administratoren und Redakteure können in der Bibliothek speichern.",
+        "unsupported": "In diesem Editor nicht verfügbar."
+      },
+      "done": {
+        "duplicate": "{what} dupliziert.",
+        "copy": "{what} kopiert.",
+        "cut": "{what} ausgeschnitten.",
+        "paste": "{what} eingefügt.",
+        "delete": "{what} gelöscht. Rückgängig stellt es wieder her.",
+        "group": "{what} gruppiert.",
+        "ungroup": "Gruppierung von {what} aufgehoben.",
+        "resetStyle": "Stil von {what} zurückgesetzt.",
+        "saveReusable": "{what} als wiederverwendbarer Block gespeichert und hier verknüpft.",
+        "savePattern": "Vorlage {what} gespeichert.",
+        "locked": "{what} gesperrt.",
+        "unlocked": "{what} entsperrt."
+      },
+      "pasteFailed": {
+        "empty": "Nichts zum Einfügen.",
+        "too-large": "Das ist zu viel, um es auf einmal einzufügen.",
+        "nesting": "Diese Blöcke können hier nicht stehen. Wähle einen passenden Container und füge erneut ein."
+      },
+      "selectRefused": {
+        "parent": "Mehrfachauswahl funktioniert nur für Blöcke im selben Container.",
+        "context": "Blöcke im Header und auf der Seite können nicht zusammen ausgewählt werden."
+      },
+      "editLocked": "Dieser Block ist gegen Bearbeiten gesperrt. Bitte jemanden, der Sperren verwalten darf, ihn zu entsperren.",
+      "editLockedManage": "Dieser Block ist gegen Bearbeiten gesperrt. Entsperre ihn über das Blockmenü, um ihn zu ändern.",
+      "multi": {
+        "title": "{count} Blöcke ausgewählt",
+        "menuHint": "Rechtsklick oder Umschalt+F10 für alle Aktionen.",
+        "sharedStyle": "Gemeinsamer Stil",
+        "styleSubset": "Stiländerungen gelten für {count} von {total} Blöcken. Gesperrte Blöcke und Blöcke mit eigener Stileinstellung werden übersprungen.",
+        "noSharedStyle": "Diese Blöcke haben keine gemeinsamen Stileinstellungen."
+      },
+      "save": {
+        "reusableTitle": "Als wiederverwendbaren Block speichern",
+        "reusableHint": "Die Auswahl wird in der Bibliothek gespeichert und hier durch eine verknüpfte Kopie ersetzt. Bearbeite den gespeicherten Block, und jede Seite übernimmt die Änderung.",
+        "patternTitle": "Als Vorlage speichern",
+        "patternHint": "Eine Kopie der Auswahl wird der Vorlagenbibliothek hinzugefügt. Diese Seite ändert sich nicht.",
+        "nameRequired": "Gib der Vorlage einen Namen.",
+        "cancel": "Abbrechen",
+        "savePattern": "Vorlage speichern"
       }
     }
   },

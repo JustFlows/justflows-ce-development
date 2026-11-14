@@ -81,8 +81,8 @@ interface CanonicalBlockNode {
 - `editor` holds persisted editor-only metadata. It sits beside `props`, never
   inside them, so a block's `render` and `validateProps` never see it and it
   cannot reach public HTML. The label is plain text, capped at 80 characters. Lock
-  flags are stored only when `true`. A lock guards against accidental change
-  and is not a permission: server capability checks are unchanged.
+  flags are stored only when `true`. Locks are enforced on save; see
+  [Locks](#locks).
 - Per-user editor preferences (panel layout, zoom, preview scheme, recent
   blocks) belong in per-user storage. They never go in a document.
 
@@ -96,6 +96,43 @@ interface CanonicalBlockNode {
 - Data imported from outside the editor can have missing, invalid, or duplicate
   ids. `repairBlockIds` fills or replaces only those ids. The first valid
   occurrence keeps its id.
+
+### Locks
+
+`editor.lock` flags limit what an author may do to a block. The editor
+disables locked actions and says why. The server checks the same rules on every
+content write (`PATCH /api/content/:id`, the management API that MCP uses, and
+revision restore). It compares the incoming blocks with the last saved
+draft using `blockLockViolations` from `@justflows/blocks`. A write that breaks
+a lock is refused with 403 and `code: "block_locked"`, listing each `id` and
+`rule`.
+
+| Flag | The server refuses |
+| --- | --- |
+| `move` | A new parent, or a new order among the move-locked siblings. Unlocked neighbours may still be added, removed or reordered. A diff can't tell that apart from moving the locked block, so the editor also refuses dragging or moving it directly. |
+| `remove` | Removing it, including by removing a block that contains it. |
+| `edit` | Any change to its `type` or `props`. Its children are separate blocks with their own locks. |
+| (any) | Adding, changing or removing the flags of a block that already exists (`rule: "lock"`). New blocks may arrive with locks, for example from a pattern. |
+
+People with the `content:locks:manage` capability can lock and unlock blocks,
+and their writes skip the check. Administrators and editors have it by
+default. Copies made by duplicate, copy and paste never keep the original's
+locks.
+
+### Clipboard
+
+Copied blocks are JSON tagged `"format": "justflows/blocks"` (MIME type
+`application/x-justflows-blocks`, with the same text as `text/plain`).
+`parseBlockClipboard` treats clipboard text as untrusted:
+
+- It runs `sanitizeBlockDocument` on the blocks.
+- It caps the size at 1,000,000 characters and 1,000 blocks, and the depth at
+  `BLOCK_MAX_DEPTH`.
+- It gives every pasted block a new id and drops its lock flags.
+- It keeps references to shared items, such as a `core.reusable` `ref`.
+
+Text that isn't builder data is pasted as paragraphs, with HTML characters
+escaped (`plainTextToBlocks`).
 
 ### Nesting
 

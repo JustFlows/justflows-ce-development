@@ -1465,7 +1465,8 @@
         "self": "A block can't be dropped onto itself.",
         "descendant": "A block can't be moved inside its own contents.",
         "region": "Blocks can't be moved into that area here.",
-        "missing": "That block no longer exists."
+        "missing": "That block no longer exists.",
+        "locked": "This block is locked in place."
       },
       "noTarget": "Not moved: release over a drop zone.",
       "moved": "Moved {block}.",
@@ -1477,7 +1478,7 @@
     "navigator": {
       "title": "Layers",
       "search": "Find a block",
-      "keysHint": "Arrows to browse, Enter to select, Alt+arrows to move, F2 to rename.",
+      "keysHint": "Arrows to browse, Enter to select, Shift+arrows to select more, Alt+arrows to move, F2 to rename, Shift+F10 for actions.",
       "empty": "No blocks yet.",
       "noMatches": "No blocks match.",
       "root": "Top level",
@@ -1494,6 +1495,82 @@
         "locked": "Locked",
         "unavailable": "Block type unavailable: its plugin may be off",
         "dynamic": "Shows content from the page or site"
+      }
+    },
+    "actions": {
+      "menu": "Block actions",
+      "blocks": "{count} blocks",
+      "more": "More actions for {block}",
+      "duplicate": "Duplicate",
+      "copy": "Copy",
+      "cut": "Cut",
+      "paste": "Paste",
+      "delete": "Delete",
+      "group": "Group",
+      "ungroup": "Ungroup",
+      "resetStyle": "Reset style",
+      "saveReusable": "Save as reusable block…",
+      "savePattern": "Save as pattern…",
+      "locks": "Locks",
+      "lock": {
+        "move": "Prevent moving",
+        "remove": "Prevent removing",
+        "edit": "Prevent editing"
+      },
+      "lockedByPolicy": "Only people who can manage locks can change these.",
+      "blocked": {
+        "empty": "Select a block first.",
+        "mixedParents": "Select blocks that sit side by side in the same container.",
+        "lockedRemove": "A selected block, or something inside it, is locked against removal.",
+        "lockedMove": "A selected block is locked in place.",
+        "lockedEdit": "A selected block is locked against editing.",
+        "nesting": "The result would not be allowed in this container.",
+        "notGroup": "Only a Group or Container can be ungrouped.",
+        "noStyle": "No custom style to reset.",
+        "clipboardEmpty": "Nothing copied yet.",
+        "permission": "Only administrators and editors can save to the library.",
+        "unsupported": "Not available in this editor."
+      },
+      "done": {
+        "duplicate": "Duplicated {what}.",
+        "copy": "Copied {what}.",
+        "cut": "Cut {what}.",
+        "paste": "Pasted {what}.",
+        "delete": "Deleted {what}. Undo restores it.",
+        "group": "Grouped {what}.",
+        "ungroup": "Ungrouped {what}.",
+        "resetStyle": "Reset the style of {what}.",
+        "saveReusable": "Saved {what} as a reusable block and linked it here.",
+        "savePattern": "Saved the pattern {what}.",
+        "locked": "Locked {what}.",
+        "unlocked": "Unlocked {what}."
+      },
+      "pasteFailed": {
+        "empty": "Nothing to paste.",
+        "too-large": "That is too much to paste at once.",
+        "nesting": "These blocks can't go here. Select a fitting container and paste again."
+      },
+      "selectRefused": {
+        "parent": "Multi-select only works for blocks in the same container.",
+        "context": "Blocks in the header and the page can't be selected together."
+      },
+      "editLocked": "This block is locked against editing. Ask someone who can manage locks to unlock it.",
+      "editLockedManage": "This block is locked against editing. Unlock it from the block menu to change it.",
+      "multi": {
+        "title": "{count} blocks selected",
+        "menuHint": "Right-click or press Shift+F10 for all actions.",
+        "sharedStyle": "Shared style",
+        "styleSubset": "Style changes apply to {count} of {total} blocks. Locked blocks and blocks with their own style setting are skipped.",
+        "noSharedStyle": "These blocks have no style settings in common."
+      },
+      "save": {
+        "reusableTitle": "Save as reusable block",
+        "reusableHint": "The selection is saved to the library and replaced here by a linked copy. Edit the saved block and every page follows.",
+        "patternTitle": "Save as pattern",
+        "patternHint": "A copy of the selection is added to the pattern library. This page does not change.",
+        "nameRequired": "Give the pattern a name.",
+        "cancel": "Cancel",
+        "savePattern": "Save pattern"
       }
     }
   },

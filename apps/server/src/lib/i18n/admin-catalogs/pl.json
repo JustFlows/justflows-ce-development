@@ -1465,7 +1465,8 @@
         "self": "Bloku nie można upuścić na samego siebie.",
         "descendant": "Bloku nie można przenieść do jego własnej zawartości.",
         "region": "Tutaj nie można przenosić bloków do tego obszaru.",
-        "missing": "Ten blok już nie istnieje."
+        "missing": "Ten blok już nie istnieje.",
+        "locked": "Ten blok jest zablokowany na swoim miejscu."
       },
       "noTarget": "Nie przeniesiono: puść nad strefą upuszczania.",
       "moved": "Przeniesiono: {block}.",
@@ -1477,7 +1478,7 @@
     "navigator": {
       "title": "Warstwy",
       "search": "Znajdź blok",
-      "keysHint": "Strzałki — przeglądanie, Enter — wybór, Alt+strzałki — przenoszenie, F2 — zmiana nazwy.",
+      "keysHint": "Strzałki, aby przeglądać, Enter, aby zaznaczyć, Shift+strzałki, aby zaznaczyć więcej, Alt+strzałki, aby przenieść, F2, aby zmienić nazwę, Shift+F10, aby otworzyć akcje.",
       "empty": "Brak bloków.",
       "noMatches": "Brak pasujących bloków.",
       "root": "Najwyższy poziom",
@@ -1494,6 +1495,82 @@
         "locked": "Zablokowany",
         "unavailable": "Typ bloku niedostępny: wtyczka może być wyłączona",
         "dynamic": "Pokazuje treść strony lub witryny"
+      }
+    },
+    "actions": {
+      "menu": "Akcje bloku",
+      "blocks": "Bloki: {count}",
+      "more": "Więcej akcji dla: {block}",
+      "duplicate": "Duplikuj",
+      "copy": "Kopiuj",
+      "cut": "Wytnij",
+      "paste": "Wklej",
+      "delete": "Usuń",
+      "group": "Grupuj",
+      "ungroup": "Rozgrupuj",
+      "resetStyle": "Przywróć styl",
+      "saveReusable": "Zapisz jako blok wielokrotnego użytku…",
+      "savePattern": "Zapisz jako wzorzec…",
+      "locks": "Blokady",
+      "lock": {
+        "move": "Zablokuj przenoszenie",
+        "remove": "Zablokuj usuwanie",
+        "edit": "Zablokuj edycję"
+      },
+      "lockedByPolicy": "Tylko osoby zarządzające blokadami mogą to zmienić.",
+      "blocked": {
+        "empty": "Najpierw zaznacz blok.",
+        "mixedParents": "Zaznacz bloki leżące obok siebie w tym samym kontenerze.",
+        "lockedRemove": "Zaznaczony blok lub jego zawartość jest zablokowany przed usunięciem.",
+        "lockedMove": "Zaznaczony blok jest zablokowany na swoim miejscu.",
+        "lockedEdit": "Zaznaczony blok jest zablokowany przed edycją.",
+        "nesting": "Wynik nie byłby dozwolony w tym kontenerze.",
+        "notGroup": "Rozgrupować można tylko Grupę lub Kontener.",
+        "noStyle": "Brak własnego stylu do przywrócenia.",
+        "clipboardEmpty": "Nic jeszcze nie skopiowano.",
+        "permission": "Tylko administratorzy i redaktorzy mogą zapisywać w bibliotece.",
+        "unsupported": "Niedostępne w tym edytorze."
+      },
+      "done": {
+        "duplicate": "Zduplikowano: {what}.",
+        "copy": "Skopiowano: {what}.",
+        "cut": "Wycięto: {what}.",
+        "paste": "Wklejono: {what}.",
+        "delete": "Usunięto: {what}. Cofnij przywraca.",
+        "group": "Zgrupowano: {what}.",
+        "ungroup": "Rozgrupowano: {what}.",
+        "resetStyle": "Przywrócono styl: {what}.",
+        "saveReusable": "Zapisano jako blok wielokrotnego użytku i połączono tutaj: {what}.",
+        "savePattern": "Zapisano wzorzec: {what}.",
+        "locked": "Zablokowano: {what}.",
+        "unlocked": "Odblokowano: {what}."
+      },
+      "pasteFailed": {
+        "empty": "Nie ma nic do wklejenia.",
+        "too-large": "To za dużo, aby wkleić naraz.",
+        "nesting": "Te bloki nie mogą się tu znaleźć. Zaznacz odpowiedni kontener i wklej ponownie."
+      },
+      "selectRefused": {
+        "parent": "Zaznaczanie wielu bloków działa tylko w obrębie jednego kontenera.",
+        "context": "Bloków z nagłówka i ze strony nie można zaznaczyć razem."
+      },
+      "editLocked": "Ten blok jest zablokowany przed edycją. Poproś osobę zarządzającą blokadami o odblokowanie.",
+      "editLockedManage": "Ten blok jest zablokowany przed edycją. Odblokuj go w menu bloku, aby go zmienić.",
+      "multi": {
+        "title": "Zaznaczone bloki: {count}",
+        "menuHint": "Kliknij prawym przyciskiem lub naciśnij Shift+F10, aby zobaczyć wszystkie akcje.",
+        "sharedStyle": "Wspólny styl",
+        "styleSubset": "Zmiany stylu dotyczą {count} z {total} bloków. Zablokowane bloki i bloki z własnym ustawieniem stylu są pomijane.",
+        "noSharedStyle": "Te bloki nie mają wspólnych ustawień stylu."
+      },
+      "save": {
+        "reusableTitle": "Zapisz jako blok wielokrotnego użytku",
+        "reusableHint": "Zaznaczenie zostanie zapisane w bibliotece i zastąpione tutaj połączoną kopią. Edytuj zapisany blok, a każda strona się zaktualizuje.",
+        "patternTitle": "Zapisz jako wzorzec",
+        "patternHint": "Kopia zaznaczenia trafi do biblioteki wzorców. Ta strona się nie zmieni.",
+        "nameRequired": "Nadaj wzorcowi nazwę.",
+        "cancel": "Anuluj",
+        "savePattern": "Zapisz wzorzec"
       }
     }
   },

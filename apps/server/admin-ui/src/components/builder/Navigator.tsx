@@ -16,6 +16,8 @@ import {
 } from "./tree-ops";
 import type { BlockCatalogEntry, BlockNode } from "./types";
 import { useBlockMoveHandle } from "./useBlockMoveHandle";
+import { isBlockLocked } from "@justflows/blocks";
+import { anchorFor, isExtendClick, useBuilderSelection } from "./selection-context";
 
 /** Rows rendered above and below the visible window in a long tree. */
 const OVERSCAN = 12;
@@ -41,6 +43,8 @@ interface NavigatorProps {
 export default function Navigator({ blocks, catalog, selectedId, onSelect, onChange }: NavigatorProps) {
   const { t } = useT();
   const { dragging, announce, rejectionText, typeLabel } = useBuilderDrag();
+  const selection = useBuilderSelection();
+  const isSelected = (id: string) => (selection ? selection.selectedIds.has(id) : id === selectedId);
   const treeId = useId();
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [query, setQuery] = useState("");
@@ -159,6 +163,26 @@ export default function Navigator({ blocks, catalog, selectedId, onSelect, onCha
   function onRowKey(e: React.KeyboardEvent, row: TreeRow, i: number) {
     if (renamingId) return;
     const id = row.node.id;
+    if (selection && ((e.shiftKey && e.key === "F10") || e.key === "ContextMenu")) {
+      e.preventDefault();
+      selection.openMenu(id, anchorFor(e.currentTarget));
+      return;
+    }
+    /** Shift+arrows extend the selection over siblings; Ctrl/Cmd+Space toggles a row. */
+    if (selection && e.shiftKey && !e.altKey && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      e.preventDefault();
+      const next = rows[e.key === "ArrowDown" ? i + 1 : i - 1];
+      if (!next) return;
+      if (!selection.selectedIds.has(id)) onSelect(id);
+      selection.extend(next.node.id, { shiftKey: true, metaKey: false, ctrlKey: false });
+      focusRow(next.node.id);
+      return;
+    }
+    if (selection && (e.ctrlKey || e.metaKey) && e.key === " ") {
+      e.preventDefault();
+      selection.extend(id, { shiftKey: false, metaKey: e.metaKey, ctrlKey: e.ctrlKey });
+      return;
+    }
     if (e.altKey && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
       e.preventDefault();
       applyMove(row, e.key === "ArrowUp" ? "up" : e.key === "ArrowDown" ? "down" : e.key === "ArrowRight" ? "indent" : "outdent");
@@ -232,6 +256,7 @@ export default function Navigator({ blocks, catalog, selectedId, onSelect, onCha
           <ul
             role="tree"
             aria-label={t("builder.navigator.title")}
+            aria-multiselectable={selection ? true : undefined}
             className="jf-navigator__tree"
             style={windowed ? { position: "relative", height: rows.length * NAVIGATOR_ROW_HEIGHT } : undefined}
           >
@@ -247,12 +272,23 @@ export default function Navigator({ blocks, catalog, selectedId, onSelect, onCha
                   domId={rowDomId(treeId, row.node.id)}
                   label={label(row.node)}
                   badges={treeBadges(row.node, catalog)}
-                  selected={row.node.id === selectedId}
+                  selected={isSelected(row.node.id)}
                   tabStop={row.node.id === tabStop}
                   renaming={renamingId === row.node.id}
                   style={windowed ? { position: "absolute", insetInline: 0, top: i * NAVIGATOR_ROW_HEIGHT, height: NAVIGATOR_ROW_HEIGHT } : undefined}
                   onFocus={() => setFocusedId(row.node.id)}
-                  onSelect={() => onSelect(row.node.id)}
+                  onSelect={(e) => {
+                    if (selection && isExtendClick(e) && selection.extend(row.node.id, e)) return;
+                    onSelect(row.node.id);
+                  }}
+                  onContextMenu={
+                    selection
+                      ? (e) => {
+                          e.preventDefault();
+                          selection.openMenu(row.node.id, { x: e.clientX, y: e.clientY });
+                        }
+                      : undefined
+                  }
                   onToggle={() => toggle(row.node.id)}
                   onKeyDown={(e) => onRowKey(e, row, i)}
                   onRename={(value) => rename(row.node.id, value)}
@@ -323,7 +359,8 @@ interface NavigatorRowProps {
   renaming: boolean;
   style?: React.CSSProperties;
   onFocus: () => void;
-  onSelect: () => void;
+  onSelect: (e: React.MouseEvent) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   onToggle: () => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   onRename: (value: string) => void;
@@ -342,6 +379,7 @@ function NavigatorRow({
   style,
   onFocus,
   onSelect,
+  onContextMenu,
   onToggle,
   onKeyDown,
   onRename,
@@ -349,7 +387,7 @@ function NavigatorRow({
   onStartRename,
 }: NavigatorRowProps) {
   const { t } = useT();
-  const { onPointerDown } = useBlockMoveHandle(row.node.id, row.node.type);
+  const { onPointerDown } = useBlockMoveHandle(row.node.id, row.node.type, isBlockLocked(row.node, "move"));
   return (
     <li
       id={domId}
@@ -366,6 +404,7 @@ function NavigatorRow({
         if (e.target === e.currentTarget) onFocus();
       }}
       onClick={onSelect}
+      onContextMenu={onContextMenu}
       onDoubleClick={onStartRename}
       onKeyDown={onKeyDown}
       onPointerDown={renaming ? undefined : onPointerDown}

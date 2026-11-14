@@ -12,6 +12,8 @@ export const USER_CAPABILITIES = [
   "content:revisions:read",
   "content:revisions:restore",
   "content:revisions:discard",
+  /** Lock and unlock blocks; without it, locked blocks cannot be moved, removed, or edited (justflows-ce#298). */
+  "content:locks:manage",
   "media:read",
   "media:upload",
   "media:delete",
@@ -95,6 +97,7 @@ export const ROLE_CAPABILITIES: Record<string, UserCapability[]> = {
     "content:revisions:read",
     "content:revisions:restore",
     "content:revisions:discard",
+    "content:locks:manage",
     "media:read",
     "media:upload",
     "media:delete",

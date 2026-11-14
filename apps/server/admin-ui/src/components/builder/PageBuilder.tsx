@@ -1,12 +1,13 @@
 import { useT } from "../../i18n/I18nProvider";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { BLOCK_CLIPBOARD_MIME, isBlockLocked, type EditorLockFlag } from "@justflows/blocks";
 import type { BlockDocument, BlockCatalogEntry, BlockNode } from "./types";
 import BlockLibrary from "./BlockLibrary";
 import BlockInspector from "./BlockInspector";
 import Navigator from "./Navigator";
 import { CORE_INLINE_FIELDS, InlineFieldsContext } from "./inline-field";
 import { PageCanvas } from "./BlockCanvas";
-import { BuilderDragProvider } from "./DragContext";
+import { BuilderDragProvider, useBuilderDrag, type DropStatus } from "./DragContext";
 import { createBlock } from "./block-defaults";
 import {
   findBlockPath,
@@ -35,7 +36,27 @@ import { PreviewSchemeContext, THEME_PREVIEW_SCOPE, type PreviewScheme } from ".
 import BuilderShell, { type BuilderContext, type BuilderShellBar } from "./shell/BuilderShell";
 import { useBuilderPrefs } from "./shell/builder-prefs";
 import { selectionCrumbs } from "./shell/breadcrumbs";
-import { useOptionalSessionUserId } from "../SessionProvider";
+import { useOptionalCapability, useOptionalSessionRole, useOptionalSessionUserId } from "../SessionProvider";
+import { uid } from "../../lib/uid";
+import {
+  actionStates,
+  duplicateBlocks,
+  extendSelection,
+  groupBlocks,
+  insertBlocksAt,
+  pasteTarget,
+  removeBlocks,
+  resetBlockStyles,
+  siblingSet,
+  ungroupBlock,
+  type BlockAction,
+} from "./block-actions";
+import BlockActionsMenu from "./BlockActionsMenu";
+import MultiSelectionInspector from "./MultiSelectionInspector";
+import SaveSelectionDialog, { type SaveKind } from "./SaveSelectionDialog";
+import { blocksFromClipboard, canPasteBlocks, readClipboardText, writeBlockClipboard } from "./builder-clipboard";
+import { saveBlockPattern, saveReusableBlocks } from "./builder-library";
+import { BuilderSelectionContext, anchorFor, type BuilderSelection, type MenuAnchor, type SelectModifiers } from "./selection-context";
 
 const PREVIEW_SCHEME_KEY = "jf-builder-preview-scheme";
 
@@ -104,7 +125,22 @@ export default function PageBuilder({
   const { t } = useT();
   const [prefs, setPrefs] = useBuilderPrefs(useOptionalSessionUserId());
   const shellContext: BuilderContext = context ?? (headerOnly ? "header" : isPage ? "page" : "post");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  /**
+   * Selected block ids and the anchor a Shift+click range starts from
+   * (justflows-ce#298). One id is an ordinary selection; several are always
+   * siblings of one parent in one region.
+   */
+  const [selection, setSelection] = useState<{ ids: string[]; anchor: string | null }>({ ids: [], anchor: null });
+  const setSelectedId = useCallback(
+    (id: string | null) => setSelection(id ? { ids: [id], anchor: id } : { ids: [], anchor: null }),
+    [],
+  );
+  const [menu, setMenu] = useState<MenuAnchor | null>(null);
+  const [saveDialog, setSaveDialog] = useState<SaveKind | null>(null);
+  const announceRef = useRef<(status: DropStatus) => void>(() => {});
+  const canManageLocks = useOptionalCapability("content:locks:manage");
+  const role = useOptionalSessionRole();
+  const canSaveLibrary = role === "administrator" || role === "editor";
   const [previewScheme, setPreviewSchemeState] = useState<PreviewScheme>(initialPreviewScheme);
   const setPreviewScheme = (scheme: PreviewScheme) => {
     setPreviewSchemeState(scheme);
@@ -164,6 +200,20 @@ export default function PageBuilder({
   );
   const blocks = Array.isArray(value?.blocks) ? value.blocks : [];
   const headerBlocks = Array.isArray(pageHeader.blocks) ? (pageHeader.blocks as BlockNode[]) : [];
+  /** Ids that still exist after an undo, a remote reload, or a delete. */
+  const selectedIds = useMemo(
+    () =>
+      selection.ids.filter(
+        (id) => id === HEADER_SELECTED_ID || Boolean(findBlockPath(blocks, id) || findBlockPath(headerBlocks, id)),
+      ),
+    [selection.ids, blocks, headerBlocks],
+  );
+  const selectedId =
+    selectedIds.length === 0
+      ? null
+      : selection.anchor && selectedIds.includes(selection.anchor)
+        ? selection.anchor
+        : selectedIds[selectedIds.length - 1]!;
 
   const history = useBuilderHistory<BlockNode[]>(
     blocks,
@@ -327,6 +377,273 @@ export default function PageBuilder({
     [selectedId, handleSyncBlock],
   );
 
+  /**
+   * The block list the selection lives in. The header chrome and the page body
+   * are separate regions; a selection never spans both.
+   */
+  const regionIsHeader = Boolean(onHeaderChange) && (selectedInHeader || (headerOnly && selectedId !== HEADER_SELECTED_ID));
+  const regionBlocks = regionIsHeader ? headerBlocks : blocks;
+  const emitRegion = regionIsHeader ? emitHeaderBlocks : emit;
+  const actionIds = useMemo(() => selectedIds.filter((id) => id !== HEADER_SELECTED_ID), [selectedIds]);
+  const states = useMemo(
+    () =>
+      actionStates({
+        blocks: regionBlocks,
+        selection: actionIds,
+        catalog: catalogMap,
+        hasClipboard: canPasteBlocks(),
+        canSaveLibrary,
+        librarySaves: true,
+      }),
+    [regionBlocks, actionIds, catalogMap, canSaveLibrary, menu],
+  );
+  const selectedNodes = useMemo(() => siblingSet(regionBlocks, actionIds)?.nodes ?? [], [regionBlocks, actionIds]);
+  const lockFlags = useMemo(() => {
+    const flags = new Set<EditorLockFlag>();
+    if (selectedNodes.length === 0) return flags;
+    for (const flag of ["move", "remove", "edit"] as const) {
+      if (selectedNodes.every((node) => isBlockLocked(node, flag))) flags.add(flag);
+    }
+    return flags;
+  }, [selectedNodes]);
+
+  const announce = (tone: DropStatus["tone"], text: string) => announceRef.current({ tone, text });
+  const blockName = (node: BlockNode) => node.editor?.label || catalogMap.get(node.type)?.title || node.type;
+  const countText = (count: number, one: BlockNode | undefined) =>
+    count === 1 && one ? blockName(one) : t("builder.actions.blocks", { count });
+
+  const selectMany = (ids: string[]) =>
+    setSelection({ ids, anchor: ids[ids.length - 1] ?? null });
+
+  /** Place blocks from the clipboard next to the selection, or say why they cannot go anywhere. */
+  const pasteBlocks = useCallback(
+    (text: string | null) => {
+      const parsed = blocksFromClipboard(text);
+      if (!parsed.ok) {
+        announce("error", t(`builder.actions.pasteFailed.${parsed.reason}`));
+        return;
+      }
+      const target = pasteTarget(regionBlocks, actionIds, parsed.blocks, catalogMap);
+      if (!target) {
+        announce("error", t("builder.actions.pasteFailed.nesting"));
+        return;
+      }
+      emitRegion(insertBlocksAt(regionBlocks, target.parentId, target.index, parsed.blocks));
+      selectMany(parsed.blocks.map((b) => b.id));
+      announce("ok", t("builder.actions.done.paste", { what: countText(parsed.blocks.length, parsed.blocks[0]) }));
+    },
+    [regionBlocks, actionIds, catalogMap, emitRegion, t],
+  );
+
+  const runAction = useCallback(
+    (action: BlockAction) => {
+      const state = states[action];
+      if (!state.ok) {
+        announce("error", t(`builder.actions.blocked.${state.reason}`));
+        return;
+      }
+      if (action === "paste") {
+        void readClipboardText().then(pasteBlocks);
+        return;
+      }
+      const nodes = selectedNodes;
+      const what = countText(nodes.length, nodes[0]);
+      switch (action) {
+        case "duplicate": {
+          const out = duplicateBlocks(regionBlocks, actionIds, uid);
+          if (!out) return;
+          emitRegion(out.blocks);
+          selectMany(out.ids);
+          break;
+        }
+        case "copy":
+          writeBlockClipboard(nodes);
+          break;
+        case "cut":
+          writeBlockClipboard(nodes);
+          emitRegion(removeBlocks(regionBlocks, actionIds));
+          setSelectedId(null);
+          break;
+        case "delete":
+          emitRegion(removeBlocks(regionBlocks, actionIds));
+          setSelectedId(null);
+          break;
+        case "group": {
+          const out = groupBlocks(regionBlocks, actionIds, uid);
+          if (!out) return;
+          emitRegion(out.blocks);
+          setSelectedId(out.id);
+          break;
+        }
+        case "ungroup": {
+          const out = ungroupBlock(regionBlocks, actionIds[0]!);
+          if (!out) return;
+          emitRegion(out.blocks);
+          selectMany(out.ids);
+          break;
+        }
+        case "resetStyle":
+          emitRegion(resetBlockStyles(regionBlocks, actionIds));
+          break;
+        case "saveReusable":
+        case "savePattern":
+          setSaveDialog(action === "saveReusable" ? "reusable" : "pattern");
+          return;
+      }
+      announce("ok", t(`builder.actions.done.${action}`, { what }));
+    },
+    [states, selectedNodes, regionBlocks, actionIds, emitRegion, pasteBlocks, setSelectedId, t],
+  );
+
+  const toggleLock = useCallback(
+    (flag: EditorLockFlag) => {
+      if (!canManageLocks || selectedNodes.length === 0) return;
+      const on = !lockFlags.has(flag);
+      const next = actionIds.reduce(
+        (acc, id) =>
+          updateBlockTree(acc, id, (node) => {
+            const lock = { ...(node.editor?.lock ?? {}) };
+            if (on) lock[flag] = true;
+            else delete lock[flag];
+            const editor = { ...(node.editor ?? {}) };
+            if (Object.keys(lock).length > 0) editor.lock = lock;
+            else delete editor.lock;
+            const out: BlockNode = { ...node };
+            if (Object.keys(editor).length > 0) out.editor = editor;
+            else delete out.editor;
+            return out;
+          }),
+        regionBlocks,
+      );
+      emitRegion(next);
+      announce("ok", t(on ? "builder.actions.done.locked" : "builder.actions.done.unlocked", { what: countText(selectedNodes.length, selectedNodes[0]) }));
+    },
+    [canManageLocks, selectedNodes, lockFlags, actionIds, regionBlocks, emitRegion, t],
+  );
+
+  const saveSelection = useCallback(
+    async (kind: SaveKind, input: { name: string; synced: boolean }) => {
+      const nodes = selectedNodes;
+      if (kind === "pattern") {
+        await saveBlockPattern(
+          { title: input.name, description: t("builder.patterns.saveDescription"), blocks: nodes, synced: input.synced },
+          t("builder.patterns.saveError"),
+        );
+        announce("ok", t("builder.actions.done.savePattern", { what: input.name }));
+        return;
+      }
+      const ref = await saveReusableBlocks(input.name, nodes, t("ui.reusablePanel.couldNotSave"));
+      reloadReusable();
+      const set = siblingSet(regionBlocks, actionIds);
+      if (!set) return;
+      const reference: BlockNode = { id: uid(), type: "core.reusable", version: 1, props: { ref } };
+      const without = removeBlocks(regionBlocks, set.ids);
+      emitRegion(insertBlocksAt(without, set.parentId, set.indices[0]!, [reference]));
+      setSelectedId(reference.id);
+      announce("ok", t("builder.actions.done.saveReusable", { what: input.name || countText(nodes.length, nodes[0]) }));
+    },
+    [selectedNodes, regionBlocks, actionIds, emitRegion, reloadReusable, setSelectedId, t],
+  );
+
+  /** Ctrl/Cmd+click toggles a block, Shift+click selects the sibling range from the anchor. */
+  const extend = useCallback(
+    (id: string, mods: SelectModifiers) => {
+      if (!(mods.shiftKey || mods.metaKey || mods.ctrlKey)) return false;
+      const list = findBlockPath(blocks, id) ? blocks : headerBlocks;
+      const current = selection.ids.filter((x) => x !== HEADER_SELECTED_ID);
+      const result = extendSelection(list, current, selection.anchor, id, mods.shiftKey ? "range" : "toggle");
+      if (result.refused) announce("error", t(`builder.actions.selectRefused.${result.refused}`));
+      setSelection({ ids: result.ids, anchor: result.anchor });
+      return true;
+    },
+    [blocks, headerBlocks, selection, t],
+  );
+
+  const openMenu = useCallback(
+    (id: string, at: MenuAnchor) => {
+      if (!selection.ids.includes(id)) setSelectedId(id);
+      setMenu(at);
+    },
+    [selection.ids, setSelectedId],
+  );
+
+  const selectionContext = useMemo<BuilderSelection>(
+    () => ({ selectedIds: new Set(selectedIds), extend, openMenu }),
+    [selectedIds, extend, openMenu],
+  );
+
+  /**
+   * Keyboard shortcuts and clipboard events for the selection. They stay out of
+   * the way of text editing: anything typed in a field, an inline editor, a
+   * menu, or a dialog is left alone.
+   */
+  const shortcutState = useRef({ runAction, pasteBlocks, actionIds, selectedNodes, multi: selectedIds.length > 1, setSelectedId, selectedId });
+  shortcutState.current = { runAction, pasteBlocks, actionIds, selectedNodes, multi: selectedIds.length > 1, setSelectedId, selectedId };
+  useEffect(() => {
+    if (!enableKeyboardShortcut) return;
+    const editing = (target: EventTarget | null) =>
+      target instanceof Element &&
+      Boolean(target.closest("input, textarea, select, [contenteditable='true'], [role='menu'], [role='dialog']"));
+    const textSelected = () => Boolean(window.getSelection()?.toString());
+
+    const onKey = (e: KeyboardEvent) => {
+      if (editing(e.target) || e.defaultPrevented) return;
+      const state = shortcutState.current;
+      if (state.actionIds.length === 0) return;
+      const mod = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+      let action: BlockAction | null = null;
+      if (mod && !e.shiftKey && key === "d") action = "duplicate";
+      else if (mod && key === "g") action = e.shiftKey ? "ungroup" : "group";
+      else if (!mod && (e.key === "Delete" || e.key === "Backspace")) action = "delete";
+      else if ((e.shiftKey && e.key === "F10") || e.key === "ContextMenu") {
+        e.preventDefault();
+        const el = document.querySelector(`[data-block-id="${CSS.escape(state.selectedId ?? "")}"]`);
+        setMenu(anchorFor(el));
+        return;
+      } else if (e.key === "Escape" && state.multi) {
+        e.preventDefault();
+        state.setSelectedId(state.selectedId);
+        return;
+      }
+      if (!action) return;
+      e.preventDefault();
+      state.runAction(action);
+    };
+    const onCopy = (e: ClipboardEvent, cut: boolean) => {
+      const state = shortcutState.current;
+      if (editing(e.target) || textSelected() || state.actionIds.length === 0) return;
+      e.preventDefault();
+      if (cut) {
+        state.runAction("cut");
+        return;
+      }
+      const text = writeBlockClipboard(state.selectedNodes);
+      e.clipboardData?.setData(BLOCK_CLIPBOARD_MIME, text);
+      e.clipboardData?.setData("text/plain", text);
+      state.runAction("copy");
+    };
+    const onPaste = (e: ClipboardEvent) => {
+      if (editing(e.target)) return;
+      const text = e.clipboardData?.getData(BLOCK_CLIPBOARD_MIME) || e.clipboardData?.getData("text/plain") || null;
+      if (!text) return;
+      e.preventDefault();
+      shortcutState.current.pasteBlocks(text);
+    };
+    const copy = (e: ClipboardEvent) => onCopy(e, false);
+    const cut = (e: ClipboardEvent) => onCopy(e, true);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("copy", copy);
+    document.addEventListener("cut", cut);
+    document.addEventListener("paste", onPaste);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("copy", copy);
+      document.removeEventListener("cut", cut);
+      document.removeEventListener("paste", onPaste);
+    };
+  }, [enableKeyboardShortcut]);
+
   const navLabels = useMemo(
     () => previewNavLabels(pageHeader, menus, siteDefaultSlug),
     [pageHeader, menus, siteDefaultSlug],
@@ -377,8 +694,19 @@ export default function PageBuilder({
     </div>
   );
 
+  const editLocked = Boolean(selectedBlock && isBlockLocked(selectedBlock, "edit"));
   const inspector =
-    (selectedId === HEADER_SELECTED_ID || (headerOnly && !selectedBlock)) &&
+    actionIds.length > 1 ? (
+      <MultiSelectionInspector
+        nodes={selectedNodes}
+        catalog={catalogMap}
+        states={states}
+        onRun={runAction}
+        onChangeProps={(changes) =>
+          emitRegion([...changes].reduce((acc, [id, props]) => updateBlockProps(acc, id, props), regionBlocks))
+        }
+      />
+    ) : (selectedId === HEADER_SELECTED_ID || (headerOnly && !selectedBlock)) &&
     enableHeader &&
     onHeaderChange ? (
       <HeaderInspector
@@ -389,6 +717,12 @@ export default function PageBuilder({
         libraryMode={headerOnly}
       />
     ) : selectedBlock ? (
+      <fieldset className="jf-inspector-lock" disabled={editLocked}>
+      {editLocked && (
+        <p className="jf-inspector-lock__notice" role="note">
+          {t(canManageLocks ? "builder.actions.editLockedManage" : "builder.actions.editLocked")}
+        </p>
+      )}
       <BlockInspector
         block={selectedBlock}
         catalogEntry={catalogMap.get(selectedBlock.type)}
@@ -403,6 +737,7 @@ export default function PageBuilder({
         tab={prefs.inspectorTab}
         onTabChange={(inspectorTab) => setPrefs({ inspectorTab })}
       />
+      </fieldset>
     ) : (
       <PageJsonPanel
         blocks={blocks}
@@ -424,6 +759,8 @@ export default function PageBuilder({
         onHeaderBlocksChange={enableHeader && onHeaderChange ? emitHeaderBlocks : undefined}
         onSelect={setSelectedId}
       >
+        <AnnounceBridge target={announceRef} />
+        <BuilderSelectionContext.Provider value={selectionContext}>
         {compact ? (
           <div
             style={{
@@ -490,9 +827,36 @@ export default function PageBuilder({
             canvas={canvas}
           />
         )}
+        {menu && actionIds.length > 0 && (
+          <BlockActionsMenu
+            anchor={menu}
+            states={states}
+            lock={{ flags: lockFlags, canManage: canManageLocks }}
+            onRun={runAction}
+            onToggleLock={toggleLock}
+            onClose={() => setMenu(null)}
+          />
+        )}
+        {saveDialog && (
+          <SaveSelectionDialog
+            kind={saveDialog}
+            onSave={(input) => saveSelection(saveDialog, input)}
+            onClose={() => setSaveDialog(null)}
+          />
+        )}
+        </BuilderSelectionContext.Provider>
       </BuilderDragProvider>
       </PreviewSchemeContext.Provider>
     </MergeTagsContext.Provider>
     </InlineFieldsContext.Provider>
   );
+}
+
+/** Lets the builder announce action results through the drag provider's live region. */
+function AnnounceBridge({ target }: { target: { current: (status: DropStatus) => void } }) {
+  const { announce } = useBuilderDrag();
+  useEffect(() => {
+    target.current = announce;
+  }, [announce, target]);
+  return null;
 }

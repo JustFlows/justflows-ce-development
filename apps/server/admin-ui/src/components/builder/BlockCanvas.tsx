@@ -9,7 +9,8 @@ import { useBuilderDrag } from "./DragContext";
 import { useBlockMoveHandle } from "./useBlockMoveHandle";
 import GridEditor from "./GridEditor";
 import { GRID_BLOCK_TYPE, gridColumns, nextRow } from "./grid";
-import { compactBlockPlacement, parseBlockPlacement } from "@justflows/blocks";
+import { compactBlockPlacement, isBlockLocked, parseBlockPlacement } from "@justflows/blocks";
+import { anchorFor, isExtendClick, useBuilderSelection } from "./selection-context";
 import { inertPreviewHandlers } from "./inert-preview";
 
 const iconBtn: React.CSSProperties = {
@@ -182,10 +183,15 @@ function BlockRow({
 }) {
   const { t } = useT();
   const meta = catalog.get(block.type);
-  const isSelected = selectedId === block.id;
+  const selection = useBuilderSelection();
+  const inMultiSelection = Boolean(selection && selection.selectedIds.size > 1 && selection.selectedIds.has(block.id));
+  const isSelected = selectedId === block.id || inMultiSelection;
   const hasChildren = meta?.supportsChildren ?? false;
   const { dragPayload } = useBuilderDrag();
-  const { onPointerDown } = useBlockMoveHandle(block.id, block.type);
+  const moveLocked = isBlockLocked(block, "move");
+  const removeLocked = subtreeHasLock(block, "remove");
+  const locked = moveLocked || removeLocked || isBlockLocked(block, "edit");
+  const { onPointerDown } = useBlockMoveHandle(block.id, block.type, moveLocked);
   const isBeingMoved = dragPayload.blockId === block.id;
   const children = block.children ?? [];
 
@@ -229,8 +235,18 @@ function BlockRow({
       }}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(isSelected ? null : block.id);
+        if (selection && isExtendClick(e) && selection.extend(block.id, e)) return;
+        onSelect(isSelected && !inMultiSelection ? null : block.id);
       }}
+      onContextMenu={
+        selection
+          ? (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              selection.openMenu(block.id, { x: e.clientX, y: e.clientY });
+            }
+          : undefined
+      }
     >
       <div
         data-builder-chrome="true"
@@ -241,7 +257,7 @@ function BlockRow({
           alignItems: "center",
           gap: "0.5rem",
           padding: depth === 0 ? "0.4rem 0.6rem 0" : "0.25rem 0.35rem 0",
-          cursor: "grab",
+          cursor: moveLocked ? "default" : "grab",
           touchAction: "none",
           userSelect: "none",
         }}
@@ -268,8 +284,14 @@ function BlockRow({
             letterSpacing: "0.04em",
           }}
         >
-          {meta?.icon} {meta?.title ?? block.type}
+          {meta?.icon} {block.editor?.label || meta?.title || block.type}
         </span>
+        {locked && (
+          <span className="jf-canvas-block__lock" title={t("builder.navigator.badge.locked")}>
+            <span aria-hidden="true">🔒</span>
+            <span className="jf-sr-only">{t("builder.navigator.badge.locked")}</span>
+          </span>
+        )}
         <div
           style={{ marginLeft: "auto", display: "flex", gap: "0.2rem" }}
           onClick={(e) => e.stopPropagation()}
@@ -278,7 +300,7 @@ function BlockRow({
             type="button"
             aria-label={t("builder.canvas.moveBlockUp")}
             onClick={() => move(-1)}
-            disabled={index === 0}
+            disabled={index === 0 || moveLocked}
             style={iconBtn}
           >
             ↑
@@ -287,7 +309,7 @@ function BlockRow({
             type="button"
             aria-label={t("builder.canvas.moveBlockDown")}
             onClick={() => move(1)}
-            disabled={index === total - 1}
+            disabled={index === total - 1 || moveLocked}
             style={iconBtn}
           >
             ↓
@@ -295,11 +317,24 @@ function BlockRow({
           <button
             type="button"
             aria-label={t("builder.canvas.removeBlock")}
+            title={removeLocked ? t("builder.actions.blocked.lockedRemove") : undefined}
             onClick={remove}
+            disabled={removeLocked}
             style={{ ...iconBtn, color: "var(--jf-danger)" }}
           >
             ✕
           </button>
+          {selection && (
+            <button
+              type="button"
+              aria-label={t("builder.actions.more", { block: block.editor?.label || meta?.title || block.type })}
+              aria-haspopup="menu"
+              onClick={(e) => selection.openMenu(block.id, anchorFor(e.currentTarget))}
+              style={iconBtn}
+            >
+              ⋯
+            </button>
+          )}
         </div>
       </div>
 
@@ -544,4 +579,10 @@ function AddBlockSlot({
       )}
     </div>
   );
+}
+
+/** Whether the block or anything inside it carries a lock flag. */
+function subtreeHasLock(block: BlockNode, flag: "move" | "remove" | "edit"): boolean {
+  if (isBlockLocked(block, flag)) return true;
+  return (block.children ?? []).some((child) => subtreeHasLock(child, flag));
 }

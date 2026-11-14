@@ -44,6 +44,8 @@ import { auditLog } from "../../lib/security/audit-log.js";
 import { sendServerError } from "../../lib/http/send-error.js";
 import {
   applyDraftUpdate,
+  blockLockedBody,
+  lockViolationsForWrite,
   contentHookRef,
   createContentEntry,
   CreateContentSchema as CreateSchema,
@@ -597,6 +599,13 @@ router.patch("/:id", requireSession, async (req, res) => {
         throw err;
       }
     }
+    if (body.data.blocks !== undefined && !(await userCan(session, "content:locks:manage", contentResource(row)))) {
+      const violations = await lockViolationsForWrite(row, body.data.blocks, session.siteId);
+      if (violations.length) {
+        res.status(403).json(blockLockedBody(violations));
+        return;
+      }
+    }
     const status = String(row.status);
     const wantsPublish = body.data.status === "published";
     const wantsUnpublish =
@@ -941,6 +950,13 @@ router.post("/:id/revisions/:revisionId/restore", requireSession, async (req, re
       const draftConflict = workingRevisionConflict(await getWorkingRevision(id, session.siteId), expectedWorking);
       if (draftConflict) {
         res.status(409).json(draftConflict);
+        return;
+      }
+    }
+    if (!(await userCan(session, "content:locks:manage", contentResource(row)))) {
+      const violations = await lockViolationsForWrite(row, revisionToSnapshot(revision).blocks, session.siteId);
+      if (violations.length) {
+        res.status(403).json(blockLockedBody(violations));
         return;
       }
     }

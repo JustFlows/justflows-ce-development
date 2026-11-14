@@ -20,6 +20,8 @@ import { revalidateOnUpdate } from "../../lib/cache/cache-revalidate.js";
 import { PAGE_HEADER_REF_FIELD, SITE_DEFAULT_HEADER_REF } from "../../lib/rendering/page-header.js";
 import {
   applyDraftUpdate,
+  blockLockedBody,
+  lockViolationsForWrite,
   CreateContentSchema,
   createContentEntry,
   now,
@@ -242,6 +244,16 @@ router.patch("/:id", async (req, res) => {
       status === "published" && body.data.status !== undefined && body.data.status !== "published";
     if ((wantsPublish || (body.data.status !== undefined && Boolean(row.publish_on || row.unpublish_on))) && !(await ensureKeyCan(req, res, "content:publish", resource))) return;
 
+    if (
+      body.data.blocks !== undefined &&
+      !(await keyCan(req.apiKey!, req.apiKeyOwner!, "content:locks:manage", resource))
+    ) {
+      const violations = await lockViolationsForWrite(row, body.data.blocks, req.apiKeyOwner!.siteId);
+      if (violations.length) {
+        res.status(403).json(blockLockedBody(violations));
+        return;
+      }
+    }
     const actor = actorOf(req);
     if (status === "published" && wantsUnpublish) {
       await unpublishRow(row, body.data, actor, res);

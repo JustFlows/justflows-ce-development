@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-import { canNestBlock } from "@justflows/blocks";
+import { canNestBlock, isBlockLocked } from "@justflows/blocks";
 import { findBlockPath, getBlockAtPath } from "./block-tree";
 import type { BlockCatalogEntry, BlockNode } from "./types";
 
@@ -26,7 +26,8 @@ export type DropRejection =
   | "self"
   | "descendant"
   | "region"
-  | "missing";
+  | "missing"
+  | "locked";
 
 export type DropVerdict = { ok: true } | { ok: false; reason: DropRejection };
 
@@ -60,7 +61,8 @@ function contains(node: BlockNode, id: string): boolean {
  * 2. A moved block must still exist (`missing`).
  * 3. A block cannot be dropped onto itself (`self`) or into its own subtree
  *    (`descendant`), which would create a cycle.
- * 4. The parent must accept the child type (`nesting`, see `canNestBlock`).
+ * 4. A move-locked block stays where it is (`locked`, justflows-ce#298).
+ * 5. The parent must accept the child type (`nesting`, see `canNestBlock`).
  */
 export function evaluateDrop({ source, target, blocks, headerBlocks, catalog, regions }: DropRulesInput): DropVerdict {
   if (!regions.has(target.region)) return { ok: false, reason: "region" };
@@ -75,6 +77,7 @@ export function evaluateDrop({ source, target, blocks, headerBlocks, catalog, re
     const node = path ? getBlockAtPath(tree, path) : null;
     if (!node) return { ok: false, reason: "missing" };
     if (target.parentId && contains(node, target.parentId)) return { ok: false, reason: "descendant" };
+    if (isBlockLocked(node, "move")) return { ok: false, reason: "locked" };
   }
 
   if (!canNestBlock(target.parentType, source.type, (type) => catalog.get(type))) {
