@@ -336,6 +336,22 @@ function BlockRow({
           >
             ✕
           </button>
+          {/** Toolbar actions the block's plugin or theme declared (justflows-ce#305), at most three. */}
+          {(meta?.actions ?? [])
+            .filter((action) => action.toolbar)
+            .slice(0, 3)
+            .map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                style={iconBtn}
+                disabled={isBlockLocked(block, "edit")}
+                title={isBlockLocked(block, "edit") ? t("builder.actions.blocked.lockedEdit") : undefined}
+                onClick={() => updateProps(block.id, { ...block.props, ...action.props })}
+              >
+                {action.label}
+              </button>
+            ))}
           {selection && (
             <button
               type="button"

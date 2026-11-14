@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { injectRootAttrs, withBlockAnimation } from "./animation.js";
-import { CONTAINER_LAYOUT_TARGETS, applyContainerLayout, supportsContainerLayout } from "./container-layout.js";
+import { applyContainerLayout, containerLayoutTarget, supportsContainerLayout } from "./container-layout.js";
 import { breakpointCss } from "./responsive.js";
 import { presetRefOf, stylePresetClass } from "./style-presets.js";
 import { blockScopeClass, sanitizeBlockClassName, scopeBlockCss } from "./safe-css.js";
@@ -86,7 +86,7 @@ export function withBlockChrome(html: string, node: BlockChromeNode): string {
   const customCss = scope ? scopeBlockCss(props["css"], `.${scope}`) : "";
   /** Breakpoint overrides (justflows-ce#300) use the same per-block scope class. */
   const type = typeof node.type === "string" ? node.type : "";
-  const layoutClass = CONTAINER_LAYOUT_TARGETS[type];
+  const layoutClass = supportsContainerLayout(type) ? containerLayoutTarget(type) : null;
   const responsiveCss =
     scope && props["breakpoints"]
       ? breakpointCss(props["breakpoints"], supportsContainerLayout(type) ? props["containerLayout"] : undefined, {

@@ -149,6 +149,7 @@ export {
   PLUGIN_DELETE_CONTENT_SETTING,
   pluginShouldDeleteData,
   pluginShouldDeleteContent,
+  BLOCK_API_VERSION,
 } from "./plugin.js";
 export {
   RegistryListingSchema,

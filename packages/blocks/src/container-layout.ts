@@ -31,8 +31,26 @@ export const CONTAINER_LAYOUT_TARGETS: Readonly<Record<string, string | null>> =
 /** Containers whose root may render as another element; their root is always a plain `div`. */
 export const CONTAINER_ELEMENT_TYPES: ReadonlySet<string> = new Set(["core.group", "core.container"]);
 
+/** Plugin and theme containers that opted in through `supports.containerLayout` (justflows-ce#305). */
+const extraTargets = new Map<string, string | null>();
+
+export function registerContainerLayoutTarget(type: string, target: string | null): void {
+  if (Object.prototype.hasOwnProperty.call(CONTAINER_LAYOUT_TARGETS, type)) return;
+  extraTargets.set(type, target);
+}
+
+export function unregisterContainerLayoutTarget(type: string): void {
+  extraTargets.delete(type);
+}
+
 export function supportsContainerLayout(type: string): boolean {
-  return Object.prototype.hasOwnProperty.call(CONTAINER_LAYOUT_TARGETS, type);
+  return Object.prototype.hasOwnProperty.call(CONTAINER_LAYOUT_TARGETS, type) || extraTargets.has(type);
+}
+
+/** The class of the element holding a container's children, or `null` for its root. */
+export function containerLayoutTarget(type: string): string | null {
+  if (Object.prototype.hasOwnProperty.call(CONTAINER_LAYOUT_TARGETS, type)) return CONTAINER_LAYOUT_TARGETS[type] ?? null;
+  return extraTargets.get(type) ?? null;
 }
 
 const JUSTIFY: Record<string, string> = {
@@ -149,7 +167,7 @@ export function applyContainerLayout(html: string, node: { type?: unknown; props
   }
   const attrs = containerLayoutAttrs(raw);
   if (!attrs) return out;
-  return injectAt(out, CONTAINER_LAYOUT_TARGETS[type] ?? null, attrs.classes, declarations(attrs.style));
+  return injectAt(out, containerLayoutTarget(type), attrs.classes, declarations(attrs.style));
 }
 
 /**

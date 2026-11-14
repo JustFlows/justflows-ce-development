@@ -95,9 +95,17 @@ export default function BlockLibrary({
     if (headerOnly)
       list = list.filter((b) => b.category === "site" || HEADER_BLOCK_TYPES.has(b.type));
 
+    /** Deprecated blocks keep rendering where they are used, but are not offered for new content (justflows-ce#305). */
+    list = list.filter((b) => !b.deprecated);
     if (query.trim()) {
       const q = query.toLowerCase();
-      list = list.filter((b) => b.title.toLowerCase().includes(q) || b.type.includes(q));
+      list = list.filter(
+        (b) =>
+          b.title.toLowerCase().includes(q) ||
+          b.type.includes(q) ||
+          (b.description ?? "").toLowerCase().includes(q) ||
+          (b.keywords ?? []).some((k) => k.includes(q)),
+      );
     }
     return list;
   }, [catalog, parentType, allowedChildTypes, query, isPage, headerOnly]);

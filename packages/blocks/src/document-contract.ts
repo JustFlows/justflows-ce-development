@@ -108,6 +108,8 @@ export function sanitizeEditorMeta(raw: unknown): BlockEditorMeta | undefined {
 export interface BlockNestingInfo {
   supportsChildren?: boolean;
   allowedChildTypes?: string[];
+  /** Parents this block may sit in; `$root` is a region root. Empty means no restriction (justflows-ce#305). */
+  parents?: string[];
 }
 
 /** Resolves a block type to its nesting info, or `undefined` for an unknown type. */
@@ -132,6 +134,9 @@ export function canNestBlock(
   lookup: BlockNestingLookup,
 ): boolean {
   if (childType === "core.column") return parentType === "core.columns";
+  /** A block that names its parents may only sit in one of them. */
+  const childParents = lookup(childType)?.parents;
+  if (childParents?.length && !childParents.includes(parentType === null ? "$root" : parentType)) return false;
   if (parentType === null) return true;
 
   const parent = lookup(parentType);

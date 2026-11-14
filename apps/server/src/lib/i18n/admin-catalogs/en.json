@@ -1612,7 +1612,9 @@
         "nameRequired": "Give the pattern a name.",
         "cancel": "Cancel",
         "savePattern": "Save pattern"
-      }
+      },
+      "blockActions": "Block actions",
+      "blockActionDone": "Applied: {action}."
     },
     "container": {
       "title": "Layout",
@@ -1830,6 +1832,16 @@
       "panelTitle": "This page's surroundings",
       "panelHint": "The header, template and footer are shared across the site. Editing one is a deliberate step.",
       "loading": "Loading…"
+    },
+    "pluginPreview": {
+      "retry": "Try again",
+      "loading": "Loading {title}…",
+      "placeholder": "Shows live content on the published page.",
+      "empty": "{title} shows nothing with its current settings.",
+      "unavailable": "Unavailable block: {type}",
+      "unavailableHint": "Its plugin or theme may be switched off. The content is kept and shows again when it is back.",
+      "timeout": "{title} took too long to preview.",
+      "failed": "{title} could not be previewed."
     }
   },
   "dashboard": {

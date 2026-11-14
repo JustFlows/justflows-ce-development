@@ -40,6 +40,9 @@ interface BlockActionsMenuProps {
   onRun: (action: BlockAction) => void;
   onToggleLock: (flag: EditorLockFlag) => void;
   onClose: () => void;
+  /** The selected block's own actions, declared by its plugin or theme (justflows-ce#305). */
+  blockActions?: Array<{ id: string; label: string; blocked?: string }>;
+  onRunBlockAction?: (id: string) => void;
 }
 
 /**
@@ -48,7 +51,7 @@ interface BlockActionsMenuProps {
  * disabled, with the reason underneath, so authors learn why rather than
  * wondering where an action went. Follows the WAI-ARIA menu pattern.
  */
-export default function BlockActionsMenu({ anchor, states, lock, onRun, onToggleLock, onClose }: BlockActionsMenuProps) {
+export default function BlockActionsMenu({ anchor, states, lock, onRun, onToggleLock, onClose, blockActions = [], onRunBlockAction }: BlockActionsMenuProps) {
   const { t } = useT();
   const menu = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState(anchor);
@@ -153,6 +156,36 @@ export default function BlockActionsMenu({ anchor, states, lock, onRun, onToggle
           })}
         </div>
       ))}
+      {blockActions.length > 0 && (
+        <div role="group" aria-label={t("builder.actions.blockActions")} className="jf-actions-menu__group">
+          <div className="jf-actions-menu__heading" aria-hidden="true">
+            {t("builder.actions.blockActions")}
+          </div>
+          {blockActions.map((action) => (
+            <button
+              key={action.id}
+              type="button"
+              role="menuitem"
+              tabIndex={-1}
+              className="jf-actions-menu__item"
+              aria-disabled={action.blocked ? true : undefined}
+              aria-describedby={action.blocked ? `jf-block-action-${action.id}` : undefined}
+              onClick={() => {
+                if (action.blocked) return;
+                close(false);
+                onRunBlockAction?.(action.id);
+              }}
+            >
+              <span className="jf-actions-menu__label">{action.label}</span>
+              {action.blocked && (
+                <span id={`jf-block-action-${action.id}`} className="jf-actions-menu__reason">
+                  {action.blocked}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
       {showLocks && (
         <div role="group" aria-label={t("builder.actions.locks")} className="jf-actions-menu__group">
           <div className="jf-actions-menu__heading" aria-hidden="true">

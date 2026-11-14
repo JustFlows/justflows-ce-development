@@ -6,6 +6,7 @@ import type { BlockNode } from "./types";
 import { blockStyleDeclarations, esc, isBlockLocked, presetRefOf, stylePresetClass, styleWithTemplateDefault, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
 import { isExtendClick, useBuilderSelection } from "./selection-context";
 import { useTemplateContext } from "./template-defaults-context";
+import { useCatalogEntry } from "./catalog-context";
 import { reusablePreviewBlocks, useReusableStore } from "../../lib/reusable-blocks";
 import MotionPreview from "./MotionPreview";
 import { applyMergeTags, useMergeTags } from "../../lib/merge-tags";
@@ -946,7 +947,7 @@ export function BlockPreview({
 
     default:
       if (!block.type.startsWith("core.")) {
-        return wrap(<PluginBlockPreview type={block.type} props={p} active={active} onCommit={commitProps} />);
+        return wrap(<PluginBlockPreview type={block.type} props={p} active={active} onCommit={commitProps} version={block.version} />);
       }
       return wrap(
         <div style={{ color: "var(--color-muted, var(--jf-text-3))", fontSize: "0.8rem" }}>{block.type}</div>,
@@ -1010,38 +1011,74 @@ function PluginBlockPreview({
   props,
   active = false,
   onCommit,
+  version,
 }: {
   type: string;
   props: Record<string, unknown>;
   active?: boolean;
   onCommit?: (props: Record<string, unknown>) => void;
+  /** The stored block version, so the server can upgrade old props before rendering. */
+  version?: number;
 }) {
   const { t } = useT();
-  const [html, setHtml] = useState<string | null>(null);
+  const entry = useCatalogEntry(type);
+  /**
+   * A plugin preview is isolated from the canvas (justflows-ce#305): it loads
+   * at a reserved height, gives up after `PREVIEW_TIMEOUT_MS`, and every
+   * outcome (empty, failed, unavailable, placeholder) is a visible, recoverable
+   * state instead of a blank block.
+   */
+  const [state, setState] = useState<{ status: "loading" | "ready" | "empty" | "error" | "timeout" | "unavailable" | "placeholder"; html: string }>({
+    status: "loading",
+    html: "",
+  });
+  const [attempt, setAttempt] = useState(0);
+  const html = state.status === "ready" ? state.html : null;
   const container = useRef<HTMLDivElement | null>(null);
   const fields = useContext(InlineFieldsContext).get(type);
   const key = JSON.stringify(props);
+  const placeholderMode = entry?.preview?.mode === "placeholder";
   useEffect(() => {
+    if (placeholderMode) {
+      setState({ status: "placeholder", html: "" });
+      return;
+    }
     let cancelled = false;
+    const controller = new AbortController();
+    let timedOut = false;
     const timer = setTimeout(() => {
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, PREVIEW_TIMEOUT_MS);
       fetch("/api/blocks/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, props: JSON.parse(key) as unknown }),
+        body: JSON.stringify({ type, props: JSON.parse(key) as unknown, ...(version ? { version } : {}) }),
+        signal: controller.signal,
       })
-        .then((res) => (res.ok ? (res.json() as Promise<{ html?: string }>) : null))
-        .then((body) => {
-          if (!cancelled) setHtml(body && typeof body.html === "string" ? sanitizePluginPreviewHtml(body.html) : "");
+        .then(async (res) => {
+          clearTimeout(timeout);
+          if (cancelled) return;
+          if (res.status === 404) return setState({ status: "unavailable", html: "" });
+          if (!res.ok) return setState({ status: "error", html: "" });
+          const body = (await res.json()) as { html?: string; placeholder?: boolean };
+          if (cancelled) return;
+          if (body.placeholder) return setState({ status: "placeholder", html: "" });
+          const clean = typeof body.html === "string" ? sanitizePluginPreviewHtml(body.html) : "";
+          setState({ status: clean.trim() ? "ready" : "empty", html: clean });
         })
         .catch(() => {
-          if (!cancelled) setHtml("");
+          clearTimeout(timeout);
+          if (!cancelled) setState({ status: timedOut ? "timeout" : "error", html: "" });
         });
     }, 250);
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      controller.abort();
     };
-  }, [type, key]);
+  }, [type, key, version, attempt, placeholderMode]);
 
   /**
    * Plugin inline editing (justflows-ce#297): only elements the plugin marked
@@ -1103,11 +1140,47 @@ function PluginBlockPreview({
     return () => cleanups.forEach((fn) => fn());
   }, [html, active, fields, onCommit, key]);
 
-  if (!html) {
-    return <div style={{ color: "var(--color-muted, var(--jf-text-3))", fontSize: "0.8rem" }}>{type}</div>;
+  const title = entry?.title ?? type;
+  const minHeight = entry?.preview?.minHeight;
+  if (state.status !== "ready") {
+    const retry = (
+      <button type="button" className="jf-btn jf-btn--ghost jf-btn--sm" data-builder-chrome="true" onClick={(e) => { e.stopPropagation(); setAttempt((n) => n + 1); }}>
+        {t("builder.pluginPreview.retry")}
+      </button>
+    );
+    const body =
+      state.status === "loading" ? <span>{t("builder.pluginPreview.loading", { title })}</span>
+      : state.status === "placeholder" ? (
+          <>
+            <strong>{entry?.icon} {title}</strong>
+            {entry?.description && <span>{entry.description}</span>}
+            <span>{t("builder.pluginPreview.placeholder")}</span>
+          </>
+        )
+      : state.status === "empty" ? <span>{t("builder.pluginPreview.empty", { title })}</span>
+      : state.status === "unavailable" ? (
+          <>
+            <strong>{t("builder.pluginPreview.unavailable", { type })}</strong>
+            <span>{t("builder.pluginPreview.unavailableHint")}</span>
+          </>
+        )
+      : (
+          <>
+            <span>{state.status === "timeout" ? t("builder.pluginPreview.timeout", { title }) : t("builder.pluginPreview.failed", { title })}</span>
+            {retry}
+          </>
+        );
+    return (
+      <div className={`jf-plugin-preview jf-plugin-preview--${state.status}`} data-jf-plugin-block={type} role={state.status === "loading" ? undefined : "note"} aria-busy={state.status === "loading" || undefined} style={minHeight ? { minHeight } : undefined}>
+        {body}
+      </div>
+    );
   }
-  return <div ref={container} data-jf-plugin-block={type} dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div ref={container} data-jf-plugin-block={type} style={minHeight ? { minHeight } : undefined} dangerouslySetInnerHTML={{ __html: html! }} />;
 }
+
+/** How long a plugin preview may take before the canvas shows it as timed out. */
+const PREVIEW_TIMEOUT_MS = 8000;
 
 const widgetChip: React.CSSProperties = {
   display: "inline-block",

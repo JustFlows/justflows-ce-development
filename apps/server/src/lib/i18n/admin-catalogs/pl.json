@@ -1612,7 +1612,9 @@
         "nameRequired": "Nadaj wzorcowi nazwę.",
         "cancel": "Anuluj",
         "savePattern": "Zapisz wzorzec"
-      }
+      },
+      "blockActions": "Akcje bloku",
+      "blockActionDone": "Zastosowano: {action}."
     },
     "container": {
       "title": "Układ",
@@ -1830,6 +1832,16 @@
       "panelTitle": "Otoczenie tej strony",
       "panelHint": "Nagłówek, szablon i stopka są wspólne dla całej witryny. Ich edycja to świadomy krok.",
       "loading": "Wczytywanie…"
+    },
+    "pluginPreview": {
+      "retry": "Spróbuj ponownie",
+      "loading": "Wczytywanie: {title}…",
+      "placeholder": "Pokazuje treść na żywo na opublikowanej stronie.",
+      "empty": "{title} nic nie pokazuje przy obecnych ustawieniach.",
+      "unavailable": "Niedostępny blok: {type}",
+      "unavailableHint": "Jego wtyczka lub motyw może być wyłączony. Treść zostaje zachowana i pojawi się ponownie po jego powrocie.",
+      "timeout": "Podgląd {title} trwał zbyt długo.",
+      "failed": "Nie udało się wyświetlić podglądu: {title}."
     }
   },
   "dashboard": {

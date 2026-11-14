@@ -8,7 +8,8 @@ import Navigator from "./Navigator";
 import { CORE_INLINE_FIELDS, InlineFieldsContext } from "./inline-field";
 import { PageCanvas } from "./BlockCanvas";
 import { BuilderDragProvider, useBuilderDrag, type DropStatus } from "./DragContext";
-import { createBlock } from "./block-defaults";
+import { createBlock, setBlockCatalog } from "./block-defaults";
+import { BlockCatalogContext } from "./catalog-context";
 import {
   findBlockPath,
   getBlockAtPath,
@@ -204,7 +205,10 @@ export default function PageBuilder({
   useEffect(() => {
     fetch("/api/blocks")
       .then((r) => r.json())
-      .then((data: { blocks: BlockCatalogEntry[] }) => setFullCatalog(data.blocks ?? []))
+      .then((data: { blocks: BlockCatalogEntry[] }) => {
+        setBlockCatalog(data.blocks ?? []);
+        setFullCatalog(data.blocks ?? []);
+      })
       .catch(() => setFullCatalog([]));
   }, []);
 
@@ -699,6 +703,28 @@ export default function PageBuilder({
     [selectedId, regionBlocks, emitRegion, setSelectedId, t],
   );
 
+  /**
+   * A single selected block's own actions (justflows-ce#305). Running one
+   * merges its props into the block like any edit: one undo step, and the
+   * host still validates and sanitizes the result on save and render.
+   */
+  const pluginActions = useMemo(() => {
+    if (selectedNodes.length !== 1) return [];
+    const node = selectedNodes[0]!;
+    const blocked = isBlockLocked(node, "edit") ? t("builder.actions.blocked.lockedEdit") : undefined;
+    return (catalogMap.get(node.type)?.actions ?? []).map((action) => ({ id: action.id, label: action.label, ...(blocked ? { blocked } : {}) }));
+  }, [selectedNodes, catalogMap, t]);
+  const runPluginAction = useCallback(
+    (actionId: string) => {
+      const node = selectedNodes[0];
+      const action = node ? catalogMap.get(node.type)?.actions?.find((a) => a.id === actionId) : undefined;
+      if (!node || !action || isBlockLocked(node, "edit")) return;
+      emitRegion(updateBlockProps(regionBlocks, node.id, { ...node.props, ...action.props }));
+      announceRef.current({ tone: "ok", text: t("builder.actions.blockActionDone", { action: action.label }) });
+    },
+    [selectedNodes, catalogMap, emitRegion, regionBlocks, t],
+  );
+
   const navLabels = useMemo(
     () => previewNavLabels(pageHeader, menus, siteDefaultSlug),
     [pageHeader, menus, siteDefaultSlug],
@@ -822,6 +848,7 @@ export default function PageBuilder({
 
   return (
     <InlineFieldsContext.Provider value={inlineFields}>
+    <BlockCatalogContext.Provider value={catalogMap}>
     <TemplateDefaultsContext.Provider value={templateContext}>
     <MergeTagsContext.Provider value={mergeTags}>
       <PreviewSchemeContext.Provider value={previewScheme}>
@@ -911,6 +938,8 @@ export default function PageBuilder({
             onRun={runAction}
             onToggleLock={toggleLock}
             onClose={() => setMenu(null)}
+            blockActions={pluginActions}
+            onRunBlockAction={runPluginAction}
           />
         )}
         {saveDialog && (
@@ -925,6 +954,7 @@ export default function PageBuilder({
       </PreviewSchemeContext.Provider>
     </MergeTagsContext.Provider>
     </TemplateDefaultsContext.Provider>
+    </BlockCatalogContext.Provider>
     </InlineFieldsContext.Provider>
   );
 }

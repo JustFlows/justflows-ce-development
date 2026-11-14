@@ -1614,7 +1614,9 @@
         "nameRequired": "Geef het patroon een naam.",
         "cancel": "Annuleren",
         "savePattern": "Patroon opslaan"
-      }
+      },
+      "blockActions": "Blokacties",
+      "blockActionDone": "Toegepast: {action}."
     },
     "container": {
       "title": "Indeling",
@@ -1832,6 +1834,16 @@
       "panelTitle": "Omgeving van deze pagina",
       "panelHint": "Header, sjabloon en voettekst worden door de hele site gedeeld. Bewerken is een bewuste stap.",
       "loading": "Laden…"
+    },
+    "pluginPreview": {
+      "retry": "Opnieuw proberen",
+      "loading": "{title} laden…",
+      "placeholder": "Toont live-inhoud op de gepubliceerde pagina.",
+      "empty": "{title} toont niets met de huidige instellingen.",
+      "unavailable": "Niet-beschikbaar blok: {type}",
+      "unavailableHint": "De plug-in of het thema staat mogelijk uit. De inhoud blijft bewaard en verschijnt weer zodra die terug is.",
+      "timeout": "Het voorbeeld van {title} duurde te lang.",
+      "failed": "Van {title} kon geen voorbeeld worden gemaakt."
     }
   },
   "dashboard": {

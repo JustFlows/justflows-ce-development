@@ -1617,7 +1617,9 @@
         "nameRequired": "Gib der Vorlage einen Namen.",
         "cancel": "Abbrechen",
         "savePattern": "Vorlage speichern"
-      }
+      },
+      "blockActions": "Block-Aktionen",
+      "blockActionDone": "Angewendet: {action}."
     },
     "container": {
       "title": "Anordnung",
@@ -1835,6 +1837,16 @@
       "panelTitle": "Umgebung dieser Seite",
       "panelHint": "Kopf, Template und Fuß gelten für die ganze Website. Sie zu bearbeiten ist ein bewusster Schritt.",
       "loading": "Wird geladen…"
+    },
+    "pluginPreview": {
+      "retry": "Erneut versuchen",
+      "loading": "{title} wird geladen…",
+      "placeholder": "Zeigt Live-Inhalte auf der veröffentlichten Seite.",
+      "empty": "{title} zeigt mit den aktuellen Einstellungen nichts an.",
+      "unavailable": "Nicht verfügbarer Block: {type}",
+      "unavailableHint": "Sein Plugin oder Theme ist vielleicht deaktiviert. Der Inhalt bleibt erhalten und erscheint wieder, sobald es zurück ist.",
+      "timeout": "Die Vorschau von {title} hat zu lange gedauert.",
+      "failed": "Für {title} konnte keine Vorschau erstellt werden."
     }
   },
   "dashboard": {

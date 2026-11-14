@@ -243,3 +243,12 @@ export {
   templateDefaultSets,
 } from "./template-defaults.js";
 export type { TemplateDefaults } from "./template-defaults.js";
+export {
+  BLOCK_API_VERSION,
+  BlockContractError,
+  ROOT_PARENT_KEYWORD,
+  SUPPORTED_BLOCK_API_VERSIONS,
+  normalizeBlockContract,
+} from "./block-contract.js";
+export type { BlockAction, BlockContract, BlockDeprecation, BlockMigrationStep, BlockPreviewContract, BlockSupports } from "./block-contract.js";
+export { containerLayoutTarget } from "./container-layout.js";

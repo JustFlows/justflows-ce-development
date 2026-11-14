@@ -1324,9 +1324,37 @@ export interface PluginBlockDefinition {
    * `render` must escape the value as it does any prop.
    */
   inline?: Record<string, { mode: "plain" | "rich"; multiline?: boolean; maxLength?: number }>;
+  /**
+   * Builder 2.0 editor contract (justflows-ce#305). Everything below is
+   * optional; see docs/BLOCK-CONTRACT.md for the rules and examples.
+   *
+   * `apiVersion`: the contract version this block was written for, today
+   * `BLOCK_API_VERSION` (1). A host that does not support it refuses the
+   * block at activation with a clear message instead of misbehaving.
+   */
+  apiVersion?: number;
+  /** Extra words the block library search matches, e.g. `["price", "plan"]`. */
+  keywords?: string[];
+  /** Parent block types this block may be placed in; `"$root"` is a page, header, footer or template root. */
+  parents?: string[];
+  /** Props a newly inserted block starts with. Always passed through `validateProps`. */
+  defaults?: Record<string, unknown>;
+  /** Hide the block from the library; existing blocks keep rendering. */
+  deprecated?: true | { since: string; replacedBy?: string; message?: string };
+  /** One-click prop changes offered in the block's menu (and its canvas toolbar with `toolbar: true`). */
+  actions?: Array<{ id: string; label: string; props: Record<string, unknown>; toolbar?: boolean }>;
+  /** How the builder previews the block: its own render (`server`, default) or a `placeholder`, with optional sample props. */
+  preview?: { mode?: "server" | "placeholder"; sampleProps?: Record<string, unknown>; minHeight?: number };
+  /** Host features the block takes part in: `containerLayout` lets a container become a row, column or grid. */
+  supports?: { containerLayout?: boolean | { target?: string } };
+  /** Steps that upgrade stored props from an older `version`, from N to N + 1, covering every version below the current one. */
+  migrations?: Array<{ from: number; to: number; migrate(props: Readonly<Record<string, unknown>>): Record<string, unknown> }>;
   render(props: Record<string, unknown>, children?: string): string;
   validateProps(raw: unknown): Record<string, unknown>;
 }
+
+/** The Builder 2.0 block contract version this SDK describes (justflows-ce#305). */
+export const BLOCK_API_VERSION = 1;
 
 export interface PluginBlocksApi {
   register(definition: PluginBlockDefinition): void;

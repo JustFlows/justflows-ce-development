@@ -1617,7 +1617,9 @@
         "nameRequired": "Ponle un nombre al patrón.",
         "cancel": "Cancelar",
         "savePattern": "Guardar patrón"
-      }
+      },
+      "blockActions": "Acciones del bloque",
+      "blockActionDone": "Aplicado: {action}."
     },
     "container": {
       "title": "Disposición",
@@ -1835,6 +1837,16 @@
       "panelTitle": "Entorno de esta página",
       "panelHint": "El encabezado, la plantilla y el pie son compartidos por todo el sitio. Editarlos es un paso deliberado.",
       "loading": "Cargando…"
+    },
+    "pluginPreview": {
+      "retry": "Reintentar",
+      "loading": "Cargando {title}…",
+      "placeholder": "Muestra contenido en vivo en la página publicada.",
+      "empty": "{title} no muestra nada con su configuración actual.",
+      "unavailable": "Bloque no disponible: {type}",
+      "unavailableHint": "Puede que su plugin o tema esté desactivado. El contenido se conserva y vuelve a mostrarse cuando regrese.",
+      "timeout": "La vista previa de {title} tardó demasiado.",
+      "failed": "No se pudo mostrar la vista previa de {title}."
     }
   },
   "dashboard": {

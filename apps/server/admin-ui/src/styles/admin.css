@@ -5883,3 +5883,38 @@ input[type="range"] {
   color: var(--jf-text-3);
   border-style: dashed;
 }
+
+/* Plugin block previews and their states (justflows-ce#305). */
+.jf-plugin-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--jf-border-strong);
+  border-radius: 6px;
+  color: var(--jf-text-3);
+  font-size: 0.8rem;
+  min-height: 2.5rem;
+}
+.jf-plugin-preview--loading {
+  border-style: solid;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--jf-text-3) 8%, transparent), transparent);
+  background-size: 200% 100%;
+  animation: jf-plugin-preview-shimmer 1.4s linear infinite;
+}
+.jf-plugin-preview--error,
+.jf-plugin-preview--timeout,
+.jf-plugin-preview--unavailable {
+  border-color: color-mix(in srgb, var(--jf-danger) 50%, transparent);
+}
+@keyframes jf-plugin-preview-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jf-plugin-preview--loading {
+    animation: none;
+  }
+}

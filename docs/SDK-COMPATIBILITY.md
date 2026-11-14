@@ -55,6 +55,18 @@ declared `rich` mode is treated as `plain`, and `render` must keep escaping the
 value. Blocks without `inline` behave as before. See
 [Blocks](BLOCKS.md#editing-text-on-the-canvas).
 
+### In development — block editor contract
+
+`PluginBlockDefinition` takes optional `apiVersion`, `keywords`, `parents`,
+`defaults`, `deprecated`, `actions`, `preview`, `supports` and `migrations`
+fields, and `BLOCK_API_VERSION` (1) is exported. All are additive; blocks
+without them behave as before. A block that declares an `apiVersion` the host
+does not support, or migrations that skip a version, is refused at activation.
+The members of `PluginBlockDefinition`, `PluginBlockField` and `BlockPattern`
+are now recorded in `packages/sdk/api-contracts.json`, and removing one or
+making one required fails `pnpm sdk:api:check`. See
+[Block editor contract](BLOCK-CONTRACT.md).
+
 ### In development — reserved `document-history` API namespace
 
 Core now serves `/api/document-history` (version history of the header, footer,

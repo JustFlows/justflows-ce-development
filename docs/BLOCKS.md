@@ -483,6 +483,10 @@ content type seeds that type when the theme has no pattern of the same name and
 the plugin has appended the type on `content.patternTypes`. The Patterns panel
 hides a pattern until its `requiresBlockTypes` are installed.
 
+A plugin block can also declare search keywords, allowed parents, starting
+props, one-click actions, how it previews, container layout support and prop
+migrations. See [Block editor contract](BLOCK-CONTRACT.md).
+
 ## Built-in Search block
 
 `core.search` is a first-party GET search form with `label`, `contentType`,

@@ -381,7 +381,9 @@ async function renderBlockTree(
           commentCtx,
           templateCtx,
         );
-        parts.push(withBlockChrome(def.render(def.validateProps(block.props), childHtml), block));
+        /** Stored props from an older block version are upgraded first, as `renderNode` does (justflows-ce#305). */
+        const current = blockRegistry.migrateNode(block);
+        parts.push(withBlockChrome(def.render(def.validateProps(current.props), childHtml), block));
       } catch {
         parts.push("");
       }

@@ -1617,7 +1617,9 @@
         "nameRequired": "Donnez un nom au modèle.",
         "cancel": "Annuler",
         "savePattern": "Enregistrer le modèle"
-      }
+      },
+      "blockActions": "Actions du bloc",
+      "blockActionDone": "Appliqué : {action}."
     },
     "container": {
       "title": "Disposition",
@@ -1835,6 +1837,16 @@
       "panelTitle": "Environnement de cette page",
       "panelHint": "L’en-tête, le modèle et le pied de page sont partagés par tout le site. Les modifier est un choix délibéré.",
       "loading": "Chargement…"
+    },
+    "pluginPreview": {
+      "retry": "Réessayer",
+      "loading": "Chargement de {title}…",
+      "placeholder": "Affiche du contenu en direct sur la page publiée.",
+      "empty": "{title} n’affiche rien avec ses réglages actuels.",
+      "unavailable": "Bloc indisponible : {type}",
+      "unavailableHint": "Son extension ou son thème est peut-être désactivé. Le contenu est conservé et réapparaîtra à son retour.",
+      "timeout": "L’aperçu de {title} a pris trop de temps.",
+      "failed": "Impossible d’afficher l’aperçu de {title}."
     }
   },
   "dashboard": {
