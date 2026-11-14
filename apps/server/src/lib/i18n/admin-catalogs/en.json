@@ -1759,6 +1759,39 @@
       "add": "Add a block type",
       "addPlaceholder": "Choose a block type…",
       "remove": "Remove the defaults for {type}"
+    },
+    "siteContext": {
+      "previewNote": "Preview of this page's surroundings. Its own title and date are real; menus and other request-based content are stand-ins. The published page is what visitors get.",
+      "region": {
+        "header": "Site header",
+        "footer": "Site footer",
+        "template": "Template"
+      },
+      "templateNamed": "Template “{slug}”",
+      "source": {
+        "override-draft": "your override, draft",
+        "override": "your override",
+        "theme": "from the theme",
+        "plugin": "from a plugin",
+        "library": "from the header library",
+        "none": "not set"
+      },
+      "siteWide": "site-wide",
+      "edit": {
+        "header": "Edit the header",
+        "footer": "Edit the footer",
+        "template": "Edit this template"
+      },
+      "hierarchy": "Template order",
+      "hierarchyHint": "Most specific first. The first one that exists is used.",
+      "menu": "Menu",
+      "notPublished": "Not published yet",
+      "headerHidden": "The header is hidden for this page.",
+      "footerEmpty": "No footer yet.",
+      "noTemplate": "No template: the theme's built-in page view is used.",
+      "panelTitle": "This page's surroundings",
+      "panelHint": "The header, template and footer are shared across the site. Editing one is a deliberate step.",
+      "loading": "Loading…"
     }
   },
   "dashboard": {
@@ -2594,7 +2627,11 @@
     "slotErrorLabel": "Error (generic)",
     "slotErrorHint": "Shared fallback for 403, 410, and 429 when no specific template exists",
     "slotIndexLabel": "Catch-all (index)",
-    "slotIndexHint": "Used only when no more specific template exists"
+    "slotIndexHint": "Used only when no more specific template exists",
+    "compareTheme": "Compare with theme version",
+    "themeVersion": "Theme version",
+    "copyThemeHint": "Copies the theme's version into the editor. Nothing is saved until you save or publish.",
+    "fromTheme": "theme"
   },
   "widgets": {
     "loading": "Loading widgets…",

@@ -235,6 +235,41 @@ export async function listTemplateSlots(
   );
 }
 
+/** Where a candidate slug would come from, or `null` when nothing provides it. */
+export type TemplateCandidateSource = "override-draft" | "override" | "theme" | "plugin" | null;
+
+export interface TemplateCandidate {
+  slug: string;
+  source: TemplateCandidateSource;
+}
+
+/**
+ * The hierarchy for a request, most specific first, and what each slug
+ * resolves to (justflows-ce#303). The first candidate with a source is the
+ * one `resolveEffectiveTemplate` renders, so the editor can show why.
+ */
+export async function describeTemplateCandidates(
+  siteId: string | null,
+  themeId: string,
+  installedPath: string | null,
+  query: TemplateQuery,
+  preview: boolean,
+): Promise<TemplateCandidate[]> {
+  const out: TemplateCandidate[] = [];
+  for (const slug of templateCandidates(query)) {
+    let source: TemplateCandidateSource = null;
+    if (siteId) {
+      const { published, draft } = await getStoredTemplateDocs(siteId, themeId, slug);
+      if (preview && draft?.length) source = "override-draft";
+      else if (published?.length) source = "override";
+    }
+    if (!source && loadThemeTemplate(themeId, slug, installedPath)?.length) source = "theme";
+    if (!source && (await loadPluginTemplate(slug))?.length) source = "plugin";
+    out.push({ slug, source });
+  }
+  return out;
+}
+
 export interface ResolvedTemplate {
   slug: string;
   blocks: BlockNode[];

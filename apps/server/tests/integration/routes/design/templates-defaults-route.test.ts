@@ -32,7 +32,27 @@ vi.mock("../../../../src/lib/themes/theme-files.js", () => ({
 vi.mock("../../../../src/lib/rendering/template-validate.js", () => ({ validateTemplateBlocks: () => ({ unknownBlockTypes: [] }) }));
 vi.mock("../../../../src/lib/security/audit-log.js", () => ({ auditLog: async () => {} }));
 vi.mock("../../../../src/lib/cache/cache-revalidate.js", () => ({ revalidateOnUpdate: async () => {} }));
+vi.mock("../../../../src/lib/i18n/languages-db.js", () => ({ getDefaultLocale: async () => "en-US" }));
+vi.mock("../../../../src/lib/rendering/header-resolve.js", () => ({
+  resolveHeaderConfig: async (input: { ref: string }) => ({ visible: input.ref !== "__none__", layout: "logo-left", blocks: [], showTitle: true }),
+}));
+vi.mock("../../../../src/lib/rendering/site-header.js", () => ({
+  SITE_DEFAULT_HEADER_REF: "__default__",
+  getSiteHeaderLibrary: async () => ({ entries: [], defaultId: null }),
+  hasSiteHeaderLibraryDraft: async () => false,
+}));
+vi.mock("../../../../src/lib/rendering/template-render.js", () => ({
+  resolveThemePartBlocks: async () => [{ id: "f", type: "core.paragraph", version: 1, props: { text: "Theme footer" } }],
+}));
 vi.mock("../../../../src/lib/themes/theme-templates-store.js", () => ({
+  getStoredTemplate: async (_s: string, _t: string, key: string, draft: boolean) =>
+    key === "part-footer" && draft ? [{ id: "fd", type: "core.paragraph", version: 1, props: { text: "Draft footer" } }] : null,
+  describeTemplateCandidates: async (_s: string, _t: string, _p: string | null, query: { contentType?: string; slug?: string }) => [
+    { slug: `${query.contentType}-${query.slug}`, source: null },
+    { slug: query.contentType === "page" ? "page" : "single", source: query.contentType === "page" ? "override" : "theme" },
+    { slug: "singular", source: null },
+    { slug: "index", source: "theme" },
+  ],
   isTemplateSlug: (v: unknown) => typeof v === "string" && /^[a-z0-9-]+$/.test(v),
   listTemplateSlots: async () => [],
   getStoredTemplateDocs: async () => stored,
@@ -46,7 +66,7 @@ vi.mock("../../../../src/lib/themes/theme-templates-store.js", () => ({
   resetStoredTemplate: async () => {},
   resolveEffectiveTemplate: async (_s: string, _t: string, _p: string | null, query: { kind: string; contentType?: string }) =>
     query.kind === "singular" && query.contentType === "page"
-      ? { slug: "page", source: "override", blocks: [], templateDefaults: { "core.heading": { textAlign: "center" } } }
+      ? { slug: "page", source: "override", blocks: [{ id: "pc", type: "core.post-content", version: 1, props: {} }], templateDefaults: { "core.heading": { textAlign: "center" } } }
       : { slug: "single", source: "theme", blocks: [] },
 }));
 
@@ -107,5 +127,32 @@ describe("PUT /api/templates/:slug", () => {
 
     await put({ blocks: [], draft: true, templateDefaults: null });
     expect((writes[2] as { opts: Record<string, unknown> }).opts.templateDefaults).toEqual({});
+  });
+});
+
+describe("GET /api/templates/resolve?context=1", () => {
+  it("adds the template's blocks and hierarchy, the resolved header, and the footer draft", async () => {
+    const res = await fetch(`${base}/resolve?context=1&contentType=page&slug=about&headerRef=__default__&locale=en-US`);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.template).toMatchObject({
+      slug: "page",
+      source: "override",
+      blocks: [{ type: "core.post-content" }],
+      candidates: [
+        { slug: "page-about", source: null },
+        { slug: "page", source: "override" },
+        { slug: "singular", source: null },
+        { slug: "index", source: "theme" },
+      ],
+    });
+    expect(body.header).toMatchObject({ ref: "__default__", source: "library", config: { visible: true } });
+    expect(body.footer).toEqual({ blocks: [{ id: "fd", type: "core.paragraph", version: 1, props: { text: "Draft footer" } }], source: "override-draft" });
+  });
+
+  it("hides the header when the page asks for none, and never reads a visitor session", async () => {
+    const body = await (await fetch(`${base}/resolve?context=1&contentType=post&slug=x&headerRef=__none__`)).json();
+    expect(body.header.config.visible).toBe(false);
+    expect(body.template.slug).toBe("single");
   });
 });

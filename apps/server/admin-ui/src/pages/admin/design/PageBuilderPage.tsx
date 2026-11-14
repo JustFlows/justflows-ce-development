@@ -20,6 +20,8 @@ import RevisionsDialog, { type RevisionListItem } from "@components/builder/shel
 import type { BlockNode } from "@components/builder/types";
 import GlobalStylesPanel from "@components/builder/GlobalStylesPanel";
 import type { TemplateContextValue } from "@components/builder/template-defaults-context";
+import SiteContextPanel from "@components/builder/SiteContextPanel";
+import { fetchSiteContext, rememberBuilderReturn, siteRegionEditPath, takeBuilderReturn, type SiteContextData } from "../../../lib/site-context";
 
 interface ContentItem {
   id: string;
@@ -32,6 +34,7 @@ interface ContentItem {
   workingRevision?: { version?: number; updatedByName?: string | null } | null;
   translationGroupId?: string | null;
   excerpt?: string | null;
+  publishedAt?: string | null;
   blocks?: BlockDocument;
   fields?: Record<string, unknown>;
 }
@@ -378,26 +381,37 @@ export default function PageBuilderPage() {
    * (justflows-ce#301). Declared before the early returns below, as every hook must be.
    */
   const [templateContext, setTemplateContext] = useState<TemplateContextValue | null>(null);
+  /** The page's surroundings for the canvas and the Site tab (justflows-ce#303). */
+  const [siteContext, setSiteContext] = useState<SiteContextData | null>(null);
   const contentType = item?.type;
   const contentSlug = item?.slug;
+  const headerRef = item ? headerRefFromFields(item.fields) : undefined;
   useEffect(() => {
     if (!contentType) return;
     let alive = true;
-    const params = new URLSearchParams({ contentType, slug: contentSlug ?? "" });
-    fetch(`/api/templates/resolve?${params}`)
-      .then((r) => (r.ok ? r.json() : { template: null }))
-      .then((data: { template?: { slug: string; templateDefaults?: Record<string, Record<string, unknown>> } | null }) => {
+    fetchSiteContext({ contentType, slug: contentSlug, contentId: id, headerRef })
+      .then((data) => {
         if (!alive) return;
+        setSiteContext(data);
         const tpl = data?.template;
-        setTemplateContext(tpl && tpl.templateDefaults && Object.keys(tpl.templateDefaults).length ? { slug: tpl.slug, defaults: tpl.templateDefaults } : null);
+        setTemplateContext(tpl && Object.keys(tpl.templateDefaults).length ? { slug: tpl.slug, defaults: tpl.templateDefaults } : null);
       })
       .catch(() => {
-        if (alive) setTemplateContext(null);
+        if (alive) {
+          setSiteContext(null);
+          setTemplateContext(null);
+        }
       });
     return () => {
       alive = false;
     };
-  }, [contentType, contentSlug]);
+  }, [contentType, contentSlug, headerRef, id]);
+  /** Leave for a site-wide part, remembering the selection so coming back restores it. */
+  const enterSiteContext = (region: "header" | "template" | "footer", slug: string | null | undefined, selectedId: string | null) => {
+    rememberBuilderReturn(id, selectedId);
+    navigate(siteRegionEditPath(region, `/admin/content/${id}/builder`, slug));
+  };
+  const [initialSelectedId] = useState<string | null>(() => takeBuilderReturn(id));
 
   if (loading && !item) {
     return (
@@ -489,6 +503,11 @@ export default function PageBuilderPage() {
       context={isPage ? "page" : "post"}
       stylesPanel={<GlobalStylesPanel />}
       templateContext={templateContext}
+      siteContext={siteContext}
+      siteContextMeta={{ title: item.title, publishedAt: item.publishedAt ?? null }}
+      onEnterSiteContext={enterSiteContext}
+      initialSelectedId={initialSelectedId}
+      sitePanel={<SiteContextPanel context={siteContext} onEnter={(region, slug) => enterSiteContext(region, slug, null)} />}
       shellBar={{
         title: item.title || t("pageBuilderPage.untitledPage"),
         subtitle: `${t("pageBuilderPage.statusLine", { status: item.status })}${item.hasWorkingRevision ? t("pageBuilderPage.draftChangesSuffix") : ""}`,

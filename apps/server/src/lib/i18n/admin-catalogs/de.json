@@ -1764,6 +1764,39 @@
       "add": "Blocktyp hinzufügen",
       "addPlaceholder": "Blocktyp wählen…",
       "remove": "Vorgaben für {type} entfernen"
+    },
+    "siteContext": {
+      "previewNote": "Vorschau der Umgebung dieser Seite. Titel und Datum sind echt; Menüs und andere anfrageabhängige Inhalte sind Platzhalter. Besucher sehen die veröffentlichte Seite.",
+      "region": {
+        "header": "Website-Kopf",
+        "footer": "Website-Fuß",
+        "template": "Template"
+      },
+      "templateNamed": "Template „{slug}“",
+      "source": {
+        "override-draft": "deine Anpassung, Entwurf",
+        "override": "deine Anpassung",
+        "theme": "aus dem Theme",
+        "plugin": "aus einem Plugin",
+        "library": "aus der Header-Bibliothek",
+        "none": "nicht gesetzt"
+      },
+      "siteWide": "websiteweit",
+      "edit": {
+        "header": "Kopfbereich bearbeiten",
+        "footer": "Fußbereich bearbeiten",
+        "template": "Dieses Template bearbeiten"
+      },
+      "hierarchy": "Template-Reihenfolge",
+      "hierarchyHint": "Spezifischstes zuerst. Das erste vorhandene wird verwendet.",
+      "menu": "Menü",
+      "notPublished": "Noch nicht veröffentlicht",
+      "headerHidden": "Der Kopfbereich ist für diese Seite ausgeblendet.",
+      "footerEmpty": "Noch kein Fußbereich.",
+      "noTemplate": "Kein Template: die eingebaute Seitenansicht des Themes wird verwendet.",
+      "panelTitle": "Umgebung dieser Seite",
+      "panelHint": "Kopf, Template und Fuß gelten für die ganze Website. Sie zu bearbeiten ist ein bewusster Schritt.",
+      "loading": "Wird geladen…"
     }
   },
   "dashboard": {
@@ -2533,7 +2566,11 @@
     "slotErrorLabel": "Fehler (generisch)",
     "slotErrorHint": "Gemeinsamer Fallback für 403, 410 und 429, wenn keine spezifische Vorlage existiert",
     "slotIndexLabel": "Auffangvorlage (index)",
-    "slotIndexHint": "Wird nur verwendet, wenn keine spezifischere Vorlage existiert"
+    "slotIndexHint": "Wird nur verwendet, wenn keine spezifischere Vorlage existiert",
+    "compareTheme": "Mit Theme-Version vergleichen",
+    "themeVersion": "Theme-Version",
+    "copyThemeHint": "Kopiert die Version des Themes in den Editor. Gespeichert wird erst beim Speichern oder Veröffentlichen.",
+    "fromTheme": "Theme"
   },
   "widgets": {
     "loading": "Widgets werden geladen…",

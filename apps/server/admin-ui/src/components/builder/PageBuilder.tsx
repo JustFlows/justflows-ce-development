@@ -54,6 +54,8 @@ import {
 import BlockActionsMenu from "./BlockActionsMenu";
 import { ancestorElementsOf } from "./LayoutControls";
 import { TemplateDefaultsContext, type TemplateContextValue } from "./template-defaults-context";
+import SiteContextFrame, { type SiteContextMeta } from "./SiteContextFrame";
+import type { SiteContextData, SiteRegion } from "../../lib/site-context";
 import MultiSelectionInspector from "./MultiSelectionInspector";
 import SaveSelectionDialog, { type SaveKind } from "./SaveSelectionDialog";
 import { blocksFromClipboard, canPasteBlocks, readClipboardText, writeBlockClipboard } from "./builder-clipboard";
@@ -109,6 +111,13 @@ interface PageBuilderProps {
   stylesPanel?: ReactNode;
   /** The template this document renders through and its style defaults, when wrapped by one. */
   templateContext?: TemplateContextValue | null;
+  /** The page's surroundings, drawn read-only around the content (justflows-ce#303). */
+  siteContext?: SiteContextData | null;
+  siteContextMeta?: SiteContextMeta;
+  /** Step into editing a site-wide region; receives the current selection so it can be restored on return. */
+  onEnterSiteContext?: (region: SiteRegion, slug: string | null | undefined, selectedId: string | null) => void;
+  /** A block to select once the document is loaded, e.g. after returning from a site-wide part. */
+  initialSelectedId?: string | null;
 }
 
 export default function PageBuilder({
@@ -129,6 +138,10 @@ export default function PageBuilder({
   sitePanel,
   stylesPanel,
   templateContext = null,
+  siteContext = null,
+  siteContextMeta,
+  onEnterSiteContext,
+  initialSelectedId = null,
 }: PageBuilderProps) {
   const { t } = useT();
   const [prefs, setPrefs] = useBuilderPrefs(useOptionalSessionUserId());
@@ -144,6 +157,16 @@ export default function PageBuilder({
     [],
   );
   const [menu, setMenu] = useState<MenuAnchor | null>(null);
+  /** Restore a remembered selection once, as soon as the block exists. */
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current || !initialSelectedId) return;
+    const list = Array.isArray(value?.blocks) ? value.blocks : [];
+    if (findBlockPath(list, initialSelectedId)) {
+      restoredRef.current = true;
+      setSelection({ ids: [initialSelectedId], anchor: initialSelectedId });
+    }
+  }, [initialSelectedId, value]);
   /** Measured canvas width, so the Responsive tab starts at the breakpoint being previewed. */
   const [canvasWidth, setCanvasWidth] = useState(0);
   const [saveDialog, setSaveDialog] = useState<SaveKind | null>(null);
@@ -690,17 +713,29 @@ export default function PageBuilder({
           onBlocksChange={emitHeaderBlocks}
         />
       )}
-      {!headerOnly && (
-        <PageCanvas
-          blocks={blocks}
-          catalog={catalogMap}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onChange={emit}
-          compact={compact}
-          rootQuickAll={flatCanvas}
-        />
-      )}
+      {!headerOnly && (() => {
+        const pageCanvas = (
+          <PageCanvas
+            blocks={blocks}
+            catalog={catalogMap}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onChange={emit}
+            compact={compact}
+            rootQuickAll={flatCanvas}
+          />
+        );
+        if (!siteContext || compact) return pageCanvas;
+        return (
+          <SiteContextFrame
+            context={siteContext}
+            meta={siteContextMeta ?? { title: "" }}
+            onEnter={(region, slug) => onEnterSiteContext?.(region, slug, selectedId)}
+          >
+            {pageCanvas}
+          </SiteContextFrame>
+        );
+      })()}
     </div>
   );
 

@@ -1764,6 +1764,39 @@
       "add": "Añadir un tipo de bloque",
       "addPlaceholder": "Elige un tipo de bloque…",
       "remove": "Quitar los valores por defecto de {type}"
+    },
+    "siteContext": {
+      "previewNote": "Vista previa del entorno de esta página. Su título y fecha son reales; los menús y otro contenido que depende de la petición son sustitutos. Los visitantes ven la página publicada.",
+      "region": {
+        "header": "Encabezado del sitio",
+        "footer": "Pie del sitio",
+        "template": "Plantilla"
+      },
+      "templateNamed": "Plantilla «{slug}»",
+      "source": {
+        "override-draft": "tu versión, borrador",
+        "override": "tu versión",
+        "theme": "del tema",
+        "plugin": "de un plugin",
+        "library": "de la biblioteca de encabezados",
+        "none": "sin definir"
+      },
+      "siteWide": "todo el sitio",
+      "edit": {
+        "header": "Editar el encabezado",
+        "footer": "Editar el pie",
+        "template": "Editar esta plantilla"
+      },
+      "hierarchy": "Orden de plantillas",
+      "hierarchyHint": "De la más específica a la más general. Se usa la primera que existe.",
+      "menu": "Menú",
+      "notPublished": "Aún sin publicar",
+      "headerHidden": "El encabezado está oculto en esta página.",
+      "footerEmpty": "Todavía no hay pie.",
+      "noTemplate": "Sin plantilla: se usa la vista de página integrada del tema.",
+      "panelTitle": "Entorno de esta página",
+      "panelHint": "El encabezado, la plantilla y el pie son compartidos por todo el sitio. Editarlos es un paso deliberado.",
+      "loading": "Cargando…"
     }
   },
   "dashboard": {
@@ -2533,7 +2566,11 @@
     "slotErrorLabel": "Error (genérico)",
     "slotErrorHint": "Plantilla de respaldo común para 403, 410 y 429 cuando no existe una plantilla específica",
     "slotIndexLabel": "Plantilla general (index)",
-    "slotIndexHint": "Solo se usa cuando no existe una plantilla más específica"
+    "slotIndexHint": "Solo se usa cuando no existe una plantilla más específica",
+    "compareTheme": "Comparar con la versión del tema",
+    "themeVersion": "Versión del tema",
+    "copyThemeHint": "Copia la versión del tema al editor. No se guarda nada hasta que guardes o publiques.",
+    "fromTheme": "tema"
   },
   "widgets": {
     "loading": "Cargando widgets…",

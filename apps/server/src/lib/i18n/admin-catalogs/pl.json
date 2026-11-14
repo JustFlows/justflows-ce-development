@@ -1759,6 +1759,39 @@
       "add": "Dodaj typ bloku",
       "addPlaceholder": "Wybierz typ bloku…",
       "remove": "Usuń domyślne wartości dla: {type}"
+    },
+    "siteContext": {
+      "previewNote": "Podgląd otoczenia tej strony. Jej tytuł i data są prawdziwe; menu i inna treść zależna od żądania to zamienniki. Odwiedzający widzą opublikowaną stronę.",
+      "region": {
+        "header": "Nagłówek witryny",
+        "footer": "Stopka witryny",
+        "template": "Szablon"
+      },
+      "templateNamed": "Szablon „{slug}”",
+      "source": {
+        "override-draft": "Twoja wersja, szkic",
+        "override": "Twoja wersja",
+        "theme": "z motywu",
+        "plugin": "z wtyczki",
+        "library": "z biblioteki nagłówków",
+        "none": "nie ustawiono"
+      },
+      "siteWide": "cała witryna",
+      "edit": {
+        "header": "Edytuj nagłówek",
+        "footer": "Edytuj stopkę",
+        "template": "Edytuj ten szablon"
+      },
+      "hierarchy": "Kolejność szablonów",
+      "hierarchyHint": "Od najbardziej szczegółowego. Używany jest pierwszy, który istnieje.",
+      "menu": "Menu",
+      "notPublished": "Jeszcze nieopublikowane",
+      "headerHidden": "Nagłówek jest ukryty na tej stronie.",
+      "footerEmpty": "Nie ma jeszcze stopki.",
+      "noTemplate": "Brak szablonu: używany jest wbudowany widok strony motywu.",
+      "panelTitle": "Otoczenie tej strony",
+      "panelHint": "Nagłówek, szablon i stopka są wspólne dla całej witryny. Ich edycja to świadomy krok.",
+      "loading": "Wczytywanie…"
     }
   },
   "dashboard": {
@@ -2594,7 +2627,11 @@
     "slotErrorLabel": "Błąd (ogólny)",
     "slotErrorHint": "Udostępniona rezerwa dla 403, 410 i 429, gdy nie istnieje żaden konkretny szablon",
     "slotIndexLabel": "Catch-all (indeks)",
-    "slotIndexHint": "Używane tylko wtedy, gdy nie istnieje żaden bardziej szczegółowy szablon"
+    "slotIndexHint": "Używane tylko wtedy, gdy nie istnieje żaden bardziej szczegółowy szablon",
+    "compareTheme": "Porównaj z wersją motywu",
+    "themeVersion": "Wersja motywu",
+    "copyThemeHint": "Kopiuje wersję motywu do edytora. Nic nie zostanie zapisane, dopóki nie zapiszesz lub nie opublikujesz.",
+    "fromTheme": "motyw"
   },
   "widgets": {
     "loading": "Wczytywanie widżetów…",

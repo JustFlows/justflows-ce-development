@@ -1764,6 +1764,39 @@
       "add": "Ajouter un type de bloc",
       "addPlaceholder": "Choisir un type de bloc…",
       "remove": "Retirer les valeurs par défaut pour {type}"
+    },
+    "siteContext": {
+      "previewNote": "Aperçu de l’environnement de cette page. Son titre et sa date sont réels ; les menus et autres contenus liés à la requête sont des substituts. Les visiteurs voient la page publiée.",
+      "region": {
+        "header": "En-tête du site",
+        "footer": "Pied de page du site",
+        "template": "Modèle"
+      },
+      "templateNamed": "Modèle « {slug} »",
+      "source": {
+        "override-draft": "votre version, brouillon",
+        "override": "votre version",
+        "theme": "du thème",
+        "plugin": "d’une extension",
+        "library": "de la bibliothèque d’en-têtes",
+        "none": "non défini"
+      },
+      "siteWide": "tout le site",
+      "edit": {
+        "header": "Modifier l’en-tête",
+        "footer": "Modifier le pied de page",
+        "template": "Modifier ce modèle"
+      },
+      "hierarchy": "Ordre des modèles",
+      "hierarchyHint": "Du plus précis au plus général. Le premier qui existe est utilisé.",
+      "menu": "Menu",
+      "notPublished": "Pas encore publié",
+      "headerHidden": "L’en-tête est masqué pour cette page.",
+      "footerEmpty": "Pas encore de pied de page.",
+      "noTemplate": "Aucun modèle : la vue de page intégrée du thème est utilisée.",
+      "panelTitle": "Environnement de cette page",
+      "panelHint": "L’en-tête, le modèle et le pied de page sont partagés par tout le site. Les modifier est un choix délibéré.",
+      "loading": "Chargement…"
     }
   },
   "dashboard": {
@@ -2533,7 +2566,11 @@
     "slotErrorLabel": "Erreur (générique)",
     "slotErrorHint": "Modèle de secours commun aux erreurs 403, 410 et 429 lorsqu’aucun modèle spécifique n’existe",
     "slotIndexLabel": "Modèle général (index)",
-    "slotIndexHint": "Utilisé uniquement lorsqu’aucun modèle plus spécifique n’existe"
+    "slotIndexHint": "Utilisé uniquement lorsqu’aucun modèle plus spécifique n’existe",
+    "compareTheme": "Comparer avec la version du thème",
+    "themeVersion": "Version du thème",
+    "copyThemeHint": "Copie la version du thème dans l’éditeur. Rien n’est enregistré tant que vous n’enregistrez ou ne publiez pas.",
+    "fromTheme": "thème"
   },
   "widgets": {
     "loading": "Chargement des widgets…",

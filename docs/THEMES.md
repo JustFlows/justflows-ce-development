@@ -199,6 +199,26 @@ with either wins — so a theme's `single-post.json` still outranks a site's
 customised `single`. `validateTemplateBlocks` flags block types no registered
 block provides (usually an uninstalled plugin) — advisory, never blocking.
 
+### Site context in the page builder
+
+Since justflows-ce#303 the page builder draws a page's surroundings around its
+content: the header the page renders, the template it resolves to, and the
+footer, read-only and marked site-wide. `GET /api/templates/resolve?context=1`
+supplies them for the builder: the resolved template with its blocks and the
+whole candidate chain with each slug's source (`override-draft`, `override`,
+`theme`, `plugin`, or none), the header config resolved for the page's header
+reference, and the footer (its draft when there is one). Drafts are included
+because the builder previews drafts; nothing in the answer depends on a
+visitor's session. The page's own title and date are real; menus and other
+request-based blocks show stand-ins, and the published page stays authoritative.
+
+Each region names its source and opens the theme builder on the right part
+(`?tab=templates&slug=<slug>&back=<page>`); Back returns to the page with its
+selection restored. In the template panel, every slot says whether it is the
+theme's file or your override (draft or published). A customised template can
+be compared with the theme's version and that version copied back into the
+editor before saving; Reset removes the override entirely.
+
 ### Back-compat
 
 Themes that predate `templates/` keep working: the `front-page` slot falls back

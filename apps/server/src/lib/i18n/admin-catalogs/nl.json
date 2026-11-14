@@ -1761,6 +1761,39 @@
       "add": "Bloktype toevoegen",
       "addPlaceholder": "Kies een bloktype…",
       "remove": "Standaardwaarden voor {type} verwijderen"
+    },
+    "siteContext": {
+      "previewNote": "Voorbeeld van de omgeving van deze pagina. De eigen titel en datum zijn echt; menu's en andere inhoud die van het verzoek afhangt zijn plaatsvervangers. Bezoekers zien de gepubliceerde pagina.",
+      "region": {
+        "header": "Sitekop",
+        "footer": "Sitevoet",
+        "template": "Sjabloon"
+      },
+      "templateNamed": "Sjabloon “{slug}”",
+      "source": {
+        "override-draft": "jouw aanpassing, concept",
+        "override": "jouw aanpassing",
+        "theme": "uit het thema",
+        "plugin": "uit een plug-in",
+        "library": "uit de headerbibliotheek",
+        "none": "niet ingesteld"
+      },
+      "siteWide": "sitebreed",
+      "edit": {
+        "header": "Header bewerken",
+        "footer": "Voettekst bewerken",
+        "template": "Dit sjabloon bewerken"
+      },
+      "hierarchy": "Sjabloonvolgorde",
+      "hierarchyHint": "Meest specifiek eerst. Het eerste dat bestaat, wordt gebruikt.",
+      "menu": "Menu",
+      "notPublished": "Nog niet gepubliceerd",
+      "headerHidden": "De header is voor deze pagina verborgen.",
+      "footerEmpty": "Nog geen voettekst.",
+      "noTemplate": "Geen sjabloon: de ingebouwde paginaweergave van het thema wordt gebruikt.",
+      "panelTitle": "Omgeving van deze pagina",
+      "panelHint": "Header, sjabloon en voettekst worden door de hele site gedeeld. Bewerken is een bewuste stap.",
+      "loading": "Laden…"
     }
   },
   "dashboard": {
@@ -2530,7 +2563,11 @@
     "slotErrorLabel": "Fout (algemeen)",
     "slotErrorHint": "Gedeelde reserve voor 403, 410 en 429 als er geen specifiek sjabloon is",
     "slotIndexLabel": "Algemeen (index)",
-    "slotIndexHint": "Wordt alleen gebruikt als er geen specifieker sjabloon is"
+    "slotIndexHint": "Wordt alleen gebruikt als er geen specifieker sjabloon is",
+    "compareTheme": "Vergelijken met themaversie",
+    "themeVersion": "Themaversie",
+    "copyThemeHint": "Kopieert de versie van het thema naar de editor. Er wordt niets opgeslagen tot je opslaat of publiceert.",
+    "fromTheme": "thema"
   },
   "widgets": {
     "loading": "Widgets laden…",

@@ -6,6 +6,8 @@ import PageBuilder, { type BlockDocument } from "@components/builder/PageBuilder
 import GlobalStylesPanel from "@components/builder/GlobalStylesPanel";
 import TemplateDefaultsPanel from "@components/builder/TemplateDefaultsPanel";
 import type { TemplateDefaults } from "@justflows/blocks";
+import type { BlockNode } from "@components/builder/types";
+import { safeBackPath } from "../../../lib/site-context";
 import HeaderLibraryEditor from "./HeaderLibraryEditor";
 import { BuilderShellEmpty, type BuilderSaveState, type BuilderShellBar } from "@components/builder/shell/BuilderShell";
 import RevisionsDialog from "@components/builder/shell/RevisionsDialog";
@@ -210,6 +212,9 @@ export default function CustomizeThemePage() {
   const [templateFromDefault, setTemplateFromDefault] = useState(false);
   /** The open template's style defaults for the content it wraps (justflows-ce#301). */
   const [templateDefaults, setTemplateDefaults] = useState<TemplateDefaults>({});
+  /** The theme's own version of the open template, for compare and copy-back (justflows-ce#303). */
+  const [templateThemeBlocks, setTemplateThemeBlocks] = useState<BlockNode[] | null>(null);
+  const [themeCompareOpen, setThemeCompareOpen] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
   /** Revisions the editor loaded, sent back so a save never overwrites someone else's newer one. */
   const [footerRevision, setFooterRevision] = useState(0);
@@ -256,10 +261,12 @@ export default function CustomizeThemePage() {
         fromThemeDefault?: boolean;
         revision?: number;
         templateDefaults?: TemplateDefaults;
+        themeBlocks?: unknown[] | null;
       };
       const blocks = (data.draft?.length ? data.draft : data.blocks) ?? [];
       setTemplateDoc({ version: 1, blocks: blocks as BlockDocument["blocks"] });
       setTemplateDefaults(data.templateDefaults ?? {});
+      setTemplateThemeBlocks(Array.isArray(data.themeBlocks) && data.themeBlocks.length ? (data.themeBlocks as BlockNode[]) : null);
       setTemplateFromDefault(Boolean(data.fromThemeDefault));
       setTemplateRevision(data.revision ?? 0);
     } catch {
@@ -273,8 +280,12 @@ export default function CustomizeThemePage() {
 
   /** Open the first slot when the templates part has nothing selected, so the canvas is never empty for no reason. */
   useEffect(() => {
-    if (tab === "templates" && !templateSlug && templateSlots[0]) void openTemplate(templateSlots[0].slug);
-  }, [tab, templateSlug, templateSlots, openTemplate]);
+    if (tab !== "templates" || templateSlug || templateSlots.length === 0) return;
+    /** A link from the page builder names the slot to open (justflows-ce#303). */
+    const wanted = searchParams.get("slug");
+    const first = (wanted && templateSlots.find((slot) => slot.slug === wanted)) || templateSlots[0];
+    if (first) void openTemplate(first.slug);
+  }, [tab, templateSlug, templateSlots, openTemplate, searchParams]);
 
   const [errorPages, setErrorPages] = useState<ErrorPageConfig>({});
   const [errorThemeSlots, setErrorThemeSlots] = useState<string[]>([]);
@@ -679,6 +690,12 @@ export default function CustomizeThemePage() {
 
   async function exitCustomize() {
     if (dirty && !window.confirm(t("themeCustomize.exitConfirm"))) return;
+    /** Opened from a page's builder: go back there, and keep the theme drafts (the page previews them). */
+    const back = safeBackPath(searchParams.get("back"));
+    if (back) {
+      navigate(back);
+      return;
+    }
     await fetch("/api/themes/customize", { method: "DELETE" }).catch(() => {});
     navigate("/admin/themes");
   }
@@ -855,6 +872,11 @@ export default function CustomizeThemePage() {
         <>
           {saveAsButton}
           {templateSlug && revisionsButton}
+          {templateSlug && templateThemeBlocks && (
+            <button type="button" className="jf-btn jf-btn--onbar" onClick={() => setThemeCompareOpen(true)}>
+              {t("themeCustomize.compareTheme")}
+            </button>
+          )}
           {templateSlug && templateSlots.find((slot) => slot.slug === templateSlug)?.customised && (
             <button type="button" className="jf-btn jf-btn--onbar" disabled={templateSaving} onClick={() => void resetTemplate()}>
               {t("themeCustomize.resetToTheme")}
@@ -903,7 +925,11 @@ export default function CustomizeThemePage() {
                       <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>{slot.slug}</span>
                     </span>
                     <span style={{ fontSize: "0.7rem", opacity: 0.8 }}>
-                      {slot.customised ? (slot.hasDraft ? t("themeCustomize.customisedDraft") : t("themeCustomize.customised")) : ""}
+                      {slot.customised
+                        ? (slot.hasDraft ? t("themeCustomize.customisedDraft") : t("themeCustomize.customised"))
+                        : slot.inTheme
+                          ? t("themeCustomize.fromTheme")
+                          : ""}
                     </span>
                   </button>
                 ))}
@@ -960,6 +986,17 @@ export default function CustomizeThemePage() {
             setTemplateDoc({ version: 1, blocks: docBlocks(doc) });
           }}
           restoreHint={t("builder.shell.restoreHintPart")}
+        />
+        <RevisionsDialog
+          open={themeCompareOpen}
+          onClose={() => setThemeCompareOpen(false)}
+          loadItems={async () => [{ id: "theme", createdAt: new Date(0).toISOString(), authorName: themeName, state: "theme" }]}
+          loadBlocks={async () => templateThemeBlocks}
+          currentBlocks={templateDoc.blocks}
+          onRestore={async () => {
+            if (templateThemeBlocks) setTemplateDoc({ version: 1, blocks: templateThemeBlocks });
+          }}
+          restoreHint={t("themeCustomize.copyThemeHint")}
         />
         <PageBuilder
           key={templateSlug}
