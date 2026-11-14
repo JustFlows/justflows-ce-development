@@ -17,6 +17,8 @@ import ThemeBlockControls from "./ThemeBlockControls";
 import { THEME_PREVIEW_SCOPE, reloadThemePreviewStylesheet } from "./BlockPreview";
 import { canManageStylePresets } from "./StylePresetPanel";
 import type { BlockNode } from "./types";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../styles/builder.css";
 
 /**
  * Global styles inside the builder (justflows-ce#301): the theme's design

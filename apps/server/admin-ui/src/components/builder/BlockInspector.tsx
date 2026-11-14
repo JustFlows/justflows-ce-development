@@ -27,6 +27,8 @@ import { useThemeStyleTokens } from "../../lib/theme-style-tokens";
 import { inspectorSections, type InspectorSections } from "./inspector-sections";
 import { INSPECTOR_FIELDS } from "@justflows/blocks";
 import { INSPECTOR_TABS, type InspectorTab } from "./shell/builder-prefs";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../styles/builder.css";
 
 
 const fieldLabel: React.CSSProperties = {

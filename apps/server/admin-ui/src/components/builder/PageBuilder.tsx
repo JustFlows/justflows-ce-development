@@ -64,6 +64,8 @@ import type { SaveKind } from "./SaveSelectionDialog";
 import { blocksFromClipboard, canPasteBlocks, readClipboardText, writeBlockClipboard } from "./builder-clipboard";
 import { saveBlockPattern, saveReusableBlocks } from "./builder-library";
 import { BuilderSelectionActionsContext, BuilderSelectionContext, anchorFor, type BuilderSelection, type BuilderSelectionActions, type MenuAnchor, type SelectModifiers } from "./selection-context";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../styles/builder.css";
 
 const PREVIEW_SCHEME_KEY = "jf-builder-preview-scheme";
 

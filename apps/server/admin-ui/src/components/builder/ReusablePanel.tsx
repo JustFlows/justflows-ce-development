@@ -3,6 +3,8 @@ import { useT } from "../../i18n/I18nProvider";
 import { useSessionRole } from "@components/SessionProvider";
 import { fetchReusableUsage, loadReusableBlocks, reusablePreviewBlocks, useReusableStore, type ReusableItem, type ReusableUsage } from "../../lib/reusable-blocks";
 import type { BlockNode } from "./types";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../styles/builder.css";
 
 export type { ReusableItem } from "../../lib/reusable-blocks";
 

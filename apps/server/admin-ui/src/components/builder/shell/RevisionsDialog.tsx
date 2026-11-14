@@ -3,6 +3,8 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useT } from "../../../i18n/I18nProvider";
 import { isEmptySummary, summarizeBlockChanges, type BlockChange, type BlockChangeSummary } from "../block-diff";
 import type { BlockNode } from "../types";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../../styles/builder.css";
 
 /** One version in the list. */
 export interface RevisionListItem {

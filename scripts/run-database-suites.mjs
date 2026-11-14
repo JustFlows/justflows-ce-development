@@ -97,7 +97,8 @@ for (const [name, flag, database, file] of suites) {
     env: { ...env, [flag]: "1", DB_NAME: database, DB_DRIVER: driver === "mariadb" ? "mariadb" : driver },
     encoding: "utf8",
   });
-  const output = `${run.stdout}${run.stderr}`;
+  /** CI prints colours; the counts are read from the plain text. */
+  const output = `${run.stdout}${run.stderr}`.replace(/\x1b\[[0-9;]*m/g, "");
   process.stdout.write(output.split("\n").filter((line) => /Test Files|Tests|FAIL|×/.test(line)).join("\n") + "\n");
   const passed = Number(/Tests\s+(\d+) passed/.exec(output)?.[1] ?? 0);
   if (run.status !== 0) failures.push(`${name}: failed`);

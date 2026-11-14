@@ -1,0 +1,2383 @@
+/**
+ * Styles used only inside the page builder (justflows-ce#308, #310). Loaded with
+ * the builder's code instead of on every admin page, so the admin's first
+ * load stays within its CSS budget (scripts/check-asset-budgets.mjs).
+ */
+/* ---------------------------------------------------- pattern library --- */
+
+.jf-pattern-browser-button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--jf-accent) 28%, var(--jf-border));
+  border-radius: var(--jf-radius);
+  background: color-mix(in srgb, var(--jf-accent) 7%, var(--jf-surface));
+  color: var(--jf-text);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.jf-pattern-browser-button:hover {
+  border-color: color-mix(in srgb, var(--jf-accent) 55%, var(--jf-border));
+  background: color-mix(in srgb, var(--jf-accent) 11%, var(--jf-surface));
+  transform: translateY(-1px);
+}
+
+.jf-pattern-browser-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--jf-accent) 28%, transparent);
+  outline-offset: 2px;
+}
+
+.jf-pattern-browser-button__icon {
+  display: grid;
+  grid-template-columns: repeat(2, 0.38rem);
+  gap: 0.18rem;
+  padding: 0.55rem;
+  border-radius: calc(var(--jf-radius) * 0.8);
+  background: var(--jf-accent);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--jf-accent) 25%, transparent);
+}
+
+.jf-pattern-browser-button__icon span {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 0.08rem;
+  background: white;
+}
+
+.jf-pattern-browser-button__copy {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.jf-pattern-browser-button__copy strong {
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.jf-pattern-browser-button__copy small {
+  overflow: hidden;
+  color: var(--jf-text-3);
+  font-size: 0.65rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+}
+
+.jf-pattern-browser-button__arrow {
+  color: var(--jf-accent);
+  font-size: 1.4rem;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.jf-pattern-browser-button:hover .jf-pattern-browser-button__arrow {
+  transform: translateX(2px);
+}
+
+.jf-pattern-library {
+  width: min(1180px, calc(100vw - 2rem));
+  height: min(820px, calc(100vh - 2rem));
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--jf-border);
+  border-radius: calc(var(--jf-radius) * 1.5);
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  box-shadow: 0 24px 80px rgb(15 23 42 / 0.24);
+}
+
+.jf-pattern-library::backdrop {
+  background: rgb(15 23 42 / 0.58);
+  backdrop-filter: blur(3px);
+}
+
+.jf-pattern-library__shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+}
+
+.jf-pattern-library__header {
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--jf-border);
+  background: var(--jf-surface);
+}
+
+.jf-pattern-library__heading {
+  min-width: 0;
+  margin-inline-end: auto;
+}
+
+.jf-pattern-library__heading h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+.jf-pattern-library__heading span {
+  color: var(--jf-text-3);
+  font-size: 0.72rem;
+}
+
+.jf-pattern-library__manage {
+  position: relative;
+}
+
+.jf-pattern-library__manage > summary {
+  list-style: none;
+}
+
+.jf-pattern-library__manage > summary::-webkit-details-marker {
+  display: none;
+}
+
+.jf-pattern-library__manage > summary::after {
+  content: "⌄";
+  margin-inline-start: 0.4rem;
+}
+
+.jf-pattern-library__menu {
+  position: absolute;
+  z-index: 5;
+  inset-block-start: calc(100% + 0.4rem);
+  inset-inline-end: 0;
+  display: grid;
+  width: 220px;
+  padding: 0.35rem;
+  border: 1px solid var(--jf-border);
+  border-radius: var(--jf-radius);
+  background: var(--jf-surface);
+  box-shadow: var(--jf-shadow-lg);
+}
+
+.jf-pattern-library__menu button,
+.jf-pattern-library__menu a {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.65rem 0.7rem;
+  border: 0;
+  border-radius: calc(var(--jf-radius) * 0.65);
+  background: transparent;
+  color: var(--jf-text-2);
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.jf-pattern-library__menu button:hover,
+.jf-pattern-library__menu a:hover {
+  background: var(--jf-surface-3);
+  color: var(--jf-text);
+}
+
+.jf-pattern-library__close {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--jf-text-3);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.jf-pattern-library__close:hover {
+  background: var(--jf-surface-3);
+  color: var(--jf-text);
+}
+
+.jf-pattern-library__body {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.jf-pattern-library__sidebar {
+  min-height: 0;
+  padding: 1rem;
+  overflow: auto;
+  border-inline-end: 1px solid var(--jf-border);
+  background: var(--jf-surface);
+}
+
+.jf-pattern-library__filters {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.jf-pattern-library__filters input,
+.jf-pattern-library__filters select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--jf-border-strong);
+  border-radius: var(--jf-radius);
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  font: inherit;
+}
+
+.jf-pattern-library__filters label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.jf-pattern-library__filters label > span {
+  color: var(--jf-text-3);
+  font-size: 0.7rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.jf-pattern-library__list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.jf-pattern-library__item {
+  padding: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--jf-radius);
+  background: transparent;
+  color: var(--jf-text);
+  text-align: start;
+  cursor: pointer;
+}
+
+.jf-pattern-library__item:hover {
+  background: var(--jf-surface-3);
+}
+
+.jf-pattern-library__item[aria-pressed="true"] {
+  border-color: var(--jf-accent);
+  background: var(--jf-accent-soft);
+  box-shadow: inset 3px 0 0 var(--jf-accent);
+}
+
+.jf-pattern-library__item small {
+  color: var(--jf-text-3);
+  font-size: 0.68rem;
+  text-transform: capitalize;
+}
+
+.jf-pattern-library__no-results {
+  padding: 1rem 0.5rem;
+  color: var(--jf-text-3);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.jf-pattern-library__preview {
+  min-width: 0;
+  padding: 1.25rem;
+  overflow: auto;
+  background: var(--jf-surface-3);
+}
+
+@media (max-width: 760px) {
+  .jf-pattern-library {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+  .jf-pattern-library__header {
+    flex-wrap: wrap;
+  }
+  .jf-pattern-library__heading {
+    flex: 1 0 calc(100% - 3rem);
+  }
+  .jf-pattern-library__body {
+    grid-template-columns: 1fr;
+  }
+  .jf-pattern-library__sidebar {
+    max-height: 42vh;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--jf-border);
+  }
+  .jf-pattern-library__filters {
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.55fr);
+  }
+}
+
+.jf-header-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  margin: 0 0 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--jf-border-strong);
+  border-radius: 10px;
+  background: var(--jf-surface);
+  cursor: pointer;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  box-sizing: border-box;
+}
+
+.jf-header-chrome:hover,
+.jf-header-chrome.is-selected {
+  border-style: solid;
+  border-color: var(--jf-accent);
+}
+
+.jf-header-chrome.is-selected {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--jf-accent) 20%, transparent);
+}
+
+.jf-header-chrome--center {
+  flex-direction: column;
+  text-align: center;
+}
+
+.jf-header-chrome--hidden {
+  justify-content: center;
+  color: var(--jf-text-2);
+  background: var(--jf-surface-2);
+}
+
+.jf-header-chrome__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+}
+
+.jf-header-chrome__logo {
+  height: 28px;
+  width: auto;
+}
+
+.jf-header-chrome__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  color: var(--jf-text-2);
+  font-size: 0.85rem;
+}
+
+.jf-header-chrome__empty {
+  font-size: 0.8rem;
+  color: var(--jf-text-3);
+}
+
+.jf-header-chrome__widget {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--jf-border);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--jf-text-2);
+}
+
+.jf-header-chrome__blocks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.35rem;
+  flex: 1 1 8rem;
+  min-width: 8rem;
+  cursor: default;
+}
+
+.jf-header-chrome__blocks .jf-header-chrome {
+  margin: 0;
+}
+
+.jf-anim-panel {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--jf-border);
+}
+.jf-anim-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.jf-anim-panel h3 {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--jf-text-2);
+}
+.jf-anim-panel__hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--jf-text-3);
+  font-weight: 400;
+}
+.jf-anim-panel__replay {
+  border: 1px solid var(--jf-border-strong);
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  border-radius: 5px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.jf-anim-panel__replay:hover {
+  background: var(--jf-surface-2);
+}
+.jf-anim-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--jf-text-2);
+  margin-bottom: 0.75rem;
+}
+.jf-anim-panel__field select,
+.jf-anim-panel__field input[type="range"] {
+  font-weight: 500;
+}
+.jf-anim-panel__field select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--jf-border-strong);
+  border-radius: 5px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--jf-surface);
+}
+.jf-anim-panel__range {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.jf-anim-panel__range input {
+  flex: 1;
+}
+.jf-anim-panel__range span {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--jf-text-2);
+  min-width: 3.2rem;
+}
+.jf-builder-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.jf-builder-toolbar__btn {
+  border: 1px solid var(--jf-border-strong);
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.jf-builder-toolbar__btn:hover:not([disabled]) {
+  background: var(--jf-surface-2);
+}
+.jf-builder-toolbar__btn[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+.jf-builder-toolbar__segmented {
+  display: inline-flex;
+  margin-left: 0.4rem;
+}
+.jf-builder-toolbar__segmented .jf-builder-toolbar__btn {
+  border-radius: 0;
+}
+.jf-builder-toolbar__segmented .jf-builder-toolbar__btn:first-child {
+  border-radius: 6px 0 0 6px;
+}
+.jf-builder-toolbar__segmented .jf-builder-toolbar__btn:last-child {
+  border-radius: 0 6px 6px 0;
+  margin-left: -1px;
+}
+.jf-builder-toolbar__btn[aria-pressed="true"] {
+  background: var(--jf-accent-soft);
+  border-color: var(--jf-accent);
+  color: var(--jf-accent);
+  position: relative;
+}
+.jf-builder-toolbar__count {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--jf-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Inline WYSIWYG editing (paragraph/heading/quote text in the canvas) ── */
+.jf-inline-editable {
+  cursor: text;
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  transition: background .12s ease, border-color .12s ease, box-shadow .12s ease, padding .12s ease;
+}
+.jf-inline-editable:focus {
+  background: var(--jf-surface);
+  border-color: var(--jf-border-strong);
+  outline: none;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+.jf-paragraph.jf-inline-editable {
+  min-height: 2.75rem;
+  line-height: 1.6;
+}
+.jf-paragraph.jf-inline-editable:focus {
+  min-height: 4.5rem;
+  padding: 0.9rem 1.1rem;
+}
+.jf-inline-editable:empty:before {
+  content: attr(data-placeholder);
+  color: var(--jf-text-3);
+  font-style: italic;
+}
+.jf-inline-toolbar {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  gap: 0.15rem;
+  background: var(--jf-text);
+  border-radius: 6px;
+  padding: 0.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.jf-inline-toolbar__btn {
+  min-width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--jf-surface);
+  cursor: pointer;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+.jf-inline-toolbar__btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+.jf-inline-image-picker {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 260px;
+  background: var(--jf-surface);
+  border: 1px solid var(--jf-border);
+  border-radius: 8px;
+  padding: 0.6rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+.jf-inline-image-picker__row {
+  display: flex;
+  gap: 0.35rem;
+}
+.jf-inline-image-picker__library {
+  grid-template-columns: repeat(4, 1fr);
+  max-height: 140px;
+}
+.jf-inline-more-menu {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  width: 200px;
+  background: var(--jf-surface);
+  border: 1px solid var(--jf-border);
+  border-radius: 8px;
+  padding: 0.3rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+}
+.jf-inline-more-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  background: none;
+  color: var(--jf-text);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  text-align: left;
+}
+.jf-inline-more-menu__item:hover {
+  background: var(--jf-surface-2);
+}
+.jf-inline-more-menu__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+.jf-footnote-ref {
+  position: relative;
+  cursor: help;
+  color: var(--jf-accent);
+  font-weight: 700;
+}
+.jf-footnote-ref:hover:after {
+  content: attr(data-footnote);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: 240px;
+  margin-bottom: 4px;
+  padding: 0.35rem 0.5rem;
+  background: var(--jf-text);
+  color: var(--jf-surface);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: normal;
+}
+.jf-math { display: inline-block; }
+
+/* ── Block inspector panels: custom CSS and JSON ── */
+.jf-block-panel {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--jf-border);
+}
+.jf-block-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.jf-block-panel h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--jf-text-2);
+}
+.jf-block-panel__head h3 {
+  margin-bottom: 0;
+}
+.jf-block-panel__hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--jf-text-3);
+  font-weight: 400;
+}
+.jf-block-panel__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--jf-text-2);
+  margin-bottom: 0.75rem;
+}
+.jf-block-panel__field input,
+.jf-block-panel__field textarea,
+.jf-block-panel__field select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--jf-border-strong);
+  border-radius: 5px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 500;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+}
+.jf-block-panel__field select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--jf-text-3) 50%),
+    linear-gradient(135deg, var(--jf-text-3) 50%, transparent 50%);
+  background-position:
+    calc(100% - 13px) calc(50% - 2px),
+    calc(100% - 9px) calc(50% - 2px);
+  background-size:
+    4px 4px,
+    4px 4px;
+  background-repeat: no-repeat;
+  padding-right: 1.75rem;
+}
+.jf-block-panel__field input:focus-visible,
+.jf-block-panel__field textarea:focus-visible,
+.jf-block-panel__field select:focus-visible {
+  border-color: var(--jf-accent);
+  outline: 2px solid var(--jf-accent-soft);
+  outline-offset: 1px;
+}
+.jf-block-panel__code,
+.jf-block-panel textarea.jf-block-panel__code {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  tab-size: 2;
+  /* The inspector column is ~280px. Wrapping keeps every line readable there;
+     hiding half of each line behind a horizontal scrollbar does not. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  resize: vertical;
+}
+.jf-block-panel > .jf-block-panel__code {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--jf-border-strong);
+  border-radius: 5px;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--jf-surface);
+}
+.jf-block-panel__error {
+  margin: -0.4rem 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--jf-danger);
+}
+.jf-block-panel__compiled {
+  margin: -0.4rem 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--jf-text-3);
+}
+.jf-block-panel__compiled summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.jf-block-panel__compiled pre {
+  margin: 0.4rem 0 0;
+  padding: 0.5rem 0.6rem;
+  background: var(--jf-surface-2);
+  border-radius: 5px;
+  overflow-x: auto;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--jf-text-2);
+}
+.jf-block-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.jf-block-panel__toggle {
+  border: 1px solid var(--jf-border-strong);
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  border-radius: 5px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.jf-block-panel__toggle:hover {
+  background: var(--jf-surface-2);
+}
+.jf-block-panel__apply {
+  border: 1px solid var(--jf-accent);
+  background: var(--jf-accent);
+  color: var(--jf-accent-contrast);
+  border-radius: 5px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.jf-block-panel__apply:hover {
+  background: var(--jf-accent-hover);
+}
+.jf-block-panel__ok {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--jf-success);
+}
+
+/* Nothing selected: the panel is the inspector, not a footnote under one. */
+.jf-block-panel--page {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.jf-block-panel--page .jf-block-panel__code {
+  flex: 1;
+  min-height: 12rem;
+}
+.jf-block-panel__grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 0.6rem;
+}
+.jf-block-panel__field--inline {
+  margin-bottom: 0.6rem;
+}
+.jf-block-panel__field--inline input {
+  font-variant-numeric: tabular-nums;
+}
+
+.jf-block-panel__count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--jf-text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.jf-block-panel__warn {
+  margin: -0.4rem 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--jf-warning);
+}
+.jf-block-panel__apply[disabled],
+.jf-block-panel__toggle[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+.jf-block-panel__apply[disabled]:hover {
+  background: var(--jf-accent);
+}
+.jf-block-panel__toggle[disabled]:hover {
+  background: var(--jf-surface);
+}
+
+.jf-anim-panel__check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--jf-text-2);
+  margin-bottom: 0.75rem;
+}
+
+/* ------------------------------------------------------ builder shell --- */
+
+/**
+ * One frame for every block document (BuilderShell.tsx): optional top bar,
+ * toolbar, then library | canvas | inspector. Logical properties keep the
+ * panels on the correct side in RTL. Below 960px the side panels overlay the
+ * canvas instead of squeezing it.
+ */
+.jf-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--jf-surface-3);
+}
+.jf-shell--page {
+  height: 100vh;
+  height: 100dvh;
+}
+.jf-shell__back {
+  display: inline-block;
+}
+[dir="rtl"] .jf-shell__back {
+  transform: scaleX(-1);
+}
+.jf-shell__toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  background: var(--jf-surface);
+  border-block-end: 1px solid var(--jf-border);
+  flex-shrink: 0;
+}
+.jf-shell__spacer {
+  flex: 1 1 auto;
+}
+.jf-shell__context {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--jf-surface-2);
+  color: var(--jf-text-2);
+  border: 1px solid var(--jf-border);
+}
+.jf-shell__context--global {
+  background: var(--jf-warning-soft);
+  color: var(--jf-warning);
+  border-color: currentColor;
+}
+.jf-shell__impact {
+  font-size: 0.72rem;
+  color: var(--jf-text-2);
+}
+.jf-shell__zoom select {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+  border: 1px solid var(--jf-border-strong);
+  background: var(--jf-surface);
+  color: var(--jf-text);
+}
+.jf-shell__body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 300px;
+}
+.jf-shell__body--no-left {
+  grid-template-columns: 0 minmax(0, 1fr) 300px;
+}
+.jf-shell__body--no-right {
+  grid-template-columns: 240px minmax(0, 1fr) 0;
+}
+.jf-shell__body--no-left.jf-shell__body--no-right {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.jf-shell__left,
+.jf-shell__right {
+  background: var(--jf-surface);
+  min-height: 0;
+  overflow: auto;
+}
+.jf-shell__left {
+  border-inline-end: 1px solid var(--jf-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.jf-shell__right {
+  border-inline-start: 1px solid var(--jf-border);
+  padding: 1rem;
+}
+.jf-shell__left[hidden],
+.jf-shell__right[hidden] {
+  display: none;
+}
+/*
+ * Fixed columns: a hidden panel leaves the grid, and without these the canvas
+ * would slide into the collapsed 0-width column.
+ */
+.jf-shell__left {
+  grid-column: 1;
+  grid-row: 1;
+}
+.jf-shell__canvas {
+  grid-column: 2;
+  grid-row: 1;
+}
+.jf-shell__right {
+  grid-column: 3;
+  grid-row: 1;
+}
+.jf-shell__canvas {
+  overflow: auto;
+  padding: 0.75rem 1.25rem 1.25rem;
+  min-width: 0;
+}
+.jf-shell__crumbs {
+  max-width: 900px;
+  margin: 0 auto 0.6rem;
+  font-size: 0.75rem;
+}
+.jf-shell__crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.jf-shell__crumbs li + li::before {
+  content: "›";
+  margin-inline-end: 0.2rem;
+  color: var(--jf-text-3);
+}
+.jf-shell__crumbs button {
+  border: 0;
+  background: none;
+  padding: 0.1rem 0.2rem;
+  color: var(--jf-accent);
+  cursor: pointer;
+  font: inherit;
+  border-radius: 4px;
+}
+.jf-shell__crumbs button:hover {
+  text-decoration: underline;
+}
+.jf-shell__crumbs [aria-current] {
+  padding: 0.1rem 0.2rem;
+  font-weight: 650;
+  color: var(--jf-text);
+}
+.jf-shell__frame {
+  position: relative;
+  isolation: isolate;
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--jf-surface);
+  border-radius: 12px;
+  box-shadow: var(--jf-shadow-sm);
+  padding: 1rem;
+  min-height: calc(100% - 2rem);
+  transition: max-width 0.2s ease;
+}
+.jf-shell__frame[data-breakpoint="desktop"] {
+  max-width: 1200px;
+}
+.jf-shell__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 12px;
+  margin: 0;
+  padding: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .jf-shell__frame {
+    transition: none;
+  }
+}
+@media (max-width: 960px) {
+  .jf-shell__body,
+  .jf-shell__body--no-left,
+  .jf-shell__body--no-right {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .jf-shell__canvas {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .jf-shell__left,
+  .jf-shell__right {
+    position: absolute;
+    inset-block: 0;
+    z-index: 5;
+    width: min(320px, 85vw);
+    box-shadow: var(--jf-shadow-md, 0 8px 24px rgba(0, 0, 0, 0.18));
+    /* Overlays over the whole body, not a grid column. */
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .jf-shell__left {
+    inset-inline-start: 0;
+  }
+  .jf-shell__right {
+    inset-inline-end: 0;
+  }
+}
+
+/* Inspector tabs (Content, Style, Layout, Responsive, Interactions, Advanced). */
+.jf-inspector__title {
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--jf-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.6rem;
+}
+.jf-inspector__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin-bottom: 0.85rem;
+  border-block-end: 1px solid var(--jf-border);
+}
+.jf-inspector__tab {
+  border: 0;
+  border-block-end: 2px solid transparent;
+  background: none;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--jf-text-2);
+  cursor: pointer;
+  margin-block-end: -1px;
+}
+.jf-inspector__tab:hover {
+  color: var(--jf-text);
+}
+.jf-inspector__tab[aria-selected="true"] {
+  color: var(--jf-accent);
+  border-block-end-color: var(--jf-accent);
+}
+.jf-inspector__tab:focus-visible,
+.jf-shell__crumbs button:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: 1px;
+}
+
+/* Builder shell: Blocks | Site left panel and the canvas-less frame. */
+.jf-shell__left-tabs {
+  padding: 0.4rem 0.6rem 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+.jf-shell__library {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.jf-shell__site {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.jf-shell__empty {
+  max-width: 34rem;
+  margin: 3rem auto;
+  text-align: center;
+  color: var(--jf-text-2);
+}
+
+/* Builder shell: a decision the author has to make (conflict, recovered changes). */
+.jf-shell__notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem;
+  background: var(--jf-warning-soft);
+  color: var(--jf-text);
+  border-block-end: 1px solid var(--jf-border);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.jf-shell__notice p {
+  margin: 0;
+  flex: 1 1 18rem;
+}
+
+/* Builder revisions dialog: version list beside a change summary. */
+.jf-revisions {
+  width: min(52rem, calc(100vw - 2rem));
+  max-height: min(40rem, calc(100vh - 2rem));
+  padding: 0;
+  border: 1px solid var(--jf-border);
+  border-radius: 12px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  box-shadow: var(--jf-shadow-md, 0 12px 32px rgba(0, 0, 0, 0.2));
+}
+.jf-revisions::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+.jf-revisions__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-block-end: 1px solid var(--jf-border);
+}
+.jf-revisions__header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.jf-revisions__body {
+  display: grid;
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+  min-height: 18rem;
+}
+.jf-revisions__list {
+  border-inline-end: 1px solid var(--jf-border);
+  overflow: auto;
+  max-height: 32rem;
+}
+.jf-revisions__list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem;
+}
+.jf-revisions__list button {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 100%;
+  text-align: start;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  padding: 0.45rem 0.55rem;
+  font: inherit;
+  font-size: 0.82rem;
+  color: var(--jf-text);
+  cursor: pointer;
+}
+.jf-revisions__list button small {
+  color: var(--jf-text-3);
+}
+.jf-revisions__list button:hover {
+  background: var(--jf-surface-2);
+}
+.jf-revisions__list button[aria-pressed="true"] {
+  background: var(--jf-accent-soft);
+  color: var(--jf-accent);
+}
+.jf-revisions__list button:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: 1px;
+}
+.jf-revisions__list p,
+.jf-revisions__detail {
+  padding: 0.85rem 1rem;
+}
+.jf-revisions__detail {
+  overflow: auto;
+  max-height: 32rem;
+  font-size: 0.85rem;
+}
+.jf-revisions__group h3 {
+  font-size: 0.78rem;
+  margin: 0.8rem 0 0.3rem;
+}
+.jf-revisions__group ul {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+}
+@media (max-width: 640px) {
+  .jf-revisions__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .jf-revisions__list {
+    border-inline-end: 0;
+    border-block-end: 1px solid var(--jf-border);
+    max-height: 12rem;
+  }
+}
+
+/* Canvas: outline the innermost hovered block, and the drop result message. */
+.jf-canvas-block:hover:not(:has(.jf-canvas-block:hover)):not([data-selected]) {
+  outline: 1px dashed var(--jf-accent);
+  outline-offset: 2px;
+}
+.jf-drop-status {
+  position: fixed;
+  inset-block-end: 1rem;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  max-width: min(32rem, calc(100vw - 2rem));
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+[dir="rtl"] .jf-drop-status {
+  transform: translateX(50%);
+}
+.jf-drop-status--ok,
+.jf-drop-status--error {
+  opacity: 1;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  border: 1px solid var(--jf-border);
+  box-shadow: var(--jf-shadow-md, 0 8px 24px rgba(0, 0, 0, 0.18));
+}
+.jf-drop-status--error {
+  border-color: var(--jf-danger);
+  color: var(--jf-danger);
+}
+@media (prefers-reduced-motion: reduce) {
+  .jf-drop-status {
+    transition: none;
+  }
+}
+
+/* Layers panel (navigator). */
+.jf-navigator {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  flex: 1;
+}
+.jf-navigator__search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--jf-border-strong);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+}
+.jf-navigator__hint {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--jf-text-3);
+}
+.jf-navigator__scroll {
+  flex: 1;
+  min-height: 8rem;
+  overflow: auto;
+}
+.jf-navigator__tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.jf-navigator__row {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 30px;
+  box-sizing: border-box;
+  padding-inline-end: 0.4rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--jf-text);
+  cursor: pointer;
+  user-select: none;
+  touch-action: pan-y;
+}
+.jf-navigator__row:hover {
+  background: var(--jf-surface-2);
+}
+.jf-navigator__row:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: -2px;
+}
+.jf-navigator__row--selected {
+  background: var(--jf-accent-soft);
+  color: var(--jf-accent);
+  font-weight: 600;
+}
+.jf-navigator__row--match .jf-navigator__label {
+  text-decoration: underline;
+  text-decoration-color: var(--jf-accent);
+}
+.jf-navigator__toggle {
+  width: 1rem;
+  flex-shrink: 0;
+  text-align: center;
+  color: var(--jf-text-3);
+}
+[dir="rtl"] .jf-navigator__toggle {
+  transform: scaleX(-1);
+}
+.jf-navigator__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.jf-navigator__rename {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  padding: 0.1rem 0.3rem;
+}
+.jf-navigator__badge {
+  font-size: 0.72rem;
+  color: var(--jf-text-3);
+}
+.jf-navigator__badge--unavailable {
+  color: var(--jf-danger);
+}
+.jf-navigator__empty {
+  font-size: 0.8rem;
+  color: var(--jf-text-3);
+  margin: 0.5rem 0;
+}
+.jf-navigator__move {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--jf-text-2);
+  border-block-start: 1px solid var(--jf-border);
+  padding-block-start: 0.5rem;
+}
+.jf-navigator__move select {
+  font-size: 0.8rem;
+  padding: 0.3rem;
+}
+
+/* Inline editing helpers next to a selected block: button link and image alt text. */
+.jf-inline-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-block-start: 0.4rem;
+  max-width: 24rem;
+}
+.jf-inline-link input {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--jf-border-strong);
+  border-radius: 6px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+}
+.jf-inline-link input[aria-invalid="true"] {
+  border-color: var(--jf-danger);
+}
+.jf-inline-link__error {
+  font-size: 0.75rem;
+  color: var(--jf-danger);
+}
+.jf-inline-alt {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  margin-block-start: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--jf-text-2);
+}
+.jf-inline-alt .jf-inline-editable {
+  flex: 1;
+  min-width: 8rem;
+  border-block-end: 1px dashed var(--jf-border-strong);
+}
+
+/* Inline media editing: replace/poster actions, non-image library list, caption line. */
+.jf-inline-media-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-block-start: 0.4rem;
+}
+.jf-inline-media-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  max-height: 12rem;
+  overflow: auto;
+}
+.jf-inline-media-list button {
+  width: 100%;
+  text-align: start;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--jf-text);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.jf-inline-media-list button:hover,
+.jf-inline-media-list button:focus-visible {
+  background: var(--jf-surface-2);
+}
+
+/* Block actions menu, multi-selection, and locks (justflows-ce#298). */
+.jf-actions-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 15rem;
+  max-width: min(22rem, calc(100vw - 1rem));
+  max-height: calc(100vh - 1rem);
+  overflow: auto;
+  padding: 0.3rem;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  border: 1px solid var(--jf-border);
+  border-radius: 8px;
+  box-shadow: var(--jf-shadow-md, 0 8px 24px rgba(0, 0, 0, 0.18));
+  font-size: 0.82rem;
+}
+.jf-actions-menu__group + .jf-actions-menu__group {
+  border-top: 1px solid var(--jf-border);
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+}
+.jf-actions-menu__heading {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--jf-text-3);
+}
+.jf-actions-menu__item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  column-gap: 0.5rem;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.jf-actions-menu__item > .jf-actions-menu__label {
+  grid-column: 2;
+}
+.jf-actions-menu__item:hover:not([aria-disabled="true"]),
+.jf-actions-menu__item:focus-visible {
+  background: var(--jf-surface-2);
+  outline: 2px solid var(--jf-accent);
+  outline-offset: -2px;
+}
+.jf-actions-menu__item[aria-disabled="true"] {
+  cursor: default;
+  color: var(--jf-text-3);
+}
+.jf-actions-menu__check {
+  grid-column: 1;
+  width: 1em;
+  text-align: center;
+}
+.jf-actions-menu__kbd {
+  grid-column: 3;
+  font: inherit;
+  font-size: 0.72rem;
+  color: var(--jf-text-3);
+}
+.jf-actions-menu__reason {
+  grid-column: 2 / 4;
+  display: block;
+  padding: 0 0.5rem 0.2rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--jf-text-3);
+}
+.jf-actions-menu__item .jf-actions-menu__reason {
+  padding: 0.1rem 0 0;
+}
+.jf-canvas-block__lock {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+.jf-inspector-lock {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.jf-inspector-lock__notice {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--jf-border);
+  border-inline-start: 3px solid var(--jf-accent);
+  border-radius: 6px;
+  background: var(--jf-surface-2);
+  font-size: 0.8rem;
+}
+.jf-inspector--multi .jf-inspector__multi-list {
+  margin: 0.5rem 0;
+  padding-inline-start: 1.1rem;
+  font-size: 0.8rem;
+  max-height: 10rem;
+  overflow: auto;
+}
+.jf-inspector__multi-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+.jf-inspector__subtitle {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.jf-save-selection__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+}
+.jf-save-selection {
+  width: min(26rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.1rem;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  border: 1px solid var(--jf-border);
+  border-radius: 10px;
+  box-shadow: var(--jf-shadow-md, 0 8px 24px rgba(0, 0, 0, 0.18));
+}
+.jf-save-selection h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.jf-save-selection__hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--jf-text-3);
+}
+.jf-save-selection__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.jf-save-selection__check {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  font-size: 0.82rem;
+}
+.jf-save-selection__error {
+  margin: 0;
+  color: var(--jf-danger);
+  font-size: 0.82rem;
+}
+.jf-save-selection__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* Layout controls and canvas overlays (justflows-ce#299). */
+.jf-layout-modes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+.jf-layout-modes__option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.2rem;
+  border: 1px solid var(--jf-border);
+  border-radius: 6px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.jf-layout-modes__option.is-active {
+  border-color: var(--jf-accent);
+  background: var(--jf-accent-soft);
+  color: var(--jf-accent);
+  font-weight: 650;
+}
+.jf-layout-modes__option:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: 1px;
+}
+.jf-layout-modes__icon {
+  display: grid;
+  gap: 2px;
+  width: 1.4rem;
+  height: 1rem;
+}
+.jf-layout-modes__icon::before,
+.jf-layout-modes__icon::after {
+  content: "";
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.55;
+}
+.jf-layout-modes__icon--stack,
+.jf-layout-modes__icon--column {
+  grid-template-rows: 1fr 1fr;
+}
+.jf-layout-modes__icon--row {
+  grid-template-columns: 1fr 1fr;
+}
+.jf-layout-modes__icon--grid {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  background: linear-gradient(currentColor, currentColor) right bottom / calc(50% - 1px) calc(50% - 1px) no-repeat,
+    linear-gradient(currentColor, currentColor) left bottom / calc(50% - 1px) calc(50% - 1px) no-repeat;
+  color: inherit;
+}
+.jf-block-panel__check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  margin: 0.35rem 0;
+}
+.jf-layout-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.jf-layout-overlay__pad {
+  position: absolute;
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--jf-accent) 18%, transparent) 0 4px,
+    transparent 4px 8px
+  );
+}
+.jf-layout-overlay__content {
+  position: absolute;
+  outline: 1px dashed color-mix(in srgb, var(--jf-accent) 70%, transparent);
+  outline-offset: -1px;
+}
+.jf-layout-overlay__track {
+  position: absolute;
+  inset-block: 0;
+  background: color-mix(in srgb, var(--jf-accent) 8%, transparent);
+  border-inline: 1px dashed color-mix(in srgb, var(--jf-accent) 45%, transparent);
+}
+.jf-layout-overlay__handle {
+  position: absolute;
+  width: 28px;
+  height: 10px;
+  margin-left: -14px;
+  margin-top: -5px;
+  border-radius: 5px;
+  border: 2px solid var(--jf-surface);
+  background: var(--jf-accent);
+  box-shadow: 0 0 0 1px var(--jf-accent);
+  cursor: ns-resize;
+  pointer-events: auto;
+  touch-action: none;
+}
+.jf-layout-overlay__handle--minHeight {
+  width: 40px;
+  margin-left: -20px;
+  background: var(--jf-surface);
+}
+.jf-layout-overlay__handle:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: 3px;
+}
+.jf-layout-overlay__value {
+  position: absolute;
+  inset-inline-start: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: var(--jf-text);
+  color: var(--jf-surface);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+@media (forced-colors: active) {
+  .jf-layout-overlay__handle {
+    forced-color-adjust: none;
+    background: Highlight;
+    border-color: Canvas;
+  }
+}
+
+/* Responsive preview (justflows-ce#300): the canvas is the query container for the theme's width rules. */
+.jf-shell__frame,
+.jf-canvas-root {
+  container: jf-canvas / inline-size;
+}
+.jf-shell__width {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--jf-text-3);
+}
+.jf-shell__width input {
+  width: 4.6rem;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+  border: 1px solid var(--jf-border-strong);
+  background: var(--jf-surface);
+  color: var(--jf-text);
+}
+.jf-shell__measure {
+  font-size: 0.72rem;
+  color: var(--jf-text-3);
+  white-space: nowrap;
+}
+.jf-responsive__bps {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+.jf-responsive__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem 0.5rem;
+  align-items: end;
+  margin-bottom: 0.45rem;
+}
+.jf-responsive__source {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  color: var(--jf-text-3);
+}
+.jf-responsive__source--own {
+  color: var(--jf-accent);
+  font-weight: 650;
+}
+.jf-responsive__warnings {
+  margin: 0 0 0.75rem;
+  padding-inline-start: 1.1rem;
+  font-size: 0.78rem;
+  color: var(--jf-warning, #b45309);
+}
+.jf-shell__unit {
+  font-size: 0.72rem;
+  color: var(--jf-text-3);
+  margin-inline-start: -0.15rem;
+}
+
+/* Global styles panel, presets, and value sources (justflows-ce#301). */
+.jf-global-styles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0.1rem 1rem;
+  overflow: auto;
+  min-height: 0;
+}
+.jf-global-styles__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.jf-global-styles__state {
+  flex: 1;
+  font-size: 0.75rem;
+  color: var(--jf-text-3);
+}
+.jf-global-styles__count {
+  margin-inline-start: auto;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--jf-accent);
+}
+.jf-global-styles__field .jf-responsive__row {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.jf-global-styles__locked {
+  padding: 0.5rem;
+}
+.jf-global-styles__presets {
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--jf-border);
+  padding-top: 0.5rem;
+}
+.jf-source-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.jf-source-reset {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: inherit;
+  color: var(--jf-accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.jf-source-reset:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+/* Site context around a page (justflows-ce#303). */
+.jf-site-context__note {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  color: var(--jf-text-3);
+  text-align: center;
+}
+.jf-site-context__region {
+  position: relative;
+  border: 1px dashed color-mix(in srgb, var(--jf-accent) 45%, transparent);
+  border-radius: 8px;
+  margin: 0.35rem 0;
+}
+.jf-site-context__region--template {
+  padding: 0;
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--jf-accent) 25%, transparent);
+}
+.jf-site-context__region > .jf-site-context__body {
+  opacity: 0.82;
+}
+.jf-site-context__region--template > .jf-site-context__body {
+  opacity: 1;
+}
+.jf-site-context__region--template > .jf-site-context__body > :not(.jf-site-context__content):not(.jf-site-context__region) {
+  opacity: 0.82;
+}
+.jf-site-context__content {
+  opacity: 1;
+}
+.jf-site-context__bar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  padding: 0.2rem 0.35rem;
+}
+.jf-site-context__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--jf-border);
+  border-radius: 999px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.jf-site-context__chip:focus-visible {
+  outline: 2px solid var(--jf-accent);
+  outline-offset: 1px;
+}
+.jf-site-context__source {
+  font-weight: 400;
+  color: var(--jf-text-3);
+}
+.jf-site-context__badge {
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--jf-accent-soft);
+  color: var(--jf-accent);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.jf-site-context__notice {
+  margin-top: 0.3rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--jf-border);
+  border-inline-start: 3px solid var(--jf-accent);
+  border-radius: 6px;
+  background: var(--jf-surface);
+  font-size: 0.78rem;
+  max-width: 28rem;
+}
+.jf-site-context__notice p {
+  margin: 0 0 0.4rem;
+}
+.jf-site-context__hierarchy {
+  margin: 0 0 0.5rem;
+  padding-inline-start: 1.1rem;
+  font-size: 0.74rem;
+}
+.jf-site-context__hierarchy li {
+  color: var(--jf-text-3);
+}
+.jf-site-context__hierarchy li[aria-current="true"] {
+  color: var(--jf-text);
+  font-weight: 650;
+}
+.jf-site-context__hierarchy--panel {
+  margin: 0.25rem 0;
+}
+.jf-site-context__empty {
+  margin: 0;
+  padding: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--jf-text-3);
+  text-align: center;
+}
+.jf-header-chrome--context {
+  pointer-events: none;
+}
+
+/* Linked reusable blocks on the canvas (justflows-ce#304). */
+.jf-reusable-ref {
+  position: relative;
+  border: 1px solid color-mix(in srgb, #0d9488 55%, transparent);
+  border-radius: 6px;
+  padding: 1.4rem 0.4rem 0.4rem;
+}
+.jf-reusable-ref__chip {
+  position: absolute;
+  top: 0.2rem;
+  inset-inline-start: 0.35rem;
+  font-size: 0.66rem;
+  font-weight: 650;
+  color: #0f766e;
+  background: var(--jf-surface);
+  padding: 0 0.35rem;
+  border-radius: 999px;
+}
+.jf-reusable-ref__draft {
+  font-weight: 400;
+  color: var(--jf-text-3);
+}
+.jf-reusable-ref--missing,
+.jf-reusable-ref--empty {
+  padding: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--jf-text-3);
+  border-style: dashed;
+}
+
+/* Plugin block previews and their states (justflows-ce#305). */
+/**
+ * A canvas stand-in for content the page fills in when served
+ * (justflows-ce#306). The label appears on hover and focus so it does not
+ * crowd the canvas, and its title says why.
+ */
+.jf-preview-stand-in {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 2;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--jf-surface-3);
+  color: var(--jf-text-2);
+  font: 600 0.68rem/1.4 var(--jf-font, system-ui, sans-serif);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+[data-jf-stand-in]:hover > .jf-preview-stand-in,
+[data-jf-stand-in]:focus-within > .jf-preview-stand-in,
+[data-selected="true"] [data-jf-stand-in] > .jf-preview-stand-in {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .jf-preview-stand-in { transition: none; }
+}
+
+.jf-block-status__note {
+  margin: 0 0 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-left: 3px solid var(--jf-warning, #b45309);
+  background: var(--jf-surface-2);
+  color: var(--jf-text-2);
+  font-size: 0.75rem;
+}
+
+.jf-plugin-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--jf-border-strong);
+  border-radius: 6px;
+  color: var(--jf-text-3);
+  font-size: 0.8rem;
+  min-height: 2.5rem;
+}
+.jf-plugin-preview--loading {
+  border-style: solid;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--jf-text-3) 8%, transparent), transparent);
+  background-size: 200% 100%;
+  animation: jf-plugin-preview-shimmer 1.4s linear infinite;
+}
+.jf-plugin-preview--error,
+.jf-plugin-preview--timeout,
+.jf-plugin-preview--unavailable {
+  border-color: color-mix(in srgb, var(--jf-danger) 50%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .jf-plugin-preview--loading {
+    animation: none;
+  }
+}
+
+/** Recovery for unavailable and deprecated blocks in the block settings (justflows-ce#306). */
+.jf-recovery {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--jf-warning);
+  border-radius: 6px;
+  background: var(--jf-warning-soft);
+  color: var(--jf-text);
+}
+.jf-recovery__title {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.jf-recovery__text,
+.jf-recovery__notice {
+  margin: 0;
+  font-size: 0.8rem;
+}
+.jf-recovery__meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.6rem;
+  margin: 0;
+  font-size: 0.75rem;
+}
+.jf-recovery__meta dt {
+  color: var(--jf-text-2);
+}
+.jf-recovery__meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.jf-recovery__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.jf-recovery__replace {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+}
+
+/** Accessibility checks panel (justflows-ce#307). */
+.jf-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+}
+.jf-checks__title {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.jf-checks__note,
+.jf-checks__empty {
+  margin: 0;
+  color: var(--jf-text-2);
+  font-size: 0.78rem;
+}
+.jf-checks__heading {
+  margin: 0.4rem 0 0.3rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.jf-checks__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.jf-checks__show {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--jf-border);
+  border-inline-start-width: 4px;
+  border-radius: 6px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.jf-checks__item[data-severity="error"] .jf-checks__show { border-inline-start-color: var(--jf-danger); }
+.jf-checks__item[data-severity="warning"] .jf-checks__show { border-inline-start-color: var(--jf-warning); }
+.jf-checks__item[data-severity="unavailable"] .jf-checks__show { border-inline-start-style: dashed; }
+.jf-checks__block {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--jf-text-2);
+}
+.jf-checks__message {
+  font-size: 0.8rem;
+}
+.jf-shell__tab-count {
+  display: inline-block;
+  min-width: 1.2rem;
+  margin-inline-start: 0.3rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--jf-danger);
+  color: #fff;
+  font-size: 0.68rem;
+  line-height: 1.2rem;
+  text-align: center;
+}
+
+/** Larger canvas buttons on touch screens (justflows-ce#307). */
+@media (pointer: coarse) {
+  .jf-canvas-btn {
+    min-width: 2.75rem !important;
+    min-height: 2.75rem !important;
+  }
+}
+
+/**
+ * Windows high contrast and other forced-colours modes drop background
+ * colours, so selection, drop targets and focus need outlines in system
+ * colours (justflows-ce#307).
+ */
+@media (forced-colors: active) {
+  .jf-canvas-root :focus-visible,
+  .jf-shell :focus-visible {
+    outline: 3px solid Highlight !important;
+    outline-offset: 2px;
+  }
+  .jf-checks__show,
+  .jf-recovery,
+  .jf-plugin-preview,
+  .jf-preview-stand-in {
+    border: 1px solid CanvasText;
+  }
+  .jf-shell__tab-count {
+    forced-color-adjust: none;
+    background: Mark;
+    color: MarkText;
+  }
+}
+
+/** Keyboard shortcuts dialog (justflows-ce#307). */
+.jf-shortcuts {
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 4rem);
+  overflow: auto;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--jf-border);
+  border-radius: 10px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+}
+.jf-shortcuts::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+.jf-shortcuts__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.jf-shortcuts__head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.jf-shortcuts__intro {
+  color: var(--jf-text-2);
+  font-size: 0.85rem;
+}
+.jf-shortcuts__area h3 {
+  margin: 1rem 0 0.4rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.jf-shortcuts__area dl {
+  margin: 0;
+}
+.jf-shortcuts__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem 1rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--jf-border);
+  font-size: 0.85rem;
+}
+.jf-shortcuts__row dd {
+  margin: 0;
+  text-align: end;
+}
+.jf-shortcuts__chord {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.jf-shortcuts__or {
+  margin: 0 0.35rem;
+  color: var(--jf-text-3);
+  font-size: 0.75rem;
+}
+.jf-shortcuts kbd {
+  min-width: 1.6rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--jf-border-strong);
+  border-radius: 4px;
+  background: var(--jf-surface-2);
+  font: 600 0.75rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .jf-shortcuts__row {
+    grid-template-columns: 1fr;
+  }
+  .jf-shortcuts__row dd {
+    text-align: start;
+  }
+}
+
+/**
+ * Long pages (justflows-ce#308): the browser skips layout and painting of
+ * top-level sections far outside the view and keeps a placeholder size, so
+ * scrolling and editing stay fast. The blocks stay in the page, so find in
+ * page, selection, focus and drop targets work as before; a section is drawn
+ * as soon as it comes near the view. The selected section is always drawn.
+ */
+.jf-canvas-block--root {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
+}
+.jf-canvas-block--root[data-selected="true"],
+.jf-canvas-block--root:focus-within,
+.jf-canvas-block--root:has([aria-expanded="true"], [role="dialog"], [role="listbox"], [role="menu"]) {
+  content-visibility: visible;
+}

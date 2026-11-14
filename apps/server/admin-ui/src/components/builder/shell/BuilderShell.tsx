@@ -14,6 +14,8 @@ import {
   type LeftPanelTab,
 } from "./builder-prefs";
 import { inertPreviewHandlers } from "../inert-preview";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../../styles/builder.css";
 
 /**
  * What the shell is editing. Decides the context badge and whether the

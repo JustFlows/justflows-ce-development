@@ -4,6 +4,8 @@ import { sanitizeTemplateDefaults, type TemplateDefaults } from "@justflows/bloc
 import { useT } from "../../i18n/I18nProvider";
 import BlockLayoutPanel from "./BlockLayoutPanel";
 import type { BlockCatalogEntry, BlockNode } from "./types";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../styles/builder.css";
 
 /**
  * A template's style defaults (justflows-ce#301): per block type, the values

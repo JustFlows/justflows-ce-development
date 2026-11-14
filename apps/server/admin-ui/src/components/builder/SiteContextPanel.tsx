@@ -2,6 +2,8 @@
 import { useT } from "../../i18n/I18nProvider";
 import type { SiteContextData, SiteRegion } from "../../lib/site-context";
 import { sourceKey } from "./SiteContextFrame";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../styles/builder.css";
 
 /**
  * The Site tab of a page: what surrounds this page and where each part comes

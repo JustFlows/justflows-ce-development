@@ -14,6 +14,8 @@ import { applyMergeTags, useMergeTags } from "../../lib/merge-tags";
 import { requestBlockPreview } from "../../lib/block-preview-batch";
 import { ImagePickerPopover, MediaPickerPopover, readEditableText } from "./InlineEditable";
 import { InlineField, InlineFieldsContext, InlineLinkField } from "./inline-field";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../styles/builder.css";
 
 /** Class the active theme's stylesheet is scoped to (see `serveThemeCss`). */
 export const THEME_PREVIEW_SCOPE = "jf-theme-surface";
