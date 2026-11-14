@@ -162,6 +162,7 @@ export function serializeEditorContent(
   const overlay = serializeContentRow(overlayRow(liveRow, working));
   const meta: ContentWorkingMeta = {
     id: working.id,
+    version: working.version,
     source: working.source,
     baseVersion: working.baseVersion,
     updatedAt: working.updatedAt,

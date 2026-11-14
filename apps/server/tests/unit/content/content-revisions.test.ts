@@ -63,6 +63,7 @@ describe("serializeEditorContent", () => {
     expect(editor.hasWorkingRevision).toBe(true);
     expect(editor.live?.title).toBe("Live title");
     expect(editor.workingRevision?.updatedByName).toBe("Ada");
+    expect(editor.workingRevision?.version).toBe(2);
     expect(editor.liveChangedSinceWorking).toBe(false);
   });
 

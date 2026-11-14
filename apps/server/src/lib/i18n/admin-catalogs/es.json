@@ -662,7 +662,10 @@
     "pageJson": {
       "title": "JSON de la página",
       "hint": "No hay nada seleccionado, así que esta es la página completa. Selecciona un bloque en el lienzo para editarlo por separado.",
-      "count": "{count} bloques",
+      "count": {
+        "one": "{count} bloque",
+        "other": "{count} bloques"
+      },
       "apply": "Aplicar",
       "reload": "Descartar",
       "applied": "Aplicado",
@@ -730,7 +733,60 @@
       "saveCopy": "Guardar una copia",
       "showing": "Muestra",
       "referenceHint": "Esto es una referencia. Los cambios en el bloque guardado aparecen en cada página que lo usa.",
-      "missing": "Ese bloque guardado ya no existe."
+      "missing": "Ese bloque guardado ya no existe.",
+      "linkedTitle": "Bloque reutilizable vinculado",
+      "usageLoading": "Comprobando dónde se usa…",
+      "usageNone": "Todavía no se usa en ningún otro sitio.",
+      "usage": {
+        "one": "Se usa en {count} lugar. Publicar un cambio lo actualiza.",
+        "other": "Se usa en {count} lugares. Publicar un cambio los actualiza todos."
+      },
+      "usageHidden": {
+        "one": "Se usa en {count} lugar, {hidden} de los cuales no puedes abrir. Publicar un cambio lo actualiza.",
+        "other": "Se usa en {count} lugares, {hidden} de los cuales no puedes abrir. Publicar un cambio los actualiza todos."
+      },
+      "hasDraft": "El origen tiene cambios sin publicar. El lienzo los muestra; los visitantes no los ven hasta que se publiquen.",
+      "editSource": "Editar el origen…",
+      "detach": "Desvincular (crear una copia local)",
+      "detachConfirm": "¿Sustituir este vínculo a «{name}» por una copia local? La copia ya no seguirá los cambios del origen.",
+      "detached": "Desvinculado: ahora es una copia local.",
+      "missingRecover": "El bloque reutilizable al que apunta ya no existe. Elige otro arriba o elimina este bloque.",
+      "notChosen": "Aún no se ha elegido un bloque reutilizable.",
+      "nestingStopped": "«{name}» no se vuelve a mostrar aquí: un bloque reutilizable no puede contenerse a sí mismo ni anidarse más de 4 niveles.",
+      "linkedChip": "Vinculado: {name}",
+      "draftChip": "cambios sin publicar",
+      "notFound": "Este bloque reutilizable no existe.",
+      "usageTitle": "Dónde se usa",
+      "open": "Abrir",
+      "inPart": "parte «{part}»",
+      "inTemplate": "plantilla «{slug}»",
+      "inMenu": "menú «{slug}»",
+      "inReusable": {
+        "one": "{count} bloque reutilizable más",
+        "other": "{count} bloques reutilizables más"
+      },
+      "inPatterns": {
+        "one": "{count} patrón",
+        "other": "{count} patrones"
+      },
+      "usageTruncated": "Solo se muestran las primeras coincidencias; puede haber más.",
+      "stateDraft": "cambios sin publicar",
+      "statePublished": "publicado, versión {revision}",
+      "publishConfirm": {
+        "one": "¿Publicar estos cambios? Aparecerán en el lugar ({count}) que usa este bloque reutilizable.",
+        "other": "¿Publicar estos cambios? Aparecerán en los {count} lugares que usan este bloque reutilizable."
+      },
+      "publishConfirmUnused": "¿Publicar estos cambios?",
+      "discard": "Descartar cambios",
+      "discardConfirm": "¿Descartar los cambios sin publicar? La versión publicada se mantiene.",
+      "rename": "Renombrar",
+      "deleteConfirm": "¿Eliminar el bloque reutilizable «{name}»?",
+      "deleteUsedConfirm": {
+        "one": "«{name}» se usa en {count} lugar. Eliminarlo lo quita de ahí. ¿Eliminar de todos modos?",
+        "other": "«{name}» se usa en {count} lugares. Eliminarlo lo quita de todos. ¿Eliminar de todos modos?"
+      },
+      "deleteFailed": "No se pudo eliminar el bloque reutilizable",
+      "restoreHint": "Carga esta versión en el editor. Guarda el borrador y publica para usarla."
     },
     "themeControls": {
       "title": "Estilo del tema",
@@ -751,7 +807,10 @@
       "search": "Buscar plantillas…",
       "category": "Categoría",
       "manage": "Gestionar",
-      "results": "{count} plantillas",
+      "results": {
+        "one": "{count} plantilla",
+        "other": "{count} plantillas"
+      },
       "noResults": "No hay plantillas que coincidan con estos filtros.",
       "loadDirectory": "Cargar catálogo",
       "choose": "Elige una plantilla para previsualizarla a ancho de página.",
@@ -768,7 +827,10 @@
       "manageExtensions": "Gestionar extensiones",
       "requires": "Requiere {types}.",
       "all": "todas",
-      "synced": "sincronizada"
+      "synced": "sincronizada",
+      "insertLinked": "Insertar vinculado",
+      "insertLinkedHint": "Patrón sincronizado: inserta un vínculo. Los cambios futuros del patrón también aparecerán aquí.",
+      "insertCopyHint": "Inserta una copia que puedes cambiar libremente. Los cambios futuros del patrón no la alcanzan."
     },
     "canvas": {
       "dragSectionHere": "Arrastra aquí una sección o un bloque hero",
@@ -795,7 +857,6 @@
         "subheading": "Subtítulo",
         "buttonLabel": "Texto del botón",
         "buttonUrl": "URL del botón",
-        "backgroundImageUrl": "URL de la imagen de fondo",
         "text": "Texto",
         "style": "Estilo",
         "headingText": "Texto del encabezado",
@@ -830,7 +891,8 @@
         "sections": "Secciones",
         "policies": "Políticas",
         "intro": "Intro",
-        "icon": "Icono"
+        "icon": "Icono",
+        "backgroundImage": "Imagen de fondo"
       },
       "option": {
         "backgroundMuted": "Atenuado",
@@ -1028,7 +1090,14 @@
       "typeAParagraph": "Escribe un párrafo…",
       "youMayAlsoLike": "También te puede gustar",
       "html": "HTML",
-      "emptyParagraph": "Párrafo vacío"
+      "emptyParagraph": "Párrafo vacío",
+      "standIn": {
+        "label": "Vista previa",
+        "site": "Muestra el logotipo, el título, los menús o las migas de pan de tu sitio cuando se sirve la página.",
+        "query": "Muestra el contenido o los encabezados que se encuentran al servir la página.",
+        "visitor": "Depende del visitante (sesión iniciada, idioma, esquema de color o búsqueda), así que el constructor muestra una versión neutra.",
+        "external": "Carga contenido de terceros en la página publicada; el constructor no lo ejecuta."
+      }
     },
     "grid": {
       "dragBlockOntoGrid": "Arrastra un bloque a la cuadrícula",
@@ -1118,10 +1187,49 @@
         "mathLatex": "Matemáticas (LaTeX)",
         "subscript": "Subíndice",
         "superscript": "Superíndice"
-      }
+      },
+      "linkRejected": "Ese enlace no está permitido. Usa una dirección web (https://…), una ruta (/pagina) o mailto:.",
+      "linkPlaceholder": "https://ejemplo.com o /pagina",
+      "attribution": "Autoría",
+      "buttonLabel": "Texto del botón",
+      "buttonLink": "Enlace del botón",
+      "supportingText": "Texto de apoyo",
+      "caption": "Pie de foto",
+      "altText": "Texto alternativo",
+      "altPlaceholder": "Describe la imagen para quien no pueda verla",
+      "replaceImage": "Reemplazar imagen",
+      "replaceImageHint": "Doble clic para reemplazar la imagen",
+      "chooseImage": "Doble clic para elegir una imagen",
+      "listItem": "Elemento de lista",
+      "pluginField": "Editar {field}",
+      "mediaUrlRejected": "Esa dirección no se puede usar. Usa un enlace https:// o un archivo de la biblioteca de medios.",
+      "mediaUrl": "Dirección del medio",
+      "mediaUrlPlaceholder": "https://… o /uploads/…",
+      "libraryEmpty": "Todavía no hay nada de este tipo en la biblioteca de medios.",
+      "pick": {
+        "image": "Elegir una imagen",
+        "video": "Elegir un vídeo",
+        "audio": "Elegir audio",
+        "file": "Elegir un archivo"
+      },
+      "upload": {
+        "image": "Subir imagen",
+        "video": "Subir vídeo",
+        "audio": "Subir audio",
+        "file": "Subir archivo"
+      },
+      "replace": {
+        "video": "Reemplazar vídeo",
+        "audio": "Reemplazar audio",
+        "file": "Reemplazar archivo"
+      },
+      "replaceMediaHint": "Doble clic para reemplazar",
+      "choosePoster": "Elegir imagen de portada",
+      "changePoster": "Cambiar imagen de portada",
+      "removePoster": "Quitar portada",
+      "linkText": "Texto del enlace",
+      "linkTextPlaceholder": "Por defecto, el nombre del archivo"
     },
-    "blockCountOne": "{count} bloque",
-    "blockCountMany": "{count} bloques",
     "previewLight": "Claro",
     "previewDark": "Oscuro",
     "previewSchemeHint": "Ver el sitio en modo claro u oscuro",
@@ -1142,7 +1250,8 @@
       "label": "Link label",
       "download": "Download file",
       "autoplayHelp": "Browsers usually require muted playback for autoplay. The editor preview always shows controls and does not autoplay.",
-      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser."
+      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser.",
+      "source": "Archivo multimedia"
     },
     "functional": {
       "fields": {
@@ -1344,6 +1453,594 @@
         "click": "Click"
       },
       "checklistItem": "Checklist item"
+    },
+    "shell": {
+      "toolbar": "Herramientas del constructor",
+      "library": "Bloques",
+      "inspector": "Ajustes",
+      "canvas": "Lienzo",
+      "breadcrumbs": "Ubicación del bloque seleccionado",
+      "history": "Historial",
+      "breakpoint": "Ancho de vista previa",
+      "zoom": "Zoom",
+      "unsaved": "Cambios sin guardar",
+      "saveFailed": "No se pudo guardar",
+      "retry": "Reintentar",
+      "leaveUnsaved": "Hay cambios sin guardar. ¿Salir del constructor de todos modos?",
+      "breakpointLabel": {
+        "desktop": "Escritorio",
+        "tablet": "Tableta",
+        "mobile": "Móvil"
+      },
+      "context": {
+        "page": "Página",
+        "post": "Entrada",
+        "header": "Cabecera global",
+        "footer": "Pie de página global",
+        "template": "Plantilla",
+        "reusable": "Bloque reutilizable",
+        "pattern": "Patrón",
+        "fragment": "Contenido"
+      },
+      "impact": {
+        "header": "Los cambios aparecen en cada página que usa esta cabecera.",
+        "footer": "Los cambios aparecen en todas las páginas.",
+        "template": "Los cambios afectan a cada página que muestra esta plantilla.",
+        "reusable": "Los cambios aparecen en todos los lugares donde se usa este bloque."
+      },
+      "tab": {
+        "content": "Contenido",
+        "style": "Estilo",
+        "layout": "Diseño",
+        "responsive": "Adaptable",
+        "interactions": "Interacciones",
+        "advanced": "Avanzado"
+      },
+      "site": "Sitio",
+      "siteParts": "Partes del sitio",
+      "autosaving": "Guardando automáticamente…",
+      "conflict": "Sin guardar: hay una versión más reciente",
+      "conflictDraft": "Otra persona cambió el borrador de esta página después de que la abrieras. Tus cambios siguen aquí y no se han guardado.",
+      "conflictDraftBy": "{name} cambió el borrador de esta página después de que la abrieras. Tus cambios siguen aquí y no se han guardado.",
+      "conflictLive": "Esta página se cambió o publicó en otro lugar después de que la abrieras. Tus cambios siguen aquí y no se han guardado.",
+      "loadLatest": "Cargar la última versión",
+      "overwrite": "Guardar la mía encima",
+      "overwriteConfirm": "¿Reemplazar la versión más reciente por la tuya? Los otros cambios se conservan en las revisiones de la página.",
+      "recoveryFound": "Este navegador guardó cambios sin guardar del {time}.",
+      "restore": "Restaurarlos",
+      "discard": "Descartar",
+      "sessionExpired": "Tu sesión ha caducado. Vuelve a iniciar sesión en otra pestaña y guarda. Tus cambios se conservan en este navegador.",
+      "conflictPart": "Otra persona guardó esto después de que lo abrieras. Tus cambios siguen aquí y no se han guardado.",
+      "overwritePartConfirm": "¿Reemplazar la versión más reciente por la tuya? Los cambios de la otra persona se perderán.",
+      "revisions": "Revisiones",
+      "revisionsLoading": "Cargando versiones…",
+      "revisionsEmpty": "Aún no hay versiones anteriores. Cada guardado añade una.",
+      "revisionsPick": "Elige una versión para ver qué cambiaría al restaurarla.",
+      "revisionsSame": "Esta versión tiene los mismos bloques que lo que estás editando.",
+      "revisionsCompare": "Comparado con lo que estás editando, restaurar esta versión:",
+      "revisionsAdded": {
+        "one": "Añadiría {count} bloque",
+        "other": "Añadiría {count} bloques"
+      },
+      "revisionsRemoved": {
+        "one": "Quitaría {count} bloque",
+        "other": "Quitaría {count} bloques"
+      },
+      "revisionsChanged": {
+        "one": "Cambiaría {count} bloque",
+        "other": "Cambiaría {count} bloques"
+      },
+      "revisionsMoved": {
+        "one": "Movería {count} bloque",
+        "other": "Movería {count} bloques"
+      },
+      "revisionsRestore": "Restaurar esta versión",
+      "restoreHintPage": "Restaurar guarda esta versión como borrador de la página. La página publicada no cambia hasta que publiques.",
+      "restoreHintPart": "Restaurar carga esta versión en el editor. Guarda un borrador o publica para conservarla.",
+      "restoreUnsavedConfirm": "Restaurar reemplaza tus cambios sin guardar. Se conservan en este navegador y puedes restaurarlos después. ¿Continuar?",
+      "stateDraft": "Borrador",
+      "statePublished": "Publicado",
+      "layers": "Capas",
+      "previewWidth": "Ancho de la vista previa en píxeles",
+      "canvasWidth": "{width} px · {breakpoint}",
+      "styles": "Estilos",
+      "checks": "Comprobaciones"
+    },
+    "drop": {
+      "rejectNesting": "{child} no puede ir dentro de {parent}.",
+      "rejectNestingRoot": "{child} no puede ir en este nivel. Colócalo dentro de un contenedor adecuado.",
+      "reject": {
+        "nesting": "Este bloque no puede ir aquí.",
+        "self": "Un bloque no se puede soltar sobre sí mismo.",
+        "descendant": "Un bloque no se puede mover dentro de su propio contenido.",
+        "region": "Aquí no se pueden mover bloques a esa zona.",
+        "missing": "Ese bloque ya no existe.",
+        "locked": "Este bloque está bloqueado en su sitio."
+      },
+      "noTarget": "No se movió: suelta sobre una zona de destino.",
+      "moved": "{block} movido.",
+      "inserted": "{block} añadido.",
+      "cancelled": "Movimiento cancelado. No ha cambiado nada.",
+      "releaseToMove": "Suelta para mover {block} aquí",
+      "releaseToInsert": "Suelta para añadir {block} aquí"
+    },
+    "navigator": {
+      "title": "Capas",
+      "search": "Buscar un bloque",
+      "keysHint": "Flechas para recorrer, Intro para seleccionar, Mayús+flechas para ampliar la selección, Alt+flechas para mover, F2 para renombrar, Mayús+F10 para acciones.",
+      "empty": "Aún no hay bloques.",
+      "noMatches": "Ningún bloque coincide.",
+      "root": "Nivel superior",
+      "moved": "{block} movido a la posición {position} en {parent}.",
+      "movedInto": "{block} movido a {parent}.",
+      "cannotMove": "No se puede mover más en esa dirección.",
+      "moveTo": "Mover «{block}» a…",
+      "chooseDestination": "Elige un contenedor",
+      "noDestinations": "Ningún otro lugar acepta este bloque",
+      "rename": "Nombre solo en este editor",
+      "badge": {
+        "reusable": "Bloque reutilizable: los cambios afectan a cada página que lo usa",
+        "hidden": "Oculto en algunos dispositivos",
+        "locked": "Bloqueado",
+        "unavailable": "Tipo de bloque no disponible: puede que su plugin esté desactivado",
+        "dynamic": "Muestra contenido de la página o del sitio"
+      }
+    },
+    "actions": {
+      "menu": "Acciones del bloque",
+      "blocks": {
+        "one": "{count} bloque",
+        "other": "{count} bloques"
+      },
+      "more": "Más acciones para {block}",
+      "duplicate": "Duplicar",
+      "copy": "Copiar",
+      "cut": "Cortar",
+      "paste": "Pegar",
+      "delete": "Eliminar",
+      "group": "Agrupar",
+      "ungroup": "Desagrupar",
+      "resetStyle": "Restablecer estilo",
+      "saveReusable": "Guardar como bloque reutilizable…",
+      "savePattern": "Guardar como patrón…",
+      "locks": "Bloqueos",
+      "lock": {
+        "move": "Impedir mover",
+        "remove": "Impedir eliminar",
+        "edit": "Impedir editar"
+      },
+      "lockedByPolicy": "Solo quien puede gestionar bloqueos puede cambiarlos.",
+      "blocked": {
+        "empty": "Selecciona primero un bloque.",
+        "mixedParents": "Selecciona bloques contiguos dentro del mismo contenedor.",
+        "lockedRemove": "Un bloque seleccionado, o algo que contiene, está protegido contra la eliminación.",
+        "lockedMove": "Un bloque seleccionado está bloqueado en su sitio.",
+        "lockedEdit": "Un bloque seleccionado está protegido contra la edición.",
+        "nesting": "El resultado no estaría permitido en este contenedor.",
+        "notGroup": "Solo se puede desagrupar un Grupo o un Contenedor.",
+        "noStyle": "No hay ningún estilo propio que restablecer.",
+        "clipboardEmpty": "Todavía no se ha copiado nada.",
+        "permission": "Solo administradores y editores pueden guardar en la biblioteca.",
+        "unsupported": "No disponible en este editor."
+      },
+      "done": {
+        "duplicate": "{what} duplicado.",
+        "copy": "{what} copiado.",
+        "cut": "{what} cortado.",
+        "paste": "{what} pegado.",
+        "delete": "{what} eliminado. Deshacer lo recupera.",
+        "group": "{what} agrupado.",
+        "ungroup": "{what} desagrupado.",
+        "resetStyle": "Estilo de {what} restablecido.",
+        "saveReusable": "{what} guardado como bloque reutilizable y vinculado aquí.",
+        "savePattern": "Patrón {what} guardado.",
+        "locked": "{what} bloqueado.",
+        "unlocked": "{what} desbloqueado."
+      },
+      "pasteFailed": {
+        "empty": "No hay nada que pegar.",
+        "too-large": "Es demasiado para pegarlo de una vez.",
+        "nesting": "Estos bloques no pueden ir aquí. Selecciona un contenedor adecuado y vuelve a pegar."
+      },
+      "selectRefused": {
+        "parent": "La selección múltiple solo funciona con bloques del mismo contenedor.",
+        "context": "Los bloques del encabezado y de la página no se pueden seleccionar juntos."
+      },
+      "editLocked": "Este bloque está protegido contra la edición. Pide a alguien que pueda gestionar bloqueos que lo desbloquee.",
+      "editLockedManage": "Este bloque está protegido contra la edición. Desbloquéalo desde el menú del bloque para cambiarlo.",
+      "multi": {
+        "title": "{count} bloques seleccionados",
+        "menuHint": "Haz clic derecho o pulsa Mayús+F10 para ver todas las acciones.",
+        "sharedStyle": "Estilo compartido",
+        "styleSubset": "Los cambios de estilo se aplican a {count} de {total} bloques. Se omiten los bloques bloqueados y los que tienen su propio ajuste de estilo.",
+        "noSharedStyle": "Estos bloques no tienen ajustes de estilo en común."
+      },
+      "save": {
+        "reusableTitle": "Guardar como bloque reutilizable",
+        "reusableHint": "La selección se guarda en la biblioteca y aquí se sustituye por una copia vinculada. Edita el bloque guardado y todas las páginas se actualizan.",
+        "patternTitle": "Guardar como patrón",
+        "patternHint": "Se añade una copia de la selección a la biblioteca de patrones. Esta página no cambia.",
+        "nameRequired": "Ponle un nombre al patrón.",
+        "cancel": "Cancelar",
+        "savePattern": "Guardar patrón"
+      },
+      "blockActions": "Acciones del bloque",
+      "blockActionDone": "Aplicado: {action}."
+    },
+    "container": {
+      "title": "Disposición",
+      "mode": "Organizar el contenido",
+      "modes": {
+        "stack": "Pila",
+        "row": "Fila",
+        "column": "Columna",
+        "grid": "Cuadrícula"
+      },
+      "modeHint": {
+        "stack": "Los bloques van uno debajo de otro, con el espaciado del tema.",
+        "row": "Los bloques van uno al lado de otro y pasan a otra línea cuando no caben.",
+        "column": "Los bloques van uno debajo de otro, con tu espaciado y alineación.",
+        "grid": "Los bloques llenan columnas iguales, fila a fila."
+      },
+      "columns": "Columnas",
+      "wrap": "Saltos de línea",
+      "wrapValue": {
+        "wrap": "Pasar a otra línea",
+        "nowrap": "Mantener en una línea"
+      },
+      "justify": "Horizontal",
+      "justifyColumn": "Vertical",
+      "justifyValue": {
+        "start": "Inicio",
+        "center": "Centro",
+        "end": "Final",
+        "between": "Espacio entre",
+        "around": "Espacio alrededor",
+        "evenly": "Espacio uniforme"
+      },
+      "align": "Vertical",
+      "alignColumn": "Horizontal",
+      "alignValue": {
+        "start": "Inicio",
+        "center": "Centro",
+        "end": "Final",
+        "stretch": "Estirar",
+        "baseline": "Línea base del texto"
+      },
+      "gap": "Separación",
+      "stackOnPhones": "Apilar en una columna en móviles",
+      "orderHint": "Los bloques siempre conservan su orden, en pantalla y para los lectores de pantalla. Para cambiarlo, muévelos en el panel Capas.",
+      "element": "Elemento HTML",
+      "elements": {
+        "div": "Simple (div)",
+        "section": "Sección",
+        "article": "Artículo",
+        "aside": "Lateral",
+        "header": "Encabezado",
+        "footer": "Pie",
+        "nav": "Navegación"
+      },
+      "elementNotHere": "no permitido aquí",
+      "elementHint": "Indica a los lectores de pantalla y a los buscadores qué es esta parte. No cambia su aspecto.",
+      "item": {
+        "title": "En esta fila",
+        "overflowTitle": "Desbordamiento",
+        "basis": "Parte de la fila",
+        "basisValue": {
+          "auto": "Según el contenido",
+          "25": "Un cuarto",
+          "33": "Un tercio",
+          "50": "La mitad",
+          "66": "Dos tercios",
+          "75": "Tres cuartos",
+          "100": "Toda la fila"
+        },
+        "grow": "Ocupar el espacio libre",
+        "overflow": "Contenido que no cabe",
+        "overflowValue": {
+          "visible": "Mostrar",
+          "hidden": "Recortar",
+          "auto": "Desplazar"
+        }
+      },
+      "handle": {
+        "padTop": "Relleno superior",
+        "padBottom": "Relleno inferior",
+        "minHeight": "Altura mínima"
+      },
+      "readingOrder": "Los bloques aparecen en un orden distinto al de lectura. Quienes usan el teclado o un lector de pantalla siguen el orden del panel Capas.",
+      "matchReadingOrder": "Igualar el orden de lectura a la disposición"
+    },
+    "responsive": {
+      "title": "Ajustes por tamaño de pantalla",
+      "editing": "Tamaño de pantalla que editar",
+      "hint": "Escritorio usa los ajustes normales del bloque. Tableta hereda de escritorio y móvil de tableta, hasta que definas un valor aquí.",
+      "previewMismatch": "Estás editando {breakpoint}, pero la vista previa es {previewing}.",
+      "previewAt": "Ver en {breakpoint}",
+      "warningsTitle": "Revisa antes de publicar",
+      "warning": {
+        "hidden": "Este bloque está oculto en este ancho.",
+        "order": "Un orden propio muestra este bloque en otro lugar del que se lee. Quienes usan el teclado o un lector de pantalla siguen el panel Capas.",
+        "tinyText": "El texto muy pequeño puede costar leerlo en el móvil.",
+        "tooWide": "El ancho máximo supera esta pantalla; el contenido puede desplazarse en horizontal.",
+        "nowrap": "Una fila en una sola línea puede desbordarse en este ancho.",
+        "tall": "Esta altura mínima supera la pantalla de un móvil.",
+        "bigSpacing": "Un espaciado muy grande ocupa mucho de una pantalla pequeña."
+      },
+      "spacing": "Espaciado",
+      "size": "Tamaño",
+      "text": "Texto",
+      "item": "En su disposición",
+      "fontSize": "Tamaño del texto",
+      "fontSizeValue": {
+        "xs": "XS",
+        "sm": "S",
+        "base": "M",
+        "lg": "L",
+        "xl": "XL",
+        "2xl": "2XL",
+        "3xl": "3XL",
+        "4xl": "4XL"
+      },
+      "span": "Columnas que ocupa",
+      "col": "Columna inicial",
+      "order": "Orden",
+      "direction": "Dirección",
+      "setHere": "Definido para este tamaño",
+      "inherited": "{value} · de {from}",
+      "notSet": "Sin definir",
+      "inherit": "Heredar ({value})",
+      "reset": "Restablecer",
+      "resetField": "Restablecer {field} en {breakpoint}"
+    },
+    "sources": {
+      "themeDefault": "Valor del tema",
+      "siteToken": "Cambiado para este sitio",
+      "theme": "Del tema",
+      "local": "Definido en este bloque",
+      "localOverPreset": "Definido en este bloque, sobre el ajuste «{name}»",
+      "preset": "Del ajuste «{name}»",
+      "breakpoint": "Definido para {breakpoint}",
+      "resetField": "Restablecer {field} a la capa inferior",
+      "resetToTheme": "Restablecer {field} al valor del tema",
+      "template": "De la plantilla «{name}». Edita la plantilla para cambiarlo."
+    },
+    "presets": {
+      "title": "Ajuste de estilo",
+      "use": "Ajuste",
+      "none": "Ninguno",
+      "missing": "Ajuste no encontrado: {id}",
+      "missingHint": "Este bloque apunta a un ajuste que ya no existe. Se muestra sin él.",
+      "using": "Usa el ajuste «{name}». Edítalo en Estilos para cambiar todos los bloques que lo usan.",
+      "usingWithLocal": "Usa el ajuste «{name}», con los valores propios de este bloque encima.",
+      "detach": "Desvincular (conservar valores)",
+      "updateFromBlock": "Pasar los valores de este bloque a «{name}»",
+      "saveAs": "Guardar estilo como ajuste…",
+      "name": "Nombre del ajuste",
+      "create": "Crear ajuste",
+      "library": "Ajustes de estilo",
+      "libraryHint": "Conjuntos con nombre de espaciado, tamaño, esquinas, sombras y colores. Cambiar uno cambia todos los bloques que lo usan, en todas las páginas.",
+      "empty": "Aún no hay ajustes. Da estilo a un bloque y elige «Guardar estilo como ajuste» en su pestaña Estilo.",
+      "edit": "Editar",
+      "done": "Listo",
+      "usageLoading": "Comprobando dónde se usa…",
+      "usageNone": "Todavía no se usa.",
+      "usage": "Usado por {count}: {where}",
+      "usageTemplates": {
+        "one": "{count} plantilla",
+        "other": "{count} plantillas"
+      },
+      "usageReusable": {
+        "one": "{count} bloque reutilizable",
+        "other": "{count} bloques reutilizables"
+      },
+      "usagePatterns": {
+        "one": "{count} patrón",
+        "other": "{count} patrones"
+      },
+      "deleteConfirm": "¿Eliminar el ajuste «{name}»?",
+      "deleteUsedConfirm": {
+        "one": "¿Eliminar el ajuste «{name}»? Lo usa {count} elemento, que perderá su estilo.",
+        "other": "¿Eliminar el ajuste «{name}»? Lo usan {count} elementos, que perderán su estilo."
+      }
+    },
+    "globalStyles": {
+      "title": "Estilos globales",
+      "impact": "Se aplican a todas las páginas, el encabezado, el pie, las plantillas y los bloques reutilizables. Los cambios se ven aquí y se publican cuando publicas.",
+      "draftState": "Cambios sin publicar",
+      "publishedState": "Todo publicado",
+      "revert": "Volver a lo publicado",
+      "unpublished": "sin publicar",
+      "changedCount": "{count} cambiados",
+      "saveError": "No se pudieron guardar los estilos",
+      "readOnly": "Solo administradores y editores pueden cambiar los estilos globales."
+    },
+    "templateDefaults": {
+      "title": "Valores por defecto del contenido",
+      "hint": "Estilos iniciales para el contenido que envuelve la plantilla {template}, por tipo de bloque. Los valores propios de un bloque siguen ganando.",
+      "empty": "Aún no hay valores por defecto. Elige un tipo de bloque abajo.",
+      "add": "Añadir un tipo de bloque",
+      "addPlaceholder": "Elige un tipo de bloque…",
+      "remove": "Quitar los valores por defecto de {type}"
+    },
+    "siteContext": {
+      "previewNote": "Vista previa del entorno de esta página. Su título y fecha son reales; los menús y otro contenido que depende de la petición son sustitutos. Los visitantes ven la página publicada.",
+      "region": {
+        "header": "Encabezado del sitio",
+        "footer": "Pie del sitio",
+        "template": "Plantilla"
+      },
+      "templateNamed": "Plantilla «{slug}»",
+      "source": {
+        "override-draft": "tu versión, borrador",
+        "override": "tu versión",
+        "theme": "del tema",
+        "plugin": "de un plugin",
+        "library": "de la biblioteca de encabezados",
+        "none": "sin definir"
+      },
+      "siteWide": "todo el sitio",
+      "edit": {
+        "header": "Editar el encabezado",
+        "footer": "Editar el pie",
+        "template": "Editar esta plantilla"
+      },
+      "hierarchy": "Orden de plantillas",
+      "hierarchyHint": "De la más específica a la más general. Se usa la primera que existe.",
+      "menu": "Menú",
+      "notPublished": "Aún sin publicar",
+      "headerHidden": "El encabezado está oculto en esta página.",
+      "footerEmpty": "Todavía no hay pie.",
+      "noTemplate": "Sin plantilla: se usa la vista de página integrada del tema.",
+      "panelTitle": "Entorno de esta página",
+      "panelHint": "El encabezado, la plantilla y el pie son compartidos por todo el sitio. Editarlos es un paso deliberado.",
+      "loading": "Cargando…"
+    },
+    "pluginPreview": {
+      "retry": "Reintentar",
+      "loading": "Cargando {title}…",
+      "placeholder": "Muestra contenido en vivo en la página publicada.",
+      "empty": "{title} no muestra nada con su configuración actual.",
+      "unavailable": "Bloque no disponible: {type}",
+      "unavailableHint": "Puede que su plugin o tema esté desactivado. El contenido se conserva y vuelve a mostrarse cuando regrese.",
+      "timeout": "La vista previa de {title} tardó demasiado.",
+      "failed": "No se pudo mostrar la vista previa de {title}."
+    },
+    "blockFailure": {
+      "title": "{type} no se puede mostrar en el constructor.",
+      "kept": "Su contenido se conserva y la página lo muestra tal como se guardó."
+    },
+    "blockStatus": {
+      "deprecated": "Este bloque está obsoleto. Sigue funcionando, pero ya no se ofrece para contenido nuevo.",
+      "deprecatedReplaced": "Este bloque está obsoleto. Usa {type} para contenido nuevo.",
+      "migrationFailed": "Este bloque no se pudo actualizar desde la versión {version}, así que muestra sus ajustes guardados."
+    },
+    "recovery": {
+      "unavailableTitle": "El plugin o tema de este bloque no está activo",
+      "deprecatedTitle": "Este bloque está obsoleto",
+      "unavailableText": "Ahora no se puede editar ni previsualizar. Su contenido se conserva y la página lo vuelve a mostrar cuando la extensión vuelva a estar activa.",
+      "deprecatedText": "Sigue funcionando, pero ya no se ofrece para contenido nuevo.",
+      "deprecatedReplaced": "Sigue funcionando. Su sustituto es {type}.",
+      "type": "Tipo",
+      "providedBy": "Proporcionado por",
+      "version": "Versión",
+      "deprecatedSince": "obsoleto desde {since}",
+      "id": "Id. del bloque",
+      "stored": "Guardado",
+      "copy": "Copiar datos",
+      "download": "Descargar datos",
+      "copied": "Datos del bloque copiados.",
+      "copyFailed": "El navegador no permitió copiar. Usa Descargar datos.",
+      "manageExtensions": "Gestionar extensiones",
+      "replaceWith": "Reemplazar por",
+      "chooseBlock": "Elige un bloque…",
+      "replace": "Reemplazar",
+      "remove": "Eliminar bloque",
+      "replaceConfirm": "¿Reemplazar este bloque por {title}? Conserva su id. y cada ajuste que {title} también tiene.",
+      "replaceDrops": {
+        "one": "Se eliminará {count} ajuste guardado que el nuevo bloque no tiene.",
+        "other": "Se eliminarán {count} ajustes guardados que el nuevo bloque no tiene."
+      },
+      "replaceDropsChildren": {
+        "one": "Se eliminará {count} bloque de su interior, porque el nuevo bloque no puede contener otros bloques.",
+        "other": "Se eliminarán {count} bloques de su interior, porque el nuevo bloque no puede contener otros bloques."
+      },
+      "downloadFirst": "Descarga primero los datos si podrías necesitarlos más adelante.",
+      "removeConfirm": "¿Eliminar este bloque de la página? Descarga primero sus datos si podrías necesitarlos más adelante.",
+      "removeConfirmChildren": {
+        "one": "¿Eliminar este bloque y el {count} bloque que contiene? Descarga primero sus datos si podrías necesitarlos más adelante.",
+        "other": "¿Eliminar este bloque y los {count} bloques que contiene? Descarga primero sus datos si podrías necesitarlos más adelante."
+      },
+      "keptHint": "Al guardar la página, este bloque se conserva exactamente como está guardado.",
+      "storedSettings": {
+        "one": "{count} ajuste",
+        "other": "{count} ajustes"
+      },
+      "storedBlocks": {
+        "one": "{count} bloque dentro",
+        "other": "{count} bloques dentro"
+      }
+    },
+    "blockCount": {
+      "one": "{count} bloque",
+      "other": "{count} bloques"
+    },
+    "checks": {
+      "title": "Comprobaciones de accesibilidad",
+      "disclaimer": "Estas comprobaciones detectan problemas habituales en lo que configuras aquí. No ven todo lo que cambia un tema, un plugin o el visitante, así que no demuestran que una página sea accesible.",
+      "none": "No se han encontrado problemas en lo que revisan estas comprobaciones.",
+      "errors": {
+        "one": "{count} problema",
+        "other": "{count} problemas"
+      },
+      "warnings": {
+        "one": "{count} para revisar",
+        "other": "{count} para revisar"
+      },
+      "unavailable": {
+        "one": "{count} sin comprobar",
+        "other": "{count} sin comprobar"
+      },
+      "problemCount": {
+        "one": "{count} problema",
+        "other": "{count} problemas"
+      },
+      "imageAlt": "Sin texto alternativo. Describe la imagen, o déjalo vacío solo si es decorativa.",
+      "linkText": "Este enlace o botón no tiene texto, así que los lectores de pantalla no pueden decir adónde lleva.",
+      "linkTextItem": "El enlace {item} no tiene texto, así que los lectores de pantalla no pueden decir adónde lleva.",
+      "linkTarget": "Este botón tiene texto pero no enlace, así que no hace nada.",
+      "headingEmpty": "Este encabezado está vacío.",
+      "headingSkip": "El nivel de encabezado salta de {from} a {to}. Los niveles saltados hacen difícil seguir la estructura de la página.",
+      "headingLevelOne": "El nivel 1 suele ser el título de la página. Usa el nivel 2 para las secciones.",
+      "contrast": "El contraste del texto es {ratio}:1. El texto normal necesita al menos 4,5:1.",
+      "contrastUnknown": "El contraste no se puede comprobar aquí porque uno de los colores viene del tema.",
+      "hiddenOnMobile": "Este encabezado o botón está oculto en los teléfonos.",
+      "readingOrder": "El orden en pantalla difiere del orden de lectura. Los lectores de pantalla y el teclado siguen el orden de Capas.",
+      "iconLabel": "Este icono no es decorativo pero no tiene etiqueta, así que se anuncia con el nombre del icono.",
+      "tableHeader": "Esta tabla no tiene fila de encabezado. Las tablas de datos la necesitan para que se entiendan sus columnas.",
+      "contentUnchecked": "El contenido de este bloque no se puede comprobar aquí."
+    },
+    "keyboard": {
+      "open": "Atajos",
+      "title": "Atajos de teclado",
+      "close": "Cerrar",
+      "or": "o",
+      "intro": "Todo lo que se hace con el ratón o el tacto se puede hacer con el teclado. Ctrl es ⌘ en un Mac.",
+      "area": {
+        "canvas": "Lienzo",
+        "layers": "Capas",
+        "library": "Bloques",
+        "text": "Texto y medios",
+        "layout": "Diseño",
+        "general": "General"
+      },
+      "path": {
+        "selectBlock": "Seleccionar un bloque (Tab hasta su nombre)",
+        "actionsMenu": "Abrir el menú de acciones del bloque",
+        "duplicate": "Duplicar",
+        "group": "Agrupar",
+        "ungroup": "Desagrupar",
+        "remove": "Eliminar",
+        "copyPaste": "Copiar, cortar y pegar",
+        "undoRedo": "Deshacer y rehacer",
+        "clearSelection": "Dejar solo un bloque seleccionado",
+        "moveBlock": "Subir o bajar",
+        "nestBlock": "Meter en el bloque de arriba, o sacar del contenedor",
+        "extendSelection": "Añadir bloques a la selección",
+        "renameBlock": "Cambiar el nombre",
+        "moveTo": "Mover a otro contenedor",
+        "addBlock": "Añadir el bloque enfocado",
+        "editText": "Terminar o cancelar la edición del texto",
+        "replaceMedia": "Reemplazar una imagen o archivo seleccionado",
+        "resizeSpacing": "Cambiar el espaciado y la altura con un tirador enfocado",
+        "gridPlacement": "Colocar y dimensionar un elemento en una cuadrícula",
+        "cancelDrag": "Cancelar un arrastre",
+        "shortcuts": "Mostrar esta lista"
+      },
+      "how": {
+        "moveTo": "«Mover a…» en Capas",
+        "gridPlacement": "Campos de posición en la cuadrícula, en la pestaña Diseño"
+      }
     }
   },
   "dashboard": {
@@ -1632,7 +2329,10 @@
     "remove": "Quitar",
     "mediaLibraryAriaLabel": "Biblioteca de medios",
     "noImagesYet": "Aún no hay imágenes. Sube una o añade archivos en Medios.",
-    "pasteUrl": "Pegar URL"
+    "pasteUrl": "Pegar URL",
+    "selectFile": "Elegir archivo",
+    "noFileSelected": "Ningún archivo seleccionado",
+    "noFilesYet": "Todavía no hay archivos de este tipo. Sube uno o añade archivos en Medios."
   },
   "auth": {
     "forgotPassword": {
@@ -2113,7 +2813,11 @@
     "slotErrorLabel": "Error (genérico)",
     "slotErrorHint": "Plantilla de respaldo común para 403, 410 y 429 cuando no existe una plantilla específica",
     "slotIndexLabel": "Plantilla general (index)",
-    "slotIndexHint": "Solo se usa cuando no existe una plantilla más específica"
+    "slotIndexHint": "Solo se usa cuando no existe una plantilla más específica",
+    "compareTheme": "Comparar con la versión del tema",
+    "themeVersion": "Versión del tema",
+    "copyThemeHint": "Copia la versión del tema al editor. No se guarda nada hasta que guardes o publiques.",
+    "fromTheme": "tema"
   },
   "widgets": {
     "loading": "Cargando widgets…",

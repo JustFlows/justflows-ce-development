@@ -108,3 +108,36 @@ export function nextRow(children: BlockNode[], columns: number): number {
   }
   return max + 1;
 }
+
+/**
+ * Child ids in the order the grid shows them: placed blocks by row, then
+ * column; blocks without a row keep their source position after them, the
+ * way CSS auto-placement fills the remaining cells. Ties keep source order.
+ */
+export function visualOrder(children: BlockNode[], columns: number): string[] {
+  return children
+    .map((child, index) => ({ child, index, p: placementOf(child, columns) }))
+    .sort((a, b) => {
+      const ar = a.p.row > 0 ? a.p.row : Number.POSITIVE_INFINITY;
+      const br = b.p.row > 0 ? b.p.row : Number.POSITIVE_INFINITY;
+      if (ar !== br) return ar - br;
+      if (a.p.row > 0 && a.p.col !== b.p.col) return a.p.col - b.p.col;
+      return a.index - b.index;
+    })
+    .map((entry) => entry.child.id);
+}
+
+/**
+ * Whether explicit grid placement shows blocks in a different order than
+ * keyboard and screen-reader users meet them (justflows-ce#299).
+ */
+export function readingOrderDiffers(children: BlockNode[], columns: number): boolean {
+  const shown = visualOrder(children, columns);
+  return shown.some((id, i) => id !== children[i]?.id);
+}
+
+/** Reorder children to match what the grid shows, so reading order and visual order agree. */
+export function matchReadingOrder(children: BlockNode[], columns: number): BlockNode[] {
+  const byId = new Map(children.map((child) => [child.id, child]));
+  return visualOrder(children, columns).map((id) => byId.get(id)!);
+}

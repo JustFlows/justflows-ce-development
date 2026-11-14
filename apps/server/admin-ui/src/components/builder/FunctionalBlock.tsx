@@ -25,14 +25,14 @@ export default function FunctionalBlock({ type, props, children }: { type: strin
     case "core.card": return <div className={`jf-card jf-card--shadow-${p.shadow}`} style={{ padding: Number(p.padding), gap: Number(p.gap), border: p.border ? "1px solid var(--color-border,#ddd)" : "0", borderRadius: Number(p.radius), textAlign: p.align as CSSProperties["textAlign"] }}>{children}</div>;
     case "core.callout": return <aside className={`jf-callout jf-callout--${p.variant}`}>{p.showIcon ? <span className="jf-callout-icon" aria-hidden="true">{p.variant === "success" ? "✓" : p.variant === "warning" ? "⚠" : p.variant === "error" ? "!" : "ⓘ"}</span> : null}<div className="jf-callout-content">{p.title ? <strong className="jf-callout-title">{String(p.title)}</strong> : null}{children}</div>{p.dismissible ? <button type="button" disabled aria-label={String(p.dismissLabel)}>×</button> : null}</aside>;
     case "core.tabs": return <div className="jf-tabs">{children}</div>;
-    case "core.tab": return <section className="jf-tab"><h3>{String(p.title)}</h3>{children}</section>;
+    case "core.tab": return <section className="jf-tab"><h3 className="jf-tab-heading">{String(p.title)}</h3>{children}</section>;
     case "core.site-logo":
     case "core.site-title":
     case "core.site-tagline":
     case "core.navigation":
     case "core.breadcrumbs":
     case "core.content-query": return <div className="jf-site-block-preview"><strong>{def.title}</strong><p>{t("builder.functional.dynamicPreview")}</p></div>;
-    case "core.table-of-contents": return <nav aria-label={String(p.title)}><strong>{String(p.title)}</strong><p>{t("builder.functional.tocPreview")}</p></nav>;
+    case "core.table-of-contents": return <nav className="jf-toc" aria-label={String(p.title)}><strong>{String(p.title)}</strong><p>{t("builder.functional.tocPreview")}</p></nav>;
     default: return <div dangerouslySetInnerHTML={{ __html: def.render(p) }} />;
   }
 }

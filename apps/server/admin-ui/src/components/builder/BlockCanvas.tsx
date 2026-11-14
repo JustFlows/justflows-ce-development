@@ -1,17 +1,40 @@
-import { useState } from "react";
+import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useT } from "../../i18n/I18nProvider";
 import type { BlockNode, BlockCatalogEntry } from "./types";
 import { BlockPreview, useThemePreviewStylesheet } from "./BlockPreview";
 import { createBlock } from "./block-defaults";
-import { insertBlock, moveBlock, removeBlock, updateBlockProps } from "./block-tree";
+import { insertBlock, moveBlock, removeBlock, updateBlockProps, updateBlockTree } from "./block-tree";
 import DropZone from "./DropZone";
-import { useBuilderDrag } from "./DragContext";
+import { useBuilderDrag, useBuilderRowDrag } from "./DragContext";
 import { useBlockMoveHandle } from "./useBlockMoveHandle";
 import GridEditor from "./GridEditor";
 import { GRID_BLOCK_TYPE, gridColumns, nextRow } from "./grid";
-import { compactBlockPlacement, parseBlockPlacement } from "@justflows/blocks";
+import {
+  breakpointCss,
+  compactBlockPlacement,
+  containerLayoutAttrs,
+  flexBasis,
+  isBlockLocked,
+  parseBlockPlacement,
+  parseBlockStyle,
+  supportsContainerLayout,
+  textDirection,
+} from "@justflows/blocks";
+import { anchorFor, isExtendClick, useBuilderSelection, useBuilderSelectionActions } from "./selection-context";
+import LayoutOverlay from "./LayoutOverlay";
+import { inspectorSections } from "./inspector-sections";
+import { inertPreviewHandlers } from "./inert-preview";
 
+/**
+ * Canvas toolbar buttons are at least 24 by 24 pixels (WCAG 2.2 target size),
+ * and larger on touch screens through `.jf-canvas-btn` (justflows-ce#307).
+ */
 const iconBtn: React.CSSProperties = {
+  minWidth: 24,
+  minHeight: 24,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
   background: "var(--jf-surface-3)",
   border: "none",
   borderRadius: 4,
@@ -22,6 +45,8 @@ const iconBtn: React.CSSProperties = {
 };
 
 interface PageCanvasProps {
+  /** Language of the content; sets the canvas's `lang` and `dir` (justflows-ce#307). */
+  contentLocale?: string;
   blocks: BlockNode[];
   catalog: Map<string, BlockCatalogEntry>;
   selectedId: string | null;
@@ -53,14 +78,42 @@ export function PageCanvas({
   addLabel,
   emptyLabel,
   rootQuickAll = false,
+  contentLocale,
 }: PageCanvasProps) {
   const { t } = useT();
   const { dragging } = useBuilderDrag();
+  const multiSelection = useBuilderSelection()?.selectedIds ?? null;
   const inline = compact;
   useThemePreviewStylesheet();
 
+  /**
+   * Rows edit the latest document through this stable handle instead of
+   * receiving the whole list and fresh callbacks, so an edit only redraws the
+   * rows it touches (justflows-ce#308).
+   */
+  const rootRef = useRef(blocks);
+  rootRef.current = blocks;
+  const changeRef = useRef(onChange);
+  changeRef.current = onChange;
+  const tree = useMemo<CanvasTree>(
+    () => ({
+      edit: (updater) => {
+        const next = updater(rootRef.current);
+        if (next === rootRef.current) return;
+        rootRef.current = next;
+        changeRef.current(next);
+      },
+    }),
+    [],
+  );
+
   return (
+    <CanvasTreeContext.Provider value={tree}>
     <div
+      {...inertPreviewHandlers}
+      className="jf-canvas-root"
+      lang={contentLocale || undefined}
+      dir={contentLocale ? textDirection(contentLocale) : undefined}
       style={{
         minHeight: !compact && blocks.length === 0 ? 320 : undefined,
         width: compact ? "100%" : undefined,
@@ -110,11 +163,10 @@ export function PageCanvas({
           />
           <BlockRow
             block={block}
-            blocks={blocks}
             catalog={catalog}
             selectedId={selectedId}
+            multiSelection={multiSelection}
             onSelect={onSelect}
-            onRootChange={onChange}
             index={i}
             total={blocks.length}
             depth={0}
@@ -148,72 +200,118 @@ export function PageCanvas({
         />
       )}
     </div>
+    </CanvasTreeContext.Provider>
   );
 }
 
-function BlockRow({
-  block,
-  blocks,
-  catalog,
-  selectedId,
-  onSelect,
-  onRootChange,
-  index,
-  total,
-  depth,
-  parentBlocks,
-  onParentChange,
-  parentType = null,
-}: {
+/** Edits the latest document of the canvas a row belongs to. */
+interface CanvasTree {
+  edit: (updater: (root: BlockNode[]) => BlockNode[]) => void;
+}
+
+const CanvasTreeContext = createContext<CanvasTree | null>(null);
+
+function useCanvasTree(): CanvasTree {
+  const tree = useContext(CanvasTreeContext);
+  if (!tree) throw new Error("A canvas row must be inside PageCanvas");
+  return tree;
+}
+
+interface BlockRowProps {
   block: BlockNode;
-  blocks: BlockNode[];
   catalog: Map<string, BlockCatalogEntry>;
   selectedId: string | null;
+  /** Every selected id when several blocks are selected; changes identity only with the selection. */
+  multiSelection: ReadonlySet<string> | null;
   onSelect: (id: string | null) => void;
-  onRootChange: (blocks: BlockNode[]) => void;
   index: number;
   total: number;
   depth: number;
-  parentBlocks?: BlockNode[];
-  onParentChange?: (blocks: BlockNode[]) => void;
   parentType?: string | null;
-}) {
+}
+
+function containsId(block: BlockNode, id: string | null): boolean {
+  if (!id) return false;
+  if (block.id === id) return true;
+  return (block.children ?? []).some((child) => containsId(child, id));
+}
+
+/**
+ * A row redraws when its own block (or anything inside it) changed, when it
+ * moved, or when the selection enters or leaves it. Edits elsewhere keep the
+ * same block objects, so the row and its preview are skipped
+ * (justflows-ce#308).
+ */
+function sameRow(prev: BlockRowProps, next: BlockRowProps): boolean {
+  if (
+    prev.block !== next.block ||
+    prev.catalog !== next.catalog ||
+    prev.onSelect !== next.onSelect ||
+    prev.index !== next.index ||
+    prev.total !== next.total ||
+    prev.depth !== next.depth ||
+    prev.parentType !== next.parentType
+  ) {
+    return false;
+  }
+  if (prev.selectedId !== next.selectedId && (containsId(next.block, prev.selectedId) || containsId(next.block, next.selectedId))) return false;
+  if (prev.multiSelection !== next.multiSelection) {
+    for (const id of new Set([...(prev.multiSelection ?? []), ...(next.multiSelection ?? [])])) {
+      if (containsId(next.block, id)) return false;
+    }
+  }
+  return true;
+}
+
+const BlockRow = memo(BlockRowContent, sameRow);
+
+function BlockRowContent({
+  block,
+  catalog,
+  selectedId,
+  multiSelection,
+  onSelect,
+  index,
+  total,
+  depth,
+  parentType = null,
+}: BlockRowProps) {
+  const tree = useCanvasTree();
   const { t } = useT();
   const meta = catalog.get(block.type);
-  const isSelected = selectedId === block.id;
+  const selection = useBuilderSelectionActions();
+  const inMultiSelection = Boolean(multiSelection && multiSelection.size > 1 && multiSelection.has(block.id));
+  const isSelected = selectedId === block.id || inMultiSelection;
   const hasChildren = meta?.supportsChildren ?? false;
-  const { dragPayload } = useBuilderDrag();
-  const { onPointerDown } = useBlockMoveHandle(block.id, block.type);
+  const { dragPayload } = useBuilderRowDrag();
+  const moveLocked = isBlockLocked(block, "move");
+  const removeLocked = subtreeHasLock(block, "remove");
+  const locked = moveLocked || removeLocked || isBlockLocked(block, "edit");
+  const { onPointerDown } = useBlockMoveHandle(block.id, block.type, moveLocked);
   const isBeingMoved = dragPayload.blockId === block.id;
   const children = block.children ?? [];
 
-  const move = (dir: -1 | 1) => {
-    const list = parentBlocks ?? blocks;
-    const change = parentBlocks ? onParentChange! : onRootChange;
-    change(moveBlock(list, block.id, dir));
-  };
+  const move = (dir: -1 | 1) => tree.edit((root) => moveBlock(root, block.id, dir));
 
   const remove = () => {
-    const list = parentBlocks ?? blocks;
-    const change = parentBlocks ? onParentChange! : onRootChange;
-    change(removeBlock(list, block.id));
+    tree.edit((root) => removeBlock(root, block.id));
     if (selectedId === block.id) onSelect(null);
   };
 
-  const updateChildren = (nextChildren: BlockNode[]) => {
-    const list = parentBlocks ?? blocks;
-    const change = parentBlocks ? onParentChange! : onRootChange;
-    change(list.map((b) => (b.id === block.id ? { ...b, children: nextChildren } : b)));
-  };
+  const updateChildren = (nextChildren: BlockNode[]) =>
+    tree.edit((root) => updateBlockTree(root, block.id, (b) => ({ ...b, children: nextChildren })));
 
-  const updateProps = (id: string, props: Record<string, unknown>) => {
-    const list = parentBlocks ?? blocks;
-    const change = parentBlocks ? onParentChange! : onRootChange;
-    change(updateBlockProps(list, id, props));
-  };
+  /** Stable, so the preview's inline editors are not rebuilt on every keystroke elsewhere. */
+  const updateProps = useCallback(
+    (id: string, props: Record<string, unknown>) => tree.edit((root) => updateBlockProps(root, id, props)),
+    [tree],
+  );
 
   return (
     <div
+      className={depth === 0 ? "jf-canvas-block jf-canvas-block--root" : "jf-canvas-block"}
+      data-block-id={block.id}
+      data-selected={isSelected ? "true" : undefined}
       style={{
         marginBottom: depth === 0 ? "0.75rem" : "0.4rem",
         border: `2px solid ${isSelected ? "var(--jf-accent)" : "transparent"}`,
@@ -224,10 +322,21 @@ function BlockRow({
       }}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(isSelected ? null : block.id);
+        if (selection && isExtendClick(e) && selection.extend(block.id, e)) return;
+        onSelect(isSelected && !inMultiSelection ? null : block.id);
       }}
+      onContextMenu={
+        selection
+          ? (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              selection.openMenu(block.id, { x: e.clientX, y: e.clientY });
+            }
+          : undefined
+      }
     >
       <div
+        data-builder-chrome="true"
         onPointerDown={onPointerDown}
         onClick={(e) => e.stopPropagation()}
         style={{
@@ -235,7 +344,7 @@ function BlockRow({
           alignItems: "center",
           gap: "0.5rem",
           padding: depth === 0 ? "0.4rem 0.6rem 0" : "0.25rem 0.35rem 0",
-          cursor: "grab",
+          cursor: moveLocked ? "default" : "grab",
           touchAction: "none",
           userSelect: "none",
         }}
@@ -253,17 +362,42 @@ function BlockRow({
         >
           ⠿
         </span>
-        <span
+        {/**
+          * The block's name is a button, so the keyboard reaches every block on
+          * the canvas and Enter or Space selects it, as a click does
+          * (justflows-ce#307).
+          */}
+        <button
+          type="button"
+          className="jf-canvas-block__name"
+          aria-pressed={isSelected}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (selection && isExtendClick(e) && selection.extend(block.id, e)) return;
+            onSelect(isSelected && !inMultiSelection ? null : block.id);
+          }}
           style={{
             fontSize: "0.65rem",
             fontWeight: 700,
             color: "var(--jf-text-3)",
             textTransform: "uppercase",
             letterSpacing: "0.04em",
+            background: "none",
+            border: "none",
+            padding: "0.15rem 0.2rem",
+            minHeight: 24,
+            cursor: "pointer",
+            fontFamily: "inherit",
           }}
         >
-          {meta?.icon} {meta?.title ?? block.type}
-        </span>
+          {meta?.icon} {block.editor?.label || meta?.title || block.type}
+        </button>
+        {locked && (
+          <span className="jf-canvas-block__lock" title={t("builder.navigator.badge.locked")}>
+            <span aria-hidden="true">🔒</span>
+            <span className="jf-sr-only">{t("builder.navigator.badge.locked")}</span>
+          </span>
+        )}
         <div
           style={{ marginLeft: "auto", display: "flex", gap: "0.2rem" }}
           onClick={(e) => e.stopPropagation()}
@@ -272,8 +406,8 @@ function BlockRow({
             type="button"
             aria-label={t("builder.canvas.moveBlockUp")}
             onClick={() => move(-1)}
-            disabled={index === 0}
-            style={iconBtn}
+            disabled={index === 0 || moveLocked}
+            className="jf-canvas-btn" style={iconBtn}
           >
             ↑
           </button>
@@ -281,23 +415,56 @@ function BlockRow({
             type="button"
             aria-label={t("builder.canvas.moveBlockDown")}
             onClick={() => move(1)}
-            disabled={index === total - 1}
-            style={iconBtn}
+            disabled={index === total - 1 || moveLocked}
+            className="jf-canvas-btn" style={iconBtn}
           >
             ↓
           </button>
           <button
             type="button"
             aria-label={t("builder.canvas.removeBlock")}
+            title={removeLocked ? t("builder.actions.blocked.lockedRemove") : undefined}
             onClick={remove}
-            style={{ ...iconBtn, color: "var(--jf-danger)" }}
+            disabled={removeLocked}
+            className="jf-canvas-btn" style={{ ...iconBtn, color: "var(--jf-danger)" }}
           >
             ✕
           </button>
+          {/** Toolbar actions the block's plugin or theme declared (justflows-ce#305), at most three. */}
+          {(meta?.actions ?? [])
+            .filter((action) => action.toolbar)
+            .slice(0, 3)
+            .map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                className="jf-canvas-btn" style={iconBtn}
+                disabled={isBlockLocked(block, "edit")}
+                title={isBlockLocked(block, "edit") ? t("builder.actions.blocked.lockedEdit") : undefined}
+                onClick={() => updateProps(block.id, { ...block.props, ...action.props })}
+              >
+                {action.label}
+              </button>
+            ))}
+          {selection && (
+            <button
+              type="button"
+              aria-label={t("builder.actions.more", { block: block.editor?.label || meta?.title || block.type })}
+              aria-haspopup="menu"
+              onClick={(e) => selection.openMenu(block.id, anchorFor(e.currentTarget))}
+              className="jf-canvas-btn" style={iconBtn}
+            >
+              ⋯
+            </button>
+          )}
         </div>
       </div>
 
-      <div style={{ padding: depth === 0 ? "0.5rem 0.6rem 0.6rem" : "0.25rem 0.35rem 0.35rem" }}>
+      <div style={{ position: "relative", padding: depth === 0 ? "0.5rem 0.6rem 0.6rem" : "0.25rem 0.35rem 0.35rem" }}>
+        {block.props.breakpoints ? <style>{canvasBreakpointCss(block)}</style> : null}
+        {selectedId === block.id && !inMultiSelection && !isBlockLocked(block, "edit") && !dragPayload.type && (
+          <LayoutOverlay block={block} allow={overlayHandles(block, meta)} onChange={(props) => updateProps(block.id, props)} />
+        )}
         <BlockPreview
           block={block}
           depth={depth}
@@ -313,16 +480,13 @@ function BlockRow({
                   const childRow = (child: BlockNode, ci: number) => (
                     <BlockRow
                       block={child}
-                      blocks={blocks}
                       catalog={catalog}
                       selectedId={selectedId}
+                      multiSelection={multiSelection}
                       onSelect={onSelect}
-                      onRootChange={onRootChange}
                       index={ci}
                       total={children.length}
                       depth={childDepth}
-                      parentBlocks={children}
-                      onParentChange={updateChildren}
                       parentType={block.type}
                     />
                   );
@@ -363,8 +527,18 @@ function BlockRow({
                     );
                   }
 
+                  /**
+                   * A container's layout (justflows-ce#299) uses the same classes as the public page,
+                   * so the canvas shows rows and grids as they will render. Each child's wrapper is
+                   * the layout item and carries the child's item values.
+                   */
+                  const layout = supportsContainerLayout(block.type) ? containerLayoutAttrs(block.props.containerLayout) : null;
                   const items = children.map((child, ci) => (
-                    <div key={child.id} style={isColumns ? { minWidth: 0 } : undefined}>
+                    <div
+                      key={child.id}
+                      data-jf-layout-item={child.id}
+                      style={isColumns ? { minWidth: 0 } : layout ? layoutItemStyle(child) : undefined}
+                    >
                       {!isColumns && (
                         <DropZone
                           parentId={block.id}
@@ -392,7 +566,13 @@ function BlockRow({
                           alwaysShow
                         />
                       )}
-                      {items}
+                      {layout ? (
+                        <div className={layout.classes.join(" ")} style={reactStyle(layout.style)} data-jf-layout-container={block.id}>
+                          {items}
+                        </div>
+                      ) : (
+                        items
+                      )}
                       {children.length > 0 && (
                         <DropZone
                           parentId={block.id}
@@ -406,7 +586,7 @@ function BlockRow({
                         label={t("builder.canvas.addBlock")}
                         onPick={(type) => {
                           const created = createBlock(type, t);
-                          onRootChange(insertBlock(blocks, block.id, children.length, created));
+                          tree.edit((root) => insertBlock(root, block.id, children.length, created));
                           onSelect(created.id);
                         }}
                         catalog={catalog}
@@ -443,6 +623,25 @@ function AddBlockSlot({
   quickAll?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  /** A click anywhere outside the picker, or Escape, closes it. */
+  useEffect(() => {
+    if (!open) return;
+    const onPointer = (e: PointerEvent) => {
+      if (root.current && !root.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      root.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    };
+    document.addEventListener("pointerdown", onPointer, true);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer, true);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
   const entries = [...catalog.values()].filter((b) => {
     if (b.type === "core.column") return parentType === "core.columns";
     if (allowedChildTypes?.length) return allowedChildTypes.includes(b.type);
@@ -458,7 +657,7 @@ function AddBlockSlot({
       : entries.filter((b) => b.category === "sections" || b.type === "core.section").slice(0, 6);
 
   return (
-    <div style={{ position: "relative", marginTop: "0.35rem" }}>
+    <div ref={root} style={{ position: "relative", marginTop: "0.35rem" }}>
       <button
         type="button"
         onClick={(e) => {
@@ -468,6 +667,7 @@ function AddBlockSlot({
           e.stopPropagation();
           setOpen(!open);
         }}
+        aria-expanded={open}
         style={{
           width: "100%",
           padding: "0.45rem",
@@ -537,5 +737,59 @@ function AddBlockSlot({
         </div>
       )}
     </div>
+  );
+}
+
+/** Whether the block or anything inside it carries a lock flag. */
+function subtreeHasLock(block: BlockNode, flag: "move" | "remove" | "edit"): boolean {
+  if (isBlockLocked(block, flag)) return true;
+  return (block.children ?? []).some((child) => subtreeHasLock(child, flag));
+}
+
+/** Declarations from `containerLayoutAttrs` as a React style object; custom properties keep their names. */
+export function reactStyle(style: Record<string, string>): React.CSSProperties {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(style)) {
+    out[key.startsWith("--") ? key : key.replace(/-([a-z])/g, (_m, c: string) => c.toUpperCase())] = value;
+  }
+  return out as React.CSSProperties;
+}
+
+/** A child's own item values (grow, share, self-alignment), on the wrapper that is the layout item. */
+export function layoutItemStyle(child: BlockNode): React.CSSProperties {
+  const style = parseBlockStyle(child.props.style);
+  const out: Record<string, string> = { minWidth: "0" };
+  if (style.grow) out["--jf-grow"] = style.grow;
+  if (style.basis) out["--jf-basis"] = flexBasis(style.basis);
+  if (style.alignSelf) out.alignSelf = style.alignSelf;
+  return out as React.CSSProperties;
+}
+
+/** Which resize handles a block offers: only what its inspector offers too. */
+function overlayHandles(block: BlockNode, meta: BlockCatalogEntry | undefined): { padding: boolean; minHeight: boolean } {
+  const sections = inspectorSections(block, meta);
+  return { padding: sections.field("padTop") && sections.field("padBottom"), minHeight: sections.field("minHeight") };
+}
+
+/** Attribute selector for a block id; ids never hold quotes, but escape anyway. */
+function attr(name: string, id: string): string {
+  return `[${name}="${id.replace(/["\\]/g, "\\$&")}"]`;
+}
+
+/**
+ * The block's breakpoint overrides as container queries on the canvas
+ * (justflows-ce#300). Same function and values as the public renderer; only
+ * the selectors and the query kind differ, so preview and page agree.
+ */
+export function canvasBreakpointCss(block: BlockNode): string {
+  return breakpointCss(
+    block.props.breakpoints,
+    supportsContainerLayout(block.type) ? block.props.containerLayout : undefined,
+    {
+      block: attr("data-jf-block-preview", block.id),
+      layout: attr("data-jf-layout-container", block.id),
+      item: attr("data-jf-layout-item", block.id),
+    },
+    { kind: "container", name: "jf-canvas" },
   );
 }

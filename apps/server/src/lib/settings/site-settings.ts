@@ -97,6 +97,82 @@ export async function setSiteSetting(siteId: string, key: string, value: unknown
   );
 }
 
+/** A setting changed on every attempt of an atomic update; the caller should ask the user to retry. */
+export class SiteSettingContentionError extends Error {
+  constructor(key: string) {
+    super(`The setting "${key}" kept changing while saving; try again`);
+    this.name = "SiteSettingContentionError";
+  }
+}
+
+const ATOMIC_ATTEMPTS = 5;
+
+/**
+ * SQL that is true when `value` holds the JSON text `previous`, per driver.
+ * PostgreSQL rows written by `setSiteSetting` hold the JSON text as a jsonb
+ * string, while rows written elsewhere may hold real jsonb, so both forms
+ * match. MariaDB stores JSON as text without a JSON type, so both sides are
+ * normalized with JSON_COMPACT. MySQL compares its JSON type natively.
+ */
+function storedValueEquals(driver: string | undefined): { sql: string; params: (previous: string) => string[] } {
+  if (driver === "postgres") {
+    return { sql: "value = ?::jsonb OR value = ?::text::jsonb", params: (previous) => [previous, previous] };
+  }
+  if (driver === "mariadb") {
+    return { sql: "JSON_COMPACT(value) = JSON_COMPACT(?)", params: (previous) => [previous] };
+  }
+  return { sql: "value = CAST(? AS JSON)", params: (previous) => [previous] };
+}
+
+/**
+ * Read-modify-write a setting without losing a concurrent write. The new value
+ * is only written if the stored value is still the one `mutate` saw (compared
+ * as JSON, so key order and spacing do not matter); otherwise the latest value
+ * is read and `mutate` runs again. Use it for list-shaped settings that several
+ * editors change at once, such as reusable blocks and site patterns.
+ */
+export async function updateSiteSettingAtomically<T>(
+  siteId: string,
+  key: string,
+  mutate: (current: T | null) => T,
+): Promise<T> {
+  const db = await getDb();
+  const driver = process.env.DB_DRIVER as "postgres" | "mysql" | "mariadb" | undefined;
+  const column = settingsKeyColumn();
+  for (let attempt = 0; attempt < ATOMIC_ATTEMPTS; attempt++) {
+    const rows = await db.query<{ value: unknown }>(
+      `SELECT value FROM site_settings WHERE site_id = ? AND ${column} = ? LIMIT 1`,
+      [siteId, key],
+    );
+    const exists = rows.length > 0;
+    const current = parseSettingValue<T>(exists, rows[0]?.value);
+    const next = mutate(current);
+    const serialized = JSON.stringify(next);
+    let changed: number;
+    if (!exists) {
+      changed = await db.execute(
+        driver === "postgres"
+          ? `INSERT INTO site_settings (id, site_id, key, value, updated_at) VALUES (?, ?, ?, ?, ?)
+             ON CONFLICT (site_id, key) DO NOTHING`
+          : `INSERT IGNORE INTO site_settings (id, site_id, \`key\`, value, updated_at) VALUES (?, ?, ?, ?, ?)`,
+        [randomUUID(), siteId, key, serialized, now()],
+      );
+    } else {
+      const previous = JSON.stringify(current ?? null);
+      if (previous === serialized) return next;
+      const match = storedValueEquals(driver);
+      /** `null` here is SQL NULL or a stored JSON null; SQL NULL never equals anything, so it is matched explicitly. */
+      changed = await db.execute(
+        `UPDATE site_settings SET value = ?, updated_at = ?
+         WHERE site_id = ? AND ${column} = ? AND (${current === null ? "value IS NULL OR " : ""}${match.sql})`,
+        [serialized, now(), siteId, key, ...match.params(previous)],
+      );
+    }
+    if (changed === 1) return next;
+  }
+  throw new SiteSettingContentionError(key);
+}
+
 export async function deleteSiteSetting(siteId: string, key: string): Promise<void> {
   const db = await getDb();
   await db.run(`DELETE FROM site_settings WHERE site_id = ? AND ${settingsKeyColumn()} = ?`, [

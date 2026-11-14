@@ -7,6 +7,8 @@ import { sanitizeBlockClassName, sanitizeBlockCss } from "./safe-css.js";
 import { isPlacementShaped, sanitizePlacementProp } from "./layout.js";
 import { sanitizeBlockStyleProp } from "./block-style.js";
 import { normalizeDeviceList } from "./visibility.js";
+import { sanitizeBlockBreakpoints, sanitizeContainerLayout, sanitizeStyleRef } from "./builder-values.js";
+import { BLOCK_NODE_KEYS, sanitizeEditorMeta } from "./document-contract.js";
 
 
 interface BlockLike {
@@ -143,22 +145,104 @@ function sanitizeProps(type: string, props: Record<string, unknown>): Record<str
     else delete next["style"];
   }
 
+  /**
+   * Builder 2.0 values (see `builder-values.ts`). Each key is namespaced so a
+   * block schema's own props cannot collide with it; an invalid value is
+   * dropped rather than stored.
+   */
+  if ("containerLayout" in next) {
+    const layout = sanitizeContainerLayout(next["containerLayout"]);
+    if (layout) next["containerLayout"] = layout;
+    else delete next["containerLayout"];
+  }
+  if ("styleRef" in next) {
+    const ref = sanitizeStyleRef(next["styleRef"]);
+    if (ref) next["styleRef"] = ref;
+    else delete next["styleRef"];
+  }
+  if ("breakpoints" in next) {
+    const breakpoints = sanitizeBlockBreakpoints(next["breakpoints"]);
+    if (breakpoints) next["breakpoints"] = breakpoints;
+    else delete next["breakpoints"];
+  }
+
   return next;
 }
 
-function sanitizeNode(node: unknown): unknown {
+const NODE_KEYS = new Set<string>(BLOCK_NODE_KEYS);
+
+/**
+ * Hard limits for any stored block document (justflows-ce#309). The document
+ * contract allows 32 levels; these are the safety ceiling past which a
+ * document is hostile or broken, never a page an author built. Writes over
+ * them are refused (see `measureBlockDocument`); the sanitizer itself never
+ * throws, so a document over them that is already stored still renders, cut
+ * off at the ceiling instead of overflowing the stack.
+ */
+export const BLOCK_DOCUMENT_MAX_DEPTH = 64;
+export const BLOCK_DOCUMENT_MAX_NODES = 20_000;
+
+/** Depth and node count of the block lists in a document, measured without recursion. */
+export function measureBlockDocument(input: unknown): { depth: number; nodes: number } {
+  let depth = 0;
+  let nodes = 0;
+  const roots = Array.isArray(input) ? input : Array.isArray((input as { blocks?: unknown } | null)?.blocks) ? (input as { blocks: unknown[] }).blocks : [];
+  const stack: Array<{ list: unknown[]; level: number }> = [{ list: roots, level: 1 }];
+  while (stack.length) {
+    const { list, level } = stack.pop()!;
+    for (const item of list) {
+      if (!item || typeof item !== "object") continue;
+      nodes++;
+      if (level > depth) depth = level;
+      if (nodes > BLOCK_DOCUMENT_MAX_NODES || depth > BLOCK_DOCUMENT_MAX_DEPTH) return { depth, nodes };
+      const kids = (item as { children?: unknown }).children;
+      if (Array.isArray(kids) && kids.length) stack.push({ list: kids, level: level + 1 });
+    }
+  }
+  return { depth, nodes };
+}
+
+/** Whether a document is within the hard limits. */
+export function withinBlockDocumentLimits(input: unknown): boolean {
+  const { depth, nodes } = measureBlockDocument(input);
+  return depth <= BLOCK_DOCUMENT_MAX_DEPTH && nodes <= BLOCK_DOCUMENT_MAX_NODES;
+}
+
+function sanitizeNode(node: unknown, level = 1, budget = { nodes: 0 }): unknown {
   if (!node || typeof node !== "object") return node;
   const n = node as BlockLike;
   const type = typeof n.type === "string" ? n.type : "";
   const props = sanitizeProps(type, asRecord(n.props));
-  const children = Array.isArray(n.children) ? n.children.map(sanitizeNode) : n.children;
-  return { ...n, props, children };
+  /** Past the ceiling, children are dropped instead of recursing further. */
+  const children = Array.isArray(n.children)
+    ? level >= BLOCK_DOCUMENT_MAX_DEPTH
+      ? []
+      : n.children.filter(() => ++budget.nodes <= BLOCK_DOCUMENT_MAX_NODES).map((child) => sanitizeNode(child, level + 1, budget))
+    : n.children;
+  /**
+   * Only contract keys are stored. Anything else on a node is transient editor
+   * state (selection, drag, hover) and must never reach the database.
+   */
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(n)) {
+    if (NODE_KEYS.has(key) && key !== "editor") out[key] = value;
+  }
+  out["props"] = props;
+  out["children"] = children;
+  if ("editor" in n) {
+    const editor = sanitizeEditorMeta(n["editor"]);
+    if (editor) out["editor"] = editor;
+  }
+  return out;
 }
 
 /** Sanitize a stored block document before it is written to the database. */
 export function sanitizeBlockDocument(input: unknown): { version: 1; blocks: unknown[] } {
   if (!input || typeof input !== "object") return { version: 1, blocks: [] };
   const doc = input as { blocks?: unknown };
-  const blocks = Array.isArray(doc.blocks) ? doc.blocks.map(sanitizeNode) : [];
+  const budget = { nodes: 0 };
+  const blocks = Array.isArray(doc.blocks)
+    ? doc.blocks.filter(() => ++budget.nodes <= BLOCK_DOCUMENT_MAX_NODES).map((node) => sanitizeNode(node, 1, budget))
+    : [];
   return { version: 1, blocks };
 }

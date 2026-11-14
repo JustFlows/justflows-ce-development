@@ -27,7 +27,7 @@ import { resolveContentLocale } from "../i18n/languages-db.js";
 import { invalidateContentCache } from "./content-public.js";
 import { getRuntimeHooks } from "../plugins/plugin-runtime.js";
 import { isHookAbortError } from "@justflows/core";
-import { sanitizeBlockDocument } from "@justflows/blocks";
+import { blockLockViolations, sanitizeBlockDocument, type BlockLockViolation } from "@justflows/blocks";
 import { defaultBlocksForContentType, isEmptyBlockDocument } from "./default-content-blocks.js";
 import { getContentTypeBySlug } from "./content-types-db.js";
 import { auditLog } from "../security/audit-log.js";
@@ -63,10 +63,64 @@ export const PatchContentSchema = z
     fields: ContentCacheFieldsSchema.optional(),
     status: z.enum(["draft", "published", "archived"]).optional(),
     expectedVersion: z.number().int().positive().optional(),
+    /**
+     * Version of the draft revision of a published entry the client last saw;
+     * `0` means it saw none. A mismatch is a 409 instead of overwriting another
+     * editor's draft.
+     */
+    expectedWorkingVersion: z.number().int().min(0).optional(),
     source: z.enum(["manual", "autosave", "import", "api"]).optional(),
   })
   .passthrough();
+
+/**
+ * The 409 body when a published entry's draft changed after the client loaded
+ * it, or `null` when the client's view is current (or it did not say).
+ */
+export function workingRevisionConflict(
+  working: { version: number; updatedAt?: string; updatedBy?: string | null; authorName?: string | null } | null,
+  expected: number | undefined,
+): Record<string, unknown> | null {
+  if (expected === undefined) return null;
+  const actual = working?.version ?? 0;
+  if (actual === expected) return null;
+  return {
+    error: "This draft was changed by someone else since you opened it",
+    code: "draft_conflict",
+    expectedWorkingVersion: expected,
+    actualWorkingVersion: actual,
+    ...(working?.updatedAt ? { updatedAt: working.updatedAt } : {}),
+    ...(working?.authorName ? { updatedByName: working.authorName } : {}),
+  };
+}
 export type PatchContentInput = z.infer<typeof PatchContentSchema>;
+
+/**
+ * The block locks a write would break (justflows-ce#298), compared against
+ * what the editor last saved: the draft of a published entry when there is
+ * one, else the entry itself. Callers skip this for actors holding
+ * `content:locks:manage`.
+ */
+export async function lockViolationsForWrite(
+  row: Record<string, unknown>,
+  nextBlocks: unknown,
+  siteId: string,
+): Promise<BlockLockViolation[]> {
+  if (nextBlocks === undefined) return [];
+  const working = await getWorkingRevision(String(row.id), siteId);
+  const base = working ? revisionToSnapshot(working) : rowToSnapshot(row);
+  return blockLockViolations(sanitizeBlockDocument(base.blocks).blocks, sanitizeBlockDocument(nextBlocks).blocks);
+}
+
+/** The 403 body for a write that breaks block locks. */
+export function blockLockedBody(violations: BlockLockViolation[]): Record<string, unknown> {
+  return {
+    code: "block_locked",
+    error: "This change moves, removes, or edits a locked block. Ask someone who can manage locks to unlock it.",
+    violations: violations.slice(0, 20),
+  };
+}
+
 
 export type ContentActor = { siteId: string; userId: string; role: string };
 
@@ -158,12 +212,18 @@ export async function saveWorkingRow(
     blocks?: unknown;
     fields?: Record<string, unknown>;
     source?: "manual" | "autosave" | "import" | "api";
+    expectedWorkingVersion?: number;
   },
   actor: ContentActor,
   res: WriteResponse,
 ): Promise<void> {
   const id = String(row.id);
   const working = await getWorkingRevision(id, actor.siteId);
+  const draftConflict = workingRevisionConflict(working, patch.expectedWorkingVersion);
+  if (draftConflict) {
+    res.status(409).json(draftConflict);
+    return;
+  }
   const base = working ? revisionToSnapshot(working) : rowToSnapshot(row);
   let proposed = mergeSnapshot(base, patch);
   if (!validateCacheFieldsForWrite(String(row.type), proposed.fields, res)) return;
@@ -197,7 +257,7 @@ export async function saveWorkingRow(
     actorId: actor.userId,
     baseVersion: Number(row.version ?? 1) || 1,
   }); } catch (err) {
-    if (err instanceof RevisionConflictError) { res.status(409).json({ error: err.message }); return; }
+    if (err instanceof RevisionConflictError) { res.status(409).json({ error: err.message, code: "draft_conflict" }); return; }
     throw err;
   }
   if (saved) {
@@ -219,6 +279,7 @@ export async function publishRow(
     blocks?: unknown;
     fields?: Record<string, unknown>;
     expectedVersion?: number;
+    expectedWorkingVersion?: number;
   },
   actor: ContentActor,
   res: WriteResponse,
@@ -228,6 +289,7 @@ export async function publishRow(
   const liveVersion = Number(row.version ?? 1) || 1;
   if (patch.expectedVersion != null && patch.expectedVersion !== liveVersion) {
     res.status(409).json({
+      code: "version_conflict",
       error: `Version conflict: expected ${patch.expectedVersion}, got ${liveVersion}`,
       expectedVersion: patch.expectedVersion,
       actualVersion: liveVersion,
@@ -236,8 +298,15 @@ export async function publishRow(
   }
 
   const working = await getWorkingRevision(id, siteId);
+  const draftConflict =
+    String(row.status) === "published" ? workingRevisionConflict(working, patch.expectedWorkingVersion) : null;
+  if (draftConflict) {
+    res.status(409).json(draftConflict);
+    return;
+  }
   if (working && String(row.status) === "published" && working.baseVersion !== liveVersion) {
     res.status(409).json({
+      code: "version_conflict",
       error: `Live version changed since this draft was created (live ${liveVersion}, draft base ${working.baseVersion})`,
       expectedVersion: working.baseVersion,
       actualVersion: liveVersion,

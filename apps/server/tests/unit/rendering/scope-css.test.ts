@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { describe, expect, it } from "vitest";
-import { scopeThemeCss } from "../../../src/lib/rendering/scope-css.js";
+import { scopeThemeCss, widthMediaToContainer } from "../../../src/lib/rendering/scope-css.js";
 
 const S = ".jf-theme-surface";
 
@@ -63,5 +63,34 @@ describe("scopeThemeCss", () => {
     const css = ":root { --x: 1; }";
     expect(scopeThemeCss(css, "body{}")).toBe(css);
     expect(scopeThemeCss(css, "div")).toBe(css);
+  });
+});
+
+describe("width media queries as canvas container queries (justflows-ce#300)", () => {
+  it("converts width-only media queries, including screen and ranges", () => {
+    expect(widthMediaToContainer("(max-width: 900px)", "jf-canvas")).toBe("@container jf-canvas (max-width: 900px)");
+    expect(widthMediaToContainer("screen and (min-width: 601px) and (max-width: 1024px)", "jf-canvas")).toBe(
+      "@container jf-canvas (min-width: 601px) and (max-width: 1024px)",
+    );
+    expect(widthMediaToContainer("(max-width: 40em), (min-width: 80em)", "jf-canvas")).toBe(
+      "@container jf-canvas (max-width: 40em) or (min-width: 80em)",
+    );
+  });
+
+  it("leaves every other media query alone", () => {
+    expect(widthMediaToContainer("print", "jf-canvas")).toBeNull();
+    expect(widthMediaToContainer("(prefers-color-scheme: dark)", "jf-canvas")).toBeNull();
+    expect(widthMediaToContainer("(max-width: 600px) and (hover: hover)", "jf-canvas")).toBeNull();
+    expect(widthMediaToContainer("(max-width: calc(1px + 2px))", "jf-canvas")).toBeNull();
+  });
+
+  it("rewrites the sheet only when a container is asked for", () => {
+    const css = "@media (max-width: 600px) { .a { color: red } } @media print { .b { color: blue } }";
+    expect(scopeThemeCss(css, ".s")).toContain("@media (max-width: 600px)");
+    const canvas = scopeThemeCss(css, ".s", "jf-canvas");
+    expect(canvas).toContain("@container jf-canvas (max-width: 600px) {");
+    expect(canvas).toContain(".s .a");
+    expect(canvas).toContain("@media print");
+    expect(scopeThemeCss(css, ".s", "bad name{")).toContain("@media (max-width: 600px)");
   });
 });

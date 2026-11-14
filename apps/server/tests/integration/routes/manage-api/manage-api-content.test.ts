@@ -8,10 +8,16 @@ process.env.APP_SECRET = "test-secret-that-is-at-least-32-characters-long";
 process.env.DB_DRIVER = "postgres";
 
 let allow = true;
+let canManageLocks = false;
 const createContentEntry = vi.fn(async () => ({ status: 201, body: { id: "c-new" } }));
+const lockViolationsForWrite = vi.fn(async () => [{ id: "hero", type: "core.heading", rule: "remove" }]);
+const applyDraftUpdate = vi.fn(async (_row: unknown, _patch: unknown, _actor: unknown, res: { json: (b: unknown) => void }) =>
+  res.json({ ok: true }),
+);
 
 vi.mock("../../../../src/lib/auth/api-keys.js", () => ({
-  keyCan: async () => allow,
+  keyCan: async (_key: unknown, _owner: unknown, capability: string) =>
+    capability === "content:locks:manage" ? canManageLocks : allow,
 }));
 vi.mock("../../../../src/lib/database/db.js", () => ({
   getDb: async () => ({
@@ -31,6 +37,9 @@ vi.mock("../../../../src/lib/i18n/languages-db.js", () => ({
 vi.mock("../../../../src/lib/content/content-write.js", async (orig) => ({
   ...(await orig<typeof import("../../../../src/lib/content/content-write.js")>()),
   createContentEntry: (...args: unknown[]) => createContentEntry(...(args as [])),
+  lockViolationsForWrite: (...args: unknown[]) => lockViolationsForWrite(...(args as [])),
+  applyDraftUpdate: (...args: unknown[]) => applyDraftUpdate(...(args as [never, never, never, never])),
+  saveWorkingRow: (...args: unknown[]) => applyDraftUpdate(...(args as [never, never, never, never])),
 }));
 
 const { default: router } = await import("../../../../src/routes/manage-api/content.js");
@@ -62,7 +71,10 @@ beforeAll(async () => {
 afterAll(() => new Promise<void>((r) => server.close(() => r())));
 beforeEach(() => {
   allow = true;
+  canManageLocks = false;
   createContentEntry.mockClear();
+  lockViolationsForWrite.mockClear();
+  applyDraftUpdate.mockClear();
 });
 
 describe("GET /api/manage/v1/content", () => {
@@ -111,5 +123,30 @@ describe("POST /api/manage/v1/content", () => {
     });
     expect(res.status).toBe(403);
     expect(createContentEntry).not.toHaveBeenCalled();
+  });
+});
+
+describe("PATCH /api/manage/v1/content/:id block locks", () => {
+  const patch = (body: Record<string, unknown>) =>
+    fetch(`${base}/c2`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+
+  it("refuses a key without content:locks:manage that breaks a lock", async () => {
+    const res = await patch({ blocks: { version: 1, blocks: [] } });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ code: "block_locked", violations: [{ id: "hero", rule: "remove" }] });
+    expect(applyDraftUpdate).not.toHaveBeenCalled();
+  });
+
+  it("skips the lock check for a key that can manage locks", async () => {
+    canManageLocks = true;
+    const res = await patch({ blocks: { version: 1, blocks: [] } });
+    expect(res.status).toBe(200);
+    expect(lockViolationsForWrite).not.toHaveBeenCalled();
+  });
+
+  it("skips the lock check when blocks are not written", async () => {
+    const res = await patch({ title: "Renamed" });
+    expect(res.status).toBe(200);
+    expect(lockViolationsForWrite).not.toHaveBeenCalled();
   });
 });

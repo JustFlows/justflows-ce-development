@@ -9,6 +9,7 @@ import type { BlockDefinition } from "../registry/block-registry.js";
 import { sanitizeHtmlBlock, sanitizeRichText } from "../sanitize.js";
 import { renderMath } from "../math.js";
 import { esc, safeHref, safeMediaSrc } from "../safe-url.js";
+import { codeLanguageClass } from "../code-language.js";
 import { siteWidgetBlocks } from "./site-widgets.js";
 import { GRID_DEFAULT_COLUMNS, GRID_MAX_COLUMNS, GRID_MIN_COLUMNS } from "../layout.js";
 import {
@@ -91,6 +92,7 @@ export const coreBlocks: BlockDefinition[] = [
   authFormBlock,
   {
     type: "core.paragraph",
+    inline: { text: { mode: "rich", multiline: true } },
     version: 1,
     title: "Paragraph",
     icon: "¶",
@@ -102,6 +104,7 @@ export const coreBlocks: BlockDefinition[] = [
   },
   {
     type: "core.heading",
+    inline: { text: { mode: "plain", maxLength: 300 } },
     version: 1,
     title: "Heading",
     icon: "H",
@@ -121,6 +124,7 @@ export const coreBlocks: BlockDefinition[] = [
   },
   {
     type: "core.image",
+    inline: { caption: { mode: "plain", maxLength: 500 }, alt: { mode: "plain", maxLength: 300 } },
     version: 1,
     title: "Image",
     icon: "🖼",
@@ -192,6 +196,7 @@ export const coreBlocks: BlockDefinition[] = [
   },
   {
     type: "core.quote",
+    inline: { text: { mode: "rich", multiline: true }, attribution: { mode: "plain", maxLength: 200 } },
     version: 1,
     title: "Quote",
     icon: "❝",
@@ -211,6 +216,7 @@ export const coreBlocks: BlockDefinition[] = [
   },
   {
     type: "core.button",
+    inline: { label: { mode: "plain", maxLength: 120 } },
     version: 1,
     title: "Button",
     icon: "⬛",
@@ -322,7 +328,8 @@ export const coreBlocks: BlockDefinition[] = [
     },
     render: (props) => {
       const { code, language } = props as { code: string; language: string };
-      return `<pre><code class="language-${esc(language)}">${esc(code)}</code></pre>`;
+      const languageClass = codeLanguageClass(language);
+      return `<pre><code${languageClass ? ` class="${languageClass}"` : ""}>${esc(code)}</code></pre>`;
     },
   },
   {
@@ -492,6 +499,7 @@ export const coreBlocks: BlockDefinition[] = [
   },
   {
     type: "core.hero",
+    inline: { heading: { mode: "plain", maxLength: 200 }, subheading: { mode: "plain", multiline: true, maxLength: 500 }, buttonLabel: { mode: "plain", maxLength: 120 } },
     version: 1,
     title: "Hero",
     icon: "★",
@@ -577,6 +585,7 @@ export const coreBlocks: BlockDefinition[] = [
   },
   {
     type: "core.cta",
+    inline: { heading: { mode: "plain", maxLength: 200 }, text: { mode: "plain", multiline: true, maxLength: 1000 }, buttonLabel: { mode: "plain", maxLength: 120 } },
     version: 1,
     title: "Call to Action",
     icon: "→",

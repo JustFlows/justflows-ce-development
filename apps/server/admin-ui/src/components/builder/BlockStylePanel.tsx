@@ -20,10 +20,15 @@ import type { BlockNode } from "./types";
 export default function BlockStylePanel({
   block,
   onChange,
+  part = "all",
 }: {
   block: BlockNode;
   onChange: (props: Record<string, unknown>) => void;
+  /** `devices`: only "Show on devices" (Responsive tab). `code`: only classes and CSS (Advanced tab). */
+  part?: "all" | "devices" | "code";
 }) {
+  const showDevices = part !== "code";
+  const showCode = part !== "devices";
   const { t } = useT();
   const { tokens } = useThemeStyleTokens();
   const props = block.props;
@@ -76,10 +81,10 @@ export default function BlockStylePanel({
 
   return (
     <section className="jf-block-panel" aria-labelledby={`jf-style-${block.id}`}>
-      <h3 id={`jf-style-${block.id}`}>{t("builder.style.title")}</h3>
-      <p className="jf-block-panel__hint">{t("builder.style.hint")}</p>
+      <h3 id={`jf-style-${block.id}`}>{part === "devices" ? t("builder.style.devices") : t("builder.style.title")}</h3>
+      {showCode && <p className="jf-block-panel__hint">{t("builder.style.hint")}</p>}
 
-      <label className="jf-block-panel__field">
+      {showCode && <label className="jf-block-panel__field">
         {t("builder.style.className")}
         <input
           type="text"
@@ -88,13 +93,13 @@ export default function BlockStylePanel({
           placeholder="hero-lead featured"
           onChange={(e) => set("className", e.target.value)}
         />
-      </label>
-      {strippedClasses && (
+      </label>}
+      {showCode && strippedClasses && (
         <p className="jf-block-panel__error">{t("builder.style.classNameInvalid")}</p>
       )}
 
-      <div className="jf-block-panel__field">
-        <span>{t("builder.style.devices")}</span>
+      {showDevices && <div className="jf-block-panel__field" data-jf-field="devices">
+        {part === "all" && <span>{t("builder.style.devices")}</span>}
         <div className="jf-filterbar" style={{ marginTop: "0.35rem" }}>
           {DEVICE_BUCKETS.map((d) => (
             <button
@@ -111,9 +116,9 @@ export default function BlockStylePanel({
         <p className="jf-block-panel__hint" style={{ marginTop: "0.3rem" }}>
           {t("builder.style.devicesHint")}
         </p>
-      </div>
+      </div>}
 
-      <label className="jf-block-panel__field">
+      {showCode && <label className="jf-block-panel__field">
         {t("builder.style.css")}
         <textarea
           rows={8}
@@ -125,9 +130,9 @@ export default function BlockStylePanel({
           }
           onChange={(e) => set("css", e.target.value)}
         />
-      </label>
+      </label>}
 
-      {rejected ? (
+      {!showCode ? null : rejected ? (
         <p className="jf-block-panel__error">{t("builder.style.cssRejected")}</p>
       ) : compiled ? (
         <details className="jf-block-panel__compiled">
@@ -136,7 +141,7 @@ export default function BlockStylePanel({
         </details>
       ) : null}
 
-      {tokens.length > 0 && (
+      {showCode && tokens.length > 0 && (
         <details className="jf-block-panel__compiled">
           <summary>
             {t("builder.style.tokens")} ({tokens.length})

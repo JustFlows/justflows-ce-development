@@ -1,4 +1,4 @@
-import type { BlockInspectorSupports } from "@justflows/blocks";
+import type { BlockEditorMeta, BlockInlineFields, BlockInspectorSupports } from "@justflows/blocks";
 
 export interface BlockNode {
   id: string;
@@ -6,6 +6,8 @@ export interface BlockNode {
   version: number;
   props: Record<string, unknown>;
   children?: BlockNode[];
+  /** Editor-only label and lock flags; never rendered. See `docs/BUILDER-DOCUMENT.md`. */
+  editor?: BlockEditorMeta;
 }
 
 export interface BlockDocument {
@@ -38,6 +40,19 @@ export interface BlockCatalogEntry {
   schema?: Record<string, BlockSchemaField>;
   /** Generic settings sections this block offers in the inspector. */
   inspector?: BlockInspectorSupports;
+  /** Props editable directly on the canvas (justflows-ce#297). */
+  inline?: BlockInlineFields;
+  /** Builder 2.0 editor contract, normalized by the server (justflows-ce#305). */
+  apiVersion?: number;
+  keywords?: string[];
+  /** Parents this block may sit in; `$root` is a region root. */
+  parents?: string[];
+  /** Props a new block starts with, already validated by the block. */
+  defaults?: Record<string, unknown>;
+  deprecated?: { since: string; replacedBy?: string; message?: string };
+  actions?: Array<{ id: string; label: string; props: Record<string, unknown>; toolbar?: boolean }>;
+  preview?: { mode: "server" | "placeholder"; minHeight?: number };
+  supports?: { containerLayout?: boolean };
 }
 
 export type BlockPath = number[];

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 import { injectRootAttrs, withBlockAnimation } from "./animation.js";
+import { applyContainerLayout, containerLayoutTarget, supportsContainerLayout } from "./container-layout.js";
+import { breakpointCss } from "./responsive.js";
+import { presetRefOf, stylePresetClass } from "./style-presets.js";
 import { blockScopeClass, sanitizeBlockClassName, scopeBlockCss } from "./safe-css.js";
 import { isDefaultPlacement, isPlacementShaped, parseBlockPlacement, placementStyleVars } from "./layout.js";
 import { blockStyleDeclarations, parseBlockStyle } from "./block-style.js";
@@ -69,14 +72,29 @@ export function withBlockChrome(html: string, node: BlockChromeNode): string {
   if (!html.trim()) return html;
   const props = asRecord(node.props);
 
-  let out = withBlockAnimation(html, props);
+  /** Layout first: it may swap the root element that the attributes below are added to. */
+  let out = withBlockAnimation(applyContainerLayout(html, node), props);
 
   const classes: string[] = [];
   const custom = sanitizeBlockClassName(props["className"]);
   if (custom) classes.push(custom);
+  /** A named style preset (justflows-ce#301): one class, defined in /theme.css. */
+  const presetClass = stylePresetClass(presetRefOf(props));
+  if (presetClass) classes.push(presetClass);
 
   const scope = blockScopeClass(node.id);
-  const css = scope ? scopeBlockCss(props["css"], `.${scope}`) : "";
+  const customCss = scope ? scopeBlockCss(props["css"], `.${scope}`) : "";
+  /** Breakpoint overrides (justflows-ce#300) use the same per-block scope class. */
+  const type = typeof node.type === "string" ? node.type : "";
+  const layoutClass = supportsContainerLayout(type) ? containerLayoutTarget(type) : null;
+  const responsiveCss =
+    scope && props["breakpoints"]
+      ? breakpointCss(props["breakpoints"], supportsContainerLayout(type) ? props["containerLayout"] : undefined, {
+          block: `.${scope}`,
+          layout: layoutClass ? `.${scope} > .${layoutClass}` : `.${scope}`,
+        })
+      : "";
+  const css = [customCss, responsiveCss].filter(Boolean).join("\n");
   if (css) classes.push(scope);
 
   // Grid placement and per-block spacing both ride on the item itself, and both

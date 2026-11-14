@@ -65,6 +65,15 @@ export function useSession(): SessionValue {
   return ctx;
 }
 
+/**
+ * The signed-in user's id, or null. Unlike `useSession` it does not require a
+ * provider, so components that also render in isolation (builders embedded in
+ * other screens, tests) can use it for per-user preferences.
+ */
+export function useOptionalSessionUserId(): string | null {
+  return useContext(SessionContext)?.session?.id ?? null;
+}
+
 /** Convenience for the common case of just needing the role. */
 export function useSessionRole(): string | null {
   return useSession().session?.role ?? null;
@@ -83,4 +92,20 @@ export function useCapability(capability: string): boolean {
   if (session.capabilities) return session.capabilities.includes(capability);
   // Compatibility with cached SSR data and older hosts during rolling updates.
   return session.role === "administrator";
+}
+
+/**
+ * `useCapability` and the role for components that also render without a
+ * session provider (embedded builders, tests). Without a session they answer
+ * false and null, so nothing is granted by accident.
+ */
+export function useOptionalCapability(capability: string): boolean {
+  const session = useContext(SessionContext)?.session;
+  if (!session) return false;
+  if (session.capabilities) return session.capabilities.includes(capability);
+  return session.role === "administrator";
+}
+
+export function useOptionalSessionRole(): string | null {
+  return useContext(SessionContext)?.session?.role ?? null;
 }

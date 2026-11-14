@@ -251,6 +251,9 @@ interface StyleTokenDto {
   description?: string;
   type: string;
   value: string;
+  /** The theme's own value, and whether the site changed it (justflows-ce#301). */
+  defaultValue?: string;
+  overridden?: boolean;
   presets?: { label: string; value: string }[];
   min?: number;
   max?: number;
@@ -340,6 +343,12 @@ router.get("/style-tokens", requireRole(...CONTENT_READ_ROLES), async (_req, res
       mods,
       schema,
     );
+    /** What the theme alone gives, so the editor can say whether a token was changed for this site (justflows-ce#301). */
+    const defaultVars = modsToCssVariables(
+      (theme?.css_variables as Record<string, string> | undefined) ?? {},
+      defaultModsFromSchema(schema, theme?.css_variables),
+      schema,
+    );
 
     const tokens: StyleTokenDto[] = [];
     const seen = new Set<string>();
@@ -364,6 +373,8 @@ router.get("/style-tokens", requireRole(...CONTENT_READ_ROLES), async (_req, res
           description: control.description,
           type: control.type,
           value: vars[key] ?? String(control.default),
+          defaultValue: defaultVars[key] ?? String(control.default),
+          overridden: (vars[key] ?? String(control.default)) !== (defaultVars[key] ?? String(control.default)),
           presets: control.options?.map((o) => ({ label: o.label, value: o.value })),
           min: control.min,
           max: control.max,
@@ -635,6 +646,8 @@ router.get("/customize", requireRole(...THEME_CUSTOMIZE_ROLES), async (_req, res
     res.json({
       theme: { id: theme.theme_id, name: theme.name, version: theme.version },
       schema: await getCustomizeSchema(siteId),
+      /** The theme's own values, so a control can say it was changed and reset to exactly this (justflows-ce#301). */
+      defaults,
       mods: effective,
       blocks: effectiveBlocks,
       defaultBlocks,
@@ -707,6 +720,8 @@ router.patch("/customize", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, re
       await publishThemeHomeBlocks(theme.theme_id, blocks);
       await publishThemeBlogBlocks(theme.theme_id, blogBlocks);
       await revalidateOnUpdate("theme");
+      /** Global styles reach every page; the entry names the theme, never the values (justflows-ce#309). */
+      auditFromRequest(req, "design.styles_published", { siteId, target: theme.theme_id, detail: "publish" });
       res.json({ ok: true, published: true, mods, blocks, homePageId, blogBlocks, blogPageId });
       return;
     }
@@ -715,6 +730,7 @@ router.patch("/customize", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, re
     await saveThemeHomeBlocks(theme.theme_id, blocks, body.draft);
     await saveThemeBlogBlocks(theme.theme_id, blogBlocks, body.draft);
     await revalidateOnUpdate("theme");
+    if (!body.draft) auditFromRequest(req, "design.styles_published", { siteId, target: theme.theme_id, detail: "save" });
     res.json({ ok: true, published: false, mods, blocks, homePageId, blogBlocks, blogPageId });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

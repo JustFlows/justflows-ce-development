@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="<%= locale %>"<% if (typeof t === 'function') { %> data-jf-session-account="<%= t('auth.myAccount') %>" data-jf-session-signout="<%= t('auth.signOut') %>"<% } %>>
+<html lang="<%= locale %>"<% if (typeof dir === 'string' && dir === 'rtl') { %> dir="rtl"<% } %><% if (typeof t === 'function') { %> data-jf-session-account="<%= t('auth.myAccount') %>" data-jf-session-signout="<%= t('auth.signOut') %>"<% } %>>
 
 <head>
   <meta charset="UTF-8">

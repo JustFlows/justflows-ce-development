@@ -1,0 +1,49 @@
+{
+  "PluginBlockDefinition": {
+    "actions": "optional",
+    "allowedChildTypes": "optional",
+    "apiVersion": "optional",
+    "category": "optional",
+    "defaults": "optional",
+    "deprecated": "optional",
+    "description": "optional",
+    "icon": "optional",
+    "inline": "optional",
+    "inspector": "optional",
+    "keywords": "optional",
+    "migrations": "optional",
+    "parents": "optional",
+    "preview": "optional",
+    "render": "required",
+    "schema": "required",
+    "supports": "optional",
+    "supportsChildren": "optional",
+    "title": "required",
+    "type": "required",
+    "validateProps": "required",
+    "version": "required"
+  },
+  "PluginBlockField": {
+    "default": "optional",
+    "help": "optional",
+    "label": "optional",
+    "multiple": "optional",
+    "optionLabels": "optional",
+    "options": "optional",
+    "optionsUrl": "optional",
+    "required": "optional",
+    "showWhen": "optional",
+    "type": "required"
+  },
+  "BlockPattern": {
+    "blocks": "required",
+    "category": "required",
+    "description": "optional",
+    "id": "required",
+    "locales": "optional",
+    "requiresBlockTypes": "required",
+    "schemaVersion": "required",
+    "title": "required",
+    "version": "required"
+  }
+}

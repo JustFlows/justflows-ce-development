@@ -44,6 +44,8 @@ import { auditLog } from "../../lib/security/audit-log.js";
 import { sendServerError } from "../../lib/http/send-error.js";
 import {
   applyDraftUpdate,
+  blockLockedBody,
+  lockViolationsForWrite,
   contentHookRef,
   createContentEntry,
   CreateContentSchema as CreateSchema,
@@ -55,6 +57,7 @@ import {
   slugify,
   trashContentEntry,
   unpublishRow,
+  workingRevisionConflict,
   type ContentActor,
 } from "../../lib/content/content-write.js";
 
@@ -568,6 +571,7 @@ router.patch("/:id", requireSession, async (req, res) => {
     const currentVersion = Number(row.version ?? 1) || 1;
     if (body.data.expectedVersion != null && body.data.expectedVersion !== currentVersion) {
       res.status(409).json({
+        code: "version_conflict",
         error: `Version conflict: expected ${body.data.expectedVersion}, got ${currentVersion}`,
         expectedVersion: body.data.expectedVersion,
         actualVersion: currentVersion,
@@ -593,6 +597,13 @@ router.patch("/:id", requireSession, async (req, res) => {
       } catch (err) {
         if (err instanceof PermalinkConflictError) { res.status(409).json({ error: err.message }); return; }
         throw err;
+      }
+    }
+    if (body.data.blocks !== undefined && !(await userCan(session, "content:locks:manage", contentResource(row)))) {
+      const violations = await lockViolationsForWrite(row, body.data.blocks, session.siteId);
+      if (violations.length) {
+        res.status(403).json(blockLockedBody(violations));
+        return;
       }
     }
     const status = String(row.status);
@@ -916,6 +927,39 @@ router.post("/:id/revisions/:revisionId/restore", requireSession, async (req, re
       res.status(404).json({ error: "Revision not found" });
       return;
     }
+    /**
+     * Restoring writes the draft just like a save, so it carries the same
+     * concurrency checks: never replace a draft or version the client did
+     * not see (justflows-ce#302). Omitted fields keep the old behaviour.
+     */
+    const liveVersion = Number(row.version ?? 1) || 1;
+    const expectedLive = typeof req.body?.expectedVersion === "number" ? req.body.expectedVersion : undefined;
+    if (expectedLive !== undefined && expectedLive !== liveVersion) {
+      res.status(409).json({
+        code: "version_conflict",
+        error: `Version conflict: expected ${expectedLive}, got ${liveVersion}`,
+        expectedVersion: expectedLive,
+        actualVersion: liveVersion,
+      });
+      return;
+    }
+    if (String(row.status) === "published") {
+      const rawWorking = req.body?.expectedWorkingVersion;
+      const expectedWorking =
+        typeof rawWorking === "number" && Number.isInteger(rawWorking) && rawWorking >= 0 ? rawWorking : undefined;
+      const draftConflict = workingRevisionConflict(await getWorkingRevision(id, session.siteId), expectedWorking);
+      if (draftConflict) {
+        res.status(409).json(draftConflict);
+        return;
+      }
+    }
+    if (!(await userCan(session, "content:locks:manage", contentResource(row)))) {
+      const violations = await lockViolationsForWrite(row, revisionToSnapshot(revision).blocks, session.siteId);
+      if (violations.length) {
+        res.status(403).json(blockLockedBody(violations));
+        return;
+      }
+    }
     const ctx = hookCtx(session);
     if (String(row.status) === "published") {
       await upsertWorkingRevision(row, {
@@ -959,6 +1003,9 @@ router.post("/:id/publish", requireSession, async (req, res) => {
   const id = param(req.params.id);
   const expectedVersion =
     typeof req.body?.expectedVersion === "number" ? req.body.expectedVersion : undefined;
+  const rawWorking = req.body?.expectedWorkingVersion;
+  const expectedWorkingVersion =
+    typeof rawWorking === "number" && Number.isInteger(rawWorking) && rawWorking >= 0 ? rawWorking : undefined;
   try {
     const db = await getDb();
     const rows = await db.query<Record<string, unknown>>(
@@ -979,7 +1026,7 @@ router.post("/:id/publish", requireSession, async (req, res) => {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
-    await publishRow(rows[0], { expectedVersion }, session, res);
+    await publishRow(rows[0], { expectedVersion, expectedWorkingVersion }, session, res);
   } catch (err) {
     sendServerError(res, "content", err);
   }

@@ -1,5 +1,16 @@
 // SPDX-License-Identifier: MIT
 
+import { getEffectiveAccess } from "../../lib/auth/access-policy.js";
+import { STYLE_PRESET_NAME_MAX } from "@justflows/blocks";
+import {
+  deleteStylePreset,
+  discardStylePresetDraft,
+  listStylePresets,
+  publishStylePresets,
+  saveStylePreset,
+  stylePresetUsage,
+  stylePresetsHaveDraft,
+} from "../../lib/themes/style-presets.js";
 import { Router, type Request } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
@@ -33,7 +44,13 @@ import {
   deleteReusableBlock,
   listReusableBlocks,
   saveReusableBlock,
+  ReusableSaveError,
+  asReusableId,
+  discardReusableDraft,
+  getReusableBlock,
+  publishReusableDraft,
 } from "../../lib/rendering/reusable-blocks.js";
+import { reusableUsageFor } from "../../lib/rendering/reusable-usage.js";
 import {
   deleteSitePattern,
   exportPatternSet,
@@ -70,7 +87,7 @@ import {
   WIDGET_AREA_POSITIONS,
 } from "../../lib/rendering/widget-areas.js";
 import { listLayoutScopes } from "../../lib/themes/layout-scopes.js";
-import { loadThemeDemoFooter, listThemePatterns, loadThemePattern, loadThemeTemplate } from "../../lib/themes/theme-files.js";
+import { loadThemeDemoFooter, listThemePatterns, loadThemePattern, loadThemeTemplateDoc } from "../../lib/themes/theme-files.js";
 import {
   clearThemeBlogDraft,
   defaultBlogBlocksFromTheme,
@@ -113,12 +130,13 @@ import {
   publishStoredTemplate,
   resetStoredTemplate,
   saveStoredTemplate,
+  writeStoredTemplate,
 } from "../../lib/themes/theme-templates-store.js";
 import { TEMPLATE_SLOTS } from "../../lib/rendering/template-hierarchy.js";
 import { validateTemplateBlocks } from "../../lib/rendering/template-validate.js";
-import { auditFromRequest } from "../../lib/security/audit-log.js";
+import { auditFromRequest, auditLog } from "../../lib/security/audit-log.js";
 import { clientIp } from "../../lib/security/rate-limit.js";
-import { badRequest, ensureKeyCan, sendJson } from "./envelope.js";
+import { badRequest, ensureKeyCan, sendJson, notFound } from "./envelope.js";
 
 /**
  * Site chrome the admin edits outside a content entry: the header library,
@@ -158,12 +176,23 @@ const PartSchema = z.object({
 const TemplateSaveSchema = z.object({
   blocks: z.array(z.record(z.string(), z.unknown())),
   draft: z.boolean().default(false),
+  /** Style defaults for the content this template wraps, by block type (justflows-ce#301). Omitted keeps the stored ones; null clears them. */
+  templateDefaults: z.record(z.string(), z.unknown()).nullable().optional(),
+});
+
+const StylePresetSaveSchema = z.object({
+  id: z.string().regex(/^[a-z][a-z0-9-]{0,63}$/),
+  name: z.string().min(1).max(STYLE_PRESET_NAME_MAX),
+  style: z.record(z.string(), z.unknown()),
 });
 
 const ReusableSaveSchema = z.object({
   id: z.string().max(64).optional(),
   name: z.string().max(120).optional(),
   blocks: z.array(z.record(z.string(), z.unknown())),
+  /** Save the draft of an existing entry instead of publishing (justflows-ce#304). */
+  draft: z.boolean().optional(),
+  expectedRevision: z.number().int().min(0).optional(),
 });
 
 const PatternSaveSchema = z.object({ synced: z.boolean().default(false) }).catchall(z.unknown());
@@ -501,18 +530,29 @@ router.get("/templates/:slug", fileLimit, async (req, res) => {
       sendJson(req, res, { blocks: [], draft: [] });
       return;
     }
-    const { published, draft } = await getStoredTemplateDocs(id, theme.themeId, slug);
+    const { published, draft, publishedDefaults, draftDefaults } = await getStoredTemplateDocs(id, theme.themeId, slug);
     if (published?.length || draft?.length) {
-      sendJson(req, res, { blocks: published ?? [], draft: draft ?? [] });
+      sendJson(req, res, {
+        blocks: published ?? [],
+        draft: draft ?? [],
+        templateDefaults: (draft?.length ? draftDefaults : publishedDefaults) ?? {},
+        publishedTemplateDefaults: publishedDefaults ?? {},
+      });
       return;
     }
-    const themeBlocks = loadThemeTemplate(theme.themeId, slug, theme.installedPath);
-    if (themeBlocks?.length) {
-      const seeded = sanitizeBlockDocument({ version: 1, blocks: themeBlocks }).blocks;
-      sendJson(req, res, { blocks: seeded, draft: [], fromThemeDefault: true });
+    const themeDoc = loadThemeTemplateDoc(theme.themeId, slug, theme.installedPath);
+    if (themeDoc?.blocks.length) {
+      const seeded = sanitizeBlockDocument({ version: 1, blocks: themeDoc.blocks }).blocks;
+      sendJson(req, res, {
+        blocks: seeded,
+        draft: [],
+        fromThemeDefault: true,
+        templateDefaults: themeDoc.templateDefaults ?? {},
+        publishedTemplateDefaults: themeDoc.templateDefaults ?? {},
+      });
       return;
     }
-    sendJson(req, res, { blocks: [], draft: [], fromThemeDefault: true });
+    sendJson(req, res, { blocks: [], draft: [], fromThemeDefault: true, templateDefaults: {}, publishedTemplateDefaults: {} });
   } catch (err) {
     sendServerError(res, "manage.templates", err);
   }
@@ -534,12 +574,15 @@ router.put("/templates/:slug", async (req, res) => {
       res.status(503).json({ error: "No site found" });
       return;
     }
-    const blocks = body.data.draft
-      ? await saveStoredTemplate(id, theme.themeId, slug, body.data.blocks, true)
-      : await publishStoredTemplate(id, theme.themeId, slug, body.data.blocks);
+    const { blocks, templateDefaults } = await writeStoredTemplate(id, theme.themeId, slug, body.data.blocks, {
+      draft: body.data.draft,
+      actorId: req.apiKeyOwner?.userId ?? null,
+      /** `null` clears the defaults; omitted keeps them (justflows-ce#301). */
+      templateDefaults: body.data.templateDefaults === null ? {} : body.data.templateDefaults,
+    });
     if (!body.data.draft) await revalidateOnUpdate("theme");
     const { unknownBlockTypes } = validateTemplateBlocks(blocks);
-    res.json({ blocks, unknownBlockTypes });
+    res.json({ blocks, unknownBlockTypes, templateDefaults: templateDefaults ?? {} });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : "Could not save" });
   }
@@ -728,22 +771,164 @@ router.put("/reusable-blocks", async (req, res) => {
   const body = ReusableSaveSchema.safeParse(req.body);
   if (!body.success) return badRequest(res, body.error.issues[0]?.message ?? "Invalid reusable block");
   try {
-    const item = await saveReusableBlock(siteId(req), body.data);
+    const item = await saveReusableBlock(siteId(req), body.data, {
+      draft: body.data.draft,
+      expectedRevision: body.data.expectedRevision,
+      actorId: req.apiKeyOwner?.userId ?? null,
+    });
+    if (!(body.data.draft && item.draft)) await revalidateOnUpdate("content");
+    res.json({ item });
+  } catch (err) {
+    sendReusableError(res, err);
+  }
+});
+
+router.get("/reusable-blocks/:id/usage", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "content:read"))) return;
+  const id = asReusableId(param(req.params.id));
+  if (!id) return notFound(res);
+  try {
+    const owner = req.apiKeyOwner!;
+    const access = await getEffectiveAccess(owner.userId, owner.siteId, owner.role);
+    sendJson(req, res, await reusableUsageFor(siteId(req), id, { userId: owner.userId, access }));
+  } catch (err) {
+    sendServerError(res, "manage.reusable-blocks", err);
+  }
+});
+
+router.post("/reusable-blocks/:id/publish", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  try {
+    const expectedRevision = typeof req.body?.expectedRevision === "number" ? req.body.expectedRevision : undefined;
+    const item = await publishReusableDraft(siteId(req), param(req.params.id), { expectedRevision, actorId: req.apiKeyOwner?.userId ?? null });
+    if (!item) {
+      res.status(409).json({ error: "Nothing to publish", code: "no_draft" });
+      return;
+    }
     await revalidateOnUpdate("content");
     res.json({ item });
+  } catch (err) {
+    sendReusableError(res, err);
+  }
+});
+
+router.post("/reusable-blocks/:id/discard", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  try {
+    await discardReusableDraft(siteId(req), param(req.params.id));
+    res.json({ item: await getReusableBlock(siteId(req), param(req.params.id)) });
+  } catch (err) {
+    sendServerError(res, "manage.reusable-blocks", err);
+  }
+});
+
+/** A block still in use needs `?confirm=1`, since deleting it empties it on every page that uses it. */
+router.delete("/reusable-blocks/:id", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  try {
+    const id = param(req.params.id);
+    if (req.query.confirm !== "1" && (req.body as { confirm?: unknown } | undefined)?.confirm !== "1") {
+      const owner = req.apiKeyOwner!;
+      const access = await getEffectiveAccess(owner.userId, owner.siteId, owner.role);
+      const usage = await reusableUsageFor(siteId(req), asReusableId(id) || "-", { userId: owner.userId, access });
+      if (usage.total > 0) {
+        res.status(409).json({ error: "This reusable block is still used; repeat with confirm=1 to delete it anyway", code: "in_use", usage });
+        return;
+      }
+    }
+    await deleteReusableBlock(siteId(req), id);
+    await revalidateOnUpdate("content");
+    res.json({ ok: true });
+  } catch (err) {
+    sendServerError(res, "manage.reusable-blocks", err);
+  }
+});
+
+function sendReusableError(res: import("express").Response, err: unknown): void {
+  if (err instanceof ReusableSaveError) {
+    const status = err.code === "revision_conflict" ? 409 : err.code === "not_found" ? 404 : 400;
+    res.status(status).json({ error: err.message, code: err.code });
+    return;
+  }
+  res.status(400).json({ error: err instanceof Error ? err.message : "Could not save" });
+}
+
+/* ----------------------------- style presets ----------------------------- */
+
+router.get("/style-presets", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "content:read"))) return;
+  try {
+    const id = siteId(req);
+    const [items, published, hasDraft] = await Promise.all([
+      listStylePresets(id, { draft: true }),
+      listStylePresets(id),
+      stylePresetsHaveDraft(id),
+    ]);
+    sendJson(req, res, { items, published, hasDraft });
+  } catch (err) {
+    sendServerError(res, "manage.style-presets", err);
+  }
+});
+
+router.put("/style-presets", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  const body = StylePresetSaveSchema.safeParse(req.body);
+  if (!body.success) return badRequest(res, body.error.issues[0]?.message ?? "Invalid style preset");
+  try {
+    res.json({ item: await saveStylePreset(siteId(req), body.data) });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : "Could not save" });
   }
 });
 
-router.delete("/reusable-blocks/:id", async (req, res) => {
+router.delete("/style-presets/:id", async (req, res) => {
   if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
   try {
-    await deleteReusableBlock(siteId(req), param(req.params.id));
-    await revalidateOnUpdate("content");
+    await deleteStylePreset(siteId(req), param(req.params.id));
     res.json({ ok: true });
   } catch (err) {
-    sendServerError(res, "manage.reusable-blocks", err);
+    sendServerError(res, "manage.style-presets", err);
+  }
+});
+
+router.get("/style-presets/:id/usage", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "content:read"))) return;
+  const id = param(req.params.id);
+  if (!/^[a-z][a-z0-9-]{0,63}$/.test(id)) return notFound(res);
+  try {
+    sendJson(req, res, await stylePresetUsage(siteId(req), id));
+  } catch (err) {
+    sendServerError(res, "manage.style-presets", err);
+  }
+});
+
+router.post("/style-presets/publish", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  try {
+    const items = await publishStylePresets(siteId(req));
+    await revalidateOnUpdate("theme");
+    void auditLog({
+      siteId: siteId(req),
+      action: "design.presets_published",
+      actorId: req.apiKeyOwner!.userId,
+      actorRole: req.apiKeyOwner!.role,
+      target: "style-presets",
+      detail: `count=${items.length}`,
+    });
+    res.json({ items, published: items, hasDraft: false });
+  } catch (err) {
+    sendServerError(res, "manage.style-presets", err);
+  }
+});
+
+router.post("/style-presets/discard", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  try {
+    await discardStylePresetDraft(siteId(req));
+    const items = await listStylePresets(siteId(req));
+    res.json({ items, published: items, hasDraft: false });
+  } catch (err) {
+    sendServerError(res, "manage.style-presets", err);
   }
 });
 

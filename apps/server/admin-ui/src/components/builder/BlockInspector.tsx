@@ -2,21 +2,33 @@ import SocialLinksEditor from "./SocialLinksEditor";
 import { FUNCTIONAL_TYPES } from "./FunctionalBlock";
 import TableEditor from "./TableEditor";
 import { useT } from "../../i18n/I18nProvider";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { BlockNode, BlockCatalogEntry, BlockSchemaField } from "./types";
 import { syncColumnCount } from "./block-defaults";
 import AnimationPanel from "./AnimationPanel";
 import ThemeBlockControls from "./ThemeBlockControls";
 import BlockStylePanel from "./BlockStylePanel";
+import { ContainerLayoutPanel, FlexItemPanel } from "./LayoutControls";
+import { supportsContainerLayout, type BreakpointSource, type OverrideBreakpoint } from "@justflows/blocks";
+import ResponsivePanel from "./ResponsivePanel";
+import StylePresetPanel from "./StylePresetPanel";
+import { useTemplateContext } from "./template-defaults-context";
+import { useStylePresets } from "../../lib/style-presets";
+import { presetRefOf } from "@justflows/blocks";
 import BlockJsonPanel from "./BlockJsonPanel";
 import GridPlacementPanel from "./GridPlacementPanel";
 import BlockLayoutPanel from "./BlockLayoutPanel";
 import ReusablePanel, { type ReusableItem } from "./ReusablePanel";
-import { GRID_BLOCK_TYPE } from "./grid";
+import { GRID_BLOCK_TYPE, gridColumns, matchReadingOrder, readingOrderDiffers } from "./grid";
 import MediaImageField from "../MediaImageField";
+import BlockRecoveryPanel, { type BlockRecoveryReason } from "./BlockRecoveryPanel";
 import { useMergeTags } from "../../lib/merge-tags";
 import { useThemeStyleTokens } from "../../lib/theme-style-tokens";
-import { inspectorSections } from "./inspector-sections";
+import { inspectorSections, type InspectorSections } from "./inspector-sections";
+import { INSPECTOR_FIELDS } from "@justflows/blocks";
+import { INSPECTOR_TABS, type InspectorTab } from "./shell/builder-prefs";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../styles/builder.css";
 
 
 const fieldLabel: React.CSSProperties = {
@@ -141,11 +153,53 @@ interface BlockInspectorProps {
   parentListStyle?: string;
   /** Column count of the grid parent, when there is one. */
   parentColumns?: number;
+  /** The parent's `containerLayout`, so a block in a row gets its item controls. */
+  parentLayout?: unknown;
+  /** Elements the ancestors render as, outermost first; see `ContainerLayoutPanel`. */
+  ancestorElements?: readonly string[];
+  /** The breakpoint the canvas is previewing, for the Responsive tab. */
+  previewing?: BreakpointSource;
+  /** Switch the canvas preview to a breakpoint. */
+  onPreviewBreakpoint?: (bp: OverrideBreakpoint) => void;
   reusable?: ReusableItem[];
   onReloadReusable?: () => void;
   onConvertToReusable?: (ref: string) => void;
+  /** Replace a linked reference with a local copy (justflows-ce#304). */
+  onDetachReusable?: (blocks: BlockNode[]) => void;
+  /** Open a reusable block's source in its editor. */
+  onEditReusable?: (id: string) => void;
+  /**
+   * The loaded block catalog, for recovering blocks whose extension is off or
+   * that are deprecated (justflows-ce#306). Without it no recovery panel shows.
+   */
+  catalog?: BlockCatalogEntry[];
+  /** Swap the selected block for another, after the author confirmed. */
+  onReplaceBlock?: (next: BlockNode) => void;
+  /** Remove the selected block, after the author confirmed. */
+  onRemoveBlock?: () => void;
+  /** Load the block catalog again, e.g. after an extension was switched back on. */
+  onReloadCatalog?: () => void;
   /** Only the block's own fields: no title, style, layout, animation, or JSON panels (widget rows). */
   compact?: boolean;
+  /** Inspector tab to show, remembered per user by the builder shell. Defaults to Content. */
+  tab?: InspectorTab;
+  onTabChange?: (tab: InspectorTab) => void;
+}
+
+/** A copy of the section switches limited to the given layout groups, for one inspector tab. */
+function onlySections(
+  sections: InspectorSections,
+  groups: ReadonlyArray<keyof typeof INSPECTOR_FIELDS>,
+): InspectorSections {
+  const allowed = new Set<string>(groups.flatMap((group) => INSPECTOR_FIELDS[group]));
+  return {
+    ...sections,
+    spacing: groups.includes("spacing") && sections.spacing,
+    size: groups.includes("size") && sections.size,
+    appearance: groups.includes("appearance") && sections.appearance,
+    colors: groups.includes("colors") && sections.colors,
+    field: (name) => allowed.has(name) && sections.field(name),
+  };
 }
 
 export default function BlockInspector({
@@ -156,14 +210,30 @@ export default function BlockInspector({
   parentType = null,
   parentListStyle,
   parentColumns = 12,
+  parentLayout,
+  ancestorElements,
+  previewing = "desktop",
+  onPreviewBreakpoint,
   reusable = [],
   onReloadReusable,
   onConvertToReusable,
+  onDetachReusable,
+  onEditReusable,
+  catalog,
+  onReplaceBlock,
+  onRemoveBlock,
+  onReloadCatalog,
   compact = false,
+  tab: requestedTab = "content",
+  onTabChange,
 }: BlockInspectorProps) {
   const { t } = useT();
+  const [localTab, setLocalTab] = useState<InspectorTab>(requestedTab);
+  const activeRequest = onTabChange ? requestedTab : localTab;
+  const selectTab = (next: InspectorTab) => (onTabChange ? onTabChange(next) : setLocalTab(next));
   const mergeTags = useMergeTags();
   const { blockControls } = useThemeStyleTokens();
+  const { presets } = useStylePresets();
   const p = block.props;
   const schemeStyle = typeof p.style === "string" ? p.style : "buttons";
   const schemeSingle = schemeStyle === "toggle" || schemeStyle === "switch";
@@ -204,7 +274,7 @@ export default function BlockInspector({
 
   const textArea = (key: string, label: string, rows = 3, withTags = false) => (
     <>
-      <label style={fieldLabel}>
+      <label style={fieldLabel} data-jf-field={key}>
         {label}
         <textarea rows={rows} style={fieldInput} value={(p[key] as string) ?? ""} onChange={(e) => set(key, e.target.value)} />
       </label>
@@ -214,7 +284,7 @@ export default function BlockInspector({
 
   const textInput = (key: string, label: string, placeholder = "", withTags = false) => (
     <>
-      <label style={fieldLabel}>
+      <label style={fieldLabel} data-jf-field={key}>
         {label}
         <input type="text" style={fieldInput} placeholder={placeholder} value={(p[key] as string) ?? ""} onChange={(e) => set(key, e.target.value)} />
       </label>
@@ -223,7 +293,7 @@ export default function BlockInspector({
   );
 
   const select = (key: string, label: string, options: { value: string; label: string }[]) => (
-    <label style={fieldLabel}>
+    <label style={fieldLabel} data-jf-field={key}>
       {label}
       <select style={fieldInput} value={String(p[key] ?? options[0]?.value)} onChange={(e) => set(key, e.target.value)}>
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -283,8 +353,8 @@ export default function BlockInspector({
         {textInput("heading", t("builder.inspector.field.heading"))}
         {textArea("subheading", t("builder.inspector.field.subheading"), 2)}
         {textInput("buttonLabel", t("builder.inspector.field.buttonLabel"))}
-        <InternalLinkField value={(p.buttonUrl as string) ?? ""} onChange={(url) => set("buttonUrl", url)} label={t("builder.inspector.field.buttonUrl")} placeholder={t("builder.inspector.placeholder.internalLink")} />
-        {textInput("backgroundImage", t("builder.inspector.field.backgroundImageUrl"))}
+        <InternalLinkField field="buttonUrl" value={(p.buttonUrl as string) ?? ""} onChange={(url) => set("buttonUrl", url)} label={t("builder.inspector.field.buttonUrl")} placeholder={t("builder.inspector.placeholder.internalLink")} />
+        <MediaImageField id={`block-${block.id}-backgroundImage`} label={t("builder.inspector.field.backgroundImage")} value={(p.backgroundImage as string) ?? ""} onChange={(url) => set("backgroundImage", url)} />
         {select("align", t("builder.inspector.field.alignment"), [
           { value: "left", label: t("builder.layout.value.left") },
           { value: "center", label: t("builder.layout.value.center") },
@@ -301,7 +371,7 @@ export default function BlockInspector({
         {textInput("heading", t("builder.inspector.field.heading"))}
         {textArea("text", t("builder.inspector.field.text"), 2)}
         {textInput("buttonLabel", t("builder.inspector.field.buttonLabel"))}
-        <InternalLinkField value={(p.buttonUrl as string) ?? ""} onChange={(url) => set("buttonUrl", url)} label={t("builder.inspector.field.buttonUrl")} />
+        <InternalLinkField field="buttonUrl" value={(p.buttonUrl as string) ?? ""} onChange={(url) => set("buttonUrl", url)} label={t("builder.inspector.field.buttonUrl")} />
         {select("variant", t("builder.inspector.field.style"), [
           { value: "primary", label: t("builder.inspector.option.primary") },
           { value: "dark", label: t("builder.inspector.option.backgroundDark") },
@@ -313,7 +383,7 @@ export default function BlockInspector({
     case "core.heading":
       fields = <>
         {textInput("text", t("builder.inspector.field.headingText"), "", true)}
-        <label style={fieldLabel}>{t("builder.inspector.field.level")}
+        <label style={fieldLabel} data-jf-field="level">{t("builder.inspector.field.level")}
           <select style={fieldInput} value={(p.level as number) ?? 2} onChange={(e) => set("level", Number(e.target.value))}>
             {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>H{n}</option>)}
           </select>
@@ -326,6 +396,9 @@ export default function BlockInspector({
       fields = <>
         {Object.entries(catalogEntry?.schema ?? {}).map(([name, field]) => name === "poster" ? (
           <MediaImageField key={name} id={`block-${block.id}-poster`} label={t("builder.media.poster")} value={(p.poster as string) ?? ""} onChange={(url) => set("poster", url)} />
+        ) : name === "src" ? (
+          /** The source is picked from, or uploaded to, the media library like an image; a URL can still be pasted. */
+          <MediaImageField key={name} id={`block-${block.id}-src`} label={t("builder.media.source")} kind={block.type === "core.video" ? "video" : block.type === "core.audio" ? "audio" : "file"} value={(p.src as string) ?? ""} onChange={(url) => set("src", url)} />
         ) : (
           <SchemaField key={name} name={name} field={{ ...field, label: t(`builder.media.${name}`) }} value={p[name]} onChange={(value) => set(name, value)} />
         ))}
@@ -364,7 +437,7 @@ export default function BlockInspector({
     case "core.button":
       fields = <>
         {textInput("label", t("builder.inspector.field.label"))}
-        <InternalLinkField value={(p.url as string) ?? ""} onChange={(url) => set("url", url)} label={t("builder.inspector.field.url")} />
+        <InternalLinkField field="url" value={(p.url as string) ?? ""} onChange={(url) => set("url", url)} label={t("builder.inspector.field.url")} />
         {select("variant", t("builder.inspector.field.variant"), [
           { value: "primary", label: t("builder.inspector.option.primary") },
           { value: "secondary", label: t("builder.inspector.option.secondary") },
@@ -373,7 +446,7 @@ export default function BlockInspector({
       </>;
       break;
     case "core.link-list":
-      fields = <LinkListEditor items={(p.items as LinkItem[]) ?? []} heading={(p.heading as string) ?? ""} onChange={onChange} p={p} />;
+      fields = <div data-jf-field="items"><LinkListEditor items={(p.items as LinkItem[]) ?? []} heading={(p.heading as string) ?? ""} onChange={onChange} p={p} /></div>;
       break;
     case "core.spacer":
       fields = (
@@ -551,6 +624,16 @@ export default function BlockInspector({
             <SocialLinksEditor key={name} value={p.links ?? field.default} onChange={(links) => set("links", links)} />
           ) : name === "poster" ? (
             <MediaImageField key={name} id={`block-${block.id}-poster`} label={t("builder.media.poster")} value={(p.poster as string) ?? ""} onChange={(url) => set("poster", url)} />
+          ) : name === "src" && "mediaType" in (catalogEntry?.schema ?? {}) ? (
+            /** Cover and Media & Text: an image or a video, depending on the chosen media type. */
+            <MediaImageField
+              key={`${name}-${p.mediaType === "video" ? "video" : "image"}`}
+              id={`block-${block.id}-src`}
+              label={p.mediaType === "video" ? t("builder.media.source") : t("builder.inspector.field.image")}
+              kind={p.mediaType === "video" ? "video" : "image"}
+              value={(p.src as string) ?? ""}
+              onChange={(url) => set("src", url)}
+            />
           ) : (
             <SchemaField key={name} name={name} field={{ ...field, label: t(`builder.functional.fields.${name}`), optionLabels: field.options ? Object.fromEntries(field.options.map(option => [option, t(`builder.functional.options.${option}`)])) : field.optionLabels }} value={p[name]} onChange={(value) => set(name, value)} />
           ))}
@@ -572,46 +655,177 @@ export default function BlockInspector({
     }
   }
 
+  /**
+   * A block whose extension is off has no settings to show, only its stored
+   * data and the ways to recover it. A deprecated block keeps its settings
+   * under the notice (justflows-ce#306).
+   */
+  const recovery: BlockRecoveryReason | null = !catalog?.length
+    ? null
+    : !catalogEntry && !block.type.startsWith("core.")
+      ? "unavailable"
+      : catalogEntry?.deprecated
+        ? "deprecated"
+        : null;
+  if (recovery) {
+    fields = (
+      <>
+        <BlockRecoveryPanel
+          block={block}
+          reason={recovery}
+          entry={catalogEntry}
+          catalog={catalog ?? []}
+          onReplace={onReplaceBlock}
+          onRemove={onRemoveBlock}
+          onRetry={onReloadCatalog}
+        />
+        {recovery === "deprecated" ? fields : null}
+      </>
+    );
+  }
+
   if (compact) return <div>{fields}</div>;
 
-  return (
-    <div>
-      <div style={{ fontWeight: 700, fontSize: "0.75rem", color: "var(--jf-text-3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.75rem" }}>
-        {catalogEntry?.icon} {catalogEntry?.title ?? block.type}
-      </div>
-      {fields}
-      {(!catalogEntry?.schema?.style || (p.style && typeof p.style === "object")) && (
-        <ThemeBlockControls block={block} onChange={onChange} showAll={sections.themeVariables} />
-      )}
-      {sections.animation && (
-        <AnimationPanel
-          blockId={block.id}
-          value={p.animation}
-          onChange={(animation) => {
-            if (!animation) {
-              const next = { ...p };
-              delete next.animation;
-              onChange(next);
-              return;
-            }
-            onChange({ ...p, animation });
-          }}
-        />
-      )}
-      {parentType === GRID_BLOCK_TYPE && (
-        <GridPlacementPanel block={block} columns={parentColumns} onChange={onChange} />
-      )}
-      {onConvertToReusable && onReloadReusable && (
-        <ReusablePanel
+  const styleSections = onlySections(sections, ["appearance", "colors"]);
+  const isContainer = supportsContainerLayout(block.type);
+  const preset = presets.find((p) => p.id === presetRefOf(block.props)) ?? null;
+  const templateContext = useTemplateContext();
+  const templateLayer = templateContext?.defaults[block.type]
+    ? { name: templateContext.slug, style: templateContext.defaults[block.type]! }
+    : null;
+  const layoutSections = onlySections(sections, ["spacing", "size"]);
+  const showThemeControls = !catalogEntry?.schema?.style || Boolean(p.style && typeof p.style === "object");
+  const panels: Record<InspectorTab, React.ReactNode> = {
+    content: (
+      <>
+        {fields}
+        {onConvertToReusable && onReloadReusable && (
+          <ReusablePanel
+            block={block}
+            items={reusable}
+            onReload={onReloadReusable}
+            onConvert={onConvertToReusable}
+            onDetach={onDetachReusable}
+            onEdit={onEditReusable}
+          />
+        )}
+      </>
+    ),
+    style:
+      showThemeControls || styleSections.appearance || styleSections.colors ? (
+        <>
+          <StylePresetPanel block={block} onChange={onChange} />
+          {showThemeControls && <ThemeBlockControls block={block} onChange={onChange} showAll={sections.themeVariables} />}
+          <BlockLayoutPanel block={block} onChange={onChange} sections={styleSections} preset={preset} previewing={previewing} templateLayer={templateLayer} />
+        </>
+      ) : null,
+    layout:
+      isContainer || block.type === GRID_BLOCK_TYPE || parentType === GRID_BLOCK_TYPE || layoutSections.spacing || layoutSections.size ? (
+        <>
+          {isContainer && <ContainerLayoutPanel block={block} onChange={onChange} ancestorElements={ancestorElements} />}
+          {block.type === GRID_BLOCK_TYPE && readingOrderDiffers(block.children ?? [], gridColumns(block)) && (
+            <div className="jf-inspector-lock__notice" role="note">
+              <p>{t("builder.container.readingOrder")}</p>
+              {onSyncBlock && (
+                <button
+                  type="button"
+                  className="jf-btn jf-btn--ghost jf-btn--sm"
+                  onClick={() => onSyncBlock({ ...block, children: matchReadingOrder(block.children ?? [], gridColumns(block)) })}
+                >
+                  {t("builder.container.matchReadingOrder")}
+                </button>
+              )}
+            </div>
+          )}
+          {parentType === GRID_BLOCK_TYPE && <GridPlacementPanel block={block} columns={parentColumns} onChange={onChange} />}
+          {layoutSections.size && <FlexItemPanel block={block} onChange={onChange} parentLayout={parentLayout} />}
+          <BlockLayoutPanel block={block} onChange={onChange} sections={layoutSections} preset={preset} previewing={previewing} templateLayer={templateLayer} />
+        </>
+      ) : null,
+    responsive: (
+      <>
+        <ResponsivePanel
           block={block}
-          items={reusable}
-          onReload={onReloadReusable}
-          onConvert={onConvertToReusable}
+          onChange={onChange}
+          previewing={previewing}
+          onPreview={onPreviewBreakpoint}
+          parentType={parentType}
+          parentLayout={parentLayout}
         />
-      )}
-      <BlockLayoutPanel block={block} onChange={onChange} sections={sections} />
-      {sections.advanced && <BlockStylePanel block={block} onChange={onChange} />}
-      {onSyncBlock && <BlockJsonPanel key={block.id} block={block} onApply={onSyncBlock} />}
+        {sections.advanced && <BlockStylePanel block={block} onChange={onChange} part="devices" />}
+      </>
+    ),
+    interactions: sections.animation ? (
+      <AnimationPanel
+        blockId={block.id}
+        value={p.animation}
+        onChange={(animation) => {
+          if (!animation) {
+            const next = { ...p };
+            delete next.animation;
+            onChange(next);
+            return;
+          }
+          onChange({ ...p, animation });
+        }}
+      />
+    ) : null,
+    advanced:
+      sections.advanced || onSyncBlock ? (
+        <>
+          {sections.advanced && <BlockStylePanel block={block} onChange={onChange} part="code" />}
+          {onSyncBlock && <BlockJsonPanel key={block.id} block={block} onApply={onSyncBlock} />}
+        </>
+      ) : null,
+  };
+  const tabs = INSPECTOR_TABS.filter((name) => panels[name] !== null);
+  const activeTab: InspectorTab = tabs.includes(activeRequest) ? activeRequest : "content";
+  const tabId = (name: InspectorTab) => `jf-inspector-${block.id}-tab-${name}`;
+  const panelId = `jf-inspector-${block.id}-panel`;
+
+  /** Arrow keys move between tabs, as the WAI-ARIA tabs pattern expects. */
+  const onTabKey = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const index = tabs.indexOf(activeTab);
+    const rtl = getComputedStyle(e.currentTarget).direction === "rtl";
+    const forward = rtl ? "ArrowLeft" : "ArrowRight";
+    const backward = rtl ? "ArrowRight" : "ArrowLeft";
+    let next: InspectorTab | undefined;
+    if (e.key === forward) next = tabs[(index + 1) % tabs.length];
+    else if (e.key === backward) next = tabs[(index - 1 + tabs.length) % tabs.length];
+    else if (e.key === "Home") next = tabs[0];
+    else if (e.key === "End") next = tabs[tabs.length - 1];
+    if (!next) return;
+    e.preventDefault();
+    selectTab(next);
+    document.getElementById(tabId(next))?.focus();
+  };
+
+  return (
+    <div className="jf-inspector">
+      <div className="jf-inspector__title">
+        {catalogEntry?.icon} {block.editor?.label || catalogEntry?.title || block.type}
+      </div>
+      <div className="jf-inspector__tabs" role="tablist" aria-label={t("builder.shell.inspector")}>
+        {tabs.map((name) => (
+          <button
+            key={name}
+            id={tabId(name)}
+            type="button"
+            role="tab"
+            className="jf-inspector__tab"
+            aria-selected={activeTab === name}
+            aria-controls={panelId}
+            tabIndex={activeTab === name ? 0 : -1}
+            onClick={() => selectTab(name)}
+            onKeyDown={onTabKey}
+          >
+            {t(`builder.shell.tab.${name}`)}
+          </button>
+        ))}
+      </div>
+      <div id={panelId} role="tabpanel" aria-labelledby={tabId(activeTab)} className="jf-inspector__panel">
+        {panels[activeTab]}
+      </div>
     </div>
   );
 }
@@ -789,8 +1003,16 @@ function MultiChoice({ options, value, onChange }: {
   );
 }
 
-/** One plugin block prop, rendered from its schema entry. */
-function SchemaField({ name, field, value, onChange }: {
+/** One plugin block prop, rendered from its schema entry, marked for the accessibility checks (justflows-ce#307). */
+function SchemaField(props: { name: string; field: BlockSchemaField; value: unknown; onChange: (value: unknown) => void }) {
+  return (
+    <div data-jf-field={props.name} style={{ display: "contents" }}>
+      <SchemaFieldControl {...props} />
+    </div>
+  );
+}
+
+function SchemaFieldControl({ name, field, value, onChange }: {
   name: string;
   field: BlockSchemaField;
   value: unknown;
@@ -802,6 +1024,12 @@ function SchemaField({ name, field, value, onChange }: {
   const help = field.help ? <span style={fieldHint}>{field.help}</span> : null;
   const hasChoices = Boolean(field.optionsUrl) || (Array.isArray(field.options) && field.options.length > 0);
   const { options, loading, failed } = useSchemaOptions(field);
+  const id = useId();
+
+  /** One image: picked from or uploaded to the media library, with a URL as fallback. */
+  if (kind === "media") {
+    return <MediaImageField id={id} label={label} description={field.help} value={typeof value === "string" ? value : ""} onChange={onChange} />;
+  }
 
   if (kind === "images") {
     return <ImagesField label={label} help={field.help} value={value} onChange={onChange} />;
@@ -878,7 +1106,9 @@ let internalLinkCache: InternalLinkOption[] | null = null;
  * so an internal link can be chosen by title instead of hand-typed and mistyped.
  * Stores a plain root-relative path (e.g. "/about"), same as a typed one.
  */
-function InternalLinkField({ value, onChange, label, placeholder }: {
+function InternalLinkField({ value, onChange, label, placeholder, field }: {
+  /** The prop it edits, so checks can point at it (justflows-ce#307). */
+  field?: string;
   value: string;
   onChange: (value: string) => void;
   label?: string;
@@ -917,7 +1147,7 @@ function InternalLinkField({ value, onChange, label, placeholder }: {
   }
 
   return (
-    <label style={fieldLabel}>
+    <label style={fieldLabel} data-jf-field={field}>
       {resolvedLabel}
       <div style={{ display: "flex", gap: "0.35rem" }}>
         <input

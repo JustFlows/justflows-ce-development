@@ -10,6 +10,10 @@ vi.mock("../../../src/lib/settings/site-settings.js", () => ({
   setSiteSetting: vi.fn(async (_siteId: string, _key: string, value: unknown) => {
     stored = value;
   }),
+  updateSiteSettingAtomically: vi.fn(async (_siteId: string, _key: string, mutate: (current: unknown) => unknown) => {
+    stored = mutate(stored);
+    return stored;
+  }),
 }));
 vi.mock("../../../src/lib/rendering/reusable-blocks.js", () => ({ saveReusableBlock }));
 

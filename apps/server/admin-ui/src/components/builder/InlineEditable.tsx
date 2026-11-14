@@ -1,11 +1,11 @@
 import { useT } from "../../i18n/I18nProvider";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useRef, useState, type HTMLAttributes } from "react";
-import { esc, renderMath, safeMediaSrc, sanitizeMediaSrc, sanitizeRichText } from "@justflows/blocks";
-import { loadImageLibrary, uploadImage, type MediaLibraryItem } from "../../lib/media-library";
+import { esc, renderMath, safeMediaSrc, sanitizeHref, sanitizeMediaSrc, sanitizeRichText, type InlineFormat } from "@justflows/blocks";
+import { loadMediaLibrary, MEDIA_ACCEPT, uploadMedia, type MediaKind, type MediaLibraryItem } from "../../lib/media-library";
 import "katex/dist/katex.min.css";
 
-type InlineEditableTag = "div" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+type InlineEditableTag = "div" | "p" | "span" | "cite" | "figcaption" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 
 interface InlineEditableProps
   extends Omit<HTMLAttributes<HTMLElement>, "onChange" | "children" | "contentEditable"> {
@@ -16,6 +16,31 @@ interface InlineEditableProps
   onCommit: (value: string) => void;
   placeholder?: string;
   allowLists?: boolean;
+  /** Plain mode only: keep line breaks (Enter inserts one) instead of committing on Enter. */
+  multiline?: boolean;
+  /** Upper bound on the text length; further typing and pasting is refused. */
+  maxLength?: number;
+  /** Rich mode toolbar formats; omitted means every format. */
+  formats?: InlineFormat[];
+  /** Accessible name of the field, e.g. "Heading" or "Image caption". */
+  label?: string;
+}
+
+/**
+ * Text of an editable element as the author sees it. Multiline fields read
+ * `innerText`, which keeps line breaks, where the DOM implements it.
+ */
+export function readEditableText(el: HTMLElement, multiline: boolean): string {
+  return multiline && "innerText" in HTMLElement.prototype ? el.innerText : (el.textContent ?? "");
+}
+
+export function writeEditableText(el: HTMLElement, value: string, multiline: boolean): void {
+  if (multiline && "innerText" in HTMLElement.prototype) el.innerText = value;
+  else el.textContent = value;
+}
+
+function textLength(el: HTMLElement, multiline: boolean): number {
+  return readEditableText(el, multiline).length;
 }
 
 /**
@@ -31,10 +56,17 @@ export function InlineEditable({
   onCommit,
   placeholder,
   allowLists = true,
+  multiline = false,
+  maxLength,
+  formats,
+  label,
   className,
   style,
   ...rest
 }: InlineEditableProps) {
+  const has = (format: InlineFormat) => !formats || formats.includes(format);
+  /** Set by Escape: the next blur restores the stored value instead of committing. */
+  const cancelRef = useRef(false);
   const { t } = useT();
   const elRef = useRef<HTMLElement | null>(null);
   const [focused, setFocused] = useState(false);
@@ -49,7 +81,7 @@ export function InlineEditable({
     const el = elRef.current;
     if (!el || document.activeElement === el) return;
     if (mode === "plain") {
-      if ((el.textContent ?? "") !== value) el.textContent = value;
+      if (readEditableText(el, multiline) !== value) writeEditableText(el, value, multiline);
     } else {
       // Stored value keeps math as a bare `data-formula` placeholder; the
       // canvas shows it rendered, so the live DOM gets the expanded form.
@@ -57,6 +89,24 @@ export function InlineEditable({
       if (el.innerHTML !== displayHtml) el.innerHTML = displayHtml;
     }
   }, [value, mode]);
+
+  /**
+   * The length limit listens to the native `beforeinput` event, which every
+   * kind of text entry fires (typing, IME, dictation, autocorrect); React's
+   * synthetic onBeforeInput does not cover all of them.
+   */
+  useEffect(() => {
+    const el = elRef.current;
+    if (!el || !maxLength) return;
+    const onBeforeInput = (e: InputEvent) => {
+      if (!e.inputType.startsWith("insert")) return;
+      const sel = window.getSelection();
+      const replacing = Boolean(sel && !sel.isCollapsed && el.contains(sel.anchorNode));
+      if (!replacing && textLength(el, multiline) + (e.data ?? "").length > maxLength) e.preventDefault();
+    };
+    el.addEventListener("beforeinput", onBeforeInput);
+    return () => el.removeEventListener("beforeinput", onBeforeInput);
+  }, [maxLength, multiline]);
 
   const updateToolbarPos = useCallback(() => {
     const el = elRef.current;
@@ -80,8 +130,9 @@ export function InlineEditable({
     const el = elRef.current;
     if (!el) return;
     if (mode === "plain") {
-      const clean = (el.textContent ?? "").trim();
-      if (el.textContent !== clean) el.textContent = clean;
+      const raw = readEditableText(el, multiline);
+      const clean = (multiline ? raw.replace(/\n{3,}/g, "\n\n") : raw.replace(/\s*\n\s*/g, " ")).trim();
+      if (readEditableText(el, multiline) !== clean) writeEditableText(el, clean, multiline);
       if (clean !== value) onCommit(clean);
       return;
     }
@@ -96,7 +147,7 @@ export function InlineEditable({
     const displayHtml = renderMath(clean);
     if (el.innerHTML !== displayHtml) el.innerHTML = displayHtml;
     if (clean !== value) onCommit(clean);
-  }, [mode, onCommit, value]);
+  }, [mode, multiline, onCommit, value]);
 
   const exec = (command: string, arg?: string) => {
     elRef.current?.focus();
@@ -245,6 +296,7 @@ export function InlineEditable({
             style={{ top: toolbarPos.top, left: toolbarPos.left }}
             onMouseDown={(e) => e.preventDefault()}
           >
+            {has("bold") && (
             <button
               type="button"
               className="jf-inline-toolbar__btn"
@@ -254,6 +306,8 @@ export function InlineEditable({
             >
               B
             </button>
+            )}
+            {has("italic") && (
             <button
               type="button"
               className="jf-inline-toolbar__btn"
@@ -263,6 +317,8 @@ export function InlineEditable({
             >
               I
             </button>
+            )}
+            {has("underline") && (
             <button
               type="button"
               className="jf-inline-toolbar__btn"
@@ -272,6 +328,8 @@ export function InlineEditable({
             >
               U
             </button>
+            )}
+            {has("underline") && (
             <button
               type="button"
               className="jf-inline-toolbar__btn"
@@ -281,6 +339,8 @@ export function InlineEditable({
             >
               S
             </button>
+            )}
+            {has("link") && (
             <button
               type="button"
               className="jf-inline-toolbar__btn"
@@ -295,12 +355,20 @@ export function InlineEditable({
                   exec("unlink");
                   return;
                 }
-                const url = window.prompt(t("builder.inline.linkUrlPrompt"));
-                if (url) exec("createLink", url);
+                const url = window.prompt(t("builder.inline.linkUrlPrompt"))?.trim();
+                if (!url) return;
+                /** Refuse unsafe links here rather than letting the sanitizer drop them silently. */
+                if (sanitizeHref(url) !== url) {
+                  window.alert(t("builder.inline.linkRejected"));
+                  return;
+                }
+                exec("createLink", url);
               }}
             >
               🔗
             </button>
+            )}
+            {has("more") && (
             <button
               type="button"
               className="jf-inline-toolbar__btn"
@@ -315,7 +383,8 @@ export function InlineEditable({
             >
               🖼
             </button>
-            {allowLists && (
+            )}
+            {allowLists && has("lists") && (
               <>
                 <button
                   type="button"
@@ -343,6 +412,7 @@ export function InlineEditable({
             >
               ✕
             </button>
+            {has("more") && (
             <button
               type="button"
               className="jf-inline-toolbar__btn"
@@ -357,6 +427,7 @@ export function InlineEditable({
             >
               ⋯
             </button>
+            )}
           </div>,
           document.body,
         )
@@ -425,25 +496,57 @@ export function InlineEditable({
         className={["jf-inline-editable", className].filter(Boolean).join(" ")}
         style={style}
         contentEditable
+        role="textbox"
+        aria-multiline={mode === "rich" || multiline}
+        aria-label={label ?? placeholder}
+        dir="auto"
+        data-builder-chrome="true"
         data-placeholder={placeholder}
-        onFocus={() => setFocused(true)}
-        onBlur={() => {
+        onFocus={() => {
+          cancelRef.current = false;
+          setFocused(true);
+        }}
+        onBlur={(e) => {
           setFocused(false);
+          if (cancelRef.current) {
+            /** Escape: put the stored value back, unsaved. */
+            cancelRef.current = false;
+            const el = e.currentTarget;
+            if (mode === "plain") writeEditableText(el, value, multiline);
+            else el.innerHTML = renderMath(value);
+            return;
+          }
           // Committing here would reset innerHTML and invalidate the caret
           // position a still-open popover is about to act on.
           if (!imagePickerOpen && !moreOpen) commit();
         }}
         onPaste={(e) => {
           e.preventDefault();
-          document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+          /** Paste is always plain text: formatting from elsewhere never reaches the document. */
+          let text = e.clipboardData.getData("text/plain");
+          if (mode === "plain" && !multiline) text = text.replace(/\s*\n\s*/g, " ");
+          if (maxLength) {
+            const el = e.currentTarget;
+            const sel = window.getSelection();
+            const selected = sel && el.contains(sel.anchorNode) ? sel.toString().length : 0;
+            text = text.slice(0, Math.max(0, maxLength - textLength(el, multiline) + selected));
+          }
+          if (text) document.execCommand("insertText", false, text);
         }}
         onKeyDown={(e) => {
+          /** While an input method is composing, Enter and Escape belong to the IME. */
+          if (e.nativeEvent.isComposing || e.keyCode === 229) return;
           if (e.key === "Escape") {
+            cancelRef.current = true;
             e.currentTarget.blur();
             return;
           }
           if (mode === "plain" && e.key === "Enter") {
             e.preventDefault();
+            if (multiline && e.shiftKey === false && !(e.metaKey || e.ctrlKey)) {
+              document.execCommand("insertLineBreak");
+              return;
+            }
             e.currentTarget.blur();
             return;
           }
@@ -562,12 +665,24 @@ function MoreFormatsMenu({
   );
 }
 
-function ImagePickerPopover({
+/** The image picker the rich-text toolbar and image blocks use. */
+export function ImagePickerPopover(props: { top: number; left: number; onInsert: (url: string) => void; onClose: () => void }) {
+  return <MediaPickerPopover kind="image" {...props} />;
+}
+
+/**
+ * Pick media for a block or rich text: upload a file, paste a URL, or choose a
+ * recent library item of the right kind. Unsafe URLs are refused here instead
+ * of being dropped later by the sanitizer.
+ */
+export function MediaPickerPopover({
+  kind,
   top,
   left,
   onInsert,
   onClose,
 }: {
+  kind: MediaKind;
   top: number;
   left: number;
   onInsert: (url: string) => void;
@@ -583,7 +698,7 @@ function ImagePickerPopover({
 
   useEffect(() => {
     let cancelled = false;
-    loadImageLibrary()
+    loadMediaLibrary(kind)
       .then((items) => {
         if (!cancelled) setLibrary(items);
       })
@@ -596,7 +711,7 @@ function ImagePickerPopover({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [kind]);
 
   useEffect(() => {
     const onPointerDown = (e: MouseEvent) => {
@@ -618,7 +733,7 @@ function ImagePickerPopover({
     setBusy(true);
     setError("");
     try {
-      onInsert(await uploadImage(file, t));
+      onInsert(await uploadMedia(file, t));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -627,8 +742,25 @@ function ImagePickerPopover({
     }
   }
 
+  function insertUrl() {
+    const value = url.trim();
+    if (!value) return;
+    if (sanitizeMediaSrc(value) !== value) {
+      setError(t("builder.inline.mediaUrlRejected"));
+      return;
+    }
+    onInsert(value);
+  }
+
   return createPortal(
-    <div ref={popRef} className="jf-inline-image-picker" style={{ top, left }}>
+    <div
+      ref={popRef}
+      className="jf-inline-image-picker"
+      style={{ top, left }}
+      role="dialog"
+      aria-label={t(`builder.inline.pick.${kind}`)}
+      data-builder-chrome="true"
+    >
       <div className="jf-inline-image-picker__row">
         <button
           type="button"
@@ -636,12 +768,12 @@ function ImagePickerPopover({
           onClick={() => fileRef.current?.click()}
           disabled={busy}
         >
-          {busy ? t("builder.inline.uploading") : t("builder.inline.uploadImage")}
+          {busy ? t("builder.inline.uploading") : t(`builder.inline.upload.${kind}`)}
         </button>
         <input
           ref={fileRef}
           type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/svg+xml"
+          accept={MEDIA_ACCEPT[kind]}
           hidden
           onChange={(e) => void handleUpload(e.target.files?.[0])}
         />
@@ -649,23 +781,23 @@ function ImagePickerPopover({
       <div className="jf-inline-image-picker__row">
         <input
           type="text"
+          dir="ltr"
           className="jf-input"
-          placeholder={t("builder.inline.imageUrlPlaceholder")}
+          aria-label={t("builder.inline.mediaUrl")}
+          placeholder={kind === "image" ? t("builder.inline.imageUrlPlaceholder") : t("builder.inline.mediaUrlPlaceholder")}
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setError("");
+          }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && url.trim()) {
               e.preventDefault();
-              onInsert(url.trim());
+              insertUrl();
             }
           }}
         />
-        <button
-          type="button"
-          className="jf-btn jf-btn--sm"
-          disabled={!url.trim()}
-          onClick={() => onInsert(url.trim())}
-        >
+        <button type="button" className="jf-btn jf-btn--sm" disabled={!url.trim()} onClick={insertUrl}>
           {t("builder.inline.insert")}
         </button>
       </div>
@@ -677,20 +809,35 @@ function ImagePickerPopover({
       {library === null ? (
         <p className="jf-field__hint">{t("builder.inline.loadingLibrary")}</p>
       ) : library.length > 0 ? (
-        <div className="jf-media-library jf-inline-image-picker__library">
-          {library.map((item) => (
-            <button
-              key={item.url}
-              type="button"
-              className="jf-media-library__item"
-              title={item.filename}
-              onClick={() => onInsert(item.url)}
-            >
-              <img src={safeMediaSrc(item.url)} alt="" />
-            </button>
-          ))}
-        </div>
-      ) : null}
+        kind === "image" ? (
+          <div className="jf-media-library jf-inline-image-picker__library">
+            {library.map((item) => (
+              <button
+                key={item.url}
+                type="button"
+                className="jf-media-library__item"
+                title={item.filename}
+                aria-label={item.filename}
+                onClick={() => onInsert(item.url)}
+              >
+                <img src={safeMediaSrc(item.url)} alt="" />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <ul className="jf-inline-media-list">
+            {library.map((item) => (
+              <li key={item.url}>
+                <button type="button" onClick={() => onInsert(item.url)}>
+                  {item.filename}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )
+      ) : (
+        <p className="jf-field__hint">{t("builder.inline.libraryEmpty")}</p>
+      )}
     </div>,
     document.body,
   );

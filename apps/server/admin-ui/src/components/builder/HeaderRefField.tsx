@@ -7,6 +7,8 @@ import {
   type HeaderTemplateOptionDTO,
   type SiteHeaderOptionDTO,
 } from "../../lib/page-header";
+/** Builder-only styles load with the builder, not on every admin page (justflows-ce#310). */
+import "../../styles/builder.css";
 
 /**
  * Per-page header picker. The header itself is built in Theme builder → Header;

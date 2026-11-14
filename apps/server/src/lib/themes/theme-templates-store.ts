@@ -11,7 +11,7 @@
  * customised `single`, exactly like WordPress.
  */
 
-import { sanitizeBlockDocument } from "@justflows/blocks";
+import { sanitizeBlockDocument, sanitizeTemplateDefaults, type TemplateDefaults } from "@justflows/blocks";
 import {
   clearThemeTemplateDraftDoc,
   deleteThemeTemplateRow,
@@ -23,10 +23,11 @@ import {
   saveThemeTemplatePublished,
   themeTemplateHasDraft,
 } from "./theme-templates-db.js";
-import { listThemeTemplateSlugs, loadThemeTemplate } from "./theme-files.js";
+import { listThemeTemplateSlugs, loadThemeTemplate, loadThemeTemplateDoc } from "./theme-files.js";
 import { templateCandidates, type TemplateQuery } from "../rendering/template-hierarchy.js";
 import { loadPluginTemplate } from "../plugins/plugin-templates.js";
 import type { BlockNode } from "../runtime/types.js";
+import { recordDocumentHistory, themeTemplateHistoryKey } from "../rendering/document-history.js";
 
 const TEMPLATE_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,80}$/;
 
@@ -37,11 +38,35 @@ export function isTemplateSlug(value: unknown): value is string {
 interface StoredTemplateDoc {
   version: 1;
   blocks?: unknown;
+  /** Style defaults for the content this template wraps, by block type (justflows-ce#301). */
+  templateDefaults?: unknown;
+}
+
+/** A template as the editor and renderer see it. */
+export interface TemplateDocView {
+  blocks: BlockNode[];
+  templateDefaults?: TemplateDefaults;
 }
 
 function toBlocks(doc: StoredTemplateDoc | null): BlockNode[] | null {
   if (!doc) return null;
   return sanitizeBlockDocument({ version: 1, blocks: doc.blocks }).blocks as BlockNode[];
+}
+
+function toView(doc: StoredTemplateDoc | null): TemplateDocView | null {
+  if (!doc) return null;
+  const defaults = sanitizeTemplateDefaults(doc.templateDefaults);
+  return { blocks: toBlocks(doc)!, ...(defaults ? { templateDefaults: defaults } : {}) };
+}
+
+/** A per-site override as a document (published, or the draft), or null when none. */
+export async function getStoredTemplateDoc(
+  siteId: string,
+  themeId: string,
+  slug: string,
+  draft = false,
+): Promise<TemplateDocView | null> {
+  return toView(await getThemeTemplateDoc<StoredTemplateDoc>(siteId, themeId, slug, { draft }));
 }
 
 /** A per-site override's blocks (published, or the draft), or null when none. */
@@ -58,9 +83,63 @@ export async function getStoredTemplateDocs(
   siteId: string,
   themeId: string,
   slug: string,
-): Promise<{ published: BlockNode[] | null; draft: BlockNode[] | null }> {
+): Promise<{
+  published: BlockNode[] | null;
+  draft: BlockNode[] | null;
+  publishedDefaults?: TemplateDefaults;
+  draftDefaults?: TemplateDefaults;
+}> {
   const { doc, draft } = await getThemeTemplateDocs<StoredTemplateDoc>(siteId, themeId, slug);
-  return { published: toBlocks(doc), draft: toBlocks(draft) };
+  const publishedDefaults = sanitizeTemplateDefaults(doc?.templateDefaults);
+  const draftDefaults = sanitizeTemplateDefaults(draft?.templateDefaults);
+  return {
+    published: toBlocks(doc),
+    draft: toBlocks(draft),
+    ...(publishedDefaults ? { publishedDefaults } : {}),
+    ...(draftDefaults ? { draftDefaults } : {}),
+  };
+}
+
+/**
+ * Save a template override as a draft or publish it, with an optional
+ * revision check. Returns the stored blocks and the row's new revision; a
+ * stale `expectedRevision` throws `DocumentRevisionConflictError`.
+ */
+export async function writeStoredTemplate(
+  siteId: string,
+  themeId: string,
+  slug: string,
+  blocks: unknown,
+  opts: { draft: boolean; expectedRevision?: number; actorId?: string | null; templateDefaults?: unknown },
+): Promise<{ blocks: BlockNode[]; revision: number; templateDefaults?: TemplateDefaults }> {
+  const sanitized = sanitizeBlockDocument({ version: 1, blocks });
+  /** A save that says nothing about defaults keeps the ones already stored (older clients). */
+  let templateDefaults: TemplateDefaults | undefined;
+  if (opts.templateDefaults === undefined) {
+    const current = await getThemeTemplateDocs<StoredTemplateDoc>(siteId, themeId, slug);
+    templateDefaults = sanitizeTemplateDefaults((current.draft ?? current.doc)?.templateDefaults);
+  } else {
+    templateDefaults = sanitizeTemplateDefaults(opts.templateDefaults);
+  }
+  const doc = { version: 1 as const, blocks: sanitized.blocks, ...(templateDefaults ? { templateDefaults } : {}) };
+  const revision = opts.draft
+    ? await saveThemeTemplateDraft(siteId, themeId, slug, doc, opts.expectedRevision)
+    : await publishThemeTemplateDoc(siteId, themeId, slug, doc, opts.expectedRevision);
+  await recordDocumentHistory({
+    siteId,
+    kind: "theme_template",
+    key: themeTemplateHistoryKey(themeId, slug),
+    revision,
+    state: opts.draft ? "draft" : "published",
+    doc,
+    actorId: opts.actorId,
+  });
+  return { blocks: sanitized.blocks as BlockNode[], revision, ...(templateDefaults ? { templateDefaults } : {}) };
+}
+
+/** The override row's current revision, or 0 when the site has none. */
+export async function getStoredTemplateRevision(siteId: string, themeId: string, slug: string): Promise<number> {
+  return (await getThemeTemplateDocs(siteId, themeId, slug)).revision;
 }
 
 export async function saveStoredTemplate(
@@ -72,8 +151,17 @@ export async function saveStoredTemplate(
 ): Promise<BlockNode[]> {
   const sanitized = sanitizeBlockDocument({ version: 1, blocks });
   const doc = { version: 1 as const, blocks: sanitized.blocks };
-  if (draft) await saveThemeTemplateDraft(siteId, themeId, slug, doc);
-  else await saveThemeTemplatePublished(siteId, themeId, slug, doc);
+  const revision = draft
+    ? await saveThemeTemplateDraft(siteId, themeId, slug, doc)
+    : await saveThemeTemplatePublished(siteId, themeId, slug, doc);
+  await recordDocumentHistory({
+    siteId,
+    kind: "theme_template",
+    key: themeTemplateHistoryKey(themeId, slug),
+    revision,
+    state: draft ? "draft" : "published",
+    doc,
+  });
   return sanitized.blocks as BlockNode[];
 }
 
@@ -84,9 +172,15 @@ export async function publishStoredTemplate(
   blocks: unknown,
 ): Promise<BlockNode[]> {
   const sanitized = sanitizeBlockDocument({ version: 1, blocks });
-  await publishThemeTemplateDoc(siteId, themeId, slug, {
-    version: 1,
-    blocks: sanitized.blocks,
+  const doc = { version: 1 as const, blocks: sanitized.blocks };
+  const revision = await publishThemeTemplateDoc(siteId, themeId, slug, doc);
+  await recordDocumentHistory({
+    siteId,
+    kind: "theme_template",
+    key: themeTemplateHistoryKey(themeId, slug),
+    revision,
+    state: "published",
+    doc,
   });
   return sanitized.blocks as BlockNode[];
 }
@@ -141,10 +235,47 @@ export async function listTemplateSlots(
   );
 }
 
+/** Where a candidate slug would come from, or `null` when nothing provides it. */
+export type TemplateCandidateSource = "override-draft" | "override" | "theme" | "plugin" | null;
+
+export interface TemplateCandidate {
+  slug: string;
+  source: TemplateCandidateSource;
+}
+
+/**
+ * The hierarchy for a request, most specific first, and what each slug
+ * resolves to (justflows-ce#303). The first candidate with a source is the
+ * one `resolveEffectiveTemplate` renders, so the editor can show why.
+ */
+export async function describeTemplateCandidates(
+  siteId: string | null,
+  themeId: string,
+  installedPath: string | null,
+  query: TemplateQuery,
+  preview: boolean,
+): Promise<TemplateCandidate[]> {
+  const out: TemplateCandidate[] = [];
+  for (const slug of templateCandidates(query)) {
+    let source: TemplateCandidateSource = null;
+    if (siteId) {
+      const { published, draft } = await getStoredTemplateDocs(siteId, themeId, slug);
+      if (preview && draft?.length) source = "override-draft";
+      else if (published?.length) source = "override";
+    }
+    if (!source && loadThemeTemplate(themeId, slug, installedPath)?.length) source = "theme";
+    if (!source && (await loadPluginTemplate(slug))?.length) source = "plugin";
+    out.push({ slug, source });
+  }
+  return out;
+}
+
 export interface ResolvedTemplate {
   slug: string;
   blocks: BlockNode[];
   source: "override" | "theme" | "plugin";
+  /** Style defaults the template gives the content it wraps (justflows-ce#301). */
+  templateDefaults?: TemplateDefaults;
 }
 
 /**
@@ -163,14 +294,14 @@ export async function resolveEffectiveTemplate(
   for (const slug of templateCandidates(query)) {
     if (siteId) {
       if (preview) {
-        const draft = await getStoredTemplate(siteId, themeId, slug, true);
-        if (draft?.length) return { slug, blocks: draft, source: "override" };
+        const draft = await getStoredTemplateDoc(siteId, themeId, slug, true);
+        if (draft?.blocks.length) return { slug, source: "override", ...draft };
       }
-      const published = await getStoredTemplate(siteId, themeId, slug, false);
-      if (published?.length) return { slug, blocks: published, source: "override" };
+      const published = await getStoredTemplateDoc(siteId, themeId, slug, false);
+      if (published?.blocks.length) return { slug, source: "override", ...published };
     }
-    const themeBlocks = loadThemeTemplate(themeId, slug, installedPath);
-    if (themeBlocks?.length) return { slug, blocks: themeBlocks, source: "theme" };
+    const themeDoc = loadThemeTemplateDoc(themeId, slug, installedPath);
+    if (themeDoc?.blocks.length) return { slug, source: "theme", ...themeDoc };
     const pluginBlocks = await loadPluginTemplate(slug);
     if (pluginBlocks?.length) return { slug, blocks: pluginBlocks, source: "plugin" };
   }

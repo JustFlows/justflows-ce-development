@@ -36,10 +36,56 @@ if (declaredSdkVersion !== sdkPackage.version) {
   process.exit(1);
 }
 
+/**
+ * Member-level snapshot of the contracts extensions implement
+ * (justflows-ce#305): removing a member, or making an optional one required,
+ * breaks every extension that relied on it, so both fail here. New optional
+ * members are additive and only need `--update`.
+ */
+const CONTRACT_TYPES = ["PluginBlockDefinition", "PluginBlockField", "BlockPattern"];
+const contractsPath = path.join(root, "packages/sdk/api-contracts.json");
+const checker = program.getTypeChecker();
+const contracts = {};
+for (const name of CONTRACT_TYPES) {
+  const exported = checker.getExportsOfModule(symbol).find((item) => item.getName() === name);
+  if (!exported) continue;
+  const target = exported.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(exported) : exported;
+  const type = checker.getDeclaredTypeOfSymbol(target);
+  contracts[name] = Object.fromEntries(
+    checker
+      .getPropertiesOfType(type)
+      .map((prop) => [prop.getName(), prop.flags & ts.SymbolFlags.Optional ? "optional" : "required"])
+      .sort(([a], [b]) => (a < b ? -1 : 1)),
+  );
+}
+
 if (process.argv.includes("--update")) {
   fs.writeFileSync(snapshotPath, `${JSON.stringify(current, null, 2)}\n`);
-  console.log(`Updated SDK API snapshot (${current.length} exports).`);
+  fs.writeFileSync(contractsPath, `${JSON.stringify(contracts, null, 2)}\n`);
+  console.log(`Updated SDK API snapshot (${current.length} exports, ${Object.keys(contracts).length} contracts).`);
   process.exit(0);
+}
+
+const expectedContracts = fs.existsSync(contractsPath) ? JSON.parse(fs.readFileSync(contractsPath, "utf8")) : {};
+const contractProblems = [];
+for (const [name, members] of Object.entries(expectedContracts)) {
+  const now = contracts[name];
+  if (!now) {
+    contractProblems.push(`${name} is no longer exported`);
+    continue;
+  }
+  for (const [member, kind] of Object.entries(members)) {
+    if (!(member in now)) contractProblems.push(`${name}.${member} was removed`);
+    else if (kind === "optional" && now[member] === "required") contractProblems.push(`${name}.${member} became required`);
+  }
+  for (const member of Object.keys(now)) {
+    if (!(member in members)) contractProblems.push(`${name}.${member} is new and not snapshotted`);
+  }
+}
+if (contractProblems.length) {
+  console.error(`SDK contract changes:\n  ${contractProblems.join("\n  ")}`);
+  console.error("Breaking changes need a new contract version and a deprecation period; additive ones need `pnpm sdk:api:update`.");
+  process.exit(1);
 }
 
 const expected = JSON.parse(fs.readFileSync(snapshotPath, "utf8"));

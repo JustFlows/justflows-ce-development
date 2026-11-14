@@ -186,3 +186,33 @@ export function moveBlockTo(
   const next = removeBlock(blocks, blockId);
   return insertBlock(next, newParentId, adjustedIndex, node);
 }
+
+/**
+ * How an edit from `prev` to `next` should join undo history: `props:<id>`
+ * when only that one block's props changed (typing, one style tweak), so a
+ * burst of such edits is one step; `null` for anything structural (insert,
+ * move, delete, paste, several blocks at once), which is always its own step.
+ */
+export function historyStepKey(prev: BlockNode[], next: BlockNode[]): string | null {
+  let changed: string | null = null;
+  let count = 0;
+  const walk = (a: BlockNode[] | undefined, b: BlockNode[] | undefined): boolean => {
+    if (a === b) return true;
+    if (!a || !b || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i]!;
+      const y = b[i]!;
+      if (x === y) continue;
+      if (x.id !== y.id || x.type !== y.type) return false;
+      if (x.props !== y.props) {
+        count++;
+        changed = x.id;
+        if (count > 1) return false;
+      }
+      if (!walk(x.children, y.children)) return false;
+    }
+    return true;
+  };
+  if (!walk(prev, next) || count !== 1) return null;
+  return `props:${changed}`;
+}

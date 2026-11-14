@@ -3,6 +3,7 @@ import { useT } from "../../i18n/I18nProvider";
 import type { BlockCatalogEntry, BlockNode } from "./types";
 import { CATEGORY_LABEL_KEYS, CATEGORY_ORDER } from "./block-defaults";
 import { useBuilderDrag } from "./DragContext";
+import { startPointerDrag } from "./pointer-drag";
 import { DND_BLOCK_TYPE } from "./dnd";
 import PatternLibrary from "./PatternLibrary";
 
@@ -51,7 +52,23 @@ export default function BlockLibrary({
   const { t } = useT();
   const [query, setQuery] = useState("");
   const [openCat, setOpenCat] = useState<string>("patterns");
-  const { onDragStartType, onDragEnd } = useBuilderDrag();
+  const { onDragStartType, onDragEnd, startLibraryPointerDrag, setDropTarget, commitPointerMove, cancelDrag } = useBuilderDrag();
+
+  /**
+   * Touch and pen drag the item with pointer events (HTML5 drag-and-drop does
+   * not fire for touch). The item allows vertical panning, so swiping up and
+   * down still scrolls the library; dragging sideways towards the canvas picks
+   * the block up. Mouse keeps native drag-and-drop.
+   */
+  function onItemPointerDown(e: React.PointerEvent, type: string) {
+    if (e.pointerType === "mouse") return;
+    startPointerDrag(e, {
+      onStart: () => startLibraryPointerDrag(type),
+      onTarget: setDropTarget,
+      onCommit: commitPointerMove,
+      onCancel: cancelDrag,
+    });
+  }
 
   const filtered = useMemo(() => {
     let list = catalog;
@@ -78,9 +95,17 @@ export default function BlockLibrary({
     if (headerOnly)
       list = list.filter((b) => b.category === "site" || HEADER_BLOCK_TYPES.has(b.type));
 
+    /** Deprecated blocks keep rendering where they are used, but are not offered for new content (justflows-ce#305). */
+    list = list.filter((b) => !b.deprecated);
     if (query.trim()) {
       const q = query.toLowerCase();
-      list = list.filter((b) => b.title.toLowerCase().includes(q) || b.type.includes(q));
+      list = list.filter(
+        (b) =>
+          b.title.toLowerCase().includes(q) ||
+          b.type.includes(q) ||
+          (b.description ?? "").toLowerCase().includes(q) ||
+          (b.keywords ?? []).some((k) => k.includes(q)),
+      );
     }
     return list;
   }, [catalog, parentType, allowedChildTypes, query, isPage, headerOnly]);
@@ -180,11 +205,21 @@ export default function BlockLibrary({
                   {items.map((block) => (
                     <div
                       key={block.type}
+                      role="button"
+                      tabIndex={0}
                       draggable
                       onDragStart={(e) => startDrag(e, block.type)}
                       onDragEnd={onDragEnd}
+                      onPointerDown={(e) => onItemPointerDown(e, block.type)}
                       onClick={() => onAdd(block.type)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onAdd(block.type);
+                        }
+                      }}
                       style={{
+                        touchAction: "pan-y",
                         display: "flex",
                         alignItems: "center",
                         gap: "0.6rem",

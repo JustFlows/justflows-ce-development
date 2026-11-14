@@ -35,6 +35,14 @@ Justflows Community Edition is extended with plugins, themes, and CSS providers.
 | [Security releases](SECURITY-RELEASES.md)             | Maintainer runbook from private report to advisory                    |
 | [Themes](THEMES.md)                                   | Styles, patterns, demo home/blog layouts, resolution order            |
 | [Blocks](BLOCKS.md)                                   | Plugin blocks, page/post builders, blog lists, layout and styling     |
+| [Builder document architecture](BUILDER-DOCUMENT.md) | Canonical block document, ids, nesting, breakpoints, migrations       |
+| [Builder preview and recovery](BUILDER-PREVIEW.md)   | How the canvas matches the page, deliberate differences, unavailable blocks |
+| [Builder accessibility](BUILDER-ACCESSIBILITY.md)     | Keyboard paths, accessibility checks and their limits, RTL, testing checklist |
+| [Builder performance](BUILDER-PERFORMANCE.md)       | Budgets for long pages, batched previews, caches and diagnostics      |
+| [Builder security](BUILDER-SECURITY.md)             | Who may change design documents, limits, cleaning, previews, audit log |
+| [Using the page builder](BUILDER-GUIDE.md)          | For authors: page vs site-wide edits, responsive, drafts, recovery    |
+| [Builder 2.0 release](BUILDER-RELEASE.md)           | Evidence per acceptance criterion, upgrade and rollback, rollout      |
+| [Block editor contract](BLOCK-CONTRACT.md)           | Optional fields plugin blocks declare for the builder                 |
 | [Security advisories](SECURITY-ADVISORIES.md)         | Signed advisory feed, check results, and publishing                   |
 | [Media and responsive images](MEDIA.md)               | Derivative generation, formats, focal point, regeneration, and the web server file for `/uploads` |
 | [Local testing and extensions](TESTING-EXTENSIONS.md) | Workspace commands, database suites, and extension testing            |

@@ -192,6 +192,7 @@ export default function GridEditor({
             <div
               key={child.id}
               data-grid-item={child.id}
+              data-jf-layout-item={child.id}
               style={{
                 position: "relative",
                 minWidth: 0,

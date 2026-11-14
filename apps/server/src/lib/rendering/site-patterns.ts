@@ -8,7 +8,7 @@ import {
   type BlockPattern,
   type PatternSet,
 } from "@justflows/sdk";
-import { getSiteSetting, setSiteSetting } from "../settings/site-settings.js";
+import { getSiteSetting, updateSiteSettingAtomically } from "../settings/site-settings.js";
 import { saveReusableBlock } from "./reusable-blocks.js";
 
 const KEY = "block_patterns";
@@ -55,7 +55,6 @@ export async function saveSitePattern(
   siteId: string,
   input: Record<string, unknown>,
 ): Promise<SitePattern> {
-  const existing = await listSitePatterns(siteId);
   const id = typeof input.id === "string" && input.id ? input.id : `pattern-${randomUUID()}`;
   const { synced: _synced, source: _source, updatedAt: _updatedAt, ...pattern } = input;
   const parsed = BlockPatternSchema.parse({ ...pattern, id });
@@ -65,9 +64,13 @@ export async function saveSitePattern(
     updatedAt: new Date().toISOString(),
   });
   if (!entry) throw new Error("Invalid pattern");
-  const without = existing.filter((item) => item.id !== entry.id);
-  if (without.length >= MAX_ITEMS) throw new Error(`A site may hold at most ${MAX_ITEMS} patterns`);
-  await setSiteSetting(siteId, KEY, [entry, ...without]);
+  /** Atomic so two editors saving different patterns at once never drop each other's (justflows-ce#302). */
+  await updateSiteSettingAtomically<unknown[]>(siteId, KEY, (stored) => {
+    const existing = Array.isArray(stored) ? stored.map(normalize).filter((item): item is SitePattern => item !== null) : [];
+    const without = existing.filter((item) => item.id !== entry.id);
+    if (without.length >= MAX_ITEMS) throw new Error(`A site may hold at most ${MAX_ITEMS} patterns`);
+    return [entry, ...without];
+  });
   if (entry.synced) {
     await saveReusableBlock(siteId, { id: entry.id, name: entry.title, blocks: entry.blocks });
   }
@@ -75,11 +78,10 @@ export async function saveSitePattern(
 }
 
 export async function deleteSitePattern(siteId: string, id: string): Promise<void> {
-  const existing = await listSitePatterns(siteId);
-  await setSiteSetting(
-    siteId,
-    KEY,
-    existing.filter((item) => item.id !== id),
+  await updateSiteSettingAtomically<unknown[]>(siteId, KEY, (stored) =>
+    (Array.isArray(stored) ? stored : []).filter(
+      (item) => !(item && typeof item === "object" && (item as { id?: unknown }).id === id),
+    ),
   );
 }
 

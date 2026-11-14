@@ -3,6 +3,8 @@ import { rateLimit } from "express-rate-limit";
 import { isInstalled, requireInstalled, blockIfInstalled } from "./middleware/install-guard.js";
 import { publicApiGuard } from "./middleware/public-api.js";
 import { publicApiCors } from "./middleware/public-api-cors.js";
+import { upgradeBlocksOnRead } from "./lib/rendering/editor-block-upgrade.js";
+import { rejectOversizedDocuments } from "./lib/rendering/block-document-limits.js";
 import { publicApiRateLimit } from "./middleware/public-api-rate-limit.js";
 import { publicPageRateLimit } from "./middleware/public-page-rate-limit.js";
 import { logSafe } from "./lib/security/log-safe.js";
@@ -208,7 +210,7 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
   app.use(blockIfInstalled);
 
   app.use("/api/search", requireInstalled, (await import("./routes/public/search.js")).default);
-  app.use("/api/content", requireInstalled, contentRoutes);
+  app.use("/api/content", requireInstalled, rejectOversizedDocuments, upgradeBlocksOnRead, contentRoutes);
   app.use("/api/content-visibility", requireInstalled, (await import("./routes/content/visibility.js")).default);
   app.use("/api/trash", requireInstalled, requireSiteFeature("feature.trash"), trashRoutes);
   app.use("/api/media", requireInstalled, mediaRoutes);
@@ -244,14 +246,16 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
   app.use("/api/import", requireInstalled, importRoutes);
   app.use("/api/static-export", requireInstalled, staticExportRoutes);
   app.use("/api/languages", requireInstalled, requireSiteFeature("feature.languages"), languagesRoutes);
-  app.use("/api/menus", requireInstalled, menusRoutes);
-  app.use("/api/reusable-blocks", requireInstalled, reusableBlocksRoutes);
-  app.use("/api/template-parts", requireInstalled, templatePartsRouter);
-  app.use("/api/widgets", requireInstalled, (await import("./routes/design/widgets.js")).default);
-  app.use("/api/templates", requireInstalled, templatesRoutes);
+  app.use("/api/menus", requireInstalled, rejectOversizedDocuments, upgradeBlocksOnRead, menusRoutes);
+  app.use("/api/reusable-blocks", requireInstalled, rejectOversizedDocuments, upgradeBlocksOnRead, reusableBlocksRoutes);
+  app.use("/api/template-parts", requireInstalled, rejectOversizedDocuments, upgradeBlocksOnRead, templatePartsRouter);
+  app.use("/api/widgets", requireInstalled, rejectOversizedDocuments, upgradeBlocksOnRead, (await import("./routes/design/widgets.js")).default);
+  app.use("/api/templates", requireInstalled, rejectOversizedDocuments, upgradeBlocksOnRead, templatesRoutes);
   app.use("/api/error-pages", requireInstalled, errorPagesRoutes);
-  app.use("/api/patterns", requireInstalled, patternsRoutes);
-  app.use("/api/headers", requireInstalled, siteHeaderRoutes);
+  app.use("/api/patterns", requireInstalled, rejectOversizedDocuments, patternsRoutes);
+  app.use("/api/headers", requireInstalled, rejectOversizedDocuments, upgradeBlocksOnRead, siteHeaderRoutes);
+  app.use("/api/document-history", requireInstalled, upgradeBlocksOnRead, (await import("./routes/design/document-history.js")).default);
+  app.use("/api/style-presets", requireInstalled, (await import("./routes/design/style-presets.js")).default);
   app.use("/api/blocks", requireInstalled, blocksRoutes);
   app.use("/api/content-types", requireInstalled, contentTypesRoutes);
   app.use("/api/taxonomies", requireInstalled, (await import("./routes/content/taxonomies.js")).default);
@@ -280,6 +284,7 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
     apiKeyAuth,
     ...manageApiRateLimit,
     manageApiCors,
+    rejectOversizedDocuments,
     manageApiRoutes,
   );
 

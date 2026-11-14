@@ -659,7 +659,10 @@
     "pageJson": {
       "title": "Pagina-JSON",
       "hint": "Er is niets geselecteerd, dus dit is de hele pagina. Selecteer een blok op het canvas om dat apart te bewerken.",
-      "count": "{count} blokken",
+      "count": {
+        "one": "{count} blok",
+        "other": "{count} blokken"
+      },
       "apply": "Toepassen",
       "reload": "Negeren",
       "applied": "Toegepast",
@@ -727,7 +730,60 @@
       "saveCopy": "Kopie opslaan",
       "showing": "Toont",
       "referenceHint": "Dit is een verwijzing. Wijzigingen in het opgeslagen blok verschijnen op elke pagina die het gebruikt.",
-      "missing": "Dat opgeslagen blok bestaat niet meer."
+      "missing": "Dat opgeslagen blok bestaat niet meer.",
+      "linkedTitle": "Gekoppeld herbruikbaar blok",
+      "usageLoading": "Gebruik wordt gecontroleerd…",
+      "usageNone": "Nog nergens anders gebruikt.",
+      "usage": {
+        "one": "Gebruikt op {count} plek. Een gepubliceerde wijziging werkt die bij.",
+        "other": "Gebruikt op {count} plekken. Een gepubliceerde wijziging werkt ze allemaal bij."
+      },
+      "usageHidden": {
+        "one": "Gebruikt op {count} plek, waarvan je er {hidden} niet kunt openen. Een gepubliceerde wijziging werkt die bij.",
+        "other": "Gebruikt op {count} plekken, waarvan je er {hidden} niet kunt openen. Een gepubliceerde wijziging werkt ze allemaal bij."
+      },
+      "hasDraft": "De bron heeft niet-gepubliceerde wijzigingen. Het canvas toont ze; bezoekers zien ze pas na publicatie.",
+      "editSource": "Bron bewerken…",
+      "detach": "Loskoppelen (lokale kopie maken)",
+      "detachConfirm": "Deze koppeling naar “{name}” vervangen door een lokale kopie? De kopie volgt wijzigingen in de bron niet meer.",
+      "detached": "Losgekoppeld: dit is nu een lokale kopie.",
+      "missingRecover": "Het herbruikbare blok waarnaar dit verwijst bestaat niet meer. Kies hierboven een ander of verwijder dit blok.",
+      "notChosen": "Nog geen herbruikbaar blok gekozen.",
+      "nestingStopped": "“{name}” wordt hier niet nog eens getoond: herbruikbare blokken kunnen zichzelf niet bevatten of meer dan 4 lagen diep nesten.",
+      "linkedChip": "Gekoppeld: {name}",
+      "draftChip": "niet-gepubliceerde wijzigingen",
+      "notFound": "Dit herbruikbare blok bestaat niet.",
+      "usageTitle": "Waar het gebruikt wordt",
+      "open": "Openen",
+      "inPart": "onderdeel “{part}”",
+      "inTemplate": "sjabloon “{slug}”",
+      "inMenu": "menu “{slug}”",
+      "inReusable": {
+        "one": "{count} ander herbruikbaar blok",
+        "other": "{count} andere herbruikbare blokken"
+      },
+      "inPatterns": {
+        "one": "{count} patroon",
+        "other": "{count} patronen"
+      },
+      "usageTruncated": "Alleen de eerste treffers; er kunnen er meer zijn.",
+      "stateDraft": "niet-gepubliceerde wijzigingen",
+      "statePublished": "gepubliceerd, versie {revision}",
+      "publishConfirm": {
+        "one": "Deze wijzigingen publiceren? Ze verschijnen op de {count} plek die dit herbruikbare blok gebruikt.",
+        "other": "Deze wijzigingen publiceren? Ze verschijnen op alle {count} plekken die dit herbruikbare blok gebruiken."
+      },
+      "publishConfirmUnused": "Deze wijzigingen publiceren?",
+      "discard": "Wijzigingen verwerpen",
+      "discardConfirm": "De niet-gepubliceerde wijzigingen verwerpen? De gepubliceerde versie blijft.",
+      "rename": "Hernoemen",
+      "deleteConfirm": "Het herbruikbare blok “{name}” verwijderen?",
+      "deleteUsedConfirm": {
+        "one": "“{name}” wordt op {count} plek gebruikt. Verwijderen haalt het daar weg. Toch verwijderen?",
+        "other": "“{name}” wordt op {count} plekken gebruikt. Verwijderen haalt het overal weg. Toch verwijderen?"
+      },
+      "deleteFailed": "Het herbruikbare blok kon niet worden verwijderd",
+      "restoreHint": "Laadt deze versie in de editor. Sla het concept op en publiceer om haar te gebruiken."
     },
     "themeControls": {
       "title": "Themastijl",
@@ -748,7 +804,10 @@
       "search": "Patronen zoeken…",
       "category": "Categorie",
       "manage": "Beheren",
-      "results": "{count} patronen",
+      "results": {
+        "one": "{count} patroon",
+        "other": "{count} patronen"
+      },
       "noResults": "Er zijn geen patronen die aan deze filters voldoen.",
       "loadDirectory": "Catalogus laden",
       "choose": "Kies een patroon om het op paginabreedte te bekijken.",
@@ -765,7 +824,10 @@
       "manageExtensions": "Extensies beheren",
       "requires": "Vereist {types}.",
       "all": "alle",
-      "synced": "gesynchroniseerd"
+      "synced": "gesynchroniseerd",
+      "insertLinked": "Gekoppeld invoegen",
+      "insertLinkedHint": "Gesynchroniseerd patroon: voegt een koppeling in. Latere wijzigingen aan het patroon verschijnen hier ook.",
+      "insertCopyHint": "Voegt een kopie in die je vrij kunt aanpassen. Latere wijzigingen aan het patroon komen hier niet terecht."
     },
     "canvas": {
       "dragSectionHere": "Sleep een sectie of hero hierheen",
@@ -792,7 +854,6 @@
         "subheading": "Subkop",
         "buttonLabel": "Knoplabel",
         "buttonUrl": "Knop-URL",
-        "backgroundImageUrl": "URL van achtergrondafbeelding",
         "text": "Tekst",
         "style": "Stijl",
         "headingText": "Koptekst",
@@ -827,7 +888,8 @@
         "sections": "Secties",
         "policies": "Beleid",
         "intro": "Inleiding",
-        "icon": "Pictogram"
+        "icon": "Pictogram",
+        "backgroundImage": "Achtergrondafbeelding"
       },
       "option": {
         "backgroundMuted": "Gedempt",
@@ -1025,7 +1087,14 @@
       "typeAParagraph": "Typ een alinea…",
       "youMayAlsoLike": "Misschien vind je dit ook leuk",
       "html": "HTML",
-      "emptyParagraph": "Lege alinea"
+      "emptyParagraph": "Lege alinea",
+      "standIn": {
+        "label": "Voorbeeld",
+        "site": "Toont het logo, de titel, menu’s of het kruimelpad van je site wanneer de pagina wordt geladen.",
+        "query": "Toont inhoud of koppen die worden gevonden wanneer de pagina wordt geladen.",
+        "visitor": "Hangt af van de bezoeker (ingelogd, taal, kleurmodus of zoekopdracht), dus de builder toont een neutrale versie.",
+        "external": "Laadt inhoud van derden op de gepubliceerde pagina; de builder voert die niet uit."
+      }
     },
     "grid": {
       "dragBlockOntoGrid": "Sleep een blok naar het raster",
@@ -1115,10 +1184,49 @@
         "mathLatex": "Wiskunde (LaTeX)",
         "subscript": "Subscript",
         "superscript": "Superscript"
-      }
+      },
+      "linkRejected": "Die link is niet toegestaan. Gebruik een webadres (https://…), een pad (/pagina) of mailto:.",
+      "linkPlaceholder": "https://voorbeeld.nl of /pagina",
+      "attribution": "Bron",
+      "buttonLabel": "Knoptekst",
+      "buttonLink": "Knoplink",
+      "supportingText": "Ondersteunende tekst",
+      "caption": "Bijschrift",
+      "altText": "Alt-tekst",
+      "altPlaceholder": "Beschrijf de afbeelding voor wie hem niet kan zien",
+      "replaceImage": "Afbeelding vervangen",
+      "replaceImageHint": "Dubbelklik om de afbeelding te vervangen",
+      "chooseImage": "Dubbelklik om een afbeelding te kiezen",
+      "listItem": "Lijstitem",
+      "pluginField": "{field} bewerken",
+      "mediaUrlRejected": "Dat adres kan niet worden gebruikt. Gebruik een https://-link of een bestand uit de mediabibliotheek.",
+      "mediaUrl": "Media-adres",
+      "mediaUrlPlaceholder": "https://… of /uploads/…",
+      "libraryEmpty": "Nog niets van dit soort in de mediabibliotheek.",
+      "pick": {
+        "image": "Kies een afbeelding",
+        "video": "Kies een video",
+        "audio": "Kies audio",
+        "file": "Kies een bestand"
+      },
+      "upload": {
+        "image": "Afbeelding uploaden",
+        "video": "Video uploaden",
+        "audio": "Audio uploaden",
+        "file": "Bestand uploaden"
+      },
+      "replace": {
+        "video": "Video vervangen",
+        "audio": "Audio vervangen",
+        "file": "Bestand vervangen"
+      },
+      "replaceMediaHint": "Dubbelklik om te vervangen",
+      "choosePoster": "Posterafbeelding kiezen",
+      "changePoster": "Posterafbeelding wijzigen",
+      "removePoster": "Poster verwijderen",
+      "linkText": "Linktekst",
+      "linkTextPlaceholder": "Standaard de bestandsnaam"
     },
-    "blockCountOne": "{count} blok",
-    "blockCountMany": "{count} blokken",
     "previewLight": "Licht",
     "previewDark": "Donker",
     "previewSchemeHint": "Bekijk de site in lichte of donkere modus",
@@ -1139,7 +1247,8 @@
       "label": "Link label",
       "download": "Download file",
       "autoplayHelp": "Browsers usually require muted playback for autoplay. The editor preview always shows controls and does not autoplay.",
-      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser."
+      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser.",
+      "source": "Mediabestand"
     },
     "functional": {
       "fields": {
@@ -1341,6 +1450,594 @@
         "click": "Click"
       },
       "checklistItem": "Checklist item"
+    },
+    "shell": {
+      "toolbar": "Builder-gereedschap",
+      "library": "Blokken",
+      "inspector": "Instellingen",
+      "canvas": "Canvas",
+      "breadcrumbs": "Locatie van het geselecteerde blok",
+      "history": "Geschiedenis",
+      "breakpoint": "Voorbeeldbreedte",
+      "zoom": "Zoom",
+      "unsaved": "Niet-opgeslagen wijzigingen",
+      "saveFailed": "Opslaan mislukt",
+      "retry": "Opnieuw proberen",
+      "leaveUnsaved": "Je hebt niet-opgeslagen wijzigingen. Toch de builder verlaten?",
+      "breakpointLabel": {
+        "desktop": "Desktop",
+        "tablet": "Tablet",
+        "mobile": "Mobiel"
+      },
+      "context": {
+        "page": "Pagina",
+        "post": "Bericht",
+        "header": "Algemene header",
+        "footer": "Algemene footer",
+        "template": "Sjabloon",
+        "reusable": "Herbruikbaar blok",
+        "pattern": "Patroon",
+        "fragment": "Inhoud"
+      },
+      "impact": {
+        "header": "Wijzigingen verschijnen op elke pagina die deze header gebruikt.",
+        "footer": "Wijzigingen verschijnen op elke pagina.",
+        "template": "Wijzigingen gelden voor elke pagina die dit sjabloon toont.",
+        "reusable": "Wijzigingen verschijnen overal waar dit blok staat."
+      },
+      "tab": {
+        "content": "Inhoud",
+        "style": "Stijl",
+        "layout": "Indeling",
+        "responsive": "Responsief",
+        "interactions": "Interacties",
+        "advanced": "Geavanceerd"
+      },
+      "site": "Site",
+      "siteParts": "Site-onderdelen",
+      "autosaving": "Automatisch opslaan…",
+      "conflict": "Niet opgeslagen: er is een nieuwere versie",
+      "conflictDraft": "Iemand anders heeft het concept van deze pagina gewijzigd nadat je hem opende. Je wijzigingen staan er nog en zijn niet opgeslagen.",
+      "conflictDraftBy": "{name} heeft het concept van deze pagina gewijzigd nadat je hem opende. Je wijzigingen staan er nog en zijn niet opgeslagen.",
+      "conflictLive": "Deze pagina is elders gewijzigd of gepubliceerd nadat je hem opende. Je wijzigingen staan er nog en zijn niet opgeslagen.",
+      "loadLatest": "Nieuwste versie laden",
+      "overwrite": "Mijn versie eroverheen opslaan",
+      "overwriteConfirm": "De nieuwere versie vervangen door de jouwe? De andere wijzigingen blijven bewaard in de revisies van de pagina.",
+      "recoveryFound": "Deze browser heeft niet-opgeslagen wijzigingen van {time} bewaard.",
+      "restore": "Terugzetten",
+      "discard": "Weggooien",
+      "sessionExpired": "Je sessie is verlopen. Log in een ander tabblad opnieuw in en sla dan op. Je wijzigingen blijven in deze browser bewaard.",
+      "conflictPart": "Iemand anders heeft dit opgeslagen nadat je het opende. Je wijzigingen staan er nog en zijn niet opgeslagen.",
+      "overwritePartConfirm": "De nieuwere versie vervangen door de jouwe? De wijzigingen van de ander gaan dan verloren.",
+      "revisions": "Revisies",
+      "revisionsLoading": "Versies laden…",
+      "revisionsEmpty": "Nog geen eerdere versies. Elke keer opslaan voegt er een toe.",
+      "revisionsPick": "Kies een versie om te zien wat terugzetten zou veranderen.",
+      "revisionsSame": "Deze versie heeft dezelfde blokken als wat je nu bewerkt.",
+      "revisionsCompare": "Vergeleken met wat je nu bewerkt, zou terugzetten van deze versie:",
+      "revisionsAdded": {
+        "one": "{count} blok toevoegen",
+        "other": "{count} blokken toevoegen"
+      },
+      "revisionsRemoved": {
+        "one": "{count} blok verwijderen",
+        "other": "{count} blokken verwijderen"
+      },
+      "revisionsChanged": {
+        "one": "{count} blok wijzigen",
+        "other": "{count} blokken wijzigen"
+      },
+      "revisionsMoved": {
+        "one": "{count} blok verplaatsen",
+        "other": "{count} blokken verplaatsen"
+      },
+      "revisionsRestore": "Deze versie terugzetten",
+      "restoreHintPage": "Terugzetten slaat deze versie op als concept van de pagina. De gepubliceerde pagina verandert pas als je publiceert.",
+      "restoreHintPart": "Terugzetten laadt deze versie in de editor. Sla een concept op of publiceer om hem te houden.",
+      "restoreUnsavedConfirm": "Terugzetten vervangt je niet-opgeslagen wijzigingen. Ze blijven in deze browser bewaard en zijn daarna terug te zetten. Doorgaan?",
+      "stateDraft": "Concept",
+      "statePublished": "Gepubliceerd",
+      "layers": "Lagen",
+      "previewWidth": "Voorbeeldbreedte in pixels",
+      "canvasWidth": "{width}px · {breakpoint}",
+      "styles": "Stijlen",
+      "checks": "Controles"
+    },
+    "drop": {
+      "rejectNesting": "{child} kan niet in {parent}.",
+      "rejectNestingRoot": "{child} kan niet op dit niveau. Zet het in een passende container.",
+      "reject": {
+        "nesting": "Dit blok kan hier niet.",
+        "self": "Een blok kan niet op zichzelf worden neergezet.",
+        "descendant": "Een blok kan niet in zijn eigen inhoud worden verplaatst.",
+        "region": "Blokken kunnen hier niet naar dat gebied worden verplaatst.",
+        "missing": "Dat blok bestaat niet meer.",
+        "locked": "Dit blok zit vast op zijn plek."
+      },
+      "noTarget": "Niet verplaatst: laat los boven een neerzetvak.",
+      "moved": "{block} verplaatst.",
+      "inserted": "{block} toegevoegd.",
+      "cancelled": "Verplaatsen geannuleerd. Er is niets veranderd.",
+      "releaseToMove": "Laat los om {block} hierheen te verplaatsen",
+      "releaseToInsert": "Laat los om {block} hier toe te voegen"
+    },
+    "navigator": {
+      "title": "Lagen",
+      "search": "Zoek een blok",
+      "keysHint": "Pijltjes om te bladeren, Enter om te selecteren, Shift+pijltjes om meer te selecteren, Alt+pijltjes om te verplaatsen, F2 om te hernoemen, Shift+F10 voor acties.",
+      "empty": "Nog geen blokken.",
+      "noMatches": "Geen blokken gevonden.",
+      "root": "Bovenste niveau",
+      "moved": "{block} verplaatst naar positie {position} in {parent}.",
+      "movedInto": "{block} verplaatst naar {parent}.",
+      "cannotMove": "Verder in die richting kan niet.",
+      "moveTo": "“{block}” verplaatsen naar…",
+      "chooseDestination": "Kies een container",
+      "noDestinations": "Geen andere plek accepteert dit blok",
+      "rename": "Naam alleen in deze editor",
+      "badge": {
+        "reusable": "Herbruikbaar blok: wijzigingen gelden op elke pagina die het gebruikt",
+        "hidden": "Verborgen op sommige apparaten",
+        "locked": "Vergrendeld",
+        "unavailable": "Bloktype niet beschikbaar: de plug-in staat mogelijk uit",
+        "dynamic": "Toont inhoud van de pagina of site"
+      }
+    },
+    "actions": {
+      "menu": "Blokacties",
+      "blocks": {
+        "one": "{count} blok",
+        "other": "{count} blokken"
+      },
+      "more": "Meer acties voor {block}",
+      "duplicate": "Dupliceren",
+      "copy": "Kopiëren",
+      "cut": "Knippen",
+      "paste": "Plakken",
+      "delete": "Verwijderen",
+      "group": "Groeperen",
+      "ungroup": "Groep opheffen",
+      "resetStyle": "Stijl herstellen",
+      "saveReusable": "Opslaan als herbruikbaar blok…",
+      "savePattern": "Opslaan als patroon…",
+      "locks": "Vergrendelingen",
+      "lock": {
+        "move": "Verplaatsen voorkomen",
+        "remove": "Verwijderen voorkomen",
+        "edit": "Bewerken voorkomen"
+      },
+      "lockedByPolicy": "Alleen wie vergrendelingen mag beheren, kan dit wijzigen.",
+      "blocked": {
+        "empty": "Selecteer eerst een blok.",
+        "mixedParents": "Selecteer blokken die naast elkaar in dezelfde container staan.",
+        "lockedRemove": "Een geselecteerd blok, of iets erin, is vergrendeld tegen verwijderen.",
+        "lockedMove": "Een geselecteerd blok zit vast op zijn plek.",
+        "lockedEdit": "Een geselecteerd blok is vergrendeld tegen bewerken.",
+        "nesting": "Het resultaat is in deze container niet toegestaan.",
+        "notGroup": "Alleen een Groep of Container kan worden opgeheven.",
+        "noStyle": "Er is geen eigen stijl om te herstellen.",
+        "clipboardEmpty": "Er is nog niets gekopieerd.",
+        "permission": "Alleen beheerders en redacteuren kunnen in de bibliotheek opslaan.",
+        "unsupported": "Niet beschikbaar in deze editor."
+      },
+      "done": {
+        "duplicate": "{what} gedupliceerd.",
+        "copy": "{what} gekopieerd.",
+        "cut": "{what} geknipt.",
+        "paste": "{what} geplakt.",
+        "delete": "{what} verwijderd. Ongedaan maken zet het terug.",
+        "group": "{what} gegroepeerd.",
+        "ungroup": "Groep {what} opgeheven.",
+        "resetStyle": "Stijl van {what} hersteld.",
+        "saveReusable": "{what} opgeslagen als herbruikbaar blok en hier gekoppeld.",
+        "savePattern": "Patroon {what} opgeslagen.",
+        "locked": "{what} vergrendeld.",
+        "unlocked": "{what} ontgrendeld."
+      },
+      "pasteFailed": {
+        "empty": "Er is niets om te plakken.",
+        "too-large": "Dat is te veel om in één keer te plakken.",
+        "nesting": "Deze blokken kunnen hier niet staan. Selecteer een passende container en plak opnieuw."
+      },
+      "selectRefused": {
+        "parent": "Meerdere blokken selecteren kan alleen binnen dezelfde container.",
+        "context": "Blokken in de header en op de pagina kunnen niet samen worden geselecteerd."
+      },
+      "editLocked": "Dit blok is vergrendeld tegen bewerken. Vraag iemand die vergrendelingen beheert om het te ontgrendelen.",
+      "editLockedManage": "Dit blok is vergrendeld tegen bewerken. Ontgrendel het via het blokmenu om het te wijzigen.",
+      "multi": {
+        "title": "{count} blokken geselecteerd",
+        "menuHint": "Klik met rechts of druk op Shift+F10 voor alle acties.",
+        "sharedStyle": "Gedeelde stijl",
+        "styleSubset": "Stijlwijzigingen gelden voor {count} van {total} blokken. Vergrendelde blokken en blokken met een eigen stijlinstelling worden overgeslagen.",
+        "noSharedStyle": "Deze blokken hebben geen stijlinstellingen gemeen."
+      },
+      "save": {
+        "reusableTitle": "Opslaan als herbruikbaar blok",
+        "reusableHint": "De selectie wordt in de bibliotheek opgeslagen en hier vervangen door een gekoppelde kopie. Bewerk het opgeslagen blok en elke pagina volgt.",
+        "patternTitle": "Opslaan als patroon",
+        "patternHint": "Een kopie van de selectie wordt aan de patroonbibliotheek toegevoegd. Deze pagina verandert niet.",
+        "nameRequired": "Geef het patroon een naam.",
+        "cancel": "Annuleren",
+        "savePattern": "Patroon opslaan"
+      },
+      "blockActions": "Blokacties",
+      "blockActionDone": "Toegepast: {action}."
+    },
+    "container": {
+      "title": "Indeling",
+      "mode": "Inhoud schikken",
+      "modes": {
+        "stack": "Stapel",
+        "row": "Rij",
+        "column": "Kolom",
+        "grid": "Raster"
+      },
+      "modeHint": {
+        "stack": "Blokken staan onder elkaar, met de afstand van het thema.",
+        "row": "Blokken staan naast elkaar en lopen door op een nieuwe regel als er geen ruimte is.",
+        "column": "Blokken staan onder elkaar, met jouw afstand en uitlijning.",
+        "grid": "Blokken vullen gelijke kolommen, rij voor rij."
+      },
+      "columns": "Kolommen",
+      "wrap": "Regelafbreking",
+      "wrapValue": {
+        "wrap": "Doorlopen",
+        "nowrap": "Op één regel houden"
+      },
+      "justify": "Horizontaal",
+      "justifyColumn": "Verticaal",
+      "justifyValue": {
+        "start": "Begin",
+        "center": "Midden",
+        "end": "Einde",
+        "between": "Ruimte ertussen",
+        "around": "Ruimte eromheen",
+        "evenly": "Gelijk verdeeld"
+      },
+      "align": "Verticaal",
+      "alignColumn": "Horizontaal",
+      "alignValue": {
+        "start": "Begin",
+        "center": "Midden",
+        "end": "Einde",
+        "stretch": "Uitrekken",
+        "baseline": "Tekstbasislijn"
+      },
+      "gap": "Tussenruimte",
+      "stackOnPhones": "Op telefoons onder elkaar zetten",
+      "orderHint": "Blokken houden altijd hun volgorde, op het scherm en voor schermlezers. Verander de volgorde in het paneel Lagen.",
+      "element": "HTML-element",
+      "elements": {
+        "div": "Gewoon (div)",
+        "section": "Sectie",
+        "article": "Artikel",
+        "aside": "Zijkant",
+        "header": "Kop",
+        "footer": "Voet",
+        "nav": "Navigatie"
+      },
+      "elementNotHere": "hier niet toegestaan",
+      "elementHint": "Vertelt schermlezers en zoekmachines wat dit deel is. Het verandert niets aan het uiterlijk.",
+      "item": {
+        "title": "In deze rij",
+        "overflowTitle": "Overloop",
+        "basis": "Deel van de rij",
+        "basisValue": {
+          "auto": "Passend bij inhoud",
+          "25": "Een kwart",
+          "33": "Een derde",
+          "50": "De helft",
+          "66": "Twee derde",
+          "75": "Driekwart",
+          "100": "Hele rij"
+        },
+        "grow": "Vrije ruimte opvullen",
+        "overflow": "Inhoud die niet past",
+        "overflowValue": {
+          "visible": "Tonen",
+          "hidden": "Afknippen",
+          "auto": "Scrollen"
+        }
+      },
+      "handle": {
+        "padTop": "Opvulling boven",
+        "padBottom": "Opvulling onder",
+        "minHeight": "Minimale hoogte"
+      },
+      "readingOrder": "Blokken staan in een andere volgorde dan ze worden gelezen. Toetsenbord- en schermlezergebruikers volgen de volgorde in het paneel Lagen.",
+      "matchReadingOrder": "Leesvolgorde gelijkzetten met de indeling"
+    },
+    "responsive": {
+      "title": "Aanpassingen per schermformaat",
+      "editing": "Schermformaat om te bewerken",
+      "hint": "Desktop gebruikt de gewone instellingen van het blok. Tablet erft van desktop en mobiel van tablet, tot je hier een waarde instelt.",
+      "previewMismatch": "Je bewerkt {breakpoint}, maar bekijkt {previewing}.",
+      "previewAt": "Bekijken op {breakpoint}",
+      "warningsTitle": "Controleer voor het publiceren",
+      "warning": {
+        "hidden": "Dit blok is verborgen op deze breedte.",
+        "order": "Een eigen volgorde toont dit blok op een andere plek dan waar het wordt gelezen. Toetsenbord- en schermlezergebruikers volgen nog steeds het paneel Lagen.",
+        "tinyText": "Extra kleine tekst is op telefoons soms moeilijk te lezen.",
+        "tooWide": "De maximale breedte is breder dan dit scherm; de inhoud kan zijwaarts scrollen.",
+        "nowrap": "Een rij op één regel kan op deze breedte buiten beeld lopen.",
+        "tall": "Deze minimale hoogte is hoger dan een telefoonscherm.",
+        "bigSpacing": "Heel grote afstand neemt veel van een klein scherm in beslag."
+      },
+      "spacing": "Afstand",
+      "size": "Grootte",
+      "text": "Tekst",
+      "item": "In de indeling",
+      "fontSize": "Tekstgrootte",
+      "fontSizeValue": {
+        "xs": "XS",
+        "sm": "S",
+        "base": "M",
+        "lg": "L",
+        "xl": "XL",
+        "2xl": "2XL",
+        "3xl": "3XL",
+        "4xl": "4XL"
+      },
+      "span": "Kolommen breed",
+      "col": "Beginkolom",
+      "order": "Volgorde",
+      "direction": "Richting",
+      "setHere": "Ingesteld voor dit formaat",
+      "inherited": "{value} · van {from}",
+      "notSet": "Niet ingesteld",
+      "inherit": "Overnemen ({value})",
+      "reset": "Herstellen",
+      "resetField": "{field} herstellen voor {breakpoint}"
+    },
+    "sources": {
+      "themeDefault": "Themastandaard",
+      "siteToken": "Gewijzigd voor deze site",
+      "theme": "Van het thema",
+      "local": "Ingesteld op dit blok",
+      "localOverPreset": "Ingesteld op dit blok, boven de preset “{name}”",
+      "preset": "Van de preset “{name}”",
+      "breakpoint": "Ingesteld voor {breakpoint}",
+      "resetField": "{field} terugzetten naar de laag eronder",
+      "resetToTheme": "{field} terugzetten naar de waarde van het thema",
+      "template": "Van het sjabloon “{name}”. Bewerk het sjabloon om dit te wijzigen."
+    },
+    "presets": {
+      "title": "Stijlpreset",
+      "use": "Preset",
+      "none": "Geen",
+      "missing": "Ontbrekende preset: {id}",
+      "missingHint": "Dit blok verwijst naar een preset die niet meer bestaat. Het wordt zonder weergegeven.",
+      "using": "Gebruikt de preset “{name}”. Bewerk de preset onder Stijlen om elk blok dat hem gebruikt te wijzigen.",
+      "usingWithLocal": "Gebruikt de preset “{name}”, met de eigen waarden van dit blok erbovenop.",
+      "detach": "Loskoppelen (waarden behouden)",
+      "updateFromBlock": "Waarden van dit blok in “{name}” zetten",
+      "saveAs": "Stijl opslaan als preset…",
+      "name": "Naam van de preset",
+      "create": "Preset maken",
+      "library": "Stijlpresets",
+      "libraryHint": "Benoemde sets van afstand, grootte, hoeken, schaduwen en kleuren. Wijzig er één en elk blok dat hem gebruikt verandert mee, op elke pagina.",
+      "empty": "Nog geen presets. Geef een blok een stijl en kies “Stijl opslaan als preset” op het tabblad Stijl.",
+      "edit": "Bewerken",
+      "done": "Klaar",
+      "usageLoading": "Gebruik wordt gecontroleerd…",
+      "usageNone": "Nog nergens gebruikt.",
+      "usage": "Gebruikt door {count}: {where}",
+      "usageTemplates": {
+        "one": "{count} sjabloon",
+        "other": "{count} sjablonen"
+      },
+      "usageReusable": {
+        "one": "{count} herbruikbaar blok",
+        "other": "{count} herbruikbare blokken"
+      },
+      "usagePatterns": {
+        "one": "{count} patroon",
+        "other": "{count} patronen"
+      },
+      "deleteConfirm": "Preset “{name}” verwijderen?",
+      "deleteUsedConfirm": {
+        "one": "Preset “{name}” verwijderen? Hij wordt door {count} item gebruikt, dat zijn opmaak verliest.",
+        "other": "Preset “{name}” verwijderen? Hij wordt door {count} items gebruikt, die hun opmaak verliezen."
+      }
+    },
+    "globalStyles": {
+      "title": "Globale stijlen",
+      "impact": "Deze gelden voor elke pagina, de header, de footer, sjablonen en herbruikbare blokken. Wijzigingen zie je hier direct; ze gaan live als je publiceert.",
+      "draftState": "Niet-gepubliceerde wijzigingen",
+      "publishedState": "Alles is gepubliceerd",
+      "revert": "Terug naar gepubliceerd",
+      "unpublished": "niet gepubliceerd",
+      "changedCount": "{count} gewijzigd",
+      "saveError": "Stijlen konden niet worden opgeslagen",
+      "readOnly": "Alleen beheerders en redacteuren kunnen globale stijlen wijzigen."
+    },
+    "templateDefaults": {
+      "title": "Standaardwaarden voor inhoud",
+      "hint": "Beginstijlen voor de inhoud die het sjabloon {template} omsluit, per bloktype. De eigen waarden van een blok winnen nog steeds.",
+      "empty": "Nog geen standaardwaarden. Kies hieronder een bloktype.",
+      "add": "Bloktype toevoegen",
+      "addPlaceholder": "Kies een bloktype…",
+      "remove": "Standaardwaarden voor {type} verwijderen"
+    },
+    "siteContext": {
+      "previewNote": "Voorbeeld van de omgeving van deze pagina. De eigen titel en datum zijn echt; menu's en andere inhoud die van het verzoek afhangt zijn plaatsvervangers. Bezoekers zien de gepubliceerde pagina.",
+      "region": {
+        "header": "Sitekop",
+        "footer": "Sitevoet",
+        "template": "Sjabloon"
+      },
+      "templateNamed": "Sjabloon “{slug}”",
+      "source": {
+        "override-draft": "jouw aanpassing, concept",
+        "override": "jouw aanpassing",
+        "theme": "uit het thema",
+        "plugin": "uit een plug-in",
+        "library": "uit de headerbibliotheek",
+        "none": "niet ingesteld"
+      },
+      "siteWide": "sitebreed",
+      "edit": {
+        "header": "Header bewerken",
+        "footer": "Voettekst bewerken",
+        "template": "Dit sjabloon bewerken"
+      },
+      "hierarchy": "Sjabloonvolgorde",
+      "hierarchyHint": "Meest specifiek eerst. Het eerste dat bestaat, wordt gebruikt.",
+      "menu": "Menu",
+      "notPublished": "Nog niet gepubliceerd",
+      "headerHidden": "De header is voor deze pagina verborgen.",
+      "footerEmpty": "Nog geen voettekst.",
+      "noTemplate": "Geen sjabloon: de ingebouwde paginaweergave van het thema wordt gebruikt.",
+      "panelTitle": "Omgeving van deze pagina",
+      "panelHint": "Header, sjabloon en voettekst worden door de hele site gedeeld. Bewerken is een bewuste stap.",
+      "loading": "Laden…"
+    },
+    "pluginPreview": {
+      "retry": "Opnieuw proberen",
+      "loading": "{title} laden…",
+      "placeholder": "Toont live-inhoud op de gepubliceerde pagina.",
+      "empty": "{title} toont niets met de huidige instellingen.",
+      "unavailable": "Niet-beschikbaar blok: {type}",
+      "unavailableHint": "De plug-in of het thema staat mogelijk uit. De inhoud blijft bewaard en verschijnt weer zodra die terug is.",
+      "timeout": "Het voorbeeld van {title} duurde te lang.",
+      "failed": "Van {title} kon geen voorbeeld worden gemaakt."
+    },
+    "blockFailure": {
+      "title": "{type} kan niet in de builder worden getoond.",
+      "kept": "De inhoud blijft bewaard en de pagina toont deze zoals opgeslagen."
+    },
+    "blockStatus": {
+      "deprecated": "Dit blok is verouderd. Het werkt nog, maar wordt niet meer aangeboden voor nieuwe inhoud.",
+      "deprecatedReplaced": "Dit blok is verouderd. Gebruik {type} voor nieuwe inhoud.",
+      "migrationFailed": "Dit blok kon niet worden bijgewerkt vanaf versie {version} en toont daarom de opgeslagen instellingen."
+    },
+    "recovery": {
+      "unavailableTitle": "De plugin of het thema van dit blok is niet actief",
+      "deprecatedTitle": "Dit blok is verouderd",
+      "unavailableText": "Het kan nu niet worden bewerkt of getoond. De inhoud blijft bewaard en de pagina toont het weer zodra de extensie terug is.",
+      "deprecatedText": "Het blijft werken, maar wordt niet meer aangeboden voor nieuwe inhoud.",
+      "deprecatedReplaced": "Het blijft werken. De vervanger is {type}.",
+      "type": "Type",
+      "providedBy": "Geleverd door",
+      "version": "Versie",
+      "deprecatedSince": "verouderd sinds {since}",
+      "id": "Blok-id",
+      "stored": "Opgeslagen",
+      "copy": "Gegevens kopiëren",
+      "download": "Gegevens downloaden",
+      "copied": "Blokgegevens gekopieerd.",
+      "copyFailed": "De browser stond kopiëren niet toe. Gebruik Gegevens downloaden.",
+      "manageExtensions": "Extensies beheren",
+      "replaceWith": "Vervangen door",
+      "chooseBlock": "Kies een blok…",
+      "replace": "Vervangen",
+      "remove": "Blok verwijderen",
+      "replaceConfirm": "Dit blok vervangen door {title}? Het behoudt zijn id en elke instelling die {title} ook heeft.",
+      "replaceDrops": {
+        "one": "{count} opgeslagen instelling die het nieuwe blok niet heeft, wordt verwijderd.",
+        "other": "{count} opgeslagen instellingen die het nieuwe blok niet heeft, worden verwijderd."
+      },
+      "replaceDropsChildren": {
+        "one": "{count} blok erin wordt verwijderd, omdat het nieuwe blok geen andere blokken kan bevatten.",
+        "other": "{count} blokken erin worden verwijderd, omdat het nieuwe blok geen andere blokken kan bevatten."
+      },
+      "downloadFirst": "Download eerst de gegevens als je ze later nog nodig kunt hebben.",
+      "removeConfirm": "Dit blok van de pagina verwijderen? Download eerst de gegevens als je ze later nog nodig kunt hebben.",
+      "removeConfirmChildren": {
+        "one": "Dit blok en het {count} blok erin verwijderen? Download eerst de gegevens als je ze later nog nodig kunt hebben.",
+        "other": "Dit blok en de {count} blokken erin verwijderen? Download eerst de gegevens als je ze later nog nodig kunt hebben."
+      },
+      "keptHint": "Bij het opslaan van de pagina blijft dit blok precies zoals het is opgeslagen.",
+      "storedSettings": {
+        "one": "{count} instelling",
+        "other": "{count} instellingen"
+      },
+      "storedBlocks": {
+        "one": "{count} blok erin",
+        "other": "{count} blokken erin"
+      }
+    },
+    "blockCount": {
+      "one": "{count} blok",
+      "other": "{count} blokken"
+    },
+    "checks": {
+      "title": "Toegankelijkheidscontroles",
+      "disclaimer": "Deze controles vinden veelvoorkomende problemen in wat je hier instelt. Ze zien niet alles wat een thema, plugin of bezoeker verandert, dus ze bewijzen niet dat een pagina toegankelijk is.",
+      "none": "Geen problemen gevonden in wat deze controles bekijken.",
+      "errors": {
+        "one": "{count} probleem",
+        "other": "{count} problemen"
+      },
+      "warnings": {
+        "one": "{count} om na te kijken",
+        "other": "{count} om na te kijken"
+      },
+      "unavailable": {
+        "one": "{count} niet gecontroleerd",
+        "other": "{count} niet gecontroleerd"
+      },
+      "problemCount": {
+        "one": "{count} probleem",
+        "other": "{count} problemen"
+      },
+      "imageAlt": "Geen alternatieve tekst. Beschrijf de afbeelding, of laat het leeg als ze alleen decoratief is.",
+      "linkText": "Deze link of knop heeft geen tekst, dus schermlezers kunnen niet zeggen waar hij heen gaat.",
+      "linkTextItem": "Link {item} heeft geen tekst, dus schermlezers kunnen niet zeggen waar hij heen gaat.",
+      "linkTarget": "Deze knop heeft tekst maar geen link, dus hij doet niets.",
+      "headingEmpty": "Deze kop is leeg.",
+      "headingSkip": "Het kopniveau springt van {from} naar {to}. Overgeslagen niveaus maken de opbouw van de pagina lastig te volgen.",
+      "headingLevelOne": "Niveau 1 is meestal de paginatitel. Gebruik niveau 2 voor secties.",
+      "contrast": "Het tekstcontrast is {ratio}:1. Gewone tekst heeft minstens 4,5:1 nodig.",
+      "contrastUnknown": "Het contrast kan hier niet worden gecontroleerd, omdat een van de kleuren uit het thema komt.",
+      "hiddenOnMobile": "Deze kop of knop is verborgen op telefoons.",
+      "readingOrder": "De volgorde op het scherm wijkt af van de leesvolgorde. Schermlezers en het toetsenbord volgen de volgorde in Lagen.",
+      "iconLabel": "Dit pictogram is niet decoratief maar heeft geen label, dus het wordt voorgelezen met de naam van het pictogram.",
+      "tableHeader": "Deze tabel heeft geen kopregel. Datatabellen hebben er een nodig om de kolommen te begrijpen.",
+      "contentUnchecked": "De inhoud van dit blok kan hier niet worden gecontroleerd."
+    },
+    "keyboard": {
+      "open": "Sneltoetsen",
+      "title": "Sneltoetsen",
+      "close": "Sluiten",
+      "or": "of",
+      "intro": "Alles wat je met muis of aanraking kunt doen, kan ook met het toetsenbord. Ctrl is ⌘ op een Mac.",
+      "area": {
+        "canvas": "Canvas",
+        "layers": "Lagen",
+        "library": "Blokken",
+        "text": "Tekst en media",
+        "layout": "Indeling",
+        "general": "Algemeen"
+      },
+      "path": {
+        "selectBlock": "Een blok selecteren (Tab naar de naam)",
+        "actionsMenu": "Het actiemenu van het blok openen",
+        "duplicate": "Dupliceren",
+        "group": "Groeperen",
+        "ungroup": "Groep opheffen",
+        "remove": "Verwijderen",
+        "copyPaste": "Kopiëren, knippen en plakken",
+        "undoRedo": "Ongedaan maken en opnieuw",
+        "clearSelection": "Maar één blok geselecteerd houden",
+        "moveBlock": "Omhoog of omlaag verplaatsen",
+        "nestBlock": "In het blok erboven plaatsen, of uit de container halen",
+        "extendSelection": "Blokken aan de selectie toevoegen",
+        "renameBlock": "Hernoemen",
+        "moveTo": "Naar een andere container verplaatsen",
+        "addBlock": "Het blok met focus toevoegen",
+        "editText": "Tekst bewerken afronden of annuleren",
+        "replaceMedia": "Een geselecteerde afbeelding of bestand vervangen",
+        "resizeSpacing": "Ruimte en hoogte wijzigen met een greep die focus heeft",
+        "gridPlacement": "Een item in een raster plaatsen en de grootte bepalen",
+        "cancelDrag": "Slepen annuleren",
+        "shortcuts": "Deze lijst tonen"
+      },
+      "how": {
+        "moveTo": "„Verplaatsen naar…” in Lagen",
+        "gridPlacement": "Rasterplaatsing-velden op het tabblad Indeling"
+      }
     }
   },
   "dashboard": {
@@ -1629,7 +2326,10 @@
     "remove": "Verwijderen",
     "mediaLibraryAriaLabel": "Mediabibliotheek",
     "noImagesYet": "Nog geen afbeeldingen. Upload er een, of voeg bestanden toe in Media.",
-    "pasteUrl": "URL plakken"
+    "pasteUrl": "URL plakken",
+    "selectFile": "Bestand kiezen",
+    "noFileSelected": "Geen bestand gekozen",
+    "noFilesYet": "Nog geen bestanden van dit soort. Upload er een, of voeg bestanden toe in Media."
   },
   "auth": {
     "forgotPassword": {
@@ -2110,7 +2810,11 @@
     "slotErrorLabel": "Fout (algemeen)",
     "slotErrorHint": "Gedeelde reserve voor 403, 410 en 429 als er geen specifiek sjabloon is",
     "slotIndexLabel": "Algemeen (index)",
-    "slotIndexHint": "Wordt alleen gebruikt als er geen specifieker sjabloon is"
+    "slotIndexHint": "Wordt alleen gebruikt als er geen specifieker sjabloon is",
+    "compareTheme": "Vergelijken met themaversie",
+    "themeVersion": "Themaversie",
+    "copyThemeHint": "Kopieert de versie van het thema naar de editor. Er wordt niets opgeslagen tot je opslaat of publiceert.",
+    "fromTheme": "thema"
   },
   "widgets": {
     "loading": "Widgets laden…",

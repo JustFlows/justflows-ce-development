@@ -1,3 +1,4 @@
+import { canNestBlock } from "@justflows/blocks";
 import type { BlockCatalogEntry, BlockNode } from "./types";
 
 export const DND_BLOCK_TYPE = "application/x-justflows-block-type";
@@ -6,31 +7,18 @@ export const DND_BLOCK_ID = "application/x-justflows-block-id";
 /** Virtual parent for blocks dropped into page header chrome. */
 export const HEADER_SLOT_PARENT_TYPE = "core.header";
 
+/**
+ * Whether `childType` may be dropped into `parentType`. Delegates to the shared
+ * document contract so drag-and-drop, moves, pastes, and server validation all
+ * apply the same nesting rules. The header slot is a region root.
+ */
 export function canDropBlockType(
   parentType: string | null,
   childType: string,
   catalog: Map<string, BlockCatalogEntry>,
 ): boolean {
-  if (childType === "core.column") return parentType === "core.columns";
-
-  if (!parentType || parentType === HEADER_SLOT_PARENT_TYPE) {
-    return childType !== "core.column";
-  }
-
-  const parent = catalog.get(parentType);
-  if (!parent?.supportsChildren) return false;
-
-  if (parent.allowedChildTypes?.length) {
-    return parent.allowedChildTypes.includes(childType);
-  }
-
-  if (parentType === "core.columns") return false;
-  if (parentType === "core.grid") return childType !== "core.column";
-  if (parentType === "core.column") {
-    return childType !== "core.column" && childType !== "core.columns";
-  }
-
-  return childType !== "core.column";
+  const parent = parentType === HEADER_SLOT_PARENT_TYPE ? null : parentType;
+  return canNestBlock(parent, childType, (type) => catalog.get(type));
 }
 
 export function libraryTargetParent(

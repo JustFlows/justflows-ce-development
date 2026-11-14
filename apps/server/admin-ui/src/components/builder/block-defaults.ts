@@ -1,3 +1,5 @@
+import { clearBlockPreviewCache } from "../../lib/block-preview-batch";
+import type { BlockCatalogEntry } from "./types";
 import { coreBlocks } from "@justflows/blocks";
 import { translateEnglish, type Translate } from "../../i18n/translate";
 import type { BlockNode } from "./types";
@@ -112,14 +114,29 @@ function makeColumn(): BlockNode {
   return { id: newId(), type: "core.column", version: 1, props: {}, children: [] };
 }
 
+/**
+ * The catalog the builder loaded, so a new plugin or theme block starts at
+ * its registered version with its schema defaults and declared `defaults`
+ * (justflows-ce#305). Core blocks are known without it.
+ */
+let catalogEntries: ReadonlyMap<string, BlockCatalogEntry> = new Map();
+
+export function setBlockCatalog(entries: Iterable<BlockCatalogEntry>): void {
+  catalogEntries = new Map([...entries].map((entry) => [entry.type, entry]));
+  /** A reloaded catalog may mean a plugin changed, so cached previews are dropped (justflows-ce#308). */
+  clearBlockPreviewCache();
+}
+
 export function createBlock(type: string, t: Translate = translateEnglish): BlockNode {
   const definition = coreBlocks.find(entry => entry.type === type);
-  const schemaDefaults = Object.fromEntries(Object.entries(definition?.schema ?? {}).filter(([, field]) => field.default !== undefined).map(([name, field]) => [name, structuredClone(field.default)]));
+  const entry = catalogEntries.get(type);
+  const schema = definition?.schema ?? entry?.schema ?? {};
+  const schemaDefaults = Object.fromEntries(Object.entries(schema).filter(([, field]) => field.default !== undefined).map(([name, field]) => [name, structuredClone(field.default)]));
   const block: BlockNode = {
     id: newId(),
     type,
-    version: 1,
-    props: { ...schemaDefaults, ...(defaultProps(t)[type] ?? {}) },
+    version: definition?.version ?? entry?.version ?? 1,
+    props: { ...schemaDefaults, ...(definition ? {} : structuredClone(entry?.defaults ?? {})), ...(defaultProps(t)[type] ?? {}) },
   };
 
   if (type === "core.columns") {
@@ -131,7 +148,7 @@ export function createBlock(type: string, t: Translate = translateEnglish): Bloc
     block.children = [];
   }
 
-  if (definition?.supportsChildren) block.children ??= [];
+  if (definition?.supportsChildren || entry?.supportsChildren) block.children ??= [];
   if (type === "core.list") block.children = [createBlock("core.list-item", t)];
   if (type === "core.accordion") block.children = [createBlock("core.details", t)];
   if (type === "core.tabs") block.children = [createBlock("core.tab", t), createBlock("core.tab", t)];

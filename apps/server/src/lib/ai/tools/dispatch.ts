@@ -106,7 +106,9 @@ async function buildInternalServer(): Promise<http.Server> {
     });
   });
   app.use(express.json({ limit: "2mb" }));
-  app.use("/api/manage/v1", manageApiRoutes);
+  /** Same document limits as the public management API (justflows-ce#309). */
+  const { rejectOversizedDocuments } = await import("../../rendering/block-document-limits.js");
+  app.use("/api/manage/v1", rejectOversizedDocuments, manageApiRoutes);
   app.use((_req: Request, res: Response) => {
     res.status(404).json({ error: "Not found" });
   });

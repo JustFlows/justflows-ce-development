@@ -8,9 +8,12 @@ export type {
   BlockRenderNode,
 } from "./registry/block-registry.js";
 export { coreBlocks } from "./core/index.js";
-export { sanitizeRichText, sanitizeHtmlBlock, sanitizePlainText, extractPlainText } from "./sanitize.js";
+export { sanitizeRichText, sanitizeHtmlBlock, sanitizePlainText, extractPlainText, sanitizePluginPreviewHtml } from "./sanitize.js";
+export { codeLanguageClass } from "./code-language.js";
+export { textDirection, type TextDirection } from "./text-direction.js";
+export { checkAccessibility, contrastRatio, parseColor, type AccessibilityCheckCode, type AccessibilityCheckOptions, type AccessibilityFixTab, type AccessibilityIssue, type AccessibilitySeverity } from "./accessibility-checks.js";
 export { renderMath } from "./math.js";
-export { sanitizeBlockDocument } from "./sanitize-document.js";
+export { BLOCK_DOCUMENT_MAX_DEPTH, BLOCK_DOCUMENT_MAX_NODES, measureBlockDocument, sanitizeBlockDocument, withinBlockDocumentLimits } from "./sanitize-document.js";
 export { esc, safeHref, safeMediaSrc, sanitizeHref, sanitizeMediaSrc } from "./safe-url.js";
 export { renderResponsiveImage, sanitizeSizes, sanitizeSrcset } from "./responsive-image.js";
 export type { ResponsiveImageInput, ResponsiveSource } from "./responsive-image.js";
@@ -79,7 +82,11 @@ export {
 export type { BlockPlacement } from "./layout.js";
 export {
   ALIGN_SELF,
+  BASIS_PRESETS,
   DEFAULT_BLOCK_STYLE,
+  FONT_SIZE_PRESETS,
+  GROW_VALUES,
+  OVERFLOW_VALUES,
   RADIUS_PRESETS,
   SHADOW_PRESETS,
   SPACE_STEPS,
@@ -87,6 +94,7 @@ export {
   WIDTH_PRESETS,
   blockStyleDeclarations,
   compactBlockStyle,
+  flexBasis,
   isDefaultBlockStyle,
   parseBlockStyle,
   sanitizeBlockStyleProp,
@@ -115,3 +123,135 @@ export function createBlockRegistrySync(): BlockRegistry {
 }
 
 export { functionalBlockCss } from "./functional-css.js";
+
+export {
+  BLOCK_DOCUMENT_VERSION,
+  BLOCK_ID_MAX_LENGTH,
+  BLOCK_MAX_DEPTH,
+  BLOCK_NODE_KEYS,
+  EDITOR_LABEL_MAX_LENGTH,
+  EDITOR_LOCK_FLAGS,
+  ROOT_PARENT,
+  canNestBlock,
+  isValidBlockId,
+  reassignBlockIds,
+  repairBlockIds,
+  sanitizeEditorMeta,
+  validateBlockDocument,
+} from "./document-contract.js";
+export type {
+  BlockDocumentIssue,
+  BlockDocumentIssueCode,
+  BlockEditorMeta,
+  BlockIdFactory,
+  BlockNestingInfo,
+  BlockNestingLookup,
+  CanonicalBlockDocument,
+  CanonicalBlockNode,
+  EditorLockFlag,
+  ValidateBlockDocumentOptions,
+} from "./document-contract.js";
+export {
+  BREAKPOINT_LAYOUT_FIELDS,
+  BREAKPOINT_PLACEMENT_FIELDS,
+  BREAKPOINT_STYLE_FIELDS,
+  CONTAINER_ALIGN,
+  CONTAINER_DIRECTIONS,
+  CONTAINER_DISPLAYS,
+  CONTAINER_ELEMENTS,
+  CONTAINER_JUSTIFY,
+  CONTAINER_STACK,
+  CONTAINER_WRAPS,
+  OVERRIDE_BREAKPOINTS,
+  STYLE_REF_RE,
+  VALUE_SOURCES,
+  sanitizeBlockBreakpoints,
+  sanitizeContainerLayout,
+  sanitizeStyleRef,
+} from "./builder-values.js";
+export type {
+  BlockBreakpoints,
+  BreakpointOverride,
+  BreakpointStyleField,
+  ContainerLayout,
+  OverrideBreakpoint,
+  ValueSource,
+} from "./builder-values.js";
+export { BlockMigrator } from "./block-migrations.js";
+export type {
+  BlockMigration,
+  BlockMigrationFailure,
+  BlockMigrationFailureReason,
+  BlockMigrationResult,
+} from "./block-migrations.js";
+export {
+  INLINE_FIELD_ATTRIBUTE,
+  INLINE_FIELD_MODES,
+  INLINE_FORMATS,
+  normalizeInlineValue,
+  resolveInlineFields,
+} from "./inline.js";
+export type { BlockInlineFields, InlineFieldMode, InlineFieldSpec, InlineFormat } from "./inline.js";
+export { blockLockFlags, blockLockViolations, isBlockLocked } from "./block-locks.js";
+export type { BlockLockRule, BlockLockViolation } from "./block-locks.js";
+export {
+  BLOCK_CLIPBOARD_FORMAT,
+  BLOCK_CLIPBOARD_MAX_CHARS,
+  BLOCK_CLIPBOARD_MAX_NODES,
+  BLOCK_CLIPBOARD_MIME,
+  looksLikeBlockClipboard,
+  parseBlockClipboard,
+  plainTextToBlocks,
+  serializeBlockClipboard,
+} from "./block-clipboard.js";
+export type { BlockClipboardParse, BlockClipboardPayload, ClipboardBlock } from "./block-clipboard.js";
+export {
+  CONTAINER_ELEMENT_TYPES,
+  CONTAINER_LAYOUT_CSS,
+  CONTAINER_LAYOUT_TARGETS,
+  applyContainerLayout,
+  containerElementAllowed,
+  containerLayoutAttrs,
+  containerLayoutCss,
+  supportsContainerLayout,
+} from "./container-layout.js";
+export type { ContainerLayoutAttrs } from "./container-layout.js";
+export {
+  BREAKPOINTS_SCHEMA_VERSION,
+  BREAKPOINT_MAX_WIDTH,
+  breakpointCss,
+  breakpointForWidth,
+  effectiveOverride,
+  resolveResponsiveValue,
+  setBreakpointValue,
+} from "./responsive.js";
+export type { BreakpointQuery, BreakpointSource, BreakpointTargets, ResolvedValue } from "./responsive.js";
+export {
+  STYLE_PRESETS_MAX,
+  STYLE_PRESET_NAME_MAX,
+  presetRefOf,
+  resolveStyleValue,
+  sanitizeStylePreset,
+  sanitizeStylePresets,
+  stylePresetClass,
+  stylePresetsCss,
+} from "./style-presets.js";
+export type { StylePreset, StyleValueLayer, StyleValueResolution } from "./style-presets.js";
+export {
+  TEMPLATE_DEFAULTS_MAX_TYPES,
+  applyTemplateDefaults,
+  sanitizeTemplateDefaults,
+  styleWithTemplateDefault,
+  templateDefaultFor,
+  templateDefaultSets,
+} from "./template-defaults.js";
+export type { TemplateDefaults } from "./template-defaults.js";
+export {
+  BLOCK_API_VERSION,
+  BlockContractError,
+  ROOT_PARENT_KEYWORD,
+  SUPPORTED_BLOCK_API_VERSIONS,
+  normalizeBlockContract,
+} from "./block-contract.js";
+export type { BlockAction, BlockContract, BlockDeprecation, BlockMigrationStep, BlockPreviewContract, BlockSupports } from "./block-contract.js";
+export { containerLayoutTarget } from "./container-layout.js";

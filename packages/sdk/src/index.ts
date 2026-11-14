@@ -149,6 +149,7 @@ export {
   PLUGIN_DELETE_CONTENT_SETTING,
   pluginShouldDeleteData,
   pluginShouldDeleteContent,
+  BLOCK_API_VERSION,
 } from "./plugin.js";
 export {
   RegistryListingSchema,
@@ -346,6 +347,7 @@ export {
   PATTERN_SLUG_RE,
   BLOCK_TYPE_RE,
   PatternBlockSchema,
+  PatternBlockEditorMetaSchema,
   PatternLocaleSchema,
   BlockPatternSchema,
   PatternSetSchema,
@@ -353,6 +355,7 @@ export {
 } from "./patterns.js";
 export type {
   PatternBlock,
+  PatternBlockEditorMeta,
   BlockPattern,
   PatternSet,
   ThemePatternRegistration,

@@ -19,6 +19,29 @@ export const TEXT_ALIGN = ["", "left", "center", "right"] as const;
 export const WIDTH_PRESETS = ["", "narrow", "content", "wide", "full"] as const;
 export const RADIUS_PRESETS = ["", "none", "sm", "md", "lg", "pill"] as const;
 export const SHADOW_PRESETS = ["", "none", "sm", "md"] as const;
+/** Whether a block grows to fill free space in a row (justflows-ce#299). */
+export const GROW_VALUES = ["", "0", "1"] as const;
+/** A block's share of a row, in percent of the row, before growing. */
+export const BASIS_PRESETS = ["", "auto", "25", "33", "50", "66", "75", "100"] as const;
+export const OVERFLOW_VALUES = ["", "hidden", "auto"] as const;
+/**
+ * Text size steps (justflows-ce#300). Each reads a `--jf-text-<step>` token a
+ * theme may define, with a fixed fallback, so the scale follows the theme.
+ */
+export const FONT_SIZE_PRESETS = ["", "xs", "sm", "base", "lg", "xl", "2xl", "3xl", "4xl"] as const;
+const FONT_SIZE_FALLBACK: Record<string, string> = {
+  xs: "0.75rem",
+  sm: "0.875rem",
+  base: "1rem",
+  lg: "1.125rem",
+  xl: "1.25rem",
+  "2xl": "1.5rem",
+  "3xl": "1.875rem",
+  "4xl": "2.25rem",
+};
+
+/** Exact fractions, so three thirds or two halves fill a row exactly. */
+const BASIS_PERCENT: Record<string, number> = { "25": 25, "33": 100 / 3, "50": 50, "66": 200 / 3, "75": 75, "100": 100 };
 
 const WIDTH_VALUES: Record<string, string> = {
   narrow: "34rem",
@@ -61,6 +84,14 @@ export interface BlockStyle {
   accent: string;
   /** Block opacity as a percent string "0"–"100"; empty = not set (fully opaque). */
   opacity: string;
+  /** Flex item: grow into free space ("1") or not ("0"). Only acts inside a row or column layout. */
+  grow: string;
+  /** Flex item: share of the row; see `BASIS_PRESETS`. */
+  basis: string;
+  /** Clip (`hidden`) or scroll (`auto`) content that does not fit. */
+  overflow: string;
+  /** Text size step; see `FONT_SIZE_PRESETS`. */
+  fontSize: string;
   /**
    * Per-instance overrides of theme CSS custom properties, e.g.
    * `{ "--brand-gradient": "linear-gradient(…)" }`. Set by the block
@@ -88,6 +119,10 @@ export const DEFAULT_BLOCK_STYLE: BlockStyle = {
   textColor: "",
   accent: "",
   opacity: "",
+  grow: "",
+  basis: "",
+  overflow: "",
+  fontSize: "",
   vars: {},
 };
 
@@ -179,6 +214,10 @@ export function parseBlockStyle(raw: unknown): BlockStyle {
     textColor: safeBlockColor(input["textColor"]),
     accent: safeBlockColor(input["accent"]),
     opacity: parseOpacityPct(input["opacity"]),
+    grow: pick(input["grow"], GROW_VALUES),
+    basis: pick(input["basis"], BASIS_PRESETS),
+    overflow: pick(input["overflow"], OVERFLOW_VALUES),
+    fontSize: pick(input["fontSize"], FONT_SIZE_PRESETS),
     vars: parseStyleVars(input["vars"]),
   };
 }
@@ -202,6 +241,10 @@ export function isDefaultBlockStyle(style: BlockStyle): boolean {
     !style.textColor &&
     !style.accent &&
     !style.opacity &&
+    !style.grow &&
+    !style.basis &&
+    !style.overflow &&
+    !style.fontSize &&
     Object.keys(style.vars).length === 0
   );
 }
@@ -227,6 +270,19 @@ function space(step: SpaceStep): string {
   return step === "0" ? "0" : `var(--space-${step})`;
 }
 
+/**
+ * A basis that accounts for the row's gap, so N items of 100/N percent fit on
+ * one line: each gives up its share of the gaps between them.
+ */
+export function flexBasis(basis: string): string {
+  if (basis === "auto") return "auto";
+  const pct = BASIS_PERCENT[basis];
+  if (pct === undefined) return "auto";
+  const share = Number((pct / 100).toFixed(4));
+  const percent = Number(pct.toFixed(4));
+  return share >= 1 ? "100%" : `calc(${percent}% - var(--jf-cl-gap, 0px) * ${Number((1 - share).toFixed(4))})`;
+}
+
 /** The declarations for a style, ready to merge into a `style` attribute. */
 export function blockStyleDeclarations(style: BlockStyle): string {
   const out: string[] = [];
@@ -250,6 +306,7 @@ export function blockStyleDeclarations(style: BlockStyle): string {
   if (style.minHeight > 0) out.push(`min-height:${style.minHeight}vh`);
   if (style.alignSelf) out.push(`justify-self:${style.alignSelf}`, `align-self:${style.alignSelf}`);
   if (style.textAlign) out.push(`text-align:${style.textAlign}`);
+  if (style.fontSize) out.push(`font-size:var(--jf-text-${style.fontSize},${FONT_SIZE_FALLBACK[style.fontSize]})`);
   if (style.radius) out.push(`border-radius:${RADIUS_VALUES[style.radius] ?? "0"}`);
   if (style.shadow) out.push(`box-shadow:${SHADOW_VALUES[style.shadow] ?? "none"}`);
   // Colours: the direct property covers the common case (a section/hero box),
@@ -260,6 +317,14 @@ export function blockStyleDeclarations(style: BlockStyle): string {
   if (style.textColor) out.push(`color:${style.textColor}`, `--jf-block-text:${style.textColor}`);
   if (style.accent) out.push(`--jf-block-accent:${style.accent}`, `accent-color:${style.accent}`);
   if (style.opacity) out.push(`opacity:${Number(style.opacity) / 100}`);
+  /**
+   * Flex item values travel as custom properties that only a row or column
+   * container reads (see `containerLayoutCss`), so they do nothing elsewhere
+   * and phones can drop the basis when a row stacks.
+   */
+  if (style.grow) out.push(`--jf-grow:${style.grow}`);
+  if (style.basis) out.push(`--jf-basis:${flexBasis(style.basis)}`);
+  if (style.overflow) out.push(`overflow:${style.overflow}`);
   // Theme-token overrides set from the inspector's theme controls.
   for (const [key, value] of Object.entries(style.vars)) out.push(`${key}:${value}`);
   return out.join(";");

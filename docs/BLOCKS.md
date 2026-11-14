@@ -31,6 +31,9 @@ ctx.blocks.register({
 sanitizer — do not emit raw script tags. The editor catalog lists registered
 blocks; public HTML is produced by the public renderer, not by the admin application.
 
+The stored document format, id and nesting rules, breakpoint overrides, and
+block migrations are specified in [Builder document architecture](BUILDER-DOCUMENT.md).
+
 ## Props every block carries
 
 Five props are handled by the platform, not by the block's own `render`, so a
@@ -156,6 +159,14 @@ patterns and site-chrome widgets; it picks its header from the site header
 library (built under Theme builder → Header) via a dropdown rather than editing
 header chrome inline. A post gets the same block canvas and inspector but omits
 those page-level tools, so its document stays focused on the article body.
+
+Every block document (page, post, global header, footer, template) opens in the
+same builder layout: a toolbar with the editing context, undo/redo, preview
+width, zoom, and preview scheme; the block library; the canvas with breadcrumbs
+for the selected block; and settings grouped into Content, Style, Layout,
+Responsive, Interactions, and Advanced tabs. The global header, footer, and
+templates are flagged as site-wide. Panel, width, zoom, and tab choices are
+per-user browser preferences and are never stored in a document.
 
 URL fields on `core.button`, `core.hero`, `core.cta`, and `core.link-list` accept
 ordinary typed URLs and can also pick a published page or post by title. The
@@ -429,12 +440,56 @@ its own keys through the `content.mergeTags` filter (editor preview) and
 `content.blocks` / `content.render` (public render). The editor loads preview
 values from `GET /api/content/{id}/merge-tags`.
 
+## Editing text on the canvas
+
+A selected block's declared text fields are edited where they appear. The core
+blocks declare: paragraph and quote text (rich), headings, quote attribution,
+button labels, call-to-action and hero headings, text and button labels, image
+captions and alt text, list items, video and audio captions, and file link
+text and captions. A selected image is replaced from the media library with a
+double-click or Enter. Video, audio and file blocks have a Replace button, also
+reachable by double-click, and the picker only lists media of that kind. Videos
+can also get, change or lose a poster image. A button's link is edited next to
+it. Links must be `http(s)://`, a path or `mailto:`, and other links are
+refused with a message. Paste is always plain text. Enter commits a single-line
+field, Escape cancels the edit, and while an input method is composing, Enter
+and Escape go to the input method.
+
+A block opts in with `inline`, which maps prop names to
+`{ mode, multiline?, maxLength?, formats? }` (`InlineFieldSpec` in
+`@justflows/blocks`). Rich fields are reserved for core blocks, whose rich
+props the document sanitizer handles. A plugin block declares plain fields
+only, and marks where each one appears:
+
+```ts
+ctx.blocks.register({
+  type: "acme.card",
+  inline: { title: { mode: "plain", maxLength: 80 } },
+  render: (p) => `<div class="acme-card"><h3 data-jf-inline="title">${escapeHtml(String(p.title ?? ""))}</h3></div>`,
+  // ...
+});
+```
+
+Only marked elements whose prop is declared become editable. The editor never
+makes other plugin markup editable. It normalizes the edited text with
+`normalizeInlineValue`, but that is a convenience, not a security boundary.
+`validateProps` and `render` must still validate and escape the prop like any
+other.
+
 ## Plugin blocks and patterns
 
 Plugins register blocks and patterns on activate. A pattern whose id matches a
 content type seeds that type when the theme has no pattern of the same name and
 the plugin has appended the type on `content.patternTypes`. The Patterns panel
 hides a pattern until its `requiresBlockTypes` are installed.
+
+A plugin block can also declare search keywords, allowed parents, starting
+props, one-click actions, how it previews, container layout support and prop
+migrations. See [Block editor contract](BLOCK-CONTRACT.md).
+
+Declare an image prop as `{ type: "media" }`, not `url`. Its settings field
+then picks from or uploads to the media library, with a pasted URL as a
+fallback. Use `images` for a list of images and `url` only for links.
 
 ## Built-in Search block
 

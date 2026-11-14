@@ -1,4 +1,5 @@
 import { renderSiteBuildingBlocks } from "../../lib/rendering/site-building-blocks.js";
+import { enterPreviewScope, inPreviewScope } from "../../lib/rendering/render-scope.js";
 import { isAccountPath } from "../../middleware/account-cache.js";
 import { getContentTypeSettings } from "../../lib/content/content-types-db.js";
 import { verifyContentPreview } from "../../lib/content/content-preview.js";
@@ -121,7 +122,7 @@ import { cacheSiteId } from "../../lib/cache/site-cache-key.js";
 import { getJfCache } from "../../lib/cache/jf-cache.js";
 import { getRuntimeBlockRegistry } from "../../lib/rendering/runtime-blocks.js";
 import type { BlockNode } from "../../lib/runtime/types.js";
-import { withBlockChrome } from "@justflows/blocks";
+import { applyTemplateDefaults, BLOCK_DOCUMENT_MAX_DEPTH, textDirection, withBlockChrome } from "@justflows/blocks";
 import {
   BLOG_POST_LIST_BLOCK_TYPE,
   registerBlogPostListBlock,
@@ -332,7 +333,10 @@ async function renderBlockTree(
   blogCtx?: BlogPostListRenderContext,
   commentCtx?: CommentsRenderContext,
   templateCtx?: TemplateBlockContext,
+  depth = 1,
 ): Promise<string> {
+  /** Past the document ceiling nothing more is rendered, so no document can exhaust the stack (justflows-ce#309). */
+  if (depth > BLOCK_DOCUMENT_MAX_DEPTH) return "";
   const parts: string[] = [];
   for (const block of blocks) {
     if (templateCtx && TEMPLATE_BLOCK_TYPES.has(block.type)) {
@@ -379,8 +383,11 @@ async function renderBlockTree(
           blogCtx,
           commentCtx,
           templateCtx,
+          depth + 1,
         );
-        parts.push(withBlockChrome(def.render(def.validateProps(block.props), childHtml), block));
+        /** Stored props from an older block version are upgraded first, as `renderNode` does (justflows-ce#305). */
+        const current = blockRegistry.migrateNode(block);
+        parts.push(withBlockChrome(def.render(def.validateProps(current.props), childHtml), block));
       } catch {
         parts.push("");
       }
@@ -406,9 +413,13 @@ async function withReusables(blocks: BlockNode[]): Promise<BlockNode[]> {
   const siteId = await getSiteId();
   if (!siteId) return blocks;
   const { listReusableBlocks, resolveReusableBlocks } = await import("../../lib/rendering/reusable-blocks.js");
+  /** An editor's preview renders reusable block drafts and skips the shared cache (justflows-ce#304). */
+  const preview = inPreviewScope();
   // Cached as an array: a Map does not survive a serializing cache backend.
-  const saved = await rememberPublic(`reusable-blocks:${siteId}`, () => listReusableBlocks(siteId), false);
-  return resolveReusableBlocks(blocks, new Map(saved.map((item) => [item.id, item])));
+  const saved = preview
+    ? await listReusableBlocks(siteId)
+    : await rememberPublic(`reusable-blocks:${siteId}`, () => listReusableBlocks(siteId), false);
+  return resolveReusableBlocks(blocks, new Map(saved.map((item) => [item.id, item])), 0, { preview });
 }
 
 function containsReusable(blocks: BlockNode[]): boolean {
@@ -1264,6 +1275,8 @@ async function renderPage(view: string, data: Record<string, unknown>): Promise<
   ]);
   const documentHtml = await ejs.renderFile(path.join(templateDir, "layout.ejs"), {
     ...pageData,
+    /** Writing direction of the page's language, for `<html dir>` (justflows-ce#307). */
+    dir: textDirection(String((pageData as { locale?: unknown }).locale ?? data.locale ?? "en")),
     body,
     headExtra,
     analyticsHead,
@@ -1302,6 +1315,13 @@ interface TemplateRenderOpts {
   blogCtx?: BlogPostListRenderContext;
   commentCtx?: CommentsRenderContext;
   preview?: boolean;
+  /**
+   * The content's own blocks and how to render them, so a template's style
+   * defaults can be applied beneath their values (justflows-ce#301). The body
+   * is rendered again only when the template actually has defaults.
+   */
+  contentBlocks?: BlockNode[];
+  renderContent?: (blocks: BlockNode[]) => Promise<string>;
 }
 
 /** The page context fields widget areas need: the site, its locale, and preview. */
@@ -1436,13 +1456,18 @@ async function renderThemeTemplateHtml(
 ): Promise<string | null> {
   const tpl = await resolvePublicTemplate(query, opts.preview ?? false);
   if (!tpl) return null;
+  let ctxForTemplate = templateCtx;
+  if (tpl.templateDefaults && opts.contentBlocks?.length && opts.renderContent) {
+    const styled = applyTemplateDefaults(opts.contentBlocks, tpl.templateDefaults);
+    if (styled !== opts.contentBlocks) ctxForTemplate = { ...templateCtx, contentBodyHtml: await opts.renderContent(styled) };
+  }
   let bodyHtml = withSiteWidgets(
     await renderBlocksHtml(
       tpl.blocks,
       opts.submittedFormId,
       opts.blogCtx,
       opts.commentCtx,
-      templateCtx,
+      ctxForTemplate,
     ),
     withHeader,
   );
@@ -1844,6 +1869,21 @@ async function renderHomeHtml(
     submittedFormId: submittedFormIdFrom(req),
     blogCtx,
     preview,
+    ...(home
+      ? {
+          contentBlocks: home.blocks.blocks,
+          renderContent: async (blocks: BlockNode[]) =>
+            withSiteWidgets(
+              applyFootnotes(
+                await applyContentRender(
+                  await renderBlocksHtml(await applyContentBlocks(blocks, home, ctx.locale), submittedFormIdFrom(req), blogCtx),
+                  home,
+                ),
+              ),
+              withHeader,
+            ),
+        }
+      : {}),
   };
   const templateHtml = await renderThemeTemplateHtml(
     {
@@ -1978,6 +2018,7 @@ router.use(
     previewAllowed: isPreviewAllowed,
     async renderContent(req, res, { content, path, basePath, pageNumber, alternates, canonicalPath }) {
       const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
       await sendPublicHtml(req, res, path, preview, () =>
         renderSinglePageHtml(
           req,
@@ -2014,6 +2055,7 @@ router.get("/", async (req, res, next) => {
   try {
     if (!(await ensureSiteIsPublic(req, res))) return;
     const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
     await sendPublicHtml(req, res, req.path || "/", preview, () =>
       renderHomeHtml(req, res, "/", preview),
     );
@@ -2164,6 +2206,27 @@ export async function renderSinglePageHtml(
     blogCtx,
     commentCtx,
     preview,
+    /** Account and auth pages post-process their body, so they keep the first render. */
+    ...(pageContent.type !== "account" && pageContent.type !== "auth"
+      ? {
+          contentBlocks: pageContent.blocks.blocks,
+          renderContent: async (blocks: BlockNode[]) =>
+            withSiteWidgets(
+              applyFootnotes(
+                await applyContentRender(
+                  await renderBlocksHtml(
+                    await applyContentBlocks(blocks, pageContent, pageCtx.locale),
+                    submittedFormIdFrom(req),
+                    blogCtx,
+                    commentCtx,
+                  ),
+                  pageContent,
+                ),
+              ),
+              withHeader,
+            ),
+        }
+      : {}),
   };
   const templateHtml = await renderThemeTemplateHtml(
     {
@@ -2229,6 +2292,7 @@ router.get("/:segment", async (req, res, next) => {
     const activeLocales = await getActiveLocaleCodes();
     const defaultLocale = await getDefaultLocale();
     const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
     const canonical = canonicalLocaleRedirect(req.path, activeLocales, defaultLocale);
     if (canonical) {
       // codeql[js/server-side-unvalidated-url-redirection]: canonical is built by
@@ -2319,6 +2383,7 @@ router.get("/:segment/page/:num", async (req, res, next) => {
       return;
     }
     const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
     const ctx = await buildPageContext(req, res, req.path, preview);
     const basePath = `/${segment}`;
 
@@ -2403,6 +2468,7 @@ router.get("/:locale/:slug", async (req, res, next) => {
     if (!(await ensureSiteIsPublic(req, res))) return;
     const defaultLocale = await getDefaultLocale();
     const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
     const canonical = canonicalLocaleRedirect(req.path, activeLocales, defaultLocale);
     if (canonical) {
       // codeql[js/server-side-unvalidated-url-redirection]: canonical is built by
@@ -2484,6 +2550,7 @@ router.get("/:locale/:slug/page/:num", async (req, res, next) => {
   try {
     if (!(await ensureSiteIsPublic(req, res))) return;
     const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
     const defaultLocale = await getDefaultLocale();
     const canonical = canonicalLocaleRedirect(req.path, activeLocales, defaultLocale);
     if (canonical) {

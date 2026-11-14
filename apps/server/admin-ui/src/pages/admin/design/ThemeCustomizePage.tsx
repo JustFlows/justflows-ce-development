@@ -3,7 +3,15 @@ import { useSearchParams } from "react-router-dom";
 import { Link, useNavigate } from "../../../admin-router";
 import MediaImageField from "@components/MediaImageField";
 import PageBuilder, { type BlockDocument } from "@components/builder/PageBuilder";
+import GlobalStylesPanel from "@components/builder/GlobalStylesPanel";
+import TemplateDefaultsPanel from "@components/builder/TemplateDefaultsPanel";
+import type { TemplateDefaults } from "@justflows/blocks";
+import type { BlockNode } from "@components/builder/types";
+import { safeBackPath } from "../../../lib/site-context";
 import HeaderLibraryEditor from "./HeaderLibraryEditor";
+import { BuilderShellEmpty, type BuilderSaveState, type BuilderShellBar } from "@components/builder/shell/BuilderShell";
+import RevisionsDialog from "@components/builder/shell/RevisionsDialog";
+import { docBlocks, getDocumentHistoryDoc, listDocumentHistory } from "../../../lib/document-history";
 import MenusPage from "./MenusPage";
 import { useT } from "../../../i18n/I18nProvider";
 
@@ -202,7 +210,33 @@ export default function CustomizeThemePage() {
   const [templateSlug, setTemplateSlug] = useState<string | null>(null);
   const [templateDoc, setTemplateDoc] = useState<BlockDocument>({ version: 1, blocks: [] });
   const [templateFromDefault, setTemplateFromDefault] = useState(false);
+  /** The open template's style defaults for the content it wraps (justflows-ce#301). */
+  const [templateDefaults, setTemplateDefaults] = useState<TemplateDefaults>({});
+  /** The theme's own version of the open template, for compare and copy-back (justflows-ce#303). */
+  const [templateThemeBlocks, setTemplateThemeBlocks] = useState<BlockNode[] | null>(null);
+  const [themeCompareOpen, setThemeCompareOpen] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
+  /** Revisions the editor loaded, sent back so a save never overwrites someone else's newer one. */
+  const [footerRevision, setFooterRevision] = useState(0);
+  const [templateRevision, setTemplateRevision] = useState(0);
+  /** Which part's save was refused because another editor saved first. */
+  const [partConflict, setPartConflict] = useState<"footer" | "template" | null>(null);
+  const [partRevisionsOpen, setPartRevisionsOpen] = useState(false);
+
+  const loadFooter = useCallback(async () => {
+    try {
+      const data = (await (await fetch("/api/template-parts/footer")).json()) as {
+        blocks?: unknown[];
+        draft?: unknown[];
+        revision?: number;
+      };
+      const blocks = (data.draft?.length ? data.draft : data.blocks) ?? [];
+      setFooter({ version: 1, blocks: blocks as BlockDocument["blocks"] });
+      setFooterRevision(data.revision ?? 0);
+    } catch {
+      /* leave as-is */
+    }
+  }, []);
 
   const loadTemplateList = useCallback(async () => {
     try {
@@ -216,6 +250,7 @@ export default function CustomizeThemePage() {
   }, []);
 
   const openTemplate = useCallback(async (slug: string) => {
+    setPartConflict(null);
     setTemplateSlug(slug);
     setTemplateDoc({ version: 1, blocks: [] });
     try {
@@ -224,10 +259,16 @@ export default function CustomizeThemePage() {
         blocks?: unknown[];
         draft?: unknown[];
         fromThemeDefault?: boolean;
+        revision?: number;
+        templateDefaults?: TemplateDefaults;
+        themeBlocks?: unknown[] | null;
       };
       const blocks = (data.draft?.length ? data.draft : data.blocks) ?? [];
       setTemplateDoc({ version: 1, blocks: blocks as BlockDocument["blocks"] });
+      setTemplateDefaults(data.templateDefaults ?? {});
+      setTemplateThemeBlocks(Array.isArray(data.themeBlocks) && data.themeBlocks.length ? (data.themeBlocks as BlockNode[]) : null);
       setTemplateFromDefault(Boolean(data.fromThemeDefault));
+      setTemplateRevision(data.revision ?? 0);
     } catch {
       /* leave empty */
     }
@@ -236,6 +277,15 @@ export default function CustomizeThemePage() {
   useEffect(() => {
     if (tab === "templates" && templateSlots.length === 0) void loadTemplateList();
   }, [tab, templateSlots.length, loadTemplateList]);
+
+  /** Open the first slot when the templates part has nothing selected, so the canvas is never empty for no reason. */
+  useEffect(() => {
+    if (tab !== "templates" || templateSlug || templateSlots.length === 0) return;
+    /** A link from the page builder names the slot to open (justflows-ce#303). */
+    const wanted = searchParams.get("slug");
+    const first = (wanted && templateSlots.find((slot) => slot.slug === wanted)) || templateSlots[0];
+    if (first) void openTemplate(first.slug);
+  }, [tab, templateSlug, templateSlots, openTemplate, searchParams]);
 
   const [errorPages, setErrorPages] = useState<ErrorPageConfig>({});
   const [errorThemeSlots, setErrorThemeSlots] = useState<string[]>([]);
@@ -318,13 +368,7 @@ export default function CustomizeThemePage() {
   }
 
   useEffect(() => {
-    fetch("/api/template-parts/footer")
-      .then((r) => r.json())
-      .then((data: { blocks?: unknown[]; draft?: unknown[] }) => {
-        const blocks = (data.draft?.length ? data.draft : data.blocks) ?? [];
-        setFooter({ version: 1, blocks: blocks as BlockDocument["blocks"] });
-      })
-      .catch(() => {});
+    void loadFooter();
   }, []);
 
   useEffect(() => {
@@ -543,17 +587,23 @@ export default function CustomizeThemePage() {
     });
   }
 
-  async function saveFooter(publish: boolean) {
+  async function saveFooter(publish: boolean, expectedRevision = footerRevision) {
     setFooterSaving(true);
     setError("");
     try {
       const res = await fetch("/api/template-parts/footer", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blocks: footer.blocks, draft: !publish }),
+        body: JSON.stringify({ blocks: footer.blocks, draft: !publish, expectedRevision }),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as { error?: string; revision?: number };
+      if (res.status === 409) {
+        setPartConflict("footer");
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? t("themeCustomize.footerSaveError"));
+      if (typeof data.revision === "number") setFooterRevision(data.revision);
+      setPartConflict(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       reloadPreview();
@@ -564,7 +614,7 @@ export default function CustomizeThemePage() {
     }
   }
 
-  async function saveTemplate(publish: boolean) {
+  async function saveTemplate(publish: boolean, expectedRevision = templateRevision) {
     if (!templateSlug) return;
     setTemplateSaving(true);
     setError("");
@@ -572,10 +622,16 @@ export default function CustomizeThemePage() {
       const res = await fetch(`/api/templates/${encodeURIComponent(templateSlug)}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ blocks: templateDoc.blocks, draft: !publish }),
+        body: JSON.stringify({ blocks: templateDoc.blocks, draft: !publish, expectedRevision, templateDefaults }),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as { error?: string; revision?: number };
+      if (res.status === 409) {
+        setPartConflict("template");
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? t("themeCustomize.templateSaveError"));
+      if (typeof data.revision === "number") setTemplateRevision(data.revision);
+      setPartConflict(null);
       setSaved(true);
       setTemplateFromDefault(false);
       setTimeout(() => setSaved(false), 2000);
@@ -634,6 +690,12 @@ export default function CustomizeThemePage() {
 
   async function exitCustomize() {
     if (dirty && !window.confirm(t("themeCustomize.exitConfirm"))) return;
+    /** Opened from a page's builder: go back there, and keep the theme drafts (the page previews them). */
+    const back = safeBackPath(searchParams.get("back"));
+    if (back) {
+      navigate(back);
+      return;
+    }
     await fetch("/api/themes/customize", { method: "DELETE" }).catch(() => {});
     navigate("/admin/themes");
   }
@@ -659,6 +721,303 @@ export default function CustomizeThemePage() {
     ? `${localePath(selectedBlog.locale, selectedBlog.slug, defaultLocale)}?preview=1&_=${previewNonce}`
     : null;
 
+  const tabSubtitle =
+    tab === "homepage"
+      ? t("themeCustomize.subHomepage")
+      : tab === "blog"
+        ? t("themeCustomize.subBlog")
+        : tab === "header"
+          ? t("themeCustomize.subHeader")
+          : tab === "footer"
+            ? t("themeCustomize.subFooter")
+            : tab === "templates"
+              ? t("themeCustomize.subTemplates")
+              : t("themeCustomize.subStyles");
+
+  /**
+   * Header, footer, and templates are block documents, so they open in the
+   * builder shell itself: its top bar replaces this page's bar, and the Site
+   * panel replaces the tab row. The other parts are settings forms and keep
+   * the customizer layout below.
+   */
+  if (tab === "header" || tab === "footer" || tab === "templates") {
+    const partTabs: Array<[EditorTab, string]> = [
+      ["homepage", t("themeCustomize.tabHomepage")],
+      ["blog", t("themeCustomize.tabBlog")],
+      ["styles", t("themeCustomize.tabStyles")],
+      ["header", t("themeCustomize.tabHeader")],
+      ["footer", t("themeCustomize.tabFooter")],
+      ["menus", t("nav.menus")],
+      ["templates", t("themeCustomize.tabTemplates")],
+      ["error-pages", t("themeCustomize.tabErrorPages")],
+    ];
+    const siteNav = (
+      <nav aria-label={t("builder.shell.siteParts")}>
+        <p className="jf-site-nav__heading">{t("builder.shell.siteParts")}</p>
+        <ul className="jf-site-nav">
+          {partTabs.map(([id, label]) => (
+            <li key={id}>
+              <button type="button" aria-current={tab === id ? "page" : undefined} onClick={() => setTab(id)}>
+                {label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    );
+    const saveAsButton = (
+      <button
+        type="button"
+        className="jf-btn jf-btn--onbar"
+        disabled={savingAs}
+        onClick={() => void saveAsTheme()}
+        title={t("themeCustomize.saveAsTitle")}
+      >
+        {savingAs ? t("common.saving") : t("themeCustomize.saveAsButton")}
+      </button>
+    );
+    const revisionsButton = (
+      <button type="button" className="jf-btn jf-btn--onbar" onClick={() => setPartRevisionsOpen(true)}>
+        {t("builder.shell.revisions")}
+      </button>
+    );
+    const historyState = (state: "draft" | "published") =>
+      state === "published" ? t("builder.shell.statePublished") : t("builder.shell.stateDraft");
+    const baseBar = {
+      title: t("themeCustomize.headerTitle", { themeName }),
+      subtitle: tabSubtitle,
+      onExit: () => void exitCustomize(),
+      previewUrl: "/?preview=1",
+    };
+    /** A refused save belongs to the part it happened on, not to whichever part is open now. */
+    const openConflict = partConflict !== null && partConflict === (tab === "footer" ? "footer" : "template");
+    const partState = (busy: boolean): BuilderSaveState =>
+      openConflict ? "conflict" : busy ? "saving" : error ? "error" : saved ? "saved" : "idle";
+
+    /** Replace local edits with what is stored now. */
+    const loadLatestPart = () => {
+      setPartConflict(null);
+      if (tab === "footer") void loadFooter();
+      else if (templateSlug) void openTemplate(templateSlug);
+    };
+    /** Explicitly save this editor's version over the newer one, as a draft. */
+    const overwritePart = async () => {
+      if (!window.confirm(t("builder.shell.overwritePartConfirm"))) return;
+      const url = tab === "footer" ? "/api/template-parts/footer" : `/api/templates/${encodeURIComponent(templateSlug ?? "")}`;
+      const latest = (await (await fetch(url)).json().catch(() => ({}))) as { revision?: number };
+      setPartConflict(null);
+      if (tab === "footer") await saveFooter(false, latest.revision ?? 0);
+      else await saveTemplate(false, latest.revision ?? 0);
+    };
+    const partNotice = openConflict ? (
+      <>
+        <p>{t("builder.shell.conflictPart")}</p>
+        <button type="button" className="jf-btn jf-btn--sm jf-btn--primary" onClick={loadLatestPart}>
+          {t("builder.shell.loadLatest")}
+        </button>
+        <button type="button" className="jf-btn jf-btn--sm" onClick={() => void overwritePart()}>
+          {t("builder.shell.overwrite")}
+        </button>
+      </>
+    ) : undefined;
+
+    if (tab === "header") {
+      return <HeaderLibraryEditor bar={baseBar} siteNav={siteNav} extraActions={saveAsButton} />;
+    }
+
+    if (tab === "footer") {
+      const footerBar: BuilderShellBar = {
+        ...baseBar,
+        saveState: partState(footerSaving),
+        saveError: error,
+        notice: partNotice,
+        actions: (
+          <>
+            {saveAsButton}
+            {revisionsButton}
+            <button type="button" className="jf-btn jf-btn--onbar" disabled={footerSaving} onClick={() => void saveFooter(false)}>
+              {footerSaving ? t("common.saving") : t("content.saveDraft")}
+            </button>
+            <button type="button" className="jf-btn jf-btn--primary" disabled={footerSaving} onClick={() => void saveFooter(true)}>
+              {t("content.publish")}
+            </button>
+          </>
+        ),
+      };
+      return (
+        <>
+          <RevisionsDialog
+            open={partRevisionsOpen}
+            onClose={() => setPartRevisionsOpen(false)}
+            loadItems={() => listDocumentHistory("template_part", "footer", historyState)}
+            loadBlocks={async (id) => docBlocks(await getDocumentHistoryDoc("template_part", "footer", id))}
+            currentBlocks={footer.blocks}
+            onRestore={async (id) => {
+              const doc = await getDocumentHistoryDoc("template_part", "footer", id);
+              setFooter({ version: 1, blocks: docBlocks(doc) });
+            }}
+            restoreHint={t("builder.shell.restoreHintPart")}
+          />
+          <PageBuilder value={footer} onChange={setFooter} context="footer" shellBar={footerBar} sitePanel={siteNav} stylesPanel={<GlobalStylesPanel />} />
+        </>
+      );
+    }
+
+    const templateBar: BuilderShellBar = {
+      ...baseBar,
+      saveState: partState(templateSaving),
+      saveError: error,
+      notice: partNotice,
+      actions: (
+        <>
+          {saveAsButton}
+          {templateSlug && revisionsButton}
+          {templateSlug && templateThemeBlocks && (
+            <button type="button" className="jf-btn jf-btn--onbar" onClick={() => setThemeCompareOpen(true)}>
+              {t("themeCustomize.compareTheme")}
+            </button>
+          )}
+          {templateSlug && templateSlots.find((slot) => slot.slug === templateSlug)?.customised && (
+            <button type="button" className="jf-btn jf-btn--onbar" disabled={templateSaving} onClick={() => void resetTemplate()}>
+              {t("themeCustomize.resetToTheme")}
+            </button>
+          )}
+          {templateSlug && (
+            <>
+              <button type="button" className="jf-btn jf-btn--onbar" disabled={templateSaving} onClick={() => void saveTemplate(false)}>
+                {templateSaving ? t("common.saving") : t("content.saveDraft")}
+              </button>
+              <button type="button" className="jf-btn jf-btn--primary" disabled={templateSaving} onClick={() => void saveTemplate(true)}>
+                {t("content.publish")}
+              </button>
+            </>
+          )}
+        </>
+      ),
+    };
+    const templatePanel = (
+      <>
+        {siteNav}
+            <div className="jf-field">
+              <label className="jf-field__label">{t("themeCustomize.templatesLabel")}</label>
+              <p className="jf-field__hint" style={{ marginTop: 0 }}>
+                {t("themeCustomize.templatesHint")}
+              </p>
+              <div className="jf-stack" style={{ gap: "0.35rem", marginTop: "0.5rem" }}>
+                {templateSlots.length === 0 && (
+                  <p className="jf-field__hint" style={{ margin: 0 }}>
+                    {t("themeCustomize.noTemplatesHint")}
+                  </p>
+                )}
+                {templateSlots.map((slot) => (
+                  <button
+                    key={slot.slug}
+                    type="button"
+                    className={`jf-btn jf-btn--block${
+                      templateSlug === slot.slug ? " jf-btn--primary" : " jf-btn--ghost"
+                    }`}
+                    style={{ justifyContent: "space-between", display: "flex", textAlign: "left" }}
+                    title={templateSlotHint(t, slot.slug) ?? slot.slug}
+                    onClick={() => void openTemplate(slot.slug)}
+                  >
+                    <span>
+                      {slotLabel(t, slot.slug)}{" "}
+                      <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>{slot.slug}</span>
+                    </span>
+                    <span style={{ fontSize: "0.7rem", opacity: 0.8 }}>
+                      {slot.customised
+                        ? (slot.hasDraft ? t("themeCustomize.customisedDraft") : t("themeCustomize.customised"))
+                        : slot.inTheme
+                          ? t("themeCustomize.fromTheme")
+                          : ""}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {templateSlug && (
+              <TemplateDefaultsPanel value={templateDefaults} onChange={setTemplateDefaults} templateLabel={slotLabel(t, templateSlug)} />
+            )}
+
+            {creatableSlots.length > 0 && (
+              <div className="jf-field">
+                <label className="jf-field__label" htmlFor="jf-add-template">
+                  {t("themeCustomize.addTemplateLabel")}
+                </label>
+                <select
+                  id="jf-add-template"
+                  className="jf-input"
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) void openTemplate(e.target.value);
+                  }}
+                >
+                  <option value="">{t("themeCustomize.chooseSlotOption")}</option>
+                  {creatableSlots.map((slug) => (
+                    <option key={slug} value={slug}>
+                      {slotLabel(t, slug)} ({slug})
+                    </option>
+                  ))}
+                </select>
+                <p className="jf-field__hint">
+                  {templateSlotHint(t, templateSlug ?? "") ?? t("themeCustomize.blankCanvasHint")}
+                </p>
+              </div>
+            )}
+        {templateSlug && templateFromDefault && (
+          <div className="jf-alert" style={{ fontSize: "0.85rem" }}>
+            {t("themeCustomize.editingFromDefaultPrefix")} <strong>{templateSlug}</strong>{" "}
+            {t("themeCustomize.editingFromDefaultSuffix")}
+          </div>
+        )}
+      </>
+    );
+    return templateSlug ? (
+      <>
+        <RevisionsDialog
+          open={partRevisionsOpen}
+          onClose={() => setPartRevisionsOpen(false)}
+          loadItems={() => listDocumentHistory("theme_template", templateSlug, historyState)}
+          loadBlocks={async (id) => docBlocks(await getDocumentHistoryDoc("theme_template", templateSlug, id))}
+          currentBlocks={templateDoc.blocks}
+          onRestore={async (id) => {
+            const doc = await getDocumentHistoryDoc("theme_template", templateSlug, id);
+            setTemplateDoc({ version: 1, blocks: docBlocks(doc) });
+          }}
+          restoreHint={t("builder.shell.restoreHintPart")}
+        />
+        <RevisionsDialog
+          open={themeCompareOpen}
+          onClose={() => setThemeCompareOpen(false)}
+          loadItems={async () => [{ id: "theme", createdAt: new Date(0).toISOString(), authorName: themeName, state: "theme" }]}
+          loadBlocks={async () => templateThemeBlocks}
+          currentBlocks={templateDoc.blocks}
+          onRestore={async () => {
+            if (templateThemeBlocks) setTemplateDoc({ version: 1, blocks: templateThemeBlocks });
+          }}
+          restoreHint={t("themeCustomize.copyThemeHint")}
+        />
+        <PageBuilder
+          key={templateSlug}
+          value={templateDoc}
+          onChange={setTemplateDoc}
+          context="template"
+          shellBar={templateBar}
+          sitePanel={templatePanel}
+          stylesPanel={<GlobalStylesPanel />}
+        />
+      </>
+    ) : (
+      <BuilderShellEmpty bar={templateBar} sitePanel={templatePanel}>
+        <p>{t("themeCustomize.pickTemplateHint")}</p>
+      </BuilderShellEmpty>
+    );
+  }
+
+  /** Widened so the shared tab row can mark the block-document parts too. */
+  const isActiveTab = (id: EditorTab) => tab === id;
+
   return (
     <div className="jf-editor">
       <header className="jf-editor__bar">
@@ -669,17 +1028,7 @@ export default function CustomizeThemePage() {
         <div className="jf-editor__title">
           <div className="jf-editor__name">{t("themeCustomize.headerTitle", { themeName })}</div>
           <div className="jf-editor__sub">
-            {tab === "homepage"
-              ? t("themeCustomize.subHomepage")
-              : tab === "blog"
-                ? t("themeCustomize.subBlog")
-                : tab === "header"
-                  ? t("themeCustomize.subHeader")
-                  : tab === "footer"
-                    ? t("themeCustomize.subFooter")
-                    : tab === "templates"
-                      ? t("themeCustomize.subTemplates")
-                      : t("themeCustomize.subStyles")}
+            {tabSubtitle}
             {dirty ? t("themeCustomize.unsavedSuffix") : ""}
           </div>
         </div>
@@ -720,112 +1069,62 @@ export default function CustomizeThemePage() {
               </button>
             </>
           )}
-          {tab === "footer" && (
-            <>
-              <button
-                type="button"
-                className="jf-btn jf-btn--onbar"
-                disabled={footerSaving}
-                onClick={() => void saveFooter(false)}
-              >
-                {footerSaving ? t("common.saving") : t("content.saveDraft")}
-              </button>
-              <button
-                type="button"
-                className="jf-btn jf-btn--primary"
-                disabled={footerSaving}
-                onClick={() => void saveFooter(true)}
-              >
-                {t("content.publish")}
-              </button>
-            </>
-          )}
-          {tab === "templates" && templateSlug && (
-            <>
-              {templateSlots.find((s) => s.slug === templateSlug)?.customised && (
-                <button
-                  type="button"
-                  className="jf-btn jf-btn--onbar"
-                  disabled={templateSaving}
-                  onClick={() => void resetTemplate()}
-                >
-                  {t("themeCustomize.resetToTheme")}
-                </button>
-              )}
-              <button
-                type="button"
-                className="jf-btn jf-btn--onbar"
-                disabled={templateSaving}
-                onClick={() => void saveTemplate(false)}
-              >
-                {templateSaving ? t("common.saving") : t("content.saveDraft")}
-              </button>
-              <button
-                type="button"
-                className="jf-btn jf-btn--primary"
-                disabled={templateSaving}
-                onClick={() => void saveTemplate(true)}
-              >
-                {t("content.publish")}
-              </button>
-            </>
-          )}
         </div>
       </header>
 
       <div className="jf-theme-builder__tabs">
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "homepage" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("homepage") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("homepage")}
         >
           {t("themeCustomize.tabHomepage")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "blog" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("blog") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("blog")}
         >
           {t("themeCustomize.tabBlog")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "styles" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("styles") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("styles")}
         >
           {t("themeCustomize.tabStyles")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "header" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("header") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("header")}
         >
           {t("themeCustomize.tabHeader")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "footer" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("footer") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("footer")}
         >
           {t("themeCustomize.tabFooter")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "menus" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("menus") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("menus")}
         >
           {t("nav.menus")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "templates" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("templates") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("templates")}
         >
           {t("themeCustomize.tabTemplates")}
         </button>
         <button
           type="button"
-          className={`jf-theme-builder__tab${tab === "error-pages" ? " jf-theme-builder__tab--active" : ""}`}
+          className={`jf-theme-builder__tab${isActiveTab("error-pages") ? " jf-theme-builder__tab--active" : ""}`}
           onClick={() => setTab("error-pages")}
         >
           {t("themeCustomize.tabErrorPages")}
@@ -980,87 +1279,6 @@ export default function CustomizeThemePage() {
             )}
           </div>
         </div>
-      ) : tab === "templates" ? (
-        <div className="jf-customizer">
-          <aside className="jf-customizer__controls" style={{ padding: "1rem" }}>
-            <div className="jf-field">
-              <label className="jf-field__label">{t("themeCustomize.templatesLabel")}</label>
-              <p className="jf-field__hint" style={{ marginTop: 0 }}>
-                {t("themeCustomize.templatesHint")}
-              </p>
-              <div className="jf-stack" style={{ gap: "0.35rem", marginTop: "0.5rem" }}>
-                {templateSlots.length === 0 && (
-                  <p className="jf-field__hint" style={{ margin: 0 }}>
-                    {t("themeCustomize.noTemplatesHint")}
-                  </p>
-                )}
-                {templateSlots.map((slot) => (
-                  <button
-                    key={slot.slug}
-                    type="button"
-                    className={`jf-btn jf-btn--block${
-                      templateSlug === slot.slug ? " jf-btn--primary" : " jf-btn--ghost"
-                    }`}
-                    style={{ justifyContent: "space-between", display: "flex", textAlign: "left" }}
-                    title={templateSlotHint(t, slot.slug) ?? slot.slug}
-                    onClick={() => void openTemplate(slot.slug)}
-                  >
-                    <span>
-                      {slotLabel(t, slot.slug)}{" "}
-                      <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>{slot.slug}</span>
-                    </span>
-                    <span style={{ fontSize: "0.7rem", opacity: 0.8 }}>
-                      {slot.customised ? (slot.hasDraft ? t("themeCustomize.customisedDraft") : t("themeCustomize.customised")) : ""}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {creatableSlots.length > 0 && (
-              <div className="jf-field">
-                <label className="jf-field__label" htmlFor="jf-add-template">
-                  {t("themeCustomize.addTemplateLabel")}
-                </label>
-                <select
-                  id="jf-add-template"
-                  className="jf-input"
-                  value=""
-                  onChange={(e) => {
-                    if (e.target.value) void openTemplate(e.target.value);
-                  }}
-                >
-                  <option value="">{t("themeCustomize.chooseSlotOption")}</option>
-                  {creatableSlots.map((slug) => (
-                    <option key={slug} value={slug}>
-                      {slotLabel(t, slug)} ({slug})
-                    </option>
-                  ))}
-                </select>
-                <p className="jf-field__hint">
-                  {templateSlotHint(t, templateSlug ?? "") ?? t("themeCustomize.blankCanvasHint")}
-                </p>
-              </div>
-            )}
-          </aside>
-          <div className="jf-customizer__preview" style={{ padding: 0 }}>
-            {templateSlug ? (
-              <div className="jf-editor__body">
-                {templateFromDefault && (
-                  <div className="jf-alert" style={{ margin: "0.75rem", fontSize: "0.85rem" }}>
-                    {t("themeCustomize.editingFromDefaultPrefix")} <strong>{templateSlug}</strong>{" "}
-                    {t("themeCustomize.editingFromDefaultSuffix")}
-                  </div>
-                )}
-                <PageBuilder value={templateDoc} onChange={setTemplateDoc} />
-              </div>
-            ) : (
-              <p className="jf-field__hint" style={{ padding: "1rem" }}>
-                {t("themeCustomize.pickTemplateHint")}
-              </p>
-            )}
-          </div>
-        </div>
       ) : tab === "error-pages" ? (
         <div className="jf-editor__body" style={{ padding: "1rem", maxWidth: "40rem" }}>
           <div className="jf-field">
@@ -1099,15 +1317,6 @@ export default function CustomizeThemePage() {
             </div>
           </div>
         </div>
-      ) : tab === "footer" ? (
-        <div className="jf-editor__body">
-          <PageBuilder value={footer} onChange={setFooter} />
-        </div>
-      ) : tab === "header" ? (
-        <div className="jf-editor__body">
-          <HeaderLibraryEditor />
-        </div>
-
       ) : tab === "menus" ? (
         <div className="jf-editor__body">
           <MenusPage embedded />

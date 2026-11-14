@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { auditFromRequest } from "../../lib/security/audit-log.js";
 import { Router, type RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
@@ -156,7 +157,9 @@ router.post(
       const body = PatternSetSchema.parse(req.body);
       const siteId = await getSiteId();
       if (!siteId) return void res.status(503).json({ error: "No site found" });
-      res.json({ patterns: await importPatternSet(siteId, body) });
+      const patterns = await importPatternSet(siteId, body);
+      auditFromRequest(req, "design.patterns_changed", { siteId, target: "import", detail: `count=${Array.isArray(patterns) ? patterns.length : 0}` });
+      res.json({ patterns });
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : "Invalid pattern set" });
     }
@@ -168,7 +171,9 @@ router.put("/", requireRole(...THEME_CUSTOMIZE_ROLES), patternsExpensiveLimit, a
     const body = SaveSchema.parse(req.body);
     const siteId = await getSiteId();
     if (!siteId) return void res.status(503).json({ error: "No site found" });
-    res.json({ pattern: await saveSitePattern(siteId, body) });
+    const pattern = await saveSitePattern(siteId, body);
+    auditFromRequest(req, "design.patterns_changed", { siteId, target: String((pattern as { id?: unknown })?.id ?? ""), detail: "save" });
+    res.json({ pattern });
   } catch (err) {
     res.status(400).json({ error: err instanceof Error ? err.message : "Could not save pattern" });
   }
@@ -217,6 +222,7 @@ router.delete("/:id", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) =>
   const siteId = await getSiteId();
   if (!siteId) return void res.status(503).json({ error: "No site found" });
   await deleteSitePattern(siteId, param(req.params.id));
+  auditFromRequest(req, "design.patterns_changed", { siteId, target: param(req.params.id), detail: "delete" });
   res.json({ ok: true });
 });
 

@@ -80,6 +80,8 @@ jobs:
             port: 5432
           - driver: mysql
             port: 3306
+          - driver: mariadb
+            port: 3307
     services:
       postgres:
         image: postgres:18
@@ -108,14 +110,30 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_DATABASE: security_test
+          MARIADB_USER: justflows
+          MARIADB_PASSWORD: test-password
+          MARIADB_ROOT_PASSWORD: root-password
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     env:
-      SECURITY_TEST_DATABASE: "1"
       DB_DRIVER: ${{ matrix.driver }}
       DB_HOST: 127.0.0.1
       DB_PORT: ${{ matrix.port }}
       DB_NAME: security_test
       DB_USER: justflows
       DB_PASSWORD: test-password
+      # The admin account creates one throwaway database per suite.
+      DB_ADMIN_USER: ${{ matrix.driver == 'postgres' && 'justflows' || 'root' }}
+      DB_ADMIN_PASSWORD: ${{ matrix.driver == 'postgres' && 'test-password' || 'root-password' }}
       DB_SSL: "false"
     steps:
       - uses: actions/checkout@v7
@@ -126,14 +144,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter "@justflows/server..." build
-      - name: Fresh install and upgrade migrations
-        run: pnpm --filter @justflows/server exec vitest run tests/integration/database/security-migrations-db.integration.test.ts
-      - name: Shared job claims
-        run: pnpm --filter @justflows/server exec vitest run tests/integration/database/job-queue-db.integration.test.ts
-      - name: Transactional concurrency
-        run: pnpm --filter @justflows/server exec vitest run tests/integration/database/plugin-rows-db.integration.test.ts
-      - name: Plugin schema upgrades
-        run: pnpm --filter @justflows/server exec vitest run tests/integration/database/plugin-schema-upgrade-db.integration.test.ts
+      # Each suite runs on its own database with its own flag, and the runner
+      # fails when a suite runs no tests, so none can be skipped silently.
+      # content-scheduling and search are left out until their fixtures are
+      # brought up to date (justflows-ce#319).
+      - name: Real-database suites
+        run: >-
+          node scripts/run-database-suites.mjs
+          security-migrations job-queue plugin-rows plugin-schema builder
+          builder-upgrade content-visibility agent-isolation ai-byok
 
   codeql:
     if: github.base_ref == 'develop' || github.base_ref == 'developers'

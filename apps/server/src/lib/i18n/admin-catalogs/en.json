@@ -579,7 +579,10 @@
       "search": "Search patterns…",
       "category": "Category",
       "manage": "Manage",
-      "results": "{count} patterns",
+      "results": {
+        "one": "{count} pattern",
+        "other": "{count} patterns"
+      },
       "noResults": "No patterns match these filters.",
       "loadDirectory": "Load directory",
       "choose": "Choose a pattern to preview it at page width.",
@@ -596,7 +599,10 @@
       "manageExtensions": "Manage extensions",
       "requires": "Requires {types}.",
       "all": "all",
-      "synced": "synced"
+      "synced": "synced",
+      "insertLinked": "Insert linked",
+      "insertLinkedHint": "Synced pattern: inserts a link. Later changes to the pattern appear here too.",
+      "insertCopyHint": "Inserts a copy you can change freely. Later changes to the pattern do not reach it."
     },
     "animation": {
       "title": "Animation",
@@ -689,7 +695,10 @@
     "pageJson": {
       "title": "Page JSON",
       "hint": "Nothing is selected, so this is the whole page. Select a block on the canvas to edit it on its own.",
-      "count": "{count} blocks",
+      "count": {
+        "one": "{count} block",
+        "other": "{count} blocks"
+      },
       "apply": "Apply",
       "reload": "Discard",
       "applied": "Applied",
@@ -757,7 +766,60 @@
       "saveCopy": "Save a copy",
       "showing": "Showing",
       "referenceHint": "This is a reference. Edits to the saved block appear on every page using it.",
-      "missing": "That saved block no longer exists."
+      "missing": "That saved block no longer exists.",
+      "linkedTitle": "Linked reusable block",
+      "usageLoading": "Checking where it is used…",
+      "usageNone": "Not used anywhere else yet.",
+      "usage": {
+        "one": "Used in {count} place. Publishing a change updates it.",
+        "other": "Used in {count} places. Publishing a change updates all of them."
+      },
+      "usageHidden": {
+        "one": "Used in {count} place, {hidden} of which you can't open. Publishing a change updates it.",
+        "other": "Used in {count} places, {hidden} of which you can't open. Publishing a change updates all of them."
+      },
+      "hasDraft": "The source has unpublished changes. The canvas shows them; visitors don't see them until they are published.",
+      "editSource": "Edit the source…",
+      "detach": "Detach (make a local copy)",
+      "detachConfirm": "Replace this link to “{name}” with a local copy? The copy no longer follows changes to the source.",
+      "detached": "Detached: this is now a local copy.",
+      "missingRecover": "The reusable block this points to no longer exists. Choose another one above, or delete this block.",
+      "notChosen": "No reusable block chosen yet.",
+      "nestingStopped": "“{name}” is not shown again here: reusable blocks cannot contain themselves or nest more than 4 deep.",
+      "linkedChip": "Linked: {name}",
+      "draftChip": "unpublished changes",
+      "notFound": "This reusable block does not exist.",
+      "usageTitle": "Where it is used",
+      "open": "Open",
+      "inPart": "part “{part}”",
+      "inTemplate": "template “{slug}”",
+      "inMenu": "menu “{slug}”",
+      "inReusable": {
+        "one": "{count} other reusable block",
+        "other": "{count} other reusable blocks"
+      },
+      "inPatterns": {
+        "one": "{count} pattern",
+        "other": "{count} patterns"
+      },
+      "usageTruncated": "Showing the first matches only; there may be more.",
+      "stateDraft": "unpublished changes",
+      "statePublished": "published, version {revision}",
+      "publishConfirm": {
+        "one": "Publish these changes? They appear in the {count} place that uses this reusable block.",
+        "other": "Publish these changes? They appear in all {count} places that use this reusable block."
+      },
+      "publishConfirmUnused": "Publish these changes?",
+      "discard": "Discard changes",
+      "discardConfirm": "Discard the unpublished changes? The published version stays.",
+      "rename": "Rename",
+      "deleteConfirm": "Delete the reusable block “{name}”?",
+      "deleteUsedConfirm": {
+        "one": "“{name}” is used in {count} place. Deleting it removes it from there. Delete anyway?",
+        "other": "“{name}” is used in {count} places. Deleting it removes it from all of them. Delete anyway?"
+      },
+      "deleteFailed": "Could not delete the reusable block",
+      "restoreHint": "Loads this version into the editor. Save the draft and publish to use it."
     },
     "themeControls": {
       "title": "Theme styling",
@@ -872,7 +934,48 @@
       "strikethroughTooltip": "Strikethrough",
       "underlineTooltip": "Underline (⌘U)",
       "uploadImage": "Upload image",
-      "uploading": "Uploading…"
+      "uploading": "Uploading…",
+      "linkRejected": "That link isn't allowed. Use a web address (https://…), a path (/page), or mailto:.",
+      "linkPlaceholder": "https://example.com or /page",
+      "attribution": "Attribution",
+      "buttonLabel": "Button text",
+      "buttonLink": "Button link",
+      "supportingText": "Supporting text",
+      "caption": "Caption",
+      "altText": "Alt text",
+      "altPlaceholder": "Describe the image for people who can't see it",
+      "replaceImage": "Replace image",
+      "replaceImageHint": "Double-click to replace the image",
+      "chooseImage": "Double-click to choose an image",
+      "listItem": "List item",
+      "pluginField": "Edit {field}",
+      "mediaUrlRejected": "That address can't be used. Use an https:// link or a file from the media library.",
+      "mediaUrl": "Media address",
+      "mediaUrlPlaceholder": "https://… or /uploads/…",
+      "libraryEmpty": "Nothing of this kind in the media library yet.",
+      "pick": {
+        "image": "Choose an image",
+        "video": "Choose a video",
+        "audio": "Choose audio",
+        "file": "Choose a file"
+      },
+      "upload": {
+        "image": "Upload image",
+        "video": "Upload video",
+        "audio": "Upload audio",
+        "file": "Upload file"
+      },
+      "replace": {
+        "video": "Replace video",
+        "audio": "Replace audio",
+        "file": "Replace file"
+      },
+      "replaceMediaHint": "Double-click to replace",
+      "choosePoster": "Choose poster image",
+      "changePoster": "Change poster image",
+      "removePoster": "Remove poster",
+      "linkText": "Link text",
+      "linkTextPlaceholder": "Defaults to the file name"
     },
     "inspector": {
       "addContentBlocksHint": "Add content blocks inside this container.",
@@ -918,7 +1021,6 @@
         "attribution": "Attribution",
         "average05": "Average (0–5)",
         "background": "Background",
-        "backgroundImageUrl": "Background image URL",
         "buttonLabel": "Button label",
         "buttonUrl": "Button URL",
         "caption": "Caption",
@@ -958,7 +1060,8 @@
         "url": "URL",
         "variant": "Variant",
         "width": "Width",
-        "widthPx": "Width (px)"
+        "widthPx": "Width (px)",
+        "backgroundImage": "Background image"
       },
       "images": {
         "addFromMediaLibrary": "Add from media library",
@@ -1113,10 +1216,15 @@
       "theFineDetails": "The Fine Details",
       "thePostExcerptAppearsHere": "The post excerpt appears here.",
       "typeAParagraph": "Type a paragraph…",
-      "youMayAlsoLike": "You may also like"
+      "youMayAlsoLike": "You may also like",
+      "standIn": {
+        "label": "Preview",
+        "site": "Shows your site’s logo, title, menus or breadcrumbs when the page is served.",
+        "query": "Lists content or headings found when the page is served.",
+        "visitor": "Depends on the visitor (signed in, language, colour scheme or search), so the builder shows a neutral version.",
+        "external": "Loads third-party content on the published page; the builder does not run it."
+      }
     },
-    "blockCountOne": "{count} block",
-    "blockCountMany": "{count} blocks",
     "previewLight": "Light",
     "previewDark": "Dark",
     "previewSchemeHint": "Preview the site in light or dark mode",
@@ -1137,7 +1245,8 @@
       "label": "Link label",
       "download": "Download file",
       "autoplayHelp": "Browsers usually require muted playback for autoplay. The editor preview always shows controls and does not autoplay.",
-      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser."
+      "downloadHelp": "Download links work best for files hosted on this site. External files may open in the browser.",
+      "source": "Media file"
     },
     "functional": {
       "fields": {
@@ -1339,6 +1448,594 @@
         "click": "Click"
       },
       "checklistItem": "Checklist item"
+    },
+    "shell": {
+      "toolbar": "Builder tools",
+      "library": "Blocks",
+      "inspector": "Settings",
+      "canvas": "Canvas",
+      "breadcrumbs": "Selected block location",
+      "history": "History",
+      "breakpoint": "Preview width",
+      "zoom": "Zoom",
+      "unsaved": "Unsaved changes",
+      "saveFailed": "Save failed",
+      "retry": "Try again",
+      "leaveUnsaved": "You have unsaved changes. Leave the builder anyway?",
+      "breakpointLabel": {
+        "desktop": "Desktop",
+        "tablet": "Tablet",
+        "mobile": "Mobile"
+      },
+      "context": {
+        "page": "Page",
+        "post": "Post",
+        "header": "Global header",
+        "footer": "Global footer",
+        "template": "Template",
+        "reusable": "Reusable block",
+        "pattern": "Pattern",
+        "fragment": "Content"
+      },
+      "impact": {
+        "header": "Changes appear on every page that uses this header.",
+        "footer": "Changes appear on every page.",
+        "template": "Changes affect every page this template renders.",
+        "reusable": "Changes appear everywhere this block is used."
+      },
+      "tab": {
+        "content": "Content",
+        "style": "Style",
+        "layout": "Layout",
+        "responsive": "Responsive",
+        "interactions": "Interactions",
+        "advanced": "Advanced"
+      },
+      "site": "Site",
+      "siteParts": "Site parts",
+      "autosaving": "Autosaving…",
+      "conflict": "Not saved: newer version exists",
+      "conflictDraft": "Someone else changed this page's draft after you opened it. Your edits are still here and have not been saved.",
+      "conflictDraftBy": "{name} changed this page's draft after you opened it. Your edits are still here and have not been saved.",
+      "conflictLive": "This page was changed or published elsewhere after you opened it. Your edits are still here and have not been saved.",
+      "loadLatest": "Load the latest version",
+      "overwrite": "Save mine over it",
+      "overwriteConfirm": "Replace the newer version with yours? The other changes will be kept in the page's revisions.",
+      "recoveryFound": "This browser kept unsaved changes from {time}.",
+      "restore": "Restore them",
+      "discard": "Discard",
+      "sessionExpired": "Your session has expired. Sign in again in another tab, then save. Your changes are kept in this browser.",
+      "conflictPart": "Someone else saved this after you opened it. Your changes are still here and have not been saved.",
+      "overwritePartConfirm": "Replace the newer version with yours? The other person’s changes will be lost.",
+      "revisions": "Revisions",
+      "revisionsLoading": "Loading versions…",
+      "revisionsEmpty": "No earlier versions yet. Each save adds one.",
+      "revisionsPick": "Pick a version to see what restoring it would change.",
+      "revisionsSame": "This version has the same blocks as what you are editing.",
+      "revisionsCompare": "Compared with what you are editing, restoring this version would:",
+      "revisionsAdded": {
+        "one": "Add {count} block",
+        "other": "Add {count} blocks"
+      },
+      "revisionsRemoved": {
+        "one": "Remove {count} block",
+        "other": "Remove {count} blocks"
+      },
+      "revisionsChanged": {
+        "one": "Change {count} block",
+        "other": "Change {count} blocks"
+      },
+      "revisionsMoved": {
+        "one": "Move {count} block",
+        "other": "Move {count} blocks"
+      },
+      "revisionsRestore": "Restore this version",
+      "restoreHintPage": "Restoring saves this version as the page's draft. The published page does not change until you publish.",
+      "restoreHintPart": "Restoring loads this version into the editor. Save a draft or publish to keep it.",
+      "restoreUnsavedConfirm": "Restoring replaces your unsaved changes. They stay in this browser and can be restored afterwards. Continue?",
+      "stateDraft": "Draft",
+      "statePublished": "Published",
+      "layers": "Layers",
+      "previewWidth": "Preview width in pixels",
+      "canvasWidth": "{width}px · {breakpoint}",
+      "styles": "Styles",
+      "checks": "Checks"
+    },
+    "drop": {
+      "rejectNesting": "{child} can't go inside {parent}.",
+      "rejectNestingRoot": "{child} can't go at this level. Put it inside a fitting container.",
+      "reject": {
+        "nesting": "This block can't go here.",
+        "self": "A block can't be dropped onto itself.",
+        "descendant": "A block can't be moved inside its own contents.",
+        "region": "Blocks can't be moved into that area here.",
+        "missing": "That block no longer exists.",
+        "locked": "This block is locked in place."
+      },
+      "noTarget": "Not moved: release over a drop zone.",
+      "moved": "Moved {block}.",
+      "inserted": "Added {block}.",
+      "cancelled": "Move cancelled. Nothing changed.",
+      "releaseToMove": "Release to move {block} here",
+      "releaseToInsert": "Release to add {block} here"
+    },
+    "navigator": {
+      "title": "Layers",
+      "search": "Find a block",
+      "keysHint": "Arrows to browse, Enter to select, Shift+arrows to select more, Alt+arrows to move, F2 to rename, Shift+F10 for actions.",
+      "empty": "No blocks yet.",
+      "noMatches": "No blocks match.",
+      "root": "Top level",
+      "moved": "Moved {block} to position {position} in {parent}.",
+      "movedInto": "Moved {block} into {parent}.",
+      "cannotMove": "It can't move further that way.",
+      "moveTo": "Move “{block}” to…",
+      "chooseDestination": "Choose a container",
+      "noDestinations": "No other place accepts this block",
+      "rename": "Name in this editor only",
+      "badge": {
+        "reusable": "Reusable block: edits change every page that uses it",
+        "hidden": "Hidden on some devices",
+        "locked": "Locked",
+        "unavailable": "Block type unavailable: its plugin may be off",
+        "dynamic": "Shows content from the page or site"
+      }
+    },
+    "actions": {
+      "menu": "Block actions",
+      "blocks": {
+        "one": "{count} block",
+        "other": "{count} blocks"
+      },
+      "more": "More actions for {block}",
+      "duplicate": "Duplicate",
+      "copy": "Copy",
+      "cut": "Cut",
+      "paste": "Paste",
+      "delete": "Delete",
+      "group": "Group",
+      "ungroup": "Ungroup",
+      "resetStyle": "Reset style",
+      "saveReusable": "Save as reusable block…",
+      "savePattern": "Save as pattern…",
+      "locks": "Locks",
+      "lock": {
+        "move": "Prevent moving",
+        "remove": "Prevent removing",
+        "edit": "Prevent editing"
+      },
+      "lockedByPolicy": "Only people who can manage locks can change these.",
+      "blocked": {
+        "empty": "Select a block first.",
+        "mixedParents": "Select blocks that sit side by side in the same container.",
+        "lockedRemove": "A selected block, or something inside it, is locked against removal.",
+        "lockedMove": "A selected block is locked in place.",
+        "lockedEdit": "A selected block is locked against editing.",
+        "nesting": "The result would not be allowed in this container.",
+        "notGroup": "Only a Group or Container can be ungrouped.",
+        "noStyle": "No custom style to reset.",
+        "clipboardEmpty": "Nothing copied yet.",
+        "permission": "Only administrators and editors can save to the library.",
+        "unsupported": "Not available in this editor."
+      },
+      "done": {
+        "duplicate": "Duplicated {what}.",
+        "copy": "Copied {what}.",
+        "cut": "Cut {what}.",
+        "paste": "Pasted {what}.",
+        "delete": "Deleted {what}. Undo restores it.",
+        "group": "Grouped {what}.",
+        "ungroup": "Ungrouped {what}.",
+        "resetStyle": "Reset the style of {what}.",
+        "saveReusable": "Saved {what} as a reusable block and linked it here.",
+        "savePattern": "Saved the pattern {what}.",
+        "locked": "Locked {what}.",
+        "unlocked": "Unlocked {what}."
+      },
+      "pasteFailed": {
+        "empty": "Nothing to paste.",
+        "too-large": "That is too much to paste at once.",
+        "nesting": "These blocks can't go here. Select a fitting container and paste again."
+      },
+      "selectRefused": {
+        "parent": "Multi-select only works for blocks in the same container.",
+        "context": "Blocks in the header and the page can't be selected together."
+      },
+      "editLocked": "This block is locked against editing. Ask someone who can manage locks to unlock it.",
+      "editLockedManage": "This block is locked against editing. Unlock it from the block menu to change it.",
+      "multi": {
+        "title": "{count} blocks selected",
+        "menuHint": "Right-click or press Shift+F10 for all actions.",
+        "sharedStyle": "Shared style",
+        "styleSubset": "Style changes apply to {count} of {total} blocks. Locked blocks and blocks with their own style setting are skipped.",
+        "noSharedStyle": "These blocks have no style settings in common."
+      },
+      "save": {
+        "reusableTitle": "Save as reusable block",
+        "reusableHint": "The selection is saved to the library and replaced here by a linked copy. Edit the saved block and every page follows.",
+        "patternTitle": "Save as pattern",
+        "patternHint": "A copy of the selection is added to the pattern library. This page does not change.",
+        "nameRequired": "Give the pattern a name.",
+        "cancel": "Cancel",
+        "savePattern": "Save pattern"
+      },
+      "blockActions": "Block actions",
+      "blockActionDone": "Applied: {action}."
+    },
+    "container": {
+      "title": "Layout",
+      "mode": "Arrange contents",
+      "modes": {
+        "stack": "Stack",
+        "row": "Row",
+        "column": "Column",
+        "grid": "Grid"
+      },
+      "modeHint": {
+        "stack": "Blocks sit one below the other, as the theme spaces them.",
+        "row": "Blocks sit side by side and wrap to a new line when there is no room.",
+        "column": "Blocks sit one below the other, with your spacing and alignment.",
+        "grid": "Blocks fill equal columns, row by row."
+      },
+      "columns": "Columns",
+      "wrap": "Line breaks",
+      "wrapValue": {
+        "wrap": "Wrap",
+        "nowrap": "Keep on one line"
+      },
+      "justify": "Horizontal",
+      "justifyColumn": "Vertical",
+      "justifyValue": {
+        "start": "Start",
+        "center": "Center",
+        "end": "End",
+        "between": "Space between",
+        "around": "Space around",
+        "evenly": "Space evenly"
+      },
+      "align": "Vertical",
+      "alignColumn": "Horizontal",
+      "alignValue": {
+        "start": "Start",
+        "center": "Center",
+        "end": "End",
+        "stretch": "Stretch",
+        "baseline": "Text baseline"
+      },
+      "gap": "Gap",
+      "stackOnPhones": "Stack into one column on phones",
+      "orderHint": "Blocks always keep their order, on screen and for screen readers. To change the order, move them in the Layers panel.",
+      "element": "HTML element",
+      "elements": {
+        "div": "Plain (div)",
+        "section": "Section",
+        "article": "Article",
+        "aside": "Aside",
+        "header": "Header",
+        "footer": "Footer",
+        "nav": "Navigation"
+      },
+      "elementNotHere": "not allowed here",
+      "elementHint": "Tells screen readers and search engines what this part is. It does not change how it looks.",
+      "item": {
+        "title": "In this row",
+        "overflowTitle": "Overflow",
+        "basis": "Share of the row",
+        "basisValue": {
+          "auto": "Fit content",
+          "25": "A quarter",
+          "33": "A third",
+          "50": "Half",
+          "66": "Two thirds",
+          "75": "Three quarters",
+          "100": "Full row"
+        },
+        "grow": "Fill the free space",
+        "overflow": "Content that doesn't fit",
+        "overflowValue": {
+          "visible": "Show",
+          "hidden": "Clip",
+          "auto": "Scroll"
+        }
+      },
+      "handle": {
+        "padTop": "Padding top",
+        "padBottom": "Padding bottom",
+        "minHeight": "Minimum height"
+      },
+      "readingOrder": "Blocks are placed in a different order than they are read. Keyboard and screen-reader users follow the order in the Layers panel.",
+      "matchReadingOrder": "Match the reading order to the layout"
+    },
+    "responsive": {
+      "title": "Breakpoint overrides",
+      "editing": "Breakpoint to edit",
+      "hint": "Desktop uses the block's normal settings. Tablet inherits from desktop and mobile from tablet, until you set a value here.",
+      "previewMismatch": "You are editing {breakpoint} but previewing {previewing}.",
+      "previewAt": "Preview at {breakpoint}",
+      "warningsTitle": "Check before publishing",
+      "warning": {
+        "hidden": "This block is hidden at this width.",
+        "order": "A custom order shows this block in a different place than it is read. Keyboard and screen-reader users still follow the Layers panel.",
+        "tinyText": "Extra-small text can be hard to read on phones.",
+        "tooWide": "The maximum width is wider than this screen; content may scroll sideways.",
+        "nowrap": "A row kept on one line may overflow at this width.",
+        "tall": "A minimum height this tall fills more than a phone screen.",
+        "bigSpacing": "Very large spacing takes up much of a small screen."
+      },
+      "spacing": "Spacing",
+      "size": "Size",
+      "text": "Text",
+      "item": "In its layout",
+      "fontSize": "Text size",
+      "fontSizeValue": {
+        "xs": "XS",
+        "sm": "S",
+        "base": "M",
+        "lg": "L",
+        "xl": "XL",
+        "2xl": "2XL",
+        "3xl": "3XL",
+        "4xl": "4XL"
+      },
+      "span": "Columns spanned",
+      "col": "Start column",
+      "order": "Order",
+      "direction": "Direction",
+      "setHere": "Set for this breakpoint",
+      "inherited": "{value} · from {from}",
+      "notSet": "Not set",
+      "inherit": "Inherit ({value})",
+      "reset": "Reset",
+      "resetField": "Reset {field} for {breakpoint}"
+    },
+    "sources": {
+      "themeDefault": "Theme default",
+      "siteToken": "Changed for this site",
+      "theme": "From the theme",
+      "local": "Set on this block",
+      "localOverPreset": "Set on this block, over the preset “{name}”",
+      "preset": "From the preset “{name}”",
+      "breakpoint": "Set for {breakpoint}",
+      "resetField": "Reset {field} to the layer beneath",
+      "resetToTheme": "Reset {field} to the theme's value",
+      "template": "From the template “{name}”. Edit the template to change it."
+    },
+    "presets": {
+      "title": "Style preset",
+      "use": "Preset",
+      "none": "None",
+      "missing": "Missing preset: {id}",
+      "missingHint": "This block refers to a preset that no longer exists. It renders without it.",
+      "using": "Uses the preset “{name}”. Edit the preset under Styles to change every block that uses it.",
+      "usingWithLocal": "Uses the preset “{name}”, with this block's own values on top.",
+      "detach": "Detach (keep values)",
+      "updateFromBlock": "Move this block's values into “{name}”",
+      "saveAs": "Save style as preset…",
+      "name": "Preset name",
+      "create": "Create preset",
+      "library": "Style presets",
+      "libraryHint": "Named sets of spacing, size, corners, shadows and colours. Changing one changes every block that uses it, on every page.",
+      "empty": "No presets yet. Style a block, then choose “Save style as preset” in its Style tab.",
+      "edit": "Edit",
+      "done": "Done",
+      "usageLoading": "Checking where it is used…",
+      "usageNone": "Not used anywhere yet.",
+      "usage": "Used by {count}: {where}",
+      "usageTemplates": {
+        "one": "{count} template",
+        "other": "{count} templates"
+      },
+      "usageReusable": {
+        "one": "{count} reusable block",
+        "other": "{count} reusable blocks"
+      },
+      "usagePatterns": {
+        "one": "{count} pattern",
+        "other": "{count} patterns"
+      },
+      "deleteConfirm": "Delete the preset “{name}”?",
+      "deleteUsedConfirm": {
+        "one": "Delete the preset “{name}”? It is used by {count} item, which will lose its styling.",
+        "other": "Delete the preset “{name}”? It is used by {count} items, which will lose its styling."
+      }
+    },
+    "globalStyles": {
+      "title": "Global styles",
+      "impact": "These apply to every page, the header, the footer, templates and reusable blocks. Changes preview here and go live when you publish.",
+      "draftState": "Unpublished changes",
+      "publishedState": "Everything published",
+      "revert": "Revert to published",
+      "unpublished": "unpublished",
+      "changedCount": "{count} changed",
+      "saveError": "Could not save styles",
+      "readOnly": "Only administrators and editors can change global styles."
+    },
+    "templateDefaults": {
+      "title": "Content defaults",
+      "hint": "Starting styles for the content the {template} template wraps, by block type. A block's own values still win.",
+      "empty": "No defaults yet. Pick a block type below.",
+      "add": "Add a block type",
+      "addPlaceholder": "Choose a block type…",
+      "remove": "Remove the defaults for {type}"
+    },
+    "siteContext": {
+      "previewNote": "Preview of this page's surroundings. Its own title and date are real; menus and other request-based content are stand-ins. The published page is what visitors get.",
+      "region": {
+        "header": "Site header",
+        "footer": "Site footer",
+        "template": "Template"
+      },
+      "templateNamed": "Template “{slug}”",
+      "source": {
+        "override-draft": "your override, draft",
+        "override": "your override",
+        "theme": "from the theme",
+        "plugin": "from a plugin",
+        "library": "from the header library",
+        "none": "not set"
+      },
+      "siteWide": "site-wide",
+      "edit": {
+        "header": "Edit the header",
+        "footer": "Edit the footer",
+        "template": "Edit this template"
+      },
+      "hierarchy": "Template order",
+      "hierarchyHint": "Most specific first. The first one that exists is used.",
+      "menu": "Menu",
+      "notPublished": "Not published yet",
+      "headerHidden": "The header is hidden for this page.",
+      "footerEmpty": "No footer yet.",
+      "noTemplate": "No template: the theme's built-in page view is used.",
+      "panelTitle": "This page's surroundings",
+      "panelHint": "The header, template and footer are shared across the site. Editing one is a deliberate step.",
+      "loading": "Loading…"
+    },
+    "pluginPreview": {
+      "retry": "Try again",
+      "loading": "Loading {title}…",
+      "placeholder": "Shows live content on the published page.",
+      "empty": "{title} shows nothing with its current settings.",
+      "unavailable": "Unavailable block: {type}",
+      "unavailableHint": "Its plugin or theme may be switched off. The content is kept and shows again when it is back.",
+      "timeout": "{title} took too long to preview.",
+      "failed": "{title} could not be previewed."
+    },
+    "blockFailure": {
+      "title": "{type} could not be shown in the builder.",
+      "kept": "Its content is kept and the page still shows it as saved."
+    },
+    "blockStatus": {
+      "deprecated": "This block is deprecated. It still works, but is no longer offered for new content.",
+      "deprecatedReplaced": "This block is deprecated. Use {type} for new content.",
+      "migrationFailed": "This block could not be upgraded from version {version}, so it shows its stored settings."
+    },
+    "recovery": {
+      "unavailableTitle": "This block’s plugin or theme is not active",
+      "deprecatedTitle": "This block is deprecated",
+      "unavailableText": "It can’t be edited or previewed right now. Its content is kept, and the page shows it again once the extension is back.",
+      "deprecatedText": "It keeps working, but is no longer offered for new content.",
+      "deprecatedReplaced": "It keeps working. Its replacement is {type}.",
+      "type": "Type",
+      "providedBy": "Provided by",
+      "version": "Version",
+      "deprecatedSince": "deprecated since {since}",
+      "id": "Block id",
+      "stored": "Stored",
+      "copy": "Copy data",
+      "download": "Download data",
+      "copied": "Block data copied.",
+      "copyFailed": "The browser did not allow copying. Use Download data instead.",
+      "manageExtensions": "Manage extensions",
+      "replaceWith": "Replace with",
+      "chooseBlock": "Choose a block…",
+      "replace": "Replace",
+      "remove": "Remove block",
+      "replaceConfirm": "Replace this block with {title}? It keeps its id and every setting {title} also has.",
+      "replaceDrops": {
+        "one": "{count} stored setting that the new block does not have will be removed.",
+        "other": "{count} stored settings that the new block does not have will be removed."
+      },
+      "replaceDropsChildren": {
+        "one": "{count} block inside it will be removed, because the new block cannot hold other blocks.",
+        "other": "{count} blocks inside it will be removed, because the new block cannot hold other blocks."
+      },
+      "downloadFirst": "Download the data first if you may need it later.",
+      "removeConfirm": "Remove this block from the page? Download its data first if you may need it later.",
+      "removeConfirmChildren": {
+        "one": "Remove this block and the {count} block inside it? Download its data first if you may need it later.",
+        "other": "Remove this block and the {count} blocks inside it? Download its data first if you may need it later."
+      },
+      "keptHint": "Saving the page keeps this block exactly as stored.",
+      "storedSettings": {
+        "one": "{count} setting",
+        "other": "{count} settings"
+      },
+      "storedBlocks": {
+        "one": "{count} block inside",
+        "other": "{count} blocks inside"
+      }
+    },
+    "blockCount": {
+      "one": "{count} block",
+      "other": "{count} blocks"
+    },
+    "checks": {
+      "title": "Accessibility checks",
+      "disclaimer": "These checks find common problems in what you set here. They can't see everything a theme, plugin or visitor changes, so they don't prove a page is accessible.",
+      "none": "No problems found in what these checks look at.",
+      "errors": {
+        "one": "{count} problem",
+        "other": "{count} problems"
+      },
+      "warnings": {
+        "one": "{count} to review",
+        "other": "{count} to review"
+      },
+      "unavailable": {
+        "one": "{count} not checked",
+        "other": "{count} not checked"
+      },
+      "problemCount": {
+        "one": "{count} problem",
+        "other": "{count} problems"
+      },
+      "imageAlt": "No alt text. Describe the image, or leave it empty only if it is decorative.",
+      "linkText": "This link or button has no text, so screen readers can't say where it goes.",
+      "linkTextItem": "Link {item} has no text, so screen readers can't say where it goes.",
+      "linkTarget": "This button has text but no link, so it does nothing.",
+      "headingEmpty": "This heading is empty.",
+      "headingSkip": "Heading level jumps from {from} to {to}. Skipped levels make the page outline hard to follow.",
+      "headingLevelOne": "Level 1 is usually the page title. Use level 2 for sections.",
+      "contrast": "Text contrast is {ratio}:1. Normal text needs at least 4.5:1.",
+      "contrastUnknown": "Contrast can't be checked here, because one of the colours comes from the theme.",
+      "hiddenOnMobile": "This heading or button is hidden on phones.",
+      "readingOrder": "The order on screen differs from the reading order. Screen readers and the keyboard follow the order in Layers.",
+      "iconLabel": "This icon is not decorative but has no label, so it is announced by its icon name.",
+      "tableHeader": "This table has no header row. Data tables need one so their columns can be understood.",
+      "contentUnchecked": "This block's content can't be checked here."
+    },
+    "keyboard": {
+      "open": "Shortcuts",
+      "title": "Keyboard shortcuts",
+      "close": "Close",
+      "or": "or",
+      "intro": "Everything you can do with a mouse or touch can be done with the keyboard. Ctrl is ⌘ on a Mac.",
+      "area": {
+        "canvas": "Canvas",
+        "layers": "Layers",
+        "library": "Blocks",
+        "text": "Text and media",
+        "layout": "Layout",
+        "general": "General"
+      },
+      "path": {
+        "selectBlock": "Select a block (Tab to its name)",
+        "actionsMenu": "Open the block's actions menu",
+        "duplicate": "Duplicate",
+        "group": "Group",
+        "ungroup": "Ungroup",
+        "remove": "Delete",
+        "copyPaste": "Copy, cut and paste",
+        "undoRedo": "Undo and redo",
+        "clearSelection": "Keep only one block selected",
+        "moveBlock": "Move up or down",
+        "nestBlock": "Move into the block above, or out of its container",
+        "extendSelection": "Add blocks to the selection",
+        "renameBlock": "Rename",
+        "moveTo": "Move to another container",
+        "addBlock": "Add the focused block",
+        "editText": "Finish or cancel editing text",
+        "replaceMedia": "Replace a selected image or file",
+        "resizeSpacing": "Change spacing and height with a focused handle",
+        "gridPlacement": "Place and size an item in a grid",
+        "cancelDrag": "Cancel a drag",
+        "shortcuts": "Show this list"
+      },
+      "how": {
+        "moveTo": "“Move to…” in Layers",
+        "gridPlacement": "Grid placement fields in the Layout tab"
+      }
     }
   },
   "dashboard": {
@@ -2174,7 +2871,11 @@
     "slotErrorLabel": "Error (generic)",
     "slotErrorHint": "Shared fallback for 403, 410, and 429 when no specific template exists",
     "slotIndexLabel": "Catch-all (index)",
-    "slotIndexHint": "Used only when no more specific template exists"
+    "slotIndexHint": "Used only when no more specific template exists",
+    "compareTheme": "Compare with theme version",
+    "themeVersion": "Theme version",
+    "copyThemeHint": "Copies the theme's version into the editor. Nothing is saved until you save or publish.",
+    "fromTheme": "theme"
   },
   "widgets": {
     "loading": "Loading widgets…",
@@ -2265,7 +2966,10 @@
     "remove": "Remove",
     "mediaLibraryAriaLabel": "Media library",
     "noImagesYet": "No images yet. Upload one, or add files in Media.",
-    "pasteUrl": "Paste URL"
+    "pasteUrl": "Paste URL",
+    "selectFile": "Select file",
+    "noFileSelected": "No file selected",
+    "noFilesYet": "No files of this kind yet. Upload one, or add files in Media."
   },
   "marketplace": {
     "title": "Marketplace",
