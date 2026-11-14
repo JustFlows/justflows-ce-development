@@ -9,6 +9,7 @@ import type { BlockDefinition } from "../registry/block-registry.js";
 import { sanitizeHtmlBlock, sanitizeRichText } from "../sanitize.js";
 import { renderMath } from "../math.js";
 import { esc, safeHref, safeMediaSrc } from "../safe-url.js";
+import { codeLanguageClass } from "../code-language.js";
 import { siteWidgetBlocks } from "./site-widgets.js";
 import { GRID_DEFAULT_COLUMNS, GRID_MAX_COLUMNS, GRID_MIN_COLUMNS } from "../layout.js";
 import {
@@ -327,7 +328,8 @@ export const coreBlocks: BlockDefinition[] = [
     },
     render: (props) => {
       const { code, language } = props as { code: string; language: string };
-      return `<pre><code class="language-${esc(language)}">${esc(code)}</code></pre>`;
+      const languageClass = codeLanguageClass(language);
+      return `<pre><code${languageClass ? ` class="${languageClass}"` : ""}>${esc(code)}</code></pre>`;
     },
   },
   {

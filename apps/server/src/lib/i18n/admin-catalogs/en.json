@@ -1192,7 +1192,14 @@
       "theFineDetails": "The Fine Details",
       "thePostExcerptAppearsHere": "The post excerpt appears here.",
       "typeAParagraph": "Type a paragraph…",
-      "youMayAlsoLike": "You may also like"
+      "youMayAlsoLike": "You may also like",
+      "standIn": {
+        "label": "Preview",
+        "site": "Shows your site’s logo, title, menus or breadcrumbs when the page is served.",
+        "query": "Lists content or headings found when the page is served.",
+        "visitor": "Depends on the visitor (signed in, language, colour scheme or search), so the builder shows a neutral version.",
+        "external": "Loads third-party content on the published page; the builder does not run it."
+      }
     },
     "blockCountOne": "{count} block",
     "blockCountMany": "{count} blocks",
@@ -1843,6 +1850,45 @@
       "unavailableHint": "Its plugin or theme may be switched off. The content is kept and shows again when it is back.",
       "timeout": "{title} took too long to preview.",
       "failed": "{title} could not be previewed."
+    },
+    "blockFailure": {
+      "title": "{type} could not be shown in the builder.",
+      "kept": "Its content is kept and the page still shows it as saved."
+    },
+    "blockStatus": {
+      "deprecated": "This block is deprecated. It still works, but is no longer offered for new content.",
+      "deprecatedReplaced": "This block is deprecated. Use {type} for new content.",
+      "migrationFailed": "This block could not be upgraded from version {version}, so it shows its stored settings."
+    },
+    "recovery": {
+      "unavailableTitle": "This block’s plugin or theme is not active",
+      "deprecatedTitle": "This block is deprecated",
+      "unavailableText": "It can’t be edited or previewed right now. Its content is kept, and the page shows it again once the extension is back.",
+      "deprecatedText": "It keeps working, but is no longer offered for new content.",
+      "deprecatedReplaced": "It keeps working. Its replacement is {type}.",
+      "type": "Type",
+      "providedBy": "Provided by",
+      "version": "Version",
+      "deprecatedSince": "deprecated since {since}",
+      "id": "Block id",
+      "stored": "Stored",
+      "storedCounts": "{settings} settings, {blocks} blocks inside",
+      "copy": "Copy data",
+      "download": "Download data",
+      "copied": "Block data copied.",
+      "copyFailed": "The browser did not allow copying. Use Download data instead.",
+      "manageExtensions": "Manage extensions",
+      "replaceWith": "Replace with",
+      "chooseBlock": "Choose a block…",
+      "replace": "Replace",
+      "remove": "Remove block",
+      "replaceConfirm": "Replace this block with {title}? It keeps its id and every setting {title} also has.",
+      "replaceDrops": "{count} stored settings that the new block does not have will be removed.",
+      "replaceDropsChildren": "{count} blocks inside it will be removed, because the new block cannot hold other blocks.",
+      "downloadFirst": "Download the data first if you may need it later.",
+      "removeConfirm": "Remove this block from the page? Download its data first if you may need it later.",
+      "removeConfirmChildren": "Remove this block and the {count} blocks inside it? Download its data first if you may need it later.",
+      "keptHint": "Saving the page keeps this block exactly as stored."
     }
   },
   "dashboard": {

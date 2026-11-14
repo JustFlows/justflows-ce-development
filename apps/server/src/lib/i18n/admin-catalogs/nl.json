@@ -1063,7 +1063,14 @@
       "typeAParagraph": "Typ een alinea…",
       "youMayAlsoLike": "Misschien vind je dit ook leuk",
       "html": "HTML",
-      "emptyParagraph": "Lege alinea"
+      "emptyParagraph": "Lege alinea",
+      "standIn": {
+        "label": "Voorbeeld",
+        "site": "Toont het logo, de titel, menu’s of het kruimelpad van je site wanneer de pagina wordt geladen.",
+        "query": "Toont inhoud of koppen die worden gevonden wanneer de pagina wordt geladen.",
+        "visitor": "Hangt af van de bezoeker (ingelogd, taal, kleurmodus of zoekopdracht), dus de builder toont een neutrale versie.",
+        "external": "Laadt inhoud van derden op de gepubliceerde pagina; de builder voert die niet uit."
+      }
     },
     "grid": {
       "dragBlockOntoGrid": "Sleep een blok naar het raster",
@@ -1845,6 +1852,45 @@
       "unavailableHint": "De plug-in of het thema staat mogelijk uit. De inhoud blijft bewaard en verschijnt weer zodra die terug is.",
       "timeout": "Het voorbeeld van {title} duurde te lang.",
       "failed": "Van {title} kon geen voorbeeld worden gemaakt."
+    },
+    "blockFailure": {
+      "title": "{type} kan niet in de builder worden getoond.",
+      "kept": "De inhoud blijft bewaard en de pagina toont deze zoals opgeslagen."
+    },
+    "blockStatus": {
+      "deprecated": "Dit blok is verouderd. Het werkt nog, maar wordt niet meer aangeboden voor nieuwe inhoud.",
+      "deprecatedReplaced": "Dit blok is verouderd. Gebruik {type} voor nieuwe inhoud.",
+      "migrationFailed": "Dit blok kon niet worden bijgewerkt vanaf versie {version} en toont daarom de opgeslagen instellingen."
+    },
+    "recovery": {
+      "unavailableTitle": "De plugin of het thema van dit blok is niet actief",
+      "deprecatedTitle": "Dit blok is verouderd",
+      "unavailableText": "Het kan nu niet worden bewerkt of getoond. De inhoud blijft bewaard en de pagina toont het weer zodra de extensie terug is.",
+      "deprecatedText": "Het blijft werken, maar wordt niet meer aangeboden voor nieuwe inhoud.",
+      "deprecatedReplaced": "Het blijft werken. De vervanger is {type}.",
+      "type": "Type",
+      "providedBy": "Geleverd door",
+      "version": "Versie",
+      "deprecatedSince": "verouderd sinds {since}",
+      "id": "Blok-id",
+      "stored": "Opgeslagen",
+      "storedCounts": "{settings} instellingen, {blocks} blokken erin",
+      "copy": "Gegevens kopiëren",
+      "download": "Gegevens downloaden",
+      "copied": "Blokgegevens gekopieerd.",
+      "copyFailed": "De browser stond kopiëren niet toe. Gebruik Gegevens downloaden.",
+      "manageExtensions": "Extensies beheren",
+      "replaceWith": "Vervangen door",
+      "chooseBlock": "Kies een blok…",
+      "replace": "Vervangen",
+      "remove": "Blok verwijderen",
+      "replaceConfirm": "Dit blok vervangen door {title}? Het behoudt zijn id en elke instelling die {title} ook heeft.",
+      "replaceDrops": "{count} opgeslagen instellingen die het nieuwe blok niet heeft, worden verwijderd.",
+      "replaceDropsChildren": "{count} blokken erin worden verwijderd, omdat het nieuwe blok geen andere blokken kan bevatten.",
+      "downloadFirst": "Download eerst de gegevens als je ze later nog nodig kunt hebben.",
+      "removeConfirm": "Dit blok van de pagina verwijderen? Download eerst de gegevens als je ze later nog nodig kunt hebben.",
+      "removeConfirmChildren": "Dit blok en de {count} blokken erin verwijderen? Download eerst de gegevens als je ze later nog nodig kunt hebben.",
+      "keptHint": "Bij het opslaan van de pagina blijft dit blok precies zoals het is opgeslagen."
     }
   },
   "dashboard": {

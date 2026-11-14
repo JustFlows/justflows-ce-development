@@ -202,6 +202,8 @@ export default function PageBuilder({
   const pageHeader = header ?? DEFAULT_PAGE_HEADER;
   const { items: reusable, reload: reloadReusable } = useReusableBlocks();
 
+  /** Bumped to load the catalog again, e.g. after an extension was switched back on (justflows-ce#306). */
+  const [catalogLoad, setCatalogLoad] = useState(0);
   useEffect(() => {
     fetch("/api/blocks")
       .then((r) => r.json())
@@ -209,8 +211,8 @@ export default function PageBuilder({
         setBlockCatalog(data.blocks ?? []);
         setFullCatalog(data.blocks ?? []);
       })
-      .catch(() => setFullCatalog([]));
-  }, []);
+      .catch(() => setFullCatalog((current) => current));
+  }, [catalogLoad]);
 
   useEffect(() => {
     if (!enableHeader) return;
@@ -833,6 +835,13 @@ export default function PageBuilder({
         onConvertToReusable={convertToReusable}
         onDetachReusable={detachReusable}
         onEditReusable={onEditReusable ? (id) => onEditReusable(id, selectedId) : undefined}
+        catalog={fullCatalog}
+        onReplaceBlock={isBlockLocked(selectedBlock, "edit") ? undefined : handleSyncBlock}
+        onRemoveBlock={isBlockLocked(selectedBlock, "remove") ? undefined : () => {
+          emitRegion(removeBlocks(regionBlocks, [selectedBlock.id]));
+          setSelectedId(null);
+        }}
+        onReloadCatalog={() => setCatalogLoad((n) => n + 1)}
         tab={prefs.inspectorTab}
         onTabChange={(inspectorTab) => setPrefs({ inspectorTab })}
       />

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { withBlockChrome } from "../block-chrome.js";
+import { isMarkableBlockType, withBlockChrome } from "../block-chrome.js";
 import { BlockMigrator } from "../block-migrations.js";
 import { normalizeBlockContract, type BlockAction, type BlockContract, type BlockDeprecation, type BlockMigrationStep, type BlockPreviewContract, type BlockSupports } from "../block-contract.js";
 import { registerContainerLayoutTarget, unregisterContainerLayoutTarget } from "../container-layout.js";
@@ -123,10 +123,20 @@ export class BlockRegistry {
    * declares migrations. Lossless: a failed step keeps the stored props.
    */
   migrateNode<T extends { type: string; props?: unknown; version?: unknown }>(node: T): T {
+    return this.migrateNodeResult(node).node;
+  }
+
+  /**
+   * Like `migrateNode`, and says whether an upgrade step failed. The node is
+   * then returned as stored, so the builder can show it and say why
+   * (justflows-ce#306).
+   */
+  migrateNodeResult<T extends { type: string; props?: unknown; version?: unknown }>(node: T): { node: T; failed: boolean } {
     const def = this.blocks.get(node.type);
-    if (!def || !this.contracts.get(node.type)?.migrations.length) return node;
-    const result = this.migrator.migrateBlocks([node], new Map([[node.type, def.version]]));
-    return result.document[0] as T;
+    if (!def || !this.contracts.get(node.type)?.migrations.length) return { node, failed: false };
+    const result = this.migrator.migrateBlocks([{ ...node, children: undefined }], new Map([[node.type, def.version]]));
+    const failed = result.failures.length > 0;
+    return { node: failed || !result.changed ? node : ({ ...(result.document[0] as T), children: (node as { children?: unknown }).children } as T), failed };
   }
 
   /**
@@ -158,7 +168,11 @@ export class BlockRegistry {
   renderNode(node: BlockRenderNode): string {
     const def = this.blocks.get(node.type);
     if (!def) {
-      return `<!-- missing block: ${node.type} -->`;
+      /**
+       * The stored type is author input: only a well-formed block id is
+       * echoed, so a crafted type cannot close the comment and inject markup.
+       */
+      return isMarkableBlockType(node.type) ? `<!-- missing block: ${node.type} -->` : "<!-- missing block -->";
     }
     const migrated = this.migrateNode(node as BlockRenderNode & { version?: unknown });
     const props = def.validateProps(migrated.props);

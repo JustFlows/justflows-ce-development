@@ -9,6 +9,7 @@ export type {
 } from "./registry/block-registry.js";
 export { coreBlocks } from "./core/index.js";
 export { sanitizeRichText, sanitizeHtmlBlock, sanitizePlainText, extractPlainText, sanitizePluginPreviewHtml } from "./sanitize.js";
+export { codeLanguageClass } from "./code-language.js";
 export { renderMath } from "./math.js";
 export { sanitizeBlockDocument } from "./sanitize-document.js";
 export { esc, safeHref, safeMediaSrc, sanitizeHref, sanitizeMediaSrc } from "./safe-url.js";

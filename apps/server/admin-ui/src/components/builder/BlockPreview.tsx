@@ -1,12 +1,13 @@
 import FunctionalBlock, { FUNCTIONAL_TYPES } from "./FunctionalBlock";
 import MediaBlock from "../MediaBlock";
 import { useT } from "../../i18n/I18nProvider";
-import { cloneElement, createContext, isValidElement, useContext, useEffect, useRef, useState, type ReactElement } from "react";
+import { Component, Fragment, cloneElement, createContext, isValidElement, useContext, useEffect, useRef, useState, type ErrorInfo, type ReactElement, type ReactNode } from "react";
 import type { BlockNode } from "./types";
-import { blockStyleDeclarations, esc, isBlockLocked, presetRefOf, stylePresetClass, styleWithTemplateDefault, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
+import { blockStyleDeclarations, codeLanguageClass, coreBlocks, esc, isBlockLocked, presetRefOf, stylePresetClass, styleWithTemplateDefault, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
 import { isExtendClick, useBuilderSelection } from "./selection-context";
 import { useTemplateContext } from "./template-defaults-context";
 import { useCatalogEntry } from "./catalog-context";
+import { previewSubstitution } from "./preview-substitutions";
 import { reusablePreviewBlocks, useReusableStore } from "../../lib/reusable-blocks";
 import MotionPreview from "./MotionPreview";
 import { applyMergeTags, useMergeTags } from "../../lib/merge-tags";
@@ -75,7 +76,71 @@ interface BlockPreviewProps {
   onUpdateProps?: (id: string, props: Record<string, unknown>) => void;
 }
 
-export function BlockPreview({
+/**
+ * One block on the canvas, isolated (justflows-ce#306): if drawing it throws,
+ * only this block shows a notice with Try again. The rest of the builder keeps
+ * working, and the block's stored data is never changed. A later edit to the
+ * block, or Try again, draws it again.
+ */
+export function BlockPreview(props: BlockPreviewProps) {
+  const { block } = props;
+  return (
+    <BlockPreviewBoundary resetKey={`${block.type}:${block.version}:${JSON.stringify(block.props)}`} block={block} onSelect={props.onSelect}>
+      <BlockPreviewContent {...props} />
+    </BlockPreviewBoundary>
+  );
+}
+
+class BlockPreviewBoundary extends Component<
+  { resetKey: string; block: BlockNode; onSelect?: (id: string) => void; children: ReactNode },
+  { failed: boolean; attempt: number }
+> {
+  state = { failed: false, attempt: 0 };
+
+  static getDerivedStateFromError(): Partial<{ failed: boolean }> {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo): void {
+    console.error(`[builder] block ${this.props.block.type} (${this.props.block.id}) could not be drawn`, error, info.componentStack);
+  }
+
+  componentDidUpdate(previous: { resetKey: string }): void {
+    if (this.state.failed && previous.resetKey !== this.props.resetKey) this.setState({ failed: false });
+  }
+
+  render() {
+    if (!this.state.failed) return <Fragment key={this.state.attempt}>{this.props.children}</Fragment>;
+    return (
+      <BlockPreviewFailure
+        block={this.props.block}
+        onSelect={this.props.onSelect}
+        onRetry={() => this.setState((s) => ({ failed: false, attempt: s.attempt + 1 }))}
+      />
+    );
+  }
+}
+
+function BlockPreviewFailure({ block, onSelect, onRetry }: { block: BlockNode; onSelect?: (id: string) => void; onRetry: () => void }) {
+  const { t } = useT();
+  return (
+    <div
+      className="jf-plugin-preview jf-plugin-preview--error"
+      role="note"
+      data-jf-block-preview={block.id}
+      data-jf-block-failed={block.type}
+      onClick={onSelect ? (e) => { e.stopPropagation(); onSelect(block.id); } : undefined}
+    >
+      <strong>{t("builder.blockFailure.title", { type: block.type })}</strong>
+      <span>{t("builder.blockFailure.kept")}</span>
+      <button type="button" className="jf-btn jf-btn--ghost jf-btn--sm" data-builder-chrome="true" onClick={(e) => { e.stopPropagation(); onRetry(); }}>
+        {t("builder.pluginPreview.retry")}
+      </button>
+    </div>
+  );
+}
+
+function BlockPreviewContent({
   block,
   depth = 0,
   onSelect,
@@ -85,7 +150,7 @@ export function BlockPreview({
 }: BlockPreviewProps) {
   const { t, locale } = useT();
   const scheme = usePreviewScheme();
-  const p = block.props;
+  const p = canvasProps(block);
   const tags = useMergeTags();
   const text = (value: unknown) => applyMergeTags(String(value ?? ""), tags);
   const isSelected = selectedId === block.id;
@@ -119,6 +184,8 @@ export function BlockPreview({
   /** A named preset is a class defined in the theme sheet, same as on the page (justflows-ce#301). */
   const presetClass = stylePresetClass(presetRefOf(p));
 
+  /** A deliberate stand-in for what the page fills in when served is labelled as one (justflows-ce#306). */
+  const substitution = previewSubstitution(block.type);
   const wrap = (content: React.ReactNode, label?: string) => {
     /**
      * A DOM element takes the chrome directly. A component root (an inline
@@ -150,6 +217,7 @@ export function BlockPreview({
       <div
         className={depth === 0 ? THEME_PREVIEW_SCOPE : undefined}
         data-theme={depth === 0 ? scheme : undefined}
+        data-jf-stand-in={substitution}
         onClick={
           onSelect
             ? (e) => {
@@ -171,6 +239,11 @@ export function BlockPreview({
         }}
       >
         {label && depth === 0 ? null : null}
+        {substitution && (
+          <span className="jf-preview-stand-in" data-builder-chrome="true" title={t(`builder.preview.standIn.${substitution}`)}>
+            {t("builder.preview.standIn.label")}
+          </span>
+        )}
         <MotionPreview blockId={block.id} animation={p.animation}>
           {inner}
         </MotionPreview>
@@ -596,18 +669,9 @@ export function BlockPreview({
 
     case "core.code":
       return wrap(
-        <pre
-          style={{
-            margin: 0,
-            padding: "0.75rem",
-            background: "var(--color-text, var(--jf-text))",
-            color: "var(--color-bg, var(--jf-surface))",
-            borderRadius: 4,
-            fontSize: "0.8rem",
-            overflow: "auto",
-          }}
-        >
-          <code>{(p.code as string) || "// code"}</code>
+        /** The theme styles code blocks, as on the page (justflows-ce#306). */
+        <pre>
+          <code className={codeLanguageClass(p.language)}>{(p.code as string) || "// code"}</code>
         </pre>,
       );
 
@@ -637,10 +701,23 @@ export function BlockPreview({
         />,
       );
 
-    case "core.grid":
+    case "core.grid": {
+      /**
+       * The page's grid element and classes, so theme grid rules apply. While
+       * editing, the grid editor inside lays the items out on its own tracks
+       * (with placement handles), so this element is a plain box there.
+       */
+      const gap = typeof p.gap === "string" ? p.gap : "md";
+      const rowHeight = typeof p.rowHeight === "string" ? p.rowHeight : "auto";
       return wrap(
-        renderChildren ? <>{renderChildren(block.children ?? [], depth + 1)}</> : <div />,
+        <div
+          className={`jf-grid jf-grid--gap-${gap} jf-grid--rows-${rowHeight}`}
+          style={{ "--jf-grid-cols": Number(p.columns) || 12, ...(onUpdateProps ? { display: "block" } : {}) } as React.CSSProperties}
+        >
+          {renderChildren?.(block.children ?? [], depth + 1)}
+        </div>,
       );
+    }
 
     case "core.color-scheme": {
       const schemeStyle = (p.style as string) || "buttons";
@@ -955,6 +1032,26 @@ export function BlockPreview({
   }
 }
 
+const CORE_DEFINITIONS = new Map(coreBlocks.map((definition) => [definition.type, definition]));
+
+/**
+ * The props a core block shows on the canvas: its stored props, with
+ * everything its own `validateProps` returns on top, as the public renderer
+ * uses them (justflows-ce#306). Missing values then get the same defaults on
+ * the canvas as on the page; editor-only props (style, animation, editor
+ * metadata) that `validateProps` does not return are kept. Inline editing
+ * still reads and writes the stored props.
+ */
+function canvasProps(block: BlockNode): Record<string, unknown> {
+  const definition = CORE_DEFINITIONS.get(block.type);
+  if (!definition) return block.props;
+  try {
+    return { ...block.props, ...(definition.validateProps(block.props) as Record<string, unknown>) };
+  } catch {
+    return block.props;
+  }
+}
+
 /** References being expanded above this one, so a stored cycle renders once instead of looping. */
 const ReusableStackContext = createContext<readonly string[]>([]);
 
@@ -1028,7 +1125,7 @@ function PluginBlockPreview({
    * outcome (empty, failed, unavailable, placeholder) is a visible, recoverable
    * state instead of a blank block.
    */
-  const [state, setState] = useState<{ status: "loading" | "ready" | "empty" | "error" | "timeout" | "unavailable" | "placeholder"; html: string }>({
+  const [state, setState] = useState<{ status: "loading" | "ready" | "empty" | "error" | "timeout" | "unavailable" | "placeholder"; html: string; migrationFailed?: boolean }>({
     status: "loading",
     html: "",
   });
@@ -1062,11 +1159,11 @@ function PluginBlockPreview({
           if (cancelled) return;
           if (res.status === 404) return setState({ status: "unavailable", html: "" });
           if (!res.ok) return setState({ status: "error", html: "" });
-          const body = (await res.json()) as { html?: string; placeholder?: boolean };
+          const body = (await res.json()) as { html?: string; placeholder?: boolean; migrationFailed?: boolean };
           if (cancelled) return;
           if (body.placeholder) return setState({ status: "placeholder", html: "" });
           const clean = typeof body.html === "string" ? sanitizePluginPreviewHtml(body.html) : "";
-          setState({ status: clean.trim() ? "ready" : "empty", html: clean });
+          setState({ status: clean.trim() ? "ready" : "empty", html: clean, ...(body.migrationFailed ? { migrationFailed: true } : {}) });
         })
         .catch(() => {
           clearTimeout(timeout);
@@ -1176,7 +1273,24 @@ function PluginBlockPreview({
       </div>
     );
   }
-  return <div ref={container} data-jf-plugin-block={type} style={minHeight ? { minHeight } : undefined} dangerouslySetInnerHTML={{ __html: html! }} />;
+  /**
+   * Deprecated blocks and blocks whose stored version could not be upgraded
+   * still show their content, with a note saying so (justflows-ce#306).
+   */
+  const notes = [
+    entry?.deprecated ? (entry.deprecated.replacedBy ? t("builder.blockStatus.deprecatedReplaced", { type: entry.deprecated.replacedBy }) : t("builder.blockStatus.deprecated")) : "",
+    state.migrationFailed ? t("builder.blockStatus.migrationFailed", { version: String(version ?? 1) }) : "",
+  ].filter(Boolean);
+  const rendered = <div ref={container} data-jf-plugin-block={type} style={minHeight ? { minHeight } : undefined} dangerouslySetInnerHTML={{ __html: html! }} />;
+  if (!notes.length) return rendered;
+  return (
+    <div className="jf-block-status" data-jf-block-status={state.migrationFailed ? "migration-failed" : "deprecated"}>
+      {notes.map((note) => (
+        <p key={note} className="jf-block-status__note" role="note" data-builder-chrome="true">{note}</p>
+      ))}
+      {rendered}
+    </div>
+  );
 }
 
 /** How long a plugin preview may take before the canvas shows it as timed out. */

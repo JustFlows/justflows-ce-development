@@ -21,6 +21,7 @@ import BlockLayoutPanel from "./BlockLayoutPanel";
 import ReusablePanel, { type ReusableItem } from "./ReusablePanel";
 import { GRID_BLOCK_TYPE, gridColumns, matchReadingOrder, readingOrderDiffers } from "./grid";
 import MediaImageField from "../MediaImageField";
+import BlockRecoveryPanel, { type BlockRecoveryReason } from "./BlockRecoveryPanel";
 import { useMergeTags } from "../../lib/merge-tags";
 import { useThemeStyleTokens } from "../../lib/theme-style-tokens";
 import { inspectorSections, type InspectorSections } from "./inspector-sections";
@@ -165,6 +166,17 @@ interface BlockInspectorProps {
   onDetachReusable?: (blocks: BlockNode[]) => void;
   /** Open a reusable block's source in its editor. */
   onEditReusable?: (id: string) => void;
+  /**
+   * The loaded block catalog, for recovering blocks whose extension is off or
+   * that are deprecated (justflows-ce#306). Without it no recovery panel shows.
+   */
+  catalog?: BlockCatalogEntry[];
+  /** Swap the selected block for another, after the author confirmed. */
+  onReplaceBlock?: (next: BlockNode) => void;
+  /** Remove the selected block, after the author confirmed. */
+  onRemoveBlock?: () => void;
+  /** Load the block catalog again, e.g. after an extension was switched back on. */
+  onReloadCatalog?: () => void;
   /** Only the block's own fields: no title, style, layout, animation, or JSON panels (widget rows). */
   compact?: boolean;
   /** Inspector tab to show, remembered per user by the builder shell. Defaults to Content. */
@@ -205,6 +217,10 @@ export default function BlockInspector({
   onConvertToReusable,
   onDetachReusable,
   onEditReusable,
+  catalog,
+  onReplaceBlock,
+  onRemoveBlock,
+  onReloadCatalog,
   compact = false,
   tab: requestedTab = "content",
   onTabChange,
@@ -635,6 +651,35 @@ export default function BlockInspector({
       );
       break;
     }
+  }
+
+  /**
+   * A block whose extension is off has no settings to show, only its stored
+   * data and the ways to recover it. A deprecated block keeps its settings
+   * under the notice (justflows-ce#306).
+   */
+  const recovery: BlockRecoveryReason | null = !catalog?.length
+    ? null
+    : !catalogEntry && !block.type.startsWith("core.")
+      ? "unavailable"
+      : catalogEntry?.deprecated
+        ? "deprecated"
+        : null;
+  if (recovery) {
+    fields = (
+      <>
+        <BlockRecoveryPanel
+          block={block}
+          reason={recovery}
+          entry={catalogEntry}
+          catalog={catalog ?? []}
+          onReplace={onReplaceBlock}
+          onRemove={onRemoveBlock}
+          onRetry={onReloadCatalog}
+        />
+        {recovery === "deprecated" ? fields : null}
+      </>
+    );
   }
 
   if (compact) return <div>{fields}</div>;

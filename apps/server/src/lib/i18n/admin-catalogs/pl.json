@@ -1192,7 +1192,14 @@
       "theFineDetails": "Drobne szczegóły",
       "thePostExcerptAppearsHere": "Fragment postu pojawia się tutaj.",
       "typeAParagraph": "Wpisz akapit…",
-      "youMayAlsoLike": "Może ci się spodobać"
+      "youMayAlsoLike": "Może ci się spodobać",
+      "standIn": {
+        "label": "Podgląd",
+        "site": "Pokazuje logo, tytuł, menu lub okruszki witryny, gdy strona jest wyświetlana.",
+        "query": "Pokazuje treści lub nagłówki znalezione podczas wyświetlania strony.",
+        "visitor": "Zależy od odwiedzającego (zalogowanie, język, schemat kolorów lub wyszukiwanie), więc kreator pokazuje wersję neutralną.",
+        "external": "Wczytuje treści zewnętrzne na opublikowanej stronie; kreator ich nie uruchamia."
+      }
     },
     "blockCountOne": "Blok {count}",
     "blockCountMany": "Bloki {count}",
@@ -1843,6 +1850,45 @@
       "unavailableHint": "Jego wtyczka lub motyw może być wyłączony. Treść zostaje zachowana i pojawi się ponownie po jego powrocie.",
       "timeout": "Podgląd {title} trwał zbyt długo.",
       "failed": "Nie udało się wyświetlić podglądu: {title}."
+    },
+    "blockFailure": {
+      "title": "Nie można wyświetlić {type} w kreatorze.",
+      "kept": "Treść jest zachowana, a strona pokazuje ją tak, jak została zapisana."
+    },
+    "blockStatus": {
+      "deprecated": "Ten blok jest przestarzały. Nadal działa, ale nie jest już oferowany dla nowych treści.",
+      "deprecatedReplaced": "Ten blok jest przestarzały. Do nowych treści używaj {type}.",
+      "migrationFailed": "Nie udało się zaktualizować tego bloku z wersji {version}, więc pokazuje zapisane ustawienia."
+    },
+    "recovery": {
+      "unavailableTitle": "Wtyczka lub motyw tego bloku nie jest aktywny",
+      "deprecatedTitle": "Ten blok jest przestarzały",
+      "unavailableText": "Nie można go teraz edytować ani podejrzeć. Treść jest zachowana, a strona pokaże go ponownie, gdy rozszerzenie wróci.",
+      "deprecatedText": "Nadal działa, ale nie jest już oferowany dla nowych treści.",
+      "deprecatedReplaced": "Nadal działa. Jego następcą jest {type}.",
+      "type": "Typ",
+      "providedBy": "Dostarczony przez",
+      "version": "Wersja",
+      "deprecatedSince": "przestarzały od {since}",
+      "id": "Id bloku",
+      "stored": "Zapisane",
+      "storedCounts": "Ustawienia: {settings}, bloki w środku: {blocks}",
+      "copy": "Kopiuj dane",
+      "download": "Pobierz dane",
+      "copied": "Skopiowano dane bloku.",
+      "copyFailed": "Przeglądarka nie pozwoliła na kopiowanie. Użyj opcji Pobierz dane.",
+      "manageExtensions": "Zarządzaj rozszerzeniami",
+      "replaceWith": "Zastąp przez",
+      "chooseBlock": "Wybierz blok…",
+      "replace": "Zastąp",
+      "remove": "Usuń blok",
+      "replaceConfirm": "Zastąpić ten blok blokiem {title}? Zachowa swój id i każde ustawienie, które ma także {title}.",
+      "replaceDrops": "Zapisane ustawienia, których nowy blok nie ma, zostaną usunięte (liczba: {count}).",
+      "replaceDropsChildren": "Bloki w środku zostaną usunięte, bo nowy blok nie może zawierać innych bloków (liczba: {count}).",
+      "downloadFirst": "Najpierw pobierz dane, jeśli mogą być później potrzebne.",
+      "removeConfirm": "Usunąć ten blok ze strony? Najpierw pobierz jego dane, jeśli mogą być później potrzebne.",
+      "removeConfirmChildren": "Usunąć ten blok wraz z blokami w środku (liczba: {count})? Najpierw pobierz jego dane, jeśli mogą być później potrzebne.",
+      "keptHint": "Zapisanie strony zachowuje ten blok dokładnie w zapisanej postaci."
     }
   },
   "dashboard": {

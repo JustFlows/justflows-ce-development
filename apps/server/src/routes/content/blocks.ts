@@ -96,9 +96,10 @@ router.post("/preview", requireRole(...CONTENT_READ_ROLES), previewLimit, (req, 
      */
     const raw = body.props && typeof body.props === "object" && !Array.isArray(body.props) ? (body.props as Record<string, unknown>) : {};
     const version = typeof (body as { version?: unknown }).version === "number" ? (body as { version: number }).version : definition.version;
-    const migrated = getRuntimeBlockRegistry().migrateNode({ type, version, props: raw });
+    const { node: migrated, failed } = getRuntimeBlockRegistry().migrateNodeResult({ type, version, props: raw });
     const props = definition.validateProps({ ...(contract?.preview.sampleProps ?? {}), ...stripEmpty(migrated.props as Record<string, unknown>) });
-    res.json({ html: String(definition.render(props as never, "") ?? "") });
+    /** A failed upgrade renders the stored props as the page does, and says so (justflows-ce#306). */
+    res.json({ html: String(definition.render(props as never, "") ?? ""), ...(failed ? { migrationFailed: true } : {}) });
   } catch {
     res.status(422).json({ error: "This block could not be previewed" });
   }

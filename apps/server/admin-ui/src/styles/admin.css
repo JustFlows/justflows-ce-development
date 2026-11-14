@@ -5902,6 +5902,43 @@ input[type="range"] {
 }
 
 /* Plugin block previews and their states (justflows-ce#305). */
+/**
+ * A canvas stand-in for content the page fills in when served
+ * (justflows-ce#306). The label appears on hover and focus so it does not
+ * crowd the canvas, and its title says why.
+ */
+.jf-preview-stand-in {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 2;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--jf-surface-3);
+  color: var(--jf-text-2);
+  font: 600 0.68rem/1.4 var(--jf-font, system-ui, sans-serif);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+[data-jf-stand-in]:hover > .jf-preview-stand-in,
+[data-jf-stand-in]:focus-within > .jf-preview-stand-in,
+[data-selected="true"] [data-jf-stand-in] > .jf-preview-stand-in {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .jf-preview-stand-in { transition: none; }
+}
+
+.jf-block-status__note {
+  margin: 0 0 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-left: 3px solid var(--jf-warning, #b45309);
+  background: var(--jf-surface-2);
+  color: var(--jf-text-2);
+  font-size: 0.75rem;
+}
+
 .jf-plugin-preview {
   display: flex;
   flex-direction: column;
@@ -5934,4 +5971,54 @@ input[type="range"] {
   .jf-plugin-preview--loading {
     animation: none;
   }
+}
+
+/** Recovery for unavailable and deprecated blocks in the block settings (justflows-ce#306). */
+.jf-recovery {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--jf-warning);
+  border-radius: 6px;
+  background: var(--jf-warning-soft);
+  color: var(--jf-text);
+}
+.jf-recovery__title {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.jf-recovery__text,
+.jf-recovery__notice {
+  margin: 0;
+  font-size: 0.8rem;
+}
+.jf-recovery__meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.6rem;
+  margin: 0;
+  font-size: 0.75rem;
+}
+.jf-recovery__meta dt {
+  color: var(--jf-text-2);
+}
+.jf-recovery__meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.jf-recovery__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.jf-recovery__replace {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+}
+.jf-recovery__replace .jf-input {
+  flex: 1;
+  min-width: 0;
 }

@@ -1066,7 +1066,14 @@
       "typeAParagraph": "Escribe un párrafo…",
       "youMayAlsoLike": "También te puede gustar",
       "html": "HTML",
-      "emptyParagraph": "Párrafo vacío"
+      "emptyParagraph": "Párrafo vacío",
+      "standIn": {
+        "label": "Vista previa",
+        "site": "Muestra el logotipo, el título, los menús o las migas de pan de tu sitio cuando se sirve la página.",
+        "query": "Muestra el contenido o los encabezados que se encuentran al servir la página.",
+        "visitor": "Depende del visitante (sesión iniciada, idioma, esquema de color o búsqueda), así que el constructor muestra una versión neutra.",
+        "external": "Carga contenido de terceros en la página publicada; el constructor no lo ejecuta."
+      }
     },
     "grid": {
       "dragBlockOntoGrid": "Arrastra un bloque a la cuadrícula",
@@ -1848,6 +1855,45 @@
       "unavailableHint": "Puede que su plugin o tema esté desactivado. El contenido se conserva y vuelve a mostrarse cuando regrese.",
       "timeout": "La vista previa de {title} tardó demasiado.",
       "failed": "No se pudo mostrar la vista previa de {title}."
+    },
+    "blockFailure": {
+      "title": "{type} no se puede mostrar en el constructor.",
+      "kept": "Su contenido se conserva y la página lo muestra tal como se guardó."
+    },
+    "blockStatus": {
+      "deprecated": "Este bloque está obsoleto. Sigue funcionando, pero ya no se ofrece para contenido nuevo.",
+      "deprecatedReplaced": "Este bloque está obsoleto. Usa {type} para contenido nuevo.",
+      "migrationFailed": "Este bloque no se pudo actualizar desde la versión {version}, así que muestra sus ajustes guardados."
+    },
+    "recovery": {
+      "unavailableTitle": "El plugin o tema de este bloque no está activo",
+      "deprecatedTitle": "Este bloque está obsoleto",
+      "unavailableText": "Ahora no se puede editar ni previsualizar. Su contenido se conserva y la página lo vuelve a mostrar cuando la extensión vuelva a estar activa.",
+      "deprecatedText": "Sigue funcionando, pero ya no se ofrece para contenido nuevo.",
+      "deprecatedReplaced": "Sigue funcionando. Su sustituto es {type}.",
+      "type": "Tipo",
+      "providedBy": "Proporcionado por",
+      "version": "Versión",
+      "deprecatedSince": "obsoleto desde {since}",
+      "id": "Id. del bloque",
+      "stored": "Guardado",
+      "storedCounts": "{settings} ajustes, {blocks} bloques dentro",
+      "copy": "Copiar datos",
+      "download": "Descargar datos",
+      "copied": "Datos del bloque copiados.",
+      "copyFailed": "El navegador no permitió copiar. Usa Descargar datos.",
+      "manageExtensions": "Gestionar extensiones",
+      "replaceWith": "Reemplazar por",
+      "chooseBlock": "Elige un bloque…",
+      "replace": "Reemplazar",
+      "remove": "Eliminar bloque",
+      "replaceConfirm": "¿Reemplazar este bloque por {title}? Conserva su id. y cada ajuste que {title} también tiene.",
+      "replaceDrops": "Se eliminarán {count} ajustes guardados que el nuevo bloque no tiene.",
+      "replaceDropsChildren": "Se eliminarán {count} bloques de su interior, porque el nuevo bloque no puede contener otros bloques.",
+      "downloadFirst": "Descarga primero los datos si podrías necesitarlos más adelante.",
+      "removeConfirm": "¿Eliminar este bloque de la página? Descarga primero sus datos si podrías necesitarlos más adelante.",
+      "removeConfirmChildren": "¿Eliminar este bloque y los {count} bloques que contiene? Descarga primero sus datos si podrías necesitarlos más adelante.",
+      "keptHint": "Al guardar la página, este bloque se conserva exactamente como está guardado."
     }
   },
   "dashboard": {

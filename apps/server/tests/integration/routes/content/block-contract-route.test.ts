@@ -237,6 +237,54 @@ describe("documents opened in the builder", () => {
   });
 });
 
+describe("extensions switched off and on again (justflows-ce#306)", () => {
+  it("keeps a saved block, its id and its children through saves, and renders it again unchanged", () => {
+    const adapter = pluginBlockAdapter();
+    const registry = getRuntimeBlockRegistry();
+    const stored = sanitizeBlockDocument({
+      version: 1,
+      blocks: [
+        { id: "card-1", type: "acme.pricing", version: 2, props: { title: "Pro", price: "€29" }, editor: { label: "Main plan" } },
+        { id: "p-1", type: "core.paragraph", version: 1, props: { text: "After" } },
+      ],
+    });
+    const before = registry.renderDocument(stored as never);
+    adapter.unregister("acme.pricing");
+    try {
+      /** Saving while the plugin is off keeps the block exactly as it was. */
+      const savedWhileOff = sanitizeBlockDocument(JSON.parse(JSON.stringify(stored)));
+      expect(savedWhileOff).toEqual(stored);
+      const page = registry.renderDocument(savedWhileOff as never);
+      expect(page).toContain("<!-- missing block: acme.pricing -->");
+      expect(page).toContain("After");
+    } finally {
+      adapter.register(pricing);
+    }
+    expect(registry.renderDocument(stored as never)).toBe(before);
+  });
+
+  it("says when a preview could not upgrade the stored version", async () => {
+    const adapter = pluginBlockAdapter();
+    adapter.register({
+      type: "acme.fragile",
+      version: 2,
+      title: "Fragile",
+      schema: {},
+      migrations: [{ from: 1, to: 2, migrate: () => { throw new Error("bad data"); } }],
+      validateProps: (raw) => (raw ?? {}) as Record<string, unknown>,
+      render: (props) => `<p>${esc(String(props.heading ?? ""))}</p>`,
+    });
+    try {
+      const body = (await (await preview({ type: "acme.fragile", version: 1, props: { heading: "Stored" } })).json()) as { html: string; migrationFailed?: boolean };
+      expect(body).toEqual({ html: "<p>Stored</p>", migrationFailed: true });
+      const current = (await (await preview({ type: "acme.fragile", version: 2, props: { heading: "Now" } })).json()) as Record<string, unknown>;
+      expect(current).not.toHaveProperty("migrationFailed");
+    } finally {
+      adapter.unregister("acme.fragile");
+    }
+  });
+});
+
 describe("refused contracts", () => {
   it("refuses an unsupported apiVersion and an incomplete migration chain at registration", () => {
     const adapter = pluginBlockAdapter();

@@ -1066,7 +1066,14 @@
       "typeAParagraph": "Absatz eingeben…",
       "youMayAlsoLike": "Das könnte Ihnen auch gefallen",
       "html": "HTML",
-      "emptyParagraph": "Leerer Absatz"
+      "emptyParagraph": "Leerer Absatz",
+      "standIn": {
+        "label": "Vorschau",
+        "site": "Zeigt Logo, Titel, Menüs oder Brotkrumen deiner Website, wenn die Seite ausgeliefert wird.",
+        "query": "Listet Inhalte oder Überschriften auf, die beim Ausliefern der Seite gefunden werden.",
+        "visitor": "Hängt vom Besucher ab (angemeldet, Sprache, Farbschema oder Suche), daher zeigt der Builder eine neutrale Version.",
+        "external": "Lädt Inhalte von Drittanbietern auf der veröffentlichten Seite; der Builder führt sie nicht aus."
+      }
     },
     "grid": {
       "dragBlockOntoGrid": "Ziehen Sie einen Block auf das Raster",
@@ -1848,6 +1855,45 @@
       "unavailableHint": "Sein Plugin oder Theme ist vielleicht deaktiviert. Der Inhalt bleibt erhalten und erscheint wieder, sobald es zurück ist.",
       "timeout": "Die Vorschau von {title} hat zu lange gedauert.",
       "failed": "Für {title} konnte keine Vorschau erstellt werden."
+    },
+    "blockFailure": {
+      "title": "{type} kann im Builder nicht angezeigt werden.",
+      "kept": "Der Inhalt bleibt erhalten und die Seite zeigt ihn wie gespeichert."
+    },
+    "blockStatus": {
+      "deprecated": "Dieser Block ist veraltet. Er funktioniert weiter, wird aber für neue Inhalte nicht mehr angeboten.",
+      "deprecatedReplaced": "Dieser Block ist veraltet. Verwende {type} für neue Inhalte.",
+      "migrationFailed": "Dieser Block konnte nicht von Version {version} aktualisiert werden und zeigt daher seine gespeicherten Einstellungen."
+    },
+    "recovery": {
+      "unavailableTitle": "Das Plugin oder Theme dieses Blocks ist nicht aktiv",
+      "deprecatedTitle": "Dieser Block ist veraltet",
+      "unavailableText": "Er kann gerade nicht bearbeitet oder angezeigt werden. Der Inhalt bleibt erhalten, und die Seite zeigt ihn wieder, sobald die Erweiterung zurück ist.",
+      "deprecatedText": "Er funktioniert weiter, wird aber für neue Inhalte nicht mehr angeboten.",
+      "deprecatedReplaced": "Er funktioniert weiter. Der Ersatz ist {type}.",
+      "type": "Typ",
+      "providedBy": "Bereitgestellt von",
+      "version": "Version",
+      "deprecatedSince": "veraltet seit {since}",
+      "id": "Block-ID",
+      "stored": "Gespeichert",
+      "storedCounts": "{settings} Einstellungen, {blocks} Blöcke darin",
+      "copy": "Daten kopieren",
+      "download": "Daten herunterladen",
+      "copied": "Blockdaten kopiert.",
+      "copyFailed": "Der Browser hat das Kopieren nicht erlaubt. Nutze stattdessen Daten herunterladen.",
+      "manageExtensions": "Erweiterungen verwalten",
+      "replaceWith": "Ersetzen durch",
+      "chooseBlock": "Block wählen…",
+      "replace": "Ersetzen",
+      "remove": "Block entfernen",
+      "replaceConfirm": "Diesen Block durch {title} ersetzen? Er behält seine ID und jede Einstellung, die {title} auch hat.",
+      "replaceDrops": "{count} gespeicherte Einstellungen, die der neue Block nicht hat, werden entfernt.",
+      "replaceDropsChildren": "{count} Blöcke darin werden entfernt, weil der neue Block keine anderen Blöcke enthalten kann.",
+      "downloadFirst": "Lade die Daten zuerst herunter, falls du sie später noch brauchst.",
+      "removeConfirm": "Diesen Block von der Seite entfernen? Lade seine Daten zuerst herunter, falls du sie später noch brauchst.",
+      "removeConfirmChildren": "Diesen Block und die {count} Blöcke darin entfernen? Lade seine Daten zuerst herunter, falls du sie später noch brauchst.",
+      "keptHint": "Beim Speichern der Seite bleibt dieser Block genau so, wie er gespeichert ist."
     }
   },
   "dashboard": {
