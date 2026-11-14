@@ -161,6 +161,10 @@ interface BlockInspectorProps {
   reusable?: ReusableItem[];
   onReloadReusable?: () => void;
   onConvertToReusable?: (ref: string) => void;
+  /** Replace a linked reference with a local copy (justflows-ce#304). */
+  onDetachReusable?: (blocks: BlockNode[]) => void;
+  /** Open a reusable block's source in its editor. */
+  onEditReusable?: (id: string) => void;
   /** Only the block's own fields: no title, style, layout, animation, or JSON panels (widget rows). */
   compact?: boolean;
   /** Inspector tab to show, remembered per user by the builder shell. Defaults to Content. */
@@ -199,6 +203,8 @@ export default function BlockInspector({
   reusable = [],
   onReloadReusable,
   onConvertToReusable,
+  onDetachReusable,
+  onEditReusable,
   compact = false,
   tab: requestedTab = "content",
   onTabChange,
@@ -634,7 +640,14 @@ export default function BlockInspector({
       <>
         {fields}
         {onConvertToReusable && onReloadReusable && (
-          <ReusablePanel block={block} items={reusable} onReload={onReloadReusable} onConvert={onConvertToReusable} />
+          <ReusablePanel
+            block={block}
+            items={reusable}
+            onReload={onReloadReusable}
+            onConvert={onConvertToReusable}
+            onDetach={onDetachReusable}
+            onEdit={onEditReusable}
+          />
         )}
       </>
     ),

@@ -323,6 +323,39 @@ value:
   stored defaults, `null` clears them. The theme builder's template panel
   edits them with the same controls a block has.
 
+## Reusable blocks and synced patterns (#304)
+
+A `core.reusable` block is a link: `props.ref` names an entry in the
+`reusable_blocks` site setting, and the public renderer replaces the link with
+that entry's tree. A synced pattern is stored as a reusable block with the
+pattern's id, so inserting it inserts a link. An ordinary pattern inserts a copy.
+
+- **Drafts.** An entry has a published tree (`blocks`, what every page renders),
+  an optional `draft`, and a `revision`. The builder saves drafts (`PUT` with
+  `draft: true`); only `POST /api/reusable-blocks/:id/publish` changes pages.
+  Previews (`?preview=1` for a signed-in editor) render drafts; shared preview
+  links and visitors never do. `expectedRevision` refuses a stale save with 409.
+  A `PUT` without `draft` publishes at once, as before, and a new entry is
+  always published. Every save is recorded in the document history
+  (`kind=reusable_block`, key = the id), publishes are audited as
+  `design.reusable_published`, and deletes as `design.reusable_deleted`.
+- **Nesting.** A save that would make an entry contain itself, directly or
+  through others (`cycle`), or nest references deeper than
+  `MAX_REUSABLE_NESTING` (4, `too_deep`), is refused with 400 and the reason.
+  The renderer also stops at 4 and never re-enters an entry it is expanding, so
+  a cycle stored earlier renders once. A link to a deleted entry renders
+  nothing on the page and a recoverable placeholder in the builder. Ordinary
+  child nesting no longer counts toward this limit (it used to drop blocks more
+  than four levels deep). Blocks of unavailable plugins are kept as stored.
+- **Usage.** `GET /api/reusable-blocks/:id/usage` counts every place a link
+  appears: content, template parts (header, footer, widget areas), templates,
+  mega menus, other reusable blocks and patterns. Content is listed only when
+  the viewer may open it (published and readable, or within their editing
+  reach); the rest is counted in `hiddenContent`. `DELETE` of an entry that is
+  still used answers 409 with the usage unless `confirm=1` is sent.
+- **Detach.** Detaching replaces the link with a copy of the entry's published
+  tree, with fresh ids and no locks. Nothing ties the copy to the source.
+
 ## Migrations and deprecation
 
 A block type's `version` describes its props. When props change in a way old

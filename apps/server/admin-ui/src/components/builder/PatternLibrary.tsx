@@ -375,9 +375,13 @@ export default function PatternLibrary({
                         dialog.current?.close();
                       }}
                     >
-                      {t("builder.patterns.insert")}
+                      {selected.synced ? t("builder.patterns.insertLinked") : t("builder.patterns.insert")}
                     </button>
                   </div>
+                  {/** Linked or copied is a real difference for the author; say which before inserting (justflows-ce#304). */}
+                  <p className="jf-field__hint" style={{ maxWidth: 900, margin: "0 auto 8px" }}>
+                    {selected.synced ? t("builder.patterns.insertLinkedHint") : t("builder.patterns.insertCopyHint")}
+                  </p>
                   {missing.length > 0 && (
                     <p role="alert" style={{ maxWidth: 900, margin: "0 auto 12px" }}>
                       {t("builder.patterns.requires", { types: missing.join(", ") })}{" "}

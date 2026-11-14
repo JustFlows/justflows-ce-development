@@ -275,7 +275,10 @@ export const MANAGE_API_OPENAPI = {
       get: op("List reusable blocks", "content:read"),
       put: op("Create or replace a reusable block", "settings:manage"),
     },
-    "/reusable-blocks/{id}": { delete: op("Delete a reusable block", "settings:manage") },
+    "/reusable-blocks/{id}": { delete: op("Delete a reusable block (a block still in use needs confirm=1)", "settings:manage") },
+    "/reusable-blocks/{id}/usage": { get: op("Where a reusable block is used", "content:read") },
+    "/reusable-blocks/{id}/publish": { post: op("Publish a reusable block's draft", "settings:manage") },
+    "/reusable-blocks/{id}/discard": { post: op("Discard a reusable block's draft", "settings:manage") },
     "/style-presets": {
       get: op("List style presets (the draft when there is one, and the published list)", "content:read"),
       put: op("Create or replace a style preset in the draft", "settings:manage"),

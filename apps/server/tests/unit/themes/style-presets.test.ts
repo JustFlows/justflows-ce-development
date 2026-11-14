@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const settings = new Map<string, unknown>();
 const queries: { sql: string; params: unknown[] }[] = [];
-let contentRows: { type: string; n: number }[] = [];
+let contentRows: Record<string, unknown>[] = [];
 
 vi.mock("../../../src/lib/settings/site-settings.js", () => ({
   getSiteSetting: async (_site: string, key: string) => settings.get(key) ?? null,
@@ -23,8 +23,10 @@ vi.mock("../../../src/lib/database/db.js", () => ({
     query: async (sql: string, params: unknown[]) => {
       queries.push({ sql, params });
       if (/FROM content/.test(sql)) return contentRows;
-      if (/FROM template_parts/.test(sql)) return [{ part: "footer" }];
+      /** PostgreSQL's jsonb text form puts a space after each colon; the scan must still match. */
+      if (/FROM template_parts/.test(sql)) return [{ part: "footer", doc: '{"blocks": [{"props": {"styleRef": "card"}}]}', draft_doc: null }];
       if (/FROM theme_templates/.test(sql)) return [];
+      if (/FROM menus/.test(sql)) return [];
       return [];
     },
   }),
@@ -77,9 +79,14 @@ describe("style preset drafts", () => {
 
 describe("stylePresetUsage", () => {
   it("counts content by type and lists parts, templates, reusable blocks and patterns", async () => {
+    const uses = (styleRef: string) => JSON.stringify({ version: 1, blocks: [{ type: "core.group", props: { styleRef } }] });
     contentRows = [
-      { type: "page", n: 3 },
-      { type: "post", n: 1 },
+      { id: "a", title: "A", type: "page", locale: "en", status: "published", author_id: null, blocks: uses("card") },
+      { id: "b", title: "B", type: "page", locale: "en", status: "draft", author_id: null, blocks: uses("card") },
+      { id: "c", title: "C", type: "page", locale: "en", status: "published", author_id: null, blocks: uses("card") },
+      { id: "d", title: "D", type: "post", locale: "en", status: "published", author_id: null, blocks: uses("card") },
+      /** Matched by the coarse LIKE (the id appears), but not as a styleRef. */
+      { id: "e", title: "card", type: "post", locale: "en", status: "published", author_id: null, blocks: JSON.stringify({ blocks: [{ props: { text: '"card"' } }] }) },
     ];
     settings.set("reusable_blocks", [
       { id: "r1", blocks: [{ type: "core.group", props: { styleRef: "card" } }] },
@@ -95,7 +102,8 @@ describe("stylePresetUsage", () => {
       patterns: 1,
       total: 7,
     });
-    /** One bounded query per table, each with the exact needle. */
-    expect(queries.map((q) => q.params[1])).toEqual(['%"styleRef":"card"%', '%"styleRef":"card"%', '%"styleRef":"card"%']);
+    /** One bounded query per table, each filtering on the quoted id, then checked exactly. */
+    expect(queries.map((q) => q.params[1])).toEqual(['%"card%', '%"card%', '%"card%', '%"card%']);
+    expect(queries.every((q) => /LIMIT \d+/.test(q.sql))).toBe(true);
   });
 });

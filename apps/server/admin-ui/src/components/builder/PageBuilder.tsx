@@ -45,6 +45,7 @@ import {
   groupBlocks,
   insertBlocksAt,
   pasteTarget,
+  freshCopy,
   removeBlocks,
   resetBlockStyles,
   siblingSet,
@@ -118,6 +119,8 @@ interface PageBuilderProps {
   onEnterSiteContext?: (region: SiteRegion, slug: string | null | undefined, selectedId: string | null) => void;
   /** A block to select once the document is loaded, e.g. after returning from a site-wide part. */
   initialSelectedId?: string | null;
+  /** Open a reusable block's source; receives the current selection so it can be restored on return. */
+  onEditReusable?: (id: string, selectedId: string | null) => void;
 }
 
 export default function PageBuilder({
@@ -142,6 +145,7 @@ export default function PageBuilder({
   siteContextMeta,
   onEnterSiteContext,
   initialSelectedId = null,
+  onEditReusable,
 }: PageBuilderProps) {
   const { t } = useT();
   const [prefs, setPrefs] = useBuilderPrefs(useOptionalSessionUserId());
@@ -677,6 +681,24 @@ export default function PageBuilder({
     };
   }, [enableKeyboardShortcut]);
 
+  /**
+   * Detach a linked reference: a local copy of the source's published blocks
+   * with fresh ids and no locks takes its place, as one undo step. Nothing
+   * links the copy to the source afterwards (justflows-ce#304).
+   */
+  const detachReusable = useCallback(
+    (source: BlockNode[]) => {
+      if (!selectedId) return;
+      const set = siblingSet(regionBlocks, [selectedId]);
+      if (!set) return;
+      const copies = freshCopy(source, uid);
+      emitRegion(insertBlocksAt(removeBlocks(regionBlocks, [selectedId]), set.parentId, set.indices[0]!, copies));
+      setSelectedId(copies[0]?.id ?? null);
+      announceRef.current({ tone: "ok", text: t("builder.reusable.detached") });
+    },
+    [selectedId, regionBlocks, emitRegion, setSelectedId, t],
+  );
+
   const navLabels = useMemo(
     () => previewNavLabels(pageHeader, menus, siteDefaultSlug),
     [pageHeader, menus, siteDefaultSlug],
@@ -783,6 +805,8 @@ export default function PageBuilder({
         reusable={reusable}
         onReloadReusable={reloadReusable}
         onConvertToReusable={convertToReusable}
+        onDetachReusable={detachReusable}
+        onEditReusable={onEditReusable ? (id) => onEditReusable(id, selectedId) : undefined}
         tab={prefs.inspectorTab}
         onTabChange={(inspectorTab) => setPrefs({ inspectorTab })}
       />

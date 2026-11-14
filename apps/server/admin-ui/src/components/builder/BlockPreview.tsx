@@ -6,6 +6,7 @@ import type { BlockNode } from "./types";
 import { blockStyleDeclarations, esc, isBlockLocked, presetRefOf, stylePresetClass, styleWithTemplateDefault, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
 import { isExtendClick, useBuilderSelection } from "./selection-context";
 import { useTemplateContext } from "./template-defaults-context";
+import { reusablePreviewBlocks, useReusableStore } from "../../lib/reusable-blocks";
 import MotionPreview from "./MotionPreview";
 import { applyMergeTags, useMergeTags } from "../../lib/merge-tags";
 import { ImagePickerPopover, MediaPickerPopover, readEditableText } from "./InlineEditable";
@@ -925,6 +926,9 @@ export function BlockPreview({
           {t("builder.preview.postContentThePageOrPostSOwnBlocksRender")}</div>,
       );
 
+    case "core.reusable":
+      return wrap(<ReusableReferencePreview refId={String(p.ref ?? "")} depth={depth} />);
+
     case "core.template-part":
       return wrap(
         <div
@@ -948,6 +952,52 @@ export function BlockPreview({
         <div style={{ color: "var(--color-muted, var(--jf-text-3))", fontSize: "0.8rem" }}>{block.type}</div>,
       );
   }
+}
+
+/** References being expanded above this one, so a stored cycle renders once instead of looping. */
+const ReusableStackContext = createContext<readonly string[]>([]);
+
+/**
+ * A linked reusable block on the canvas (justflows-ce#304): its content,
+ * read-only, under a chip naming the source. The canvas shows the draft when
+ * there is one, like a preview; the chip says so. A deleted source, a cycle,
+ * or a too-deep chain shows a recoverable placeholder instead of nothing.
+ */
+function ReusableReferencePreview({ refId, depth }: { refId: string; depth: number }) {
+  const { t } = useT();
+  const { items, loaded } = useReusableStore();
+  const stack = useContext(ReusableStackContext);
+  const item = items.find((entry) => entry.id === refId);
+  if (!loaded) return <div className="jf-reusable-ref jf-reusable-ref--empty">{t("builder.reusable.usageLoading")}</div>;
+  if (!item) {
+    return (
+      <div className="jf-reusable-ref jf-reusable-ref--missing" role="note">
+        {refId ? t("builder.reusable.missingRecover") : t("builder.reusable.notChosen")}
+      </div>
+    );
+  }
+  if (stack.includes(refId) || stack.length >= 4) {
+    return (
+      <div className="jf-reusable-ref jf-reusable-ref--missing" role="note">
+        {t("builder.reusable.nestingStopped", { name: item.name })}
+      </div>
+    );
+  }
+  const render = (blocks: BlockNode[], childDepth: number): React.ReactNode =>
+    blocks.map((child) => <BlockPreview key={child.id} block={child} depth={childDepth} renderChildren={render} />);
+  return (
+    <div className="jf-reusable-ref" data-reusable-ref={refId}>
+      <span className="jf-reusable-ref__chip">
+        <span aria-hidden="true">♻</span> {t("builder.reusable.linkedChip", { name: item.draft?.name ?? item.name })}
+        {item.draft && <span className="jf-reusable-ref__draft"> · {t("builder.reusable.draftChip")}</span>}
+      </span>
+      <ReusableStackContext.Provider value={[...stack, refId]}>
+        <div className="jf-reusable-ref__body" inert>
+          {render(reusablePreviewBlocks(item), depth + 1)}
+        </div>
+      </ReusableStackContext.Provider>
+    </div>
+  );
 }
 
 /**

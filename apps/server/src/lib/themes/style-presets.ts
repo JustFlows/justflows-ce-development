@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import { STYLE_PRESETS_MAX, sanitizeStylePreset, sanitizeStylePresets, type StylePreset } from "@justflows/blocks";
-import { getDb } from "../database/db.js";
+import { findBlockReferences } from "../rendering/block-references.js";
 import { getSiteSetting, updateSiteSettingAtomically } from "../settings/site-settings.js";
 
 /**
@@ -81,51 +81,24 @@ export interface StylePresetUsage {
   total: number;
 }
 
-/** Whether a stored document JSON references the preset. */
-function mentions(json: unknown, needle: string): boolean {
-  const text = typeof json === "string" ? json : json == null ? "" : JSON.stringify(json);
-  return text.includes(needle);
-}
-
 /**
  * Where a preset is used, so an editor sees the impact of changing or
- * deleting it. The content scan is one bounded `LIKE` per table on the stored
- * JSON; `styleRef` values are `[a-z0-9-]`, so the needle needs no escaping.
+ * deleting it. Uses the shared reference scan (`findBlockReferences`), which
+ * matches the exact `styleRef` on every database driver.
  */
 export async function stylePresetUsage(siteId: string, id: string): Promise<StylePresetUsage> {
-  const needle = `"styleRef":"${id}"`;
-  const like = `%${needle}%`;
-  const db = await getDb();
+  const found = await findBlockReferences(siteId, "styleRef", id);
   const content: Record<string, number> = {};
-  const rows = await db.query<{ type: string; n: number | string }>(
-    "SELECT type, COUNT(*) AS n FROM content WHERE site_id = ? AND trashed_at IS NULL AND blocks LIKE ? GROUP BY type",
-    [siteId, like],
-  );
-  for (const row of rows) content[String(row.type)] = Number(row.n) || 0;
-  const parts = await db.query<{ part: string }>(
-    "SELECT part FROM template_parts WHERE site_id = ? AND (doc LIKE ? OR draft_doc LIKE ?) ORDER BY part",
-    [siteId, like, like],
-  );
-  const templates = await db.query<{ slug: string }>(
-    "SELECT slug FROM theme_templates WHERE site_id = ? AND (doc LIKE ? OR draft_doc LIKE ?) ORDER BY slug",
-    [siteId, like, like],
-  );
-  const reusable = await getSiteSetting<unknown[]>(siteId, "reusable_blocks");
-  const patterns = await getSiteSetting<unknown[]>(siteId, "block_patterns");
-  const count = (list: unknown) => (Array.isArray(list) ? list.filter((item) => mentions(item, needle)).length : 0);
+  for (const row of found.content) content[row.type] = (content[row.type] ?? 0) + 1;
   const usage: StylePresetUsage = {
     content,
-    templateParts: parts.map((row) => String(row.part)),
-    templates: templates.map((row) => String(row.slug)),
-    reusableBlocks: count(reusable),
-    patterns: count(patterns),
+    templateParts: found.templateParts,
+    templates: found.templates,
+    reusableBlocks: found.reusableBlocks.length,
+    patterns: found.patterns.length,
     total: 0,
   };
   usage.total =
-    Object.values(content).reduce((a, b) => a + b, 0) +
-    usage.templateParts.length +
-    usage.templates.length +
-    usage.reusableBlocks +
-    usage.patterns;
+    found.content.length + usage.templateParts.length + usage.templates.length + found.menus.length + usage.reusableBlocks + usage.patterns;
   return usage;
 }

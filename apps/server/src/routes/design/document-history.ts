@@ -39,6 +39,7 @@ async function resolveTarget(
   const siteId = await getSiteId();
   if (!siteId) return null;
   if (kind === "template_part") return PART_KEY.test(key) ? { siteId, kind, key } : null;
+  if (kind === "reusable_block") return /^[A-Za-z0-9_-]{1,64}$/.test(key) ? { siteId, kind, key } : null;
   if (!isTemplateSlug(key)) return null;
   const theme = await getActiveTheme(siteId);
   return { siteId, kind, key: themeTemplateHistoryKey(theme?.theme_id ?? "justflows.default", key) };

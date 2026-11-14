@@ -6,7 +6,7 @@ import type { RevisionListItem } from "@components/builder/shell/RevisionsDialog
  * footer, widget areas (`template_part`), and template overrides
  * (`theme_template`, keyed by slug for the active theme).
  */
-export type HistoryKind = "template_part" | "theme_template";
+export type HistoryKind = "template_part" | "theme_template" | "reusable_block";
 
 function query(kind: HistoryKind, key: string): string {
   return `kind=${encodeURIComponent(kind)}&key=${encodeURIComponent(key)}`;

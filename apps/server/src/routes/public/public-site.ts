@@ -1,4 +1,5 @@
 import { renderSiteBuildingBlocks } from "../../lib/rendering/site-building-blocks.js";
+import { enterPreviewScope, inPreviewScope } from "../../lib/rendering/render-scope.js";
 import { isAccountPath } from "../../middleware/account-cache.js";
 import { getContentTypeSettings } from "../../lib/content/content-types-db.js";
 import { verifyContentPreview } from "../../lib/content/content-preview.js";
@@ -406,9 +407,13 @@ async function withReusables(blocks: BlockNode[]): Promise<BlockNode[]> {
   const siteId = await getSiteId();
   if (!siteId) return blocks;
   const { listReusableBlocks, resolveReusableBlocks } = await import("../../lib/rendering/reusable-blocks.js");
+  /** An editor's preview renders reusable block drafts and skips the shared cache (justflows-ce#304). */
+  const preview = inPreviewScope();
   // Cached as an array: a Map does not survive a serializing cache backend.
-  const saved = await rememberPublic(`reusable-blocks:${siteId}`, () => listReusableBlocks(siteId), false);
-  return resolveReusableBlocks(blocks, new Map(saved.map((item) => [item.id, item])));
+  const saved = preview
+    ? await listReusableBlocks(siteId)
+    : await rememberPublic(`reusable-blocks:${siteId}`, () => listReusableBlocks(siteId), false);
+  return resolveReusableBlocks(blocks, new Map(saved.map((item) => [item.id, item])), 0, { preview });
 }
 
 function containsReusable(blocks: BlockNode[]): boolean {
@@ -2005,6 +2010,7 @@ router.use(
     previewAllowed: isPreviewAllowed,
     async renderContent(req, res, { content, path, basePath, pageNumber, alternates, canonicalPath }) {
       const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
       await sendPublicHtml(req, res, path, preview, () =>
         renderSinglePageHtml(
           req,
@@ -2041,6 +2047,7 @@ router.get("/", async (req, res, next) => {
   try {
     if (!(await ensureSiteIsPublic(req, res))) return;
     const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
     await sendPublicHtml(req, res, req.path || "/", preview, () =>
       renderHomeHtml(req, res, "/", preview),
     );
@@ -2277,6 +2284,7 @@ router.get("/:segment", async (req, res, next) => {
     const activeLocales = await getActiveLocaleCodes();
     const defaultLocale = await getDefaultLocale();
     const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
     const canonical = canonicalLocaleRedirect(req.path, activeLocales, defaultLocale);
     if (canonical) {
       // codeql[js/server-side-unvalidated-url-redirection]: canonical is built by
@@ -2367,6 +2375,7 @@ router.get("/:segment/page/:num", async (req, res, next) => {
       return;
     }
     const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
     const ctx = await buildPageContext(req, res, req.path, preview);
     const basePath = `/${segment}`;
 
@@ -2451,6 +2460,7 @@ router.get("/:locale/:slug", async (req, res, next) => {
     if (!(await ensureSiteIsPublic(req, res))) return;
     const defaultLocale = await getDefaultLocale();
     const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
     const canonical = canonicalLocaleRedirect(req.path, activeLocales, defaultLocale);
     if (canonical) {
       // codeql[js/server-side-unvalidated-url-redirection]: canonical is built by
@@ -2532,6 +2542,7 @@ router.get("/:locale/:slug/page/:num", async (req, res, next) => {
   try {
     if (!(await ensureSiteIsPublic(req, res))) return;
     const preview = await isPreviewAllowed(req, res);
+    enterPreviewScope(preview);
     const defaultLocale = await getDefaultLocale();
     const canonical = canonicalLocaleRedirect(req.path, activeLocales, defaultLocale);
     if (canonical) {

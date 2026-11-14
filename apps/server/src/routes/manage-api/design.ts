@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { getEffectiveAccess } from "../../lib/auth/access-policy.js";
 import { STYLE_PRESET_NAME_MAX } from "@justflows/blocks";
 import {
   deleteStylePreset,
@@ -43,7 +44,13 @@ import {
   deleteReusableBlock,
   listReusableBlocks,
   saveReusableBlock,
+  ReusableSaveError,
+  asReusableId,
+  discardReusableDraft,
+  getReusableBlock,
+  publishReusableDraft,
 } from "../../lib/rendering/reusable-blocks.js";
+import { reusableUsageFor } from "../../lib/rendering/reusable-usage.js";
 import {
   deleteSitePattern,
   exportPatternSet,
@@ -183,6 +190,9 @@ const ReusableSaveSchema = z.object({
   id: z.string().max(64).optional(),
   name: z.string().max(120).optional(),
   blocks: z.array(z.record(z.string(), z.unknown())),
+  /** Save the draft of an existing entry instead of publishing (justflows-ce#304). */
+  draft: z.boolean().optional(),
+  expectedRevision: z.number().int().min(0).optional(),
 });
 
 const PatternSaveSchema = z.object({ synced: z.boolean().default(false) }).catchall(z.unknown());
@@ -761,24 +771,87 @@ router.put("/reusable-blocks", async (req, res) => {
   const body = ReusableSaveSchema.safeParse(req.body);
   if (!body.success) return badRequest(res, body.error.issues[0]?.message ?? "Invalid reusable block");
   try {
-    const item = await saveReusableBlock(siteId(req), body.data);
-    await revalidateOnUpdate("content");
+    const item = await saveReusableBlock(siteId(req), body.data, {
+      draft: body.data.draft,
+      expectedRevision: body.data.expectedRevision,
+      actorId: req.apiKeyOwner?.userId ?? null,
+    });
+    if (!(body.data.draft && item.draft)) await revalidateOnUpdate("content");
     res.json({ item });
   } catch (err) {
-    res.status(400).json({ error: err instanceof Error ? err.message : "Could not save" });
+    sendReusableError(res, err);
   }
 });
 
+router.get("/reusable-blocks/:id/usage", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "content:read"))) return;
+  const id = asReusableId(param(req.params.id));
+  if (!id) return notFound(res);
+  try {
+    const owner = req.apiKeyOwner!;
+    const access = await getEffectiveAccess(owner.userId, owner.siteId, owner.role);
+    sendJson(req, res, await reusableUsageFor(siteId(req), id, { userId: owner.userId, access }));
+  } catch (err) {
+    sendServerError(res, "manage.reusable-blocks", err);
+  }
+});
+
+router.post("/reusable-blocks/:id/publish", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  try {
+    const expectedRevision = typeof req.body?.expectedRevision === "number" ? req.body.expectedRevision : undefined;
+    const item = await publishReusableDraft(siteId(req), param(req.params.id), { expectedRevision, actorId: req.apiKeyOwner?.userId ?? null });
+    if (!item) {
+      res.status(409).json({ error: "Nothing to publish", code: "no_draft" });
+      return;
+    }
+    await revalidateOnUpdate("content");
+    res.json({ item });
+  } catch (err) {
+    sendReusableError(res, err);
+  }
+});
+
+router.post("/reusable-blocks/:id/discard", async (req, res) => {
+  if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
+  try {
+    await discardReusableDraft(siteId(req), param(req.params.id));
+    res.json({ item: await getReusableBlock(siteId(req), param(req.params.id)) });
+  } catch (err) {
+    sendServerError(res, "manage.reusable-blocks", err);
+  }
+});
+
+/** A block still in use needs `?confirm=1`, since deleting it empties it on every page that uses it. */
 router.delete("/reusable-blocks/:id", async (req, res) => {
   if (!(await ensureKeyCan(req, res, "settings:manage"))) return;
   try {
-    await deleteReusableBlock(siteId(req), param(req.params.id));
+    const id = param(req.params.id);
+    if (req.query.confirm !== "1" && (req.body as { confirm?: unknown } | undefined)?.confirm !== "1") {
+      const owner = req.apiKeyOwner!;
+      const access = await getEffectiveAccess(owner.userId, owner.siteId, owner.role);
+      const usage = await reusableUsageFor(siteId(req), asReusableId(id) || "-", { userId: owner.userId, access });
+      if (usage.total > 0) {
+        res.status(409).json({ error: "This reusable block is still used; repeat with confirm=1 to delete it anyway", code: "in_use", usage });
+        return;
+      }
+    }
+    await deleteReusableBlock(siteId(req), id);
     await revalidateOnUpdate("content");
     res.json({ ok: true });
   } catch (err) {
     sendServerError(res, "manage.reusable-blocks", err);
   }
 });
+
+function sendReusableError(res: import("express").Response, err: unknown): void {
+  if (err instanceof ReusableSaveError) {
+    const status = err.code === "revision_conflict" ? 409 : err.code === "not_found" ? 404 : 400;
+    res.status(status).json({ error: err.message, code: err.code });
+    return;
+  }
+  res.status(400).json({ error: err instanceof Error ? err.message : "Could not save" });
+}
 
 /* ----------------------------- style presets ----------------------------- */
 

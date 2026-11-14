@@ -14,7 +14,8 @@ import { getDb } from "../database/db.js";
  * document and saves it through the normal, revision-checked write path.
  */
 
-export const DOCUMENT_HISTORY_KINDS = ["template_part", "theme_template"] as const;
+/** `reusable_block` keys are reusable block ids (justflows-ce#304). */
+export const DOCUMENT_HISTORY_KINDS = ["template_part", "theme_template", "reusable_block"] as const;
 export type DocumentHistoryKind = (typeof DOCUMENT_HISTORY_KINDS)[number];
 
 /** Versions kept per document; older ones are pruned when a new one is recorded. */

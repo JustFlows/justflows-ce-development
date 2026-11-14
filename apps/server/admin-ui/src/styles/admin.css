@@ -5853,3 +5853,33 @@ input[type="range"] {
   border-radius: 6px;
   font-size: 0.8rem;
 }
+
+/* Linked reusable blocks on the canvas (justflows-ce#304). */
+.jf-reusable-ref {
+  position: relative;
+  border: 1px solid color-mix(in srgb, #0d9488 55%, transparent);
+  border-radius: 6px;
+  padding: 1.4rem 0.4rem 0.4rem;
+}
+.jf-reusable-ref__chip {
+  position: absolute;
+  top: 0.2rem;
+  inset-inline-start: 0.35rem;
+  font-size: 0.66rem;
+  font-weight: 650;
+  color: #0f766e;
+  background: var(--jf-surface);
+  padding: 0 0.35rem;
+  border-radius: 999px;
+}
+.jf-reusable-ref__draft {
+  font-weight: 400;
+  color: var(--jf-text-3);
+}
+.jf-reusable-ref--missing,
+.jf-reusable-ref--empty {
+  padding: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--jf-text-3);
+  border-style: dashed;
+}

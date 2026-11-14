@@ -21,6 +21,7 @@ import type { BlockNode } from "@components/builder/types";
 import GlobalStylesPanel from "@components/builder/GlobalStylesPanel";
 import type { TemplateContextValue } from "@components/builder/template-defaults-context";
 import SiteContextPanel from "@components/builder/SiteContextPanel";
+import { reusableEditPath } from "../../../lib/reusable-blocks";
 import { fetchSiteContext, rememberBuilderReturn, siteRegionEditPath, takeBuilderReturn, type SiteContextData } from "../../../lib/site-context";
 
 interface ContentItem {
@@ -506,6 +507,11 @@ export default function PageBuilderPage() {
       siteContext={siteContext}
       siteContextMeta={{ title: item.title, publishedAt: item.publishedAt ?? null }}
       onEnterSiteContext={enterSiteContext}
+      onEditReusable={(reusableId, selectedId) => {
+        if (dirty && !window.confirm(t("builder.shell.leaveUnsaved"))) return;
+        rememberBuilderReturn(id, selectedId);
+        navigate(reusableEditPath(reusableId, `/admin/content/${id}/builder`));
+      }}
       initialSelectedId={initialSelectedId}
       sitePanel={<SiteContextPanel context={siteContext} onEnter={(region, slug) => enterSiteContext(region, slug, null)} />}
       shellBar={{
