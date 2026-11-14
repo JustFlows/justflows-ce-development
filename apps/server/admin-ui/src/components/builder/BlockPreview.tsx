@@ -127,6 +127,12 @@ export function BlockPreview({
             : undefined
         }
         style={{
+          /**
+           * Each block is a containing block, so absolutely positioned content
+           * from theme or plugin CSS (a stretched card link) stays inside it
+           * instead of covering other blocks and the builder's own controls.
+           */
+          position: "relative",
           borderRadius: 4,
           cursor: onSelect ? "pointer" : undefined,
           maxWidth: blockStyle.maxWidth > 0 ? `min(100%, ${blockStyle.maxWidth}px)` : undefined,

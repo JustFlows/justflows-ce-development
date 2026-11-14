@@ -384,13 +384,25 @@ export default function PatternLibrary({
                       <Link to="/admin/plugins">{t("builder.patterns.manageExtensions")}</Link>.
                     </p>
                   )}
+                  {/**
+                   * The preview is a picture of the pattern, not a page: `inert`
+                   * keeps its links and buttons from being clicked or focused, and
+                   * paint/layout containment keeps positioned content (a stretched
+                   * card link, a fixed bar) inside this box instead of covering the
+                   * dialog and its Insert button.
+                   */}
                   <div
+                    className="jf-pattern-library__frame"
+                    inert
                     style={{
                       width: 900,
                       maxWidth: "100%",
                       margin: "0 auto",
                       background: "var(--jf-surface)",
                       boxShadow: "0 1px 4px rgb(0 0 0 / .12)",
+                      position: "relative",
+                      overflow: "hidden",
+                      contain: "layout paint",
                     }}
                     aria-busy={busy}
                   >
