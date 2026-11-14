@@ -1,3 +1,4 @@
+import { clearBlockPreviewCache } from "../../lib/block-preview-batch";
 import type { BlockCatalogEntry } from "./types";
 import { coreBlocks } from "@justflows/blocks";
 import { translateEnglish, type Translate } from "../../i18n/translate";
@@ -122,6 +123,8 @@ let catalogEntries: ReadonlyMap<string, BlockCatalogEntry> = new Map();
 
 export function setBlockCatalog(entries: Iterable<BlockCatalogEntry>): void {
   catalogEntries = new Map([...entries].map((entry) => [entry.type, entry]));
+  /** A reloaded catalog may mean a plugin changed, so cached previews are dropped (justflows-ce#308). */
+  clearBlockPreviewCache();
 }
 
 export function createBlock(type: string, t: Translate = translateEnglish): BlockNode {

@@ -7,6 +7,7 @@ import { I18nProvider } from "../../../src/i18n/I18nProvider";
 import PageBuilder from "../../../src/components/builder/PageBuilder";
 import { InlineEditable } from "../../../src/components/builder/InlineEditable";
 import type { BlockCatalogEntry, BlockDocument } from "../../../src/components/builder/types";
+import { batchPreview } from "../../helpers/preview-batch";
 
 const CATALOG: BlockCatalogEntry[] = [
   { type: "core.heading", version: 1, title: "Heading", category: "content", supportsChildren: false },
@@ -33,10 +34,10 @@ function respond(body: unknown): Promise<Response> {
 function mockFetch() {
   vi.stubGlobal(
     "fetch",
-    vi.fn((input: RequestInfo | URL) => {
+    vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/api/blocks/preview")) {
-        return respond({ html: '<div><h3 data-jf-inline="title">Old title</h3><p data-jf-inline="secret">Not declared</p></div>' });
+        return batchPreview(init, () => respond({ html: '<div><h3 data-jf-inline="title">Old title</h3><p data-jf-inline="secret">Not declared</p></div>' }));
       }
       if (url.includes("/api/blocks")) return respond({ blocks: CATALOG });
       if (url.includes("/api/media")) {

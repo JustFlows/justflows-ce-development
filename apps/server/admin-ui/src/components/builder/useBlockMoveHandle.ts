@@ -1,4 +1,4 @@
-import { useBuilderDrag } from "./DragContext";
+import { useBuilderRowDrag } from "./DragContext";
 import { startPointerDrag } from "./pointer-drag";
 
 /**
@@ -6,7 +6,7 @@ import { startPointerDrag } from "./pointer-drag";
  * place on the canvas. A move-locked block (`locked`) never starts a drag.
  */
 export function useBlockMoveHandle(blockId: string, blockType: string, locked = false) {
-  const { startPointerMove, commitPointerMove, setDropTarget, cancelDrag } = useBuilderDrag();
+  const { startPointerMove, commitPointerMove, setDropTarget, cancelDrag } = useBuilderRowDrag();
 
   function onPointerDown(e: React.PointerEvent) {
     if (locked || (e.target as HTMLElement).closest("button")) return;

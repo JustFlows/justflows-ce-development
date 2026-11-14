@@ -6,6 +6,7 @@ import { I18nProvider } from "../../../src/i18n/I18nProvider";
 import PageBuilder from "../../../src/components/builder/PageBuilder";
 import { replacementBlock } from "../../../src/components/builder/BlockRecoveryPanel";
 import type { BlockCatalogEntry, BlockDocument, BlockNode } from "../../../src/components/builder/types";
+import { batchPreview } from "../../helpers/preview-batch";
 
 /**
  * Blocks the builder cannot edit normally (justflows-ce#306): their extension
@@ -63,9 +64,10 @@ function mockFetch() {
     vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes("/api/blocks/preview")) {
-        const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
-        if (!catalog.some((entry) => entry.type === body.type)) return Promise.resolve(json({ error: "Unknown block type" }, 404));
-        return Promise.resolve(previewReply(body));
+        return batchPreview(init, (body) => {
+          if (!catalog.some((entry) => entry.type === body.type)) return json({ error: "Unknown block type" }, 404);
+          return previewReply(body);
+        });
       }
       if (url.includes("/api/blocks")) {
         catalogRequests++;

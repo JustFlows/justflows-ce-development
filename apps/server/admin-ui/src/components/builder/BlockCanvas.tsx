@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useT } from "../../i18n/I18nProvider";
 import type { BlockNode, BlockCatalogEntry } from "./types";
 import { BlockPreview, useThemePreviewStylesheet } from "./BlockPreview";
 import { createBlock } from "./block-defaults";
-import { insertBlock, moveBlock, removeBlock, updateBlockProps } from "./block-tree";
+import { insertBlock, moveBlock, removeBlock, updateBlockProps, updateBlockTree } from "./block-tree";
 import DropZone from "./DropZone";
-import { useBuilderDrag } from "./DragContext";
+import { useBuilderDrag, useBuilderRowDrag } from "./DragContext";
 import { useBlockMoveHandle } from "./useBlockMoveHandle";
 import GridEditor from "./GridEditor";
 import { GRID_BLOCK_TYPE, gridColumns, nextRow } from "./grid";
@@ -20,7 +20,7 @@ import {
   supportsContainerLayout,
   textDirection,
 } from "@justflows/blocks";
-import { anchorFor, isExtendClick, useBuilderSelection } from "./selection-context";
+import { anchorFor, isExtendClick, useBuilderSelection, useBuilderSelectionActions } from "./selection-context";
 import LayoutOverlay from "./LayoutOverlay";
 import { inspectorSections } from "./inspector-sections";
 import { inertPreviewHandlers } from "./inert-preview";
@@ -82,10 +82,33 @@ export function PageCanvas({
 }: PageCanvasProps) {
   const { t } = useT();
   const { dragging } = useBuilderDrag();
+  const multiSelection = useBuilderSelection()?.selectedIds ?? null;
   const inline = compact;
   useThemePreviewStylesheet();
 
+  /**
+   * Rows edit the latest document through this stable handle instead of
+   * receiving the whole list and fresh callbacks, so an edit only redraws the
+   * rows it touches (justflows-ce#308).
+   */
+  const rootRef = useRef(blocks);
+  rootRef.current = blocks;
+  const changeRef = useRef(onChange);
+  changeRef.current = onChange;
+  const tree = useMemo<CanvasTree>(
+    () => ({
+      edit: (updater) => {
+        const next = updater(rootRef.current);
+        if (next === rootRef.current) return;
+        rootRef.current = next;
+        changeRef.current(next);
+      },
+    }),
+    [],
+  );
+
   return (
+    <CanvasTreeContext.Provider value={tree}>
     <div
       {...inertPreviewHandlers}
       className="jf-canvas-root"
@@ -140,11 +163,10 @@ export function PageCanvas({
           />
           <BlockRow
             block={block}
-            blocks={blocks}
             catalog={catalog}
             selectedId={selectedId}
+            multiSelection={multiSelection}
             onSelect={onSelect}
-            onRootChange={onChange}
             index={i}
             total={blocks.length}
             depth={0}
@@ -178,43 +200,90 @@ export function PageCanvas({
         />
       )}
     </div>
+    </CanvasTreeContext.Provider>
   );
 }
 
-function BlockRow({
-  block,
-  blocks,
-  catalog,
-  selectedId,
-  onSelect,
-  onRootChange,
-  index,
-  total,
-  depth,
-  parentBlocks,
-  onParentChange,
-  parentType = null,
-}: {
+/** Edits the latest document of the canvas a row belongs to. */
+interface CanvasTree {
+  edit: (updater: (root: BlockNode[]) => BlockNode[]) => void;
+}
+
+const CanvasTreeContext = createContext<CanvasTree | null>(null);
+
+function useCanvasTree(): CanvasTree {
+  const tree = useContext(CanvasTreeContext);
+  if (!tree) throw new Error("A canvas row must be inside PageCanvas");
+  return tree;
+}
+
+interface BlockRowProps {
   block: BlockNode;
-  blocks: BlockNode[];
   catalog: Map<string, BlockCatalogEntry>;
   selectedId: string | null;
+  /** Every selected id when several blocks are selected; changes identity only with the selection. */
+  multiSelection: ReadonlySet<string> | null;
   onSelect: (id: string | null) => void;
-  onRootChange: (blocks: BlockNode[]) => void;
   index: number;
   total: number;
   depth: number;
-  parentBlocks?: BlockNode[];
-  onParentChange?: (blocks: BlockNode[]) => void;
   parentType?: string | null;
-}) {
+}
+
+function containsId(block: BlockNode, id: string | null): boolean {
+  if (!id) return false;
+  if (block.id === id) return true;
+  return (block.children ?? []).some((child) => containsId(child, id));
+}
+
+/**
+ * A row redraws when its own block (or anything inside it) changed, when it
+ * moved, or when the selection enters or leaves it. Edits elsewhere keep the
+ * same block objects, so the row and its preview are skipped
+ * (justflows-ce#308).
+ */
+function sameRow(prev: BlockRowProps, next: BlockRowProps): boolean {
+  if (
+    prev.block !== next.block ||
+    prev.catalog !== next.catalog ||
+    prev.onSelect !== next.onSelect ||
+    prev.index !== next.index ||
+    prev.total !== next.total ||
+    prev.depth !== next.depth ||
+    prev.parentType !== next.parentType
+  ) {
+    return false;
+  }
+  if (prev.selectedId !== next.selectedId && (containsId(next.block, prev.selectedId) || containsId(next.block, next.selectedId))) return false;
+  if (prev.multiSelection !== next.multiSelection) {
+    for (const id of new Set([...(prev.multiSelection ?? []), ...(next.multiSelection ?? [])])) {
+      if (containsId(next.block, id)) return false;
+    }
+  }
+  return true;
+}
+
+const BlockRow = memo(BlockRowContent, sameRow);
+
+function BlockRowContent({
+  block,
+  catalog,
+  selectedId,
+  multiSelection,
+  onSelect,
+  index,
+  total,
+  depth,
+  parentType = null,
+}: BlockRowProps) {
+  const tree = useCanvasTree();
   const { t } = useT();
   const meta = catalog.get(block.type);
-  const selection = useBuilderSelection();
-  const inMultiSelection = Boolean(selection && selection.selectedIds.size > 1 && selection.selectedIds.has(block.id));
+  const selection = useBuilderSelectionActions();
+  const inMultiSelection = Boolean(multiSelection && multiSelection.size > 1 && multiSelection.has(block.id));
   const isSelected = selectedId === block.id || inMultiSelection;
   const hasChildren = meta?.supportsChildren ?? false;
-  const { dragPayload } = useBuilderDrag();
+  const { dragPayload } = useBuilderRowDrag();
   const moveLocked = isBlockLocked(block, "move");
   const removeLocked = subtreeHasLock(block, "remove");
   const locked = moveLocked || removeLocked || isBlockLocked(block, "edit");
@@ -222,34 +291,25 @@ function BlockRow({
   const isBeingMoved = dragPayload.blockId === block.id;
   const children = block.children ?? [];
 
-  const move = (dir: -1 | 1) => {
-    const list = parentBlocks ?? blocks;
-    const change = parentBlocks ? onParentChange! : onRootChange;
-    change(moveBlock(list, block.id, dir));
-  };
+  const move = (dir: -1 | 1) => tree.edit((root) => moveBlock(root, block.id, dir));
 
   const remove = () => {
-    const list = parentBlocks ?? blocks;
-    const change = parentBlocks ? onParentChange! : onRootChange;
-    change(removeBlock(list, block.id));
+    tree.edit((root) => removeBlock(root, block.id));
     if (selectedId === block.id) onSelect(null);
   };
 
-  const updateChildren = (nextChildren: BlockNode[]) => {
-    const list = parentBlocks ?? blocks;
-    const change = parentBlocks ? onParentChange! : onRootChange;
-    change(list.map((b) => (b.id === block.id ? { ...b, children: nextChildren } : b)));
-  };
+  const updateChildren = (nextChildren: BlockNode[]) =>
+    tree.edit((root) => updateBlockTree(root, block.id, (b) => ({ ...b, children: nextChildren })));
 
-  const updateProps = (id: string, props: Record<string, unknown>) => {
-    const list = parentBlocks ?? blocks;
-    const change = parentBlocks ? onParentChange! : onRootChange;
-    change(updateBlockProps(list, id, props));
-  };
+  /** Stable, so the preview's inline editors are not rebuilt on every keystroke elsewhere. */
+  const updateProps = useCallback(
+    (id: string, props: Record<string, unknown>) => tree.edit((root) => updateBlockProps(root, id, props)),
+    [tree],
+  );
 
   return (
     <div
-      className="jf-canvas-block"
+      className={depth === 0 ? "jf-canvas-block jf-canvas-block--root" : "jf-canvas-block"}
       data-block-id={block.id}
       data-selected={isSelected ? "true" : undefined}
       style={{
@@ -420,16 +480,13 @@ function BlockRow({
                   const childRow = (child: BlockNode, ci: number) => (
                     <BlockRow
                       block={child}
-                      blocks={blocks}
                       catalog={catalog}
                       selectedId={selectedId}
+                      multiSelection={multiSelection}
                       onSelect={onSelect}
-                      onRootChange={onRootChange}
                       index={ci}
                       total={children.length}
                       depth={childDepth}
-                      parentBlocks={children}
-                      onParentChange={updateChildren}
                       parentType={block.type}
                     />
                   );
@@ -529,7 +586,7 @@ function BlockRow({
                         label={t("builder.canvas.addBlock")}
                         onPick={(type) => {
                           const created = createBlock(type, t);
-                          onRootChange(insertBlock(blocks, block.id, children.length, created));
+                          tree.edit((root) => insertBlock(root, block.id, children.length, created));
                           onSelect(created.id);
                         }}
                         catalog={catalog}

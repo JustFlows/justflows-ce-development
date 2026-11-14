@@ -38,6 +38,19 @@ export function useBuilderSelection(): BuilderSelection | null {
   return useContext(BuilderSelectionContext);
 }
 
+/**
+ * Only the selection actions, which never change identity (justflows-ce#308).
+ * Canvas rows and previews use this, so selecting a block does not redraw
+ * every preview; rows get the selected ids as a prop and compare them.
+ */
+export type BuilderSelectionActions = Pick<BuilderSelection, "extend" | "openMenu">;
+
+export const BuilderSelectionActionsContext = createContext<BuilderSelectionActions | null>(null);
+
+export function useBuilderSelectionActions(): BuilderSelectionActions | null {
+  return useContext(BuilderSelectionActionsContext);
+}
+
 /** Whether a click should extend the selection rather than replace it. */
 export function isExtendClick(e: SelectModifiers): boolean {
   return e.shiftKey || e.metaKey || e.ctrlKey;

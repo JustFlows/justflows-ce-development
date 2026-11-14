@@ -76,18 +76,41 @@ const previewLimit = rateLimit({ windowMs: 60_000, limit: 240, standardHeaders: 
  * before showing it. Children are not rendered.
  */
 router.post("/preview", requireRole(...CONTENT_READ_ROLES), previewLimit, (req, res) => {
-  const body = (req.body ?? {}) as { type?: unknown; props?: unknown };
+  const result = renderPreview(req.body);
+  res.status(result.status).json(result.body);
+});
+
+/** Previews rendered per batch request at most. */
+export const PREVIEW_BATCH_LIMIT = 50;
+
+/**
+ * Several previews in one request (justflows-ce#308). The builder collects
+ * the previews it needs at the same moment, such as every plugin block on a
+ * page that just opened, so a long page costs one request and one rate-limit
+ * hit instead of one per block. Each item is rendered on its own, exactly
+ * like `/preview`, and one failing item never fails the others.
+ */
+router.post("/preview/batch", requireRole(...CONTENT_READ_ROLES), previewLimit, (req, res) => {
+  const items = (req.body as { items?: unknown } | undefined)?.items;
+  if (!Array.isArray(items) || items.length === 0 || items.length > PREVIEW_BATCH_LIMIT) {
+    res.status(400).json({ error: `Send 1 to ${PREVIEW_BATCH_LIMIT} items` });
+    return;
+  }
+  res.json({ results: items.map((item) => renderPreview(item)) });
+});
+
+interface PreviewResult {
+  status: number;
+  body: { html?: string; placeholder?: true; migrationFailed?: true; error?: string };
+}
+
+function renderPreview(input: unknown): PreviewResult {
+  const body = (input && typeof input === "object" ? input : {}) as { type?: unknown; props?: unknown; version?: unknown };
   const type = typeof body.type === "string" ? body.type : "";
   const definition = type ? getRuntimeBlockRegistry().get(type) : undefined;
-  if (!definition) {
-    res.status(404).json({ error: "Unknown block type" });
-    return;
-  }
+  if (!definition) return { status: 404, body: { error: "Unknown block type" } };
   const contract = getRuntimeBlockRegistry().contractOf(type);
-  if (contract?.preview.mode === "placeholder") {
-    res.json({ html: "", placeholder: true });
-    return;
-  }
+  if (contract?.preview.mode === "placeholder") return { status: 200, body: { html: "", placeholder: true } };
   try {
     /**
      * Older stored props are upgraded first, and the block's sample props fill
@@ -95,15 +118,15 @@ router.post("/preview", requireRole(...CONTENT_READ_ROLES), previewLimit, (req, 
      * through the block's `validateProps`, and the builder sanitizes the HTML.
      */
     const raw = body.props && typeof body.props === "object" && !Array.isArray(body.props) ? (body.props as Record<string, unknown>) : {};
-    const version = typeof (body as { version?: unknown }).version === "number" ? (body as { version: number }).version : definition.version;
+    const version = typeof body.version === "number" ? body.version : definition.version;
     const { node: migrated, failed } = getRuntimeBlockRegistry().migrateNodeResult({ type, version, props: raw });
     const props = definition.validateProps({ ...(contract?.preview.sampleProps ?? {}), ...stripEmpty(migrated.props as Record<string, unknown>) });
     /** A failed upgrade renders the stored props as the page does, and says so (justflows-ce#306). */
-    res.json({ html: String(definition.render(props as never, "") ?? ""), ...(failed ? { migrationFailed: true } : {}) });
+    return { status: 200, body: { html: String(definition.render(props as never, "") ?? ""), ...(failed ? { migrationFailed: true as const } : {}) } };
   } catch {
-    res.status(422).json({ error: "This block could not be previewed" });
+    return { status: 422, body: { error: "This block could not be previewed" } };
   }
-});
+}
 
 /** Props the author left empty, so sample props can stand in for them in a preview. */
 function stripEmpty(props: Record<string, unknown>): Record<string, unknown> {

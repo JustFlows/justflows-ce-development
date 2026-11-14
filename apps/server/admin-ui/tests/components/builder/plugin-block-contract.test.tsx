@@ -8,6 +8,7 @@ import BlockLibrary from "../../../src/components/builder/BlockLibrary";
 import { BuilderDragProvider } from "../../../src/components/builder/DragContext";
 import { createBlock, setBlockCatalog } from "../../../src/components/builder/block-defaults";
 import type { BlockCatalogEntry, BlockDocument, BlockNode } from "../../../src/components/builder/types";
+import { batchPreview } from "../../helpers/preview-batch";
 
 /** The builder side of the plugin and theme block contract (justflows-ce#305). */
 
@@ -47,9 +48,10 @@ function mockFetch() {
       const url = String(input);
       const ok = (data: unknown) => Promise.resolve({ ok: true, status: 200, json: async () => data } as Response);
       if (url.includes("/api/blocks/preview")) {
-        const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
-        previews.push(body);
-        return previewReply(body);
+        return batchPreview(init, (body) => {
+          previews.push(body);
+          return previewReply(body);
+        });
       }
       if (url.includes("/api/blocks")) return ok({ blocks: CATALOG });
       if (url.includes("/api/auth/me")) return ok({ id: "u1", email: "a@example.test", role: "editor", capabilities: ["content:update", "content:locks:manage"] });

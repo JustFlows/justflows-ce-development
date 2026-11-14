@@ -4,13 +4,14 @@ import { useT } from "../../i18n/I18nProvider";
 import { Component, Fragment, cloneElement, createContext, isValidElement, useContext, useEffect, useRef, useState, type ErrorInfo, type ReactElement, type ReactNode } from "react";
 import type { BlockNode } from "./types";
 import { blockStyleDeclarations, codeLanguageClass, coreBlocks, esc, isBlockLocked, presetRefOf, stylePresetClass, styleWithTemplateDefault, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
-import { isExtendClick, useBuilderSelection } from "./selection-context";
+import { isExtendClick, useBuilderSelectionActions } from "./selection-context";
 import { useTemplateContext } from "./template-defaults-context";
 import { useCatalogEntry } from "./catalog-context";
 import { previewSubstitution } from "./preview-substitutions";
 import { reusablePreviewBlocks, useReusableStore } from "../../lib/reusable-blocks";
 import MotionPreview from "./MotionPreview";
 import { applyMergeTags, useMergeTags } from "../../lib/merge-tags";
+import { requestBlockPreview } from "../../lib/block-preview-batch";
 import { ImagePickerPopover, MediaPickerPopover, readEditableText } from "./InlineEditable";
 import { InlineField, InlineFieldsContext, InlineLinkField } from "./inline-field";
 
@@ -154,7 +155,7 @@ function BlockPreviewContent({
   const tags = useMergeTags();
   const text = (value: unknown) => applyMergeTags(String(value ?? ""), tags);
   const isSelected = selectedId === block.id;
-  const selection = useBuilderSelection();
+  const selection = useBuilderSelectionActions();
   /** Declared inline fields are editable while their block is selected, unless it is edit-locked. */
   const active = Boolean(isSelected && onUpdateProps && !isBlockLocked(block, "edit"));
   const commitProps = (next: Record<string, unknown>) => onUpdateProps?.(block.id, next);
@@ -1148,19 +1149,13 @@ function PluginBlockPreview({
         timedOut = true;
         controller.abort();
       }, PREVIEW_TIMEOUT_MS);
-      fetch("/api/blocks/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, props: JSON.parse(key) as unknown, ...(version ? { version } : {}) }),
-        signal: controller.signal,
-      })
-        .then(async (res) => {
+      /** Batched with other previews and cached per type, version and props (justflows-ce#308). */
+      requestBlockPreview({ type, props: JSON.parse(key) as unknown, ...(version ? { version } : {}) }, controller.signal)
+        .then(({ status, body }) => {
           clearTimeout(timeout);
           if (cancelled) return;
-          if (res.status === 404) return setState({ status: "unavailable", html: "" });
-          if (!res.ok) return setState({ status: "error", html: "" });
-          const body = (await res.json()) as { html?: string; placeholder?: boolean; migrationFailed?: boolean };
-          if (cancelled) return;
+          if (status === 404) return setState({ status: "unavailable", html: "" });
+          if (status >= 400) return setState({ status: "error", html: "" });
           if (body.placeholder) return setState({ status: "placeholder", html: "" });
           const clean = typeof body.html === "string" ? sanitizePluginPreviewHtml(body.html) : "";
           setState({ status: clean.trim() ? "ready" : "empty", html: clean, ...(body.migrationFailed ? { migrationFailed: true } : {}) });

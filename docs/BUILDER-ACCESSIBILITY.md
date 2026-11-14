@@ -156,3 +156,4 @@ release. Record the result and the versions used.
 | Reduced motion | With "reduce motion" on, the canvas does not animate |
 | Right to left | A page in Arabic or Hebrew: canvas and published page read right to left; text editing and alignment behave |
 | Languages | Polish, Russian and Ukrainian with 1, 2, 5 and 22 blocks selected: counts read correctly; long German and French labels do not overflow the toolbar or panels |
+| Performance | The large page from [Builder performance](BUILDER-PERFORMANCE.md) opens, scrolls, takes typing and drags a section without visible lag in Chrome, Firefox and Safari |

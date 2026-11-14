@@ -1,10 +1,9 @@
 import { useT } from "../../i18n/I18nProvider";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BLOCK_CLIPBOARD_MIME, breakpointForWidth, isBlockLocked, type EditorLockFlag } from "@justflows/blocks";
 import type { BlockDocument, BlockCatalogEntry, BlockNode } from "./types";
 import BlockLibrary from "./BlockLibrary";
 import ChecksPanel, { focusInspectorField, useAccessibilityIssues } from "./ChecksPanel";
-import KeyboardShortcutsDialog from "./KeyboardShortcutsDialog";
 import BlockInspector from "./BlockInspector";
 import Navigator from "./Navigator";
 import { CORE_INLINE_FIELDS, InlineFieldsContext } from "./inline-field";
@@ -61,10 +60,10 @@ import { TemplateDefaultsContext, type TemplateContextValue } from "./template-d
 import SiteContextFrame, { type SiteContextMeta } from "./SiteContextFrame";
 import type { SiteContextData, SiteRegion } from "../../lib/site-context";
 import MultiSelectionInspector from "./MultiSelectionInspector";
-import SaveSelectionDialog, { type SaveKind } from "./SaveSelectionDialog";
+import type { SaveKind } from "./SaveSelectionDialog";
 import { blocksFromClipboard, canPasteBlocks, readClipboardText, writeBlockClipboard } from "./builder-clipboard";
 import { saveBlockPattern, saveReusableBlocks } from "./builder-library";
-import { BuilderSelectionContext, anchorFor, type BuilderSelection, type MenuAnchor, type SelectModifiers } from "./selection-context";
+import { BuilderSelectionActionsContext, BuilderSelectionContext, anchorFor, type BuilderSelection, type BuilderSelectionActions, type MenuAnchor, type SelectModifiers } from "./selection-context";
 
 const PREVIEW_SCHEME_KEY = "jf-builder-preview-scheme";
 
@@ -131,6 +130,13 @@ interface PageBuilderProps {
   /** Open a reusable block's source; receives the current selection so it can be restored on return. */
   onEditReusable?: (id: string, selectedId: string | null) => void;
 }
+
+/** Dialogs that open on request load on first use (justflows-ce#308). */
+const KeyboardShortcutsDialog = lazy(() => import("./KeyboardShortcutsDialog"));
+const SaveSelectionDialog = lazy(() => import("./SaveSelectionDialog"));
+
+/** Shared empty list, so a page without header blocks does not change identity every render. */
+const NO_BLOCKS: BlockNode[] = [];
 
 export default function PageBuilder({
   value,
@@ -251,17 +257,24 @@ export default function PageBuilder({
     [catalog],
   );
   const blocks = Array.isArray(value?.blocks) ? value.blocks : [];
-  const headerBlocks = Array.isArray(pageHeader.blocks) ? (pageHeader.blocks as BlockNode[]) : [];
+  const headerBlocks = Array.isArray(pageHeader.blocks) ? (pageHeader.blocks as BlockNode[]) : NO_BLOCKS;
   /** Accessibility checks over what this builder edits (justflows-ce#307). */
   const accessibilityIssues = useAccessibilityIssues(headerOnly ? headerBlocks : blocks, catalogMap);
   /** Ids that still exist after an undo, a remote reload, or a delete. */
-  const selectedIds = useMemo(
-    () =>
-      selection.ids.filter(
-        (id) => id === HEADER_SELECTED_ID || Boolean(findBlockPath(blocks, id) || findBlockPath(headerBlocks, id)),
-      ),
-    [selection.ids, blocks, headerBlocks],
-  );
+  /**
+   * Keeps its identity while the selected ids are the same, so an edit does
+   * not hand every canvas row a new selection context (justflows-ce#308).
+   */
+  const previousSelectedIds = useRef<string[]>([]);
+  const selectedIds = useMemo(() => {
+    const next = selection.ids.filter(
+      (id) => id === HEADER_SELECTED_ID || Boolean(findBlockPath(blocks, id) || findBlockPath(headerBlocks, id)),
+    );
+    const prev = previousSelectedIds.current;
+    if (prev.length === next.length && prev.every((id, i) => id === next[i])) return prev;
+    previousSelectedIds.current = next;
+    return next;
+  }, [selection.ids, blocks, headerBlocks]);
   const selectedId =
     selectedIds.length === 0
       ? null
@@ -600,31 +613,40 @@ export default function PageBuilder({
   );
 
   /** Ctrl/Cmd+click toggles a block, Shift+click selects the sibling range from the anchor. */
+  /**
+   * The selection callbacks read the latest document and selection through a
+   * ref, so they keep their identity across edits and the selection context
+   * only changes when the selection does (justflows-ce#308).
+   */
+  const selectionInputs = useRef({ blocks, headerBlocks, selection, t });
+  selectionInputs.current = { blocks, headerBlocks, selection, t };
   const extend = useCallback(
     (id: string, mods: SelectModifiers) => {
       if (!(mods.shiftKey || mods.metaKey || mods.ctrlKey)) return false;
-      const list = findBlockPath(blocks, id) ? blocks : headerBlocks;
-      const current = selection.ids.filter((x) => x !== HEADER_SELECTED_ID);
-      const result = extendSelection(list, current, selection.anchor, id, mods.shiftKey ? "range" : "toggle");
-      if (result.refused) announce("error", t(`builder.actions.selectRefused.${result.refused}`));
+      const { blocks: docBlocks, headerBlocks: docHeader, selection: current, t: translate } = selectionInputs.current;
+      const list = findBlockPath(docBlocks, id) ? docBlocks : docHeader;
+      const ids = current.ids.filter((x) => x !== HEADER_SELECTED_ID);
+      const result = extendSelection(list, ids, current.anchor, id, mods.shiftKey ? "range" : "toggle");
+      if (result.refused) announce("error", translate(`builder.actions.selectRefused.${result.refused}`));
       setSelection({ ids: result.ids, anchor: result.anchor });
       return true;
     },
-    [blocks, headerBlocks, selection, t],
+    [],
   );
 
   const openMenu = useCallback(
     (id: string, at: MenuAnchor) => {
-      if (!selection.ids.includes(id)) setSelectedId(id);
+      if (!selectionInputs.current.selection.ids.includes(id)) setSelectedId(id);
       setMenu(at);
     },
-    [selection.ids, setSelectedId],
+    [setSelectedId],
   );
 
   const selectionContext = useMemo<BuilderSelection>(
     () => ({ selectedIds: new Set(selectedIds), extend, openMenu }),
     [selectedIds, extend, openMenu],
   );
+  const selectionActions = useMemo<BuilderSelectionActions>(() => ({ extend, openMenu }), [extend, openMenu]);
 
   /**
    * Keyboard shortcuts and clipboard events for the selection. They stay out of
@@ -900,8 +922,13 @@ export default function PageBuilder({
         onSelect={setSelectedId}
       >
         <AnnounceBridge target={announceRef} />
-        {shortcutsOpen && <KeyboardShortcutsDialog onClose={() => setShortcutsOpen(false)} />}
+        {shortcutsOpen && (
+          <Suspense fallback={null}>
+            <KeyboardShortcutsDialog onClose={() => setShortcutsOpen(false)} />
+          </Suspense>
+        )}
         <BuilderSelectionContext.Provider value={selectionContext}>
+        <BuilderSelectionActionsContext.Provider value={selectionActions}>
         {compact ? (
           <div
             style={{
@@ -996,12 +1023,15 @@ export default function PageBuilder({
           />
         )}
         {saveDialog && (
-          <SaveSelectionDialog
-            kind={saveDialog}
-            onSave={(input) => saveSelection(saveDialog, input)}
-            onClose={() => setSaveDialog(null)}
-          />
+          <Suspense fallback={null}>
+            <SaveSelectionDialog
+              kind={saveDialog}
+              onSave={(input) => saveSelection(saveDialog, input)}
+              onClose={() => setSaveDialog(null)}
+            />
+          </Suspense>
         )}
+        </BuilderSelectionActionsContext.Provider>
         </BuilderSelectionContext.Provider>
       </BuilderDragProvider>
       </PreviewSchemeContext.Provider>

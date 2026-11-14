@@ -6206,3 +6206,20 @@ input[type="range"] {
     text-align: start;
   }
 }
+
+/**
+ * Long pages (justflows-ce#308): the browser skips layout and painting of
+ * top-level sections far outside the view and keeps a placeholder size, so
+ * scrolling and editing stay fast. The blocks stay in the page, so find in
+ * page, selection, focus and drop targets work as before; a section is drawn
+ * as soon as it comes near the view. The selected section is always drawn.
+ */
+.jf-canvas-block--root {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
+}
+.jf-canvas-block--root[data-selected="true"],
+.jf-canvas-block--root:focus-within,
+.jf-canvas-block--root:has([aria-expanded="true"], [role="dialog"], [role="listbox"], [role="menu"]) {
+  content-visibility: visible;
+}

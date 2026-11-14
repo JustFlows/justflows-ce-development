@@ -38,6 +38,7 @@ Justflows Community Edition is extended with plugins, themes, and CSS providers.
 | [Builder document architecture](BUILDER-DOCUMENT.md) | Canonical block document, ids, nesting, breakpoints, migrations       |
 | [Builder preview and recovery](BUILDER-PREVIEW.md)   | How the canvas matches the page, deliberate differences, unavailable blocks |
 | [Builder accessibility](BUILDER-ACCESSIBILITY.md)     | Keyboard paths, accessibility checks and their limits, RTL, testing checklist |
+| [Builder performance](BUILDER-PERFORMANCE.md)       | Budgets for long pages, batched previews, caches and diagnostics      |
 | [Block editor contract](BLOCK-CONTRACT.md)           | Optional fields plugin blocks declare for the builder                 |
 | [Security advisories](SECURITY-ADVISORIES.md)         | Signed advisory feed, check results, and publishing                   |
 | [Media and responsive images](MEDIA.md)               | Derivative generation, formats, focal point, regeneration, and the web server file for `/uploads` |

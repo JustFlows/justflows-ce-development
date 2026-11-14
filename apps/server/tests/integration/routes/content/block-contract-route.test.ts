@@ -285,6 +285,49 @@ describe("extensions switched off and on again (justflows-ce#306)", () => {
   });
 });
 
+describe("batched previews (justflows-ce#308)", () => {
+  const batch = (items: unknown) =>
+    fetch(`${base}/preview/batch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items }) });
+
+  it("renders each item like a single preview, in order, and isolates failures", async () => {
+    const adapter = pluginBlockAdapter();
+    adapter.register({ type: "acme.boom", version: 1, title: "Boom", schema: {}, validateProps: () => ({}), render: () => { throw new Error("boom"); } });
+    try {
+      const res = await batch([
+        { type: "acme.pricing", props: { title: "Pro", price: "€9" } },
+        { type: "acme.boom", props: {} },
+        { type: "acme.missing", props: {} },
+        { type: "acme.live", props: {} },
+        { type: "acme.pricing", version: 1, props: { heading: "Old" } },
+      ]);
+      expect(res.status).toBe(200);
+      const { results } = (await res.json()) as { results: Array<{ status: number; body: Record<string, unknown> }> };
+      expect(results.map((r) => r.status)).toEqual([200, 422, 404, 200, 200]);
+      expect(results[0]!.body.html).toContain(">Pro<");
+      expect(results[3]!.body).toEqual({ html: "", placeholder: true });
+      expect(results[4]!.body.html).toContain(">Old<");
+    } finally {
+      adapter.unregister("acme.boom");
+    }
+  });
+
+  it("refuses empty and oversized batches", async () => {
+    expect((await batch([])).status).toBe(400);
+    expect((await batch(Array.from({ length: 51 }, () => ({ type: "acme.pricing", props: {} })))).status).toBe(400);
+    expect((await batch("nope")).status).toBe(400);
+  });
+
+  it("renders from the request alone, so preview cost does not grow with database reads", async () => {
+    const db = await import("../../../../src/lib/database/db.js");
+    const spy = vi.spyOn(db, "getDb");
+    const items = Array.from({ length: 50 }, (_, i) => ({ type: "acme.pricing", props: { title: `Plan ${i}` } }));
+    const { results } = (await (await batch(items)).json()) as { results: unknown[] };
+    expect(results).toHaveLength(50);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+});
+
 describe("refused contracts", () => {
   it("refuses an unsupported apiVersion and an incomplete migration chain at registration", () => {
     const adapter = pluginBlockAdapter();

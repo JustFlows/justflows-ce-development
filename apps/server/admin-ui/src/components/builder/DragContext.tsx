@@ -1,5 +1,5 @@
 import { useT } from "../../i18n/I18nProvider";
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import type { BlockCatalogEntry, BlockNode } from "./types";
 import { createBlock } from "./block-defaults";
 import { extractBlock, findBlockPath, insertBlock, moveBlockTo } from "./block-tree";
@@ -54,6 +54,29 @@ const BuilderDragContext = createContext<BuilderDragContextValue | null>(null);
 export function useBuilderDrag() {
   const ctx = useContext(BuilderDragContext);
   if (!ctx) throw new Error("useBuilderDrag must be used within BuilderDragProvider");
+  return ctx;
+}
+
+/**
+ * What a canvas row needs from dragging (justflows-ce#308): the current
+ * payload and the actions that start, aim, commit or cancel a move. The
+ * actions never change identity and the value only changes when a drag
+ * starts or ends, so editing one block or hovering drop zones does not
+ * redraw every row.
+ */
+export interface BuilderRowDrag {
+  dragPayload: DragPayload;
+  startPointerMove: (blockId: string, type: string) => void;
+  commitPointerMove: () => void;
+  cancelDrag: () => void;
+  setDropTarget: (target: DropTarget | null) => void;
+}
+
+const BuilderRowDragContext = createContext<BuilderRowDrag | null>(null);
+
+export function useBuilderRowDrag(): BuilderRowDrag {
+  const ctx = useContext(BuilderRowDragContext);
+  if (!ctx) throw new Error("useBuilderRowDrag must be used within BuilderDragProvider");
   return ctx;
 }
 
@@ -285,7 +308,21 @@ export function BuilderDragProvider({
     [announce, applyInsert, evaluate, onSelect, placementOf, rejectionText, reset, t, typeLabel],
   );
 
+  const rowActionsRef = useRef({ startPointerMove, commitPointerMove, cancelDrag, setDropTarget });
+  rowActionsRef.current = { startPointerMove, commitPointerMove, cancelDrag, setDropTarget };
+  const rowActions = useMemo(
+    () => ({
+      startPointerMove: (blockId: string, type: string) => rowActionsRef.current.startPointerMove(blockId, type),
+      commitPointerMove: () => rowActionsRef.current.commitPointerMove(),
+      cancelDrag: () => rowActionsRef.current.cancelDrag(),
+      setDropTarget: (target: DropTarget | null) => rowActionsRef.current.setDropTarget(target),
+    }),
+    [],
+  );
+  const rowDrag = useMemo<BuilderRowDrag>(() => ({ dragPayload, ...rowActions }), [dragPayload, rowActions]);
+
   return (
+    <BuilderRowDragContext.Provider value={rowDrag}>
     <BuilderDragContext.Provider
       value={{
         dragging,
@@ -316,6 +353,7 @@ export function BuilderDragProvider({
         {status?.text ?? ""}
       </div>
     </BuilderDragContext.Provider>
+    </BuilderRowDragContext.Provider>
   );
 }
 
