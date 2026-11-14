@@ -122,7 +122,7 @@ import { cacheSiteId } from "../../lib/cache/site-cache-key.js";
 import { getJfCache } from "../../lib/cache/jf-cache.js";
 import { getRuntimeBlockRegistry } from "../../lib/rendering/runtime-blocks.js";
 import type { BlockNode } from "../../lib/runtime/types.js";
-import { applyTemplateDefaults, textDirection, withBlockChrome } from "@justflows/blocks";
+import { applyTemplateDefaults, BLOCK_DOCUMENT_MAX_DEPTH, textDirection, withBlockChrome } from "@justflows/blocks";
 import {
   BLOG_POST_LIST_BLOCK_TYPE,
   registerBlogPostListBlock,
@@ -333,7 +333,10 @@ async function renderBlockTree(
   blogCtx?: BlogPostListRenderContext,
   commentCtx?: CommentsRenderContext,
   templateCtx?: TemplateBlockContext,
+  depth = 1,
 ): Promise<string> {
+  /** Past the document ceiling nothing more is rendered, so no document can exhaust the stack (justflows-ce#309). */
+  if (depth > BLOCK_DOCUMENT_MAX_DEPTH) return "";
   const parts: string[] = [];
   for (const block of blocks) {
     if (templateCtx && TEMPLATE_BLOCK_TYPES.has(block.type)) {
@@ -380,6 +383,7 @@ async function renderBlockTree(
           blogCtx,
           commentCtx,
           templateCtx,
+          depth + 1,
         );
         /** Stored props from an older block version are upgraded first, as `renderNode` does (justflows-ce#305). */
         const current = blockRegistry.migrateNode(block);

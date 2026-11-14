@@ -162,6 +162,23 @@ const CreateMenuSchema = z.object({
   name: z.string().min(1).max(255),
 });
 
+/**
+ * A refused menu save says what to fix; anything unexpected is logged and
+ * answered with a generic message, so database and stack details never reach
+ * the browser (justflows-ce#309).
+ */
+function sendMenuError(res: import("express").Response, err: unknown): void {
+  if (err instanceof z.ZodError) {
+    res.status(400).json({ error: err.issues[0]?.message ?? "Invalid menu" });
+    return;
+  }
+  if (err instanceof Error && err.message.startsWith("Invalid menu URL")) {
+    res.status(400).json({ error: "A menu link uses an address that is not allowed." });
+    return;
+  }
+  sendServerError(res, "menus", err);
+}
+
 function validateMenuItems(items: MenuItem[]): void {
   for (const item of items) {
     if (item.type === "custom") {
@@ -253,9 +270,10 @@ router.put("/:slug", requireRole(...MENU_WRITE_ROLES), async (req, res) => {
     // The JF cache prefix wipe below covers both — the preview render path
     // reads draft columns directly, live requests never do.
     await revalidateOnUpdate("menus");
+    if (!body.draft) auditFromRequest(req, "design.menu_saved", { target: slug });
     res.json({ menu, draft: Boolean(body.draft) });
   } catch (err) {
-    res.status(400).json({ error: String(err) });
+    sendMenuError(res, err);
   }
 });
 
@@ -272,9 +290,10 @@ router.post("/", requireRole(...MENU_WRITE_ROLES), async (req, res) => {
 
     const menu = await createMenu(siteId, body.slug, body.name);
     await revalidateOnUpdate("menus");
+    auditFromRequest(req, "design.menu_saved", { target: body.slug, detail: "create" });
     res.json({ menu });
   } catch (err) {
-    res.status(400).json({ error: String(err) });
+    sendMenuError(res, err);
   }
 });
 

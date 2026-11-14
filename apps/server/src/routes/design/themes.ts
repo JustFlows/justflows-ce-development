@@ -720,6 +720,8 @@ router.patch("/customize", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, re
       await publishThemeHomeBlocks(theme.theme_id, blocks);
       await publishThemeBlogBlocks(theme.theme_id, blogBlocks);
       await revalidateOnUpdate("theme");
+      /** Global styles reach every page; the entry names the theme, never the values (justflows-ce#309). */
+      auditFromRequest(req, "design.styles_published", { siteId, target: theme.theme_id, detail: "publish" });
       res.json({ ok: true, published: true, mods, blocks, homePageId, blogBlocks, blogPageId });
       return;
     }
@@ -728,6 +730,7 @@ router.patch("/customize", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, re
     await saveThemeHomeBlocks(theme.theme_id, blocks, body.draft);
     await saveThemeBlogBlocks(theme.theme_id, blogBlocks, body.draft);
     await revalidateOnUpdate("theme");
+    if (!body.draft) auditFromRequest(req, "design.styles_published", { siteId, target: theme.theme_id, detail: "save" });
     res.json({ ok: true, published: false, mods, blocks, homePageId, blogBlocks, blogPageId });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isMarkableBlockType, withBlockChrome } from "../block-chrome.js";
+import { BLOCK_DOCUMENT_MAX_DEPTH } from "../sanitize-document.js";
 import { BlockMigrator } from "../block-migrations.js";
 import { normalizeBlockContract, type BlockAction, type BlockContract, type BlockDeprecation, type BlockMigrationStep, type BlockPreviewContract, type BlockSupports } from "../block-contract.js";
 import { registerContainerLayoutTarget, unregisterContainerLayoutTarget } from "../container-layout.js";
@@ -165,7 +166,7 @@ export class BlockRegistry {
    * Render a block node to HTML. If the block type is unknown, emit a
    * missing-block placeholder so stored data is never lost.
    */
-  renderNode(node: BlockRenderNode): string {
+  renderNode(node: BlockRenderNode, depth = 1): string {
     const def = this.blocks.get(node.type);
     if (!def) {
       /**
@@ -176,9 +177,10 @@ export class BlockRegistry {
     }
     const migrated = this.migrateNode(node as BlockRenderNode & { version?: unknown });
     const props = def.validateProps(migrated.props);
+    /** Past the document ceiling, nested blocks are not rendered (justflows-ce#309). */
     const childrenHtml =
-      node.children?.length && def.supportsChildren
-        ? node.children.map((child) => this.renderNode(child)).join("\n")
+      node.children?.length && def.supportsChildren && depth < BLOCK_DOCUMENT_MAX_DEPTH
+        ? node.children.map((child) => this.renderNode(child, depth + 1)).join("\n")
         : "";
     return withBlockChrome(def.render(props, childrenHtml), node);
   }

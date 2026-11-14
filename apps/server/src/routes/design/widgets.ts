@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+import { auditFromRequest } from "../../lib/security/audit-log.js";
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
@@ -101,6 +102,7 @@ router.put("/layout", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res) =>
   }
   const layout = await saveWidgetLayout(siteId, body.data.layout);
   await revalidateOnUpdate("theme");
+  auditFromRequest(req, "design.widgets_published", { siteId, target: "layout" });
   res.json({ layout });
 });
 
@@ -184,7 +186,10 @@ router.put("/areas/:key", requireRole(...THEME_CUSTOMIZE_ROLES), async (req, res
   }
   const { draft, ...doc } = body.data;
   const saved = await saveWidgetAreaDoc(siteId, key, doc, draft ? "draft" : "publish");
-  if (!draft) await revalidateOnUpdate("theme");
+  if (!draft) {
+    await revalidateOnUpdate("theme");
+    auditFromRequest(req, "design.widgets_published", { siteId, target: key });
+  }
   res.json({ doc: saved });
 });
 
