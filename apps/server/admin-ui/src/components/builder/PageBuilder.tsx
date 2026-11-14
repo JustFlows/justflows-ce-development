@@ -4,6 +4,7 @@ import type { BlockDocument, BlockCatalogEntry, BlockNode } from "./types";
 import BlockLibrary from "./BlockLibrary";
 import BlockInspector from "./BlockInspector";
 import Navigator from "./Navigator";
+import { CORE_INLINE_FIELDS, InlineFieldsContext } from "./inline-field";
 import { PageCanvas } from "./BlockCanvas";
 import { BuilderDragProvider } from "./DragContext";
 import { createBlock } from "./block-defaults";
@@ -153,6 +154,14 @@ export default function PageBuilder({
   }, [enableHeader]);
 
   const catalogMap = useMemo(() => new Map(catalog.map((b) => [b.type, b])), [catalog]);
+  const inlineFields = useMemo(
+    () =>
+      new Map([
+        ...CORE_INLINE_FIELDS,
+        ...catalog.filter((b) => b.inline && Object.keys(b.inline).length > 0).map((b) => [b.type, b.inline!] as const),
+      ]),
+    [catalog],
+  );
   const blocks = Array.isArray(value?.blocks) ? value.blocks : [];
   const headerBlocks = Array.isArray(pageHeader.blocks) ? (pageHeader.blocks as BlockNode[]) : [];
 
@@ -404,6 +413,7 @@ export default function PageBuilder({
     );
 
   return (
+    <InlineFieldsContext.Provider value={inlineFields}>
     <MergeTagsContext.Provider value={mergeTags}>
       <PreviewSchemeContext.Provider value={previewScheme}>
       <BuilderDragProvider
@@ -483,5 +493,6 @@ export default function PageBuilder({
       </BuilderDragProvider>
       </PreviewSchemeContext.Provider>
     </MergeTagsContext.Provider>
+    </InlineFieldsContext.Provider>
   );
 }

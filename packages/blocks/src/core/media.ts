@@ -20,6 +20,7 @@ function playbackBlock(kind: "video" | "audio"): BlockDefinition {
   return {
     type: `core.${kind}`,
     version: 1,
+    inline: { caption: { mode: "plain", maxLength: 500 } },
     title: kind === "video" ? "Video" : "Audio",
     icon: kind === "video" ? "▶" : "♫",
     category: "media",
@@ -70,7 +71,7 @@ export const mediaBlocks: BlockDefinition[] = [
   playbackBlock("video"),
   playbackBlock("audio"),
   {
-    type: "core.file", version: 1, title: "File", icon: "⇩", category: "media",
+    type: "core.file", version: 1, inline: { label: { mode: "plain", maxLength: 200 }, caption: { mode: "plain", maxLength: 500 } }, title: "File", icon: "⇩", category: "media",
     schema: {
       src: { type: "url", required: true },
       label: { type: "text" },

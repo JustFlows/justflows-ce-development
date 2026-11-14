@@ -1118,7 +1118,48 @@
         "mathLatex": "Mathématiques (LaTeX)",
         "subscript": "Indice",
         "superscript": "Exposant"
-      }
+      },
+      "linkRejected": "Ce lien n’est pas autorisé. Utilisez une adresse web (https://…), un chemin (/page) ou mailto:.",
+      "linkPlaceholder": "https://exemple.fr ou /page",
+      "attribution": "Source",
+      "buttonLabel": "Texte du bouton",
+      "buttonLink": "Lien du bouton",
+      "supportingText": "Texte d’accompagnement",
+      "caption": "Légende",
+      "altText": "Texte alternatif",
+      "altPlaceholder": "Décrivez l’image pour les personnes qui ne la voient pas",
+      "replaceImage": "Remplacer l’image",
+      "replaceImageHint": "Double-cliquez pour remplacer l’image",
+      "chooseImage": "Double-cliquez pour choisir une image",
+      "listItem": "Élément de liste",
+      "pluginField": "Modifier {field}",
+      "mediaUrlRejected": "Cette adresse ne peut pas être utilisée. Utilisez un lien https:// ou un fichier de la médiathèque.",
+      "mediaUrl": "Adresse du média",
+      "mediaUrlPlaceholder": "https://… ou /uploads/…",
+      "libraryEmpty": "Rien de ce type dans la médiathèque pour l’instant.",
+      "pick": {
+        "image": "Choisir une image",
+        "video": "Choisir une vidéo",
+        "audio": "Choisir un audio",
+        "file": "Choisir un fichier"
+      },
+      "upload": {
+        "image": "Téléverser une image",
+        "video": "Téléverser une vidéo",
+        "audio": "Téléverser un audio",
+        "file": "Téléverser un fichier"
+      },
+      "replace": {
+        "video": "Remplacer la vidéo",
+        "audio": "Remplacer l’audio",
+        "file": "Remplacer le fichier"
+      },
+      "replaceMediaHint": "Double-cliquez pour remplacer",
+      "choosePoster": "Choisir l’image d’aperçu",
+      "changePoster": "Changer l’image d’aperçu",
+      "removePoster": "Retirer l’image d’aperçu",
+      "linkText": "Texte du lien",
+      "linkTextPlaceholder": "Par défaut, le nom du fichier"
     },
     "blockCountOne": "{count} bloc",
     "blockCountMany": "{count} blocs",

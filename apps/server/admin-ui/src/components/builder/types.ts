@@ -1,4 +1,4 @@
-import type { BlockEditorMeta, BlockInspectorSupports } from "@justflows/blocks";
+import type { BlockEditorMeta, BlockInlineFields, BlockInspectorSupports } from "@justflows/blocks";
 
 export interface BlockNode {
   id: string;
@@ -40,6 +40,8 @@ export interface BlockCatalogEntry {
   schema?: Record<string, BlockSchemaField>;
   /** Generic settings sections this block offers in the inspector. */
   inspector?: BlockInspectorSupports;
+  /** Props editable directly on the canvas (justflows-ce#297). */
+  inline?: BlockInlineFields;
 }
 
 export type BlockPath = number[];

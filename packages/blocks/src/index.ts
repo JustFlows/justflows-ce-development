@@ -8,7 +8,7 @@ export type {
   BlockRenderNode,
 } from "./registry/block-registry.js";
 export { coreBlocks } from "./core/index.js";
-export { sanitizeRichText, sanitizeHtmlBlock, sanitizePlainText, extractPlainText } from "./sanitize.js";
+export { sanitizeRichText, sanitizeHtmlBlock, sanitizePlainText, extractPlainText, sanitizePluginPreviewHtml } from "./sanitize.js";
 export { renderMath } from "./math.js";
 export { sanitizeBlockDocument } from "./sanitize-document.js";
 export { esc, safeHref, safeMediaSrc, sanitizeHref, sanitizeMediaSrc } from "./safe-url.js";
@@ -174,3 +174,11 @@ export type {
   BlockMigrationFailureReason,
   BlockMigrationResult,
 } from "./block-migrations.js";
+export {
+  INLINE_FIELD_ATTRIBUTE,
+  INLINE_FIELD_MODES,
+  INLINE_FORMATS,
+  normalizeInlineValue,
+  resolveInlineFields,
+} from "./inline.js";
+export type { BlockInlineFields, InlineFieldMode, InlineFieldSpec, InlineFormat } from "./inline.js";

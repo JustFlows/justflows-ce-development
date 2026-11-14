@@ -87,3 +87,8 @@ export const functionalBlocks: BlockDefinition[] = [
   define("tab", "Tab panel", "content", { title: txt("Tab") }, r => ({ title: text(r["title"], "Tab") }),
     (p, children = "") => `<section class="jf-tab" data-jf-title="${esc(String(p["title"]))}"><h3 class="jf-tab-heading">${esc(String(p["title"]))}</h3>${children}</section>`, true),
 ];
+
+/** List items are edited in place on the canvas, with the list's own inline formatting. */
+for (const block of functionalBlocks) {
+  if (block.type === "core.list-item") block.inline = { text: { mode: "rich", multiline: false, formats: ["bold", "italic", "underline", "link", "code"] } };
+}

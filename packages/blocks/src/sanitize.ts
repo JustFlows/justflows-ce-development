@@ -129,3 +129,17 @@ export function extractPlainText(html: string): string {
     return ({ amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" } as Record<string, string>)[code.toLowerCase()] ?? entity;
   }).replace(/\s+/g, " ").trim();
 }
+
+/**
+ * Builder preview of a plugin block's own render: the HTML block rules, plus
+ * the `data-jf-inline` marker a plugin uses to point at an inline-editable
+ * prop (see `inline.ts`). Editor only; never used for stored or public HTML.
+ */
+export function sanitizePluginPreviewHtml(html: string): string {
+  const attributes: Record<string, string[]> = {};
+  for (const [tag, list] of Object.entries(HTML_BLOCK_OPTIONS.allowedAttributes as Record<string, string[]>)) {
+    attributes[tag] = [...list, "data-jf-inline"];
+  }
+  for (const tag of HTML_BLOCK_OPTIONS.allowedTags as string[]) attributes[tag] ??= ["data-jf-inline"];
+  return sanitizeHtmlLib(html, { ...HTML_BLOCK_OPTIONS, allowedAttributes: attributes });
+}

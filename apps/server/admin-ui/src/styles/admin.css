@@ -5170,3 +5170,79 @@ input[type="range"] {
   font-size: 0.8rem;
   padding: 0.3rem;
 }
+
+/* Inline editing helpers next to a selected block: button link and image alt text. */
+.jf-inline-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-block-start: 0.4rem;
+  max-width: 24rem;
+}
+.jf-inline-link input {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--jf-border-strong);
+  border-radius: 6px;
+  background: var(--jf-surface);
+  color: var(--jf-text);
+}
+.jf-inline-link input[aria-invalid="true"] {
+  border-color: var(--jf-danger);
+}
+.jf-inline-link__error {
+  font-size: 0.75rem;
+  color: var(--jf-danger);
+}
+.jf-inline-alt {
+  display: flex;
+  gap: 0.35rem;
+  align-items: baseline;
+  margin-block-start: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--jf-text-2);
+}
+.jf-inline-alt .jf-inline-editable {
+  flex: 1;
+  min-width: 8rem;
+  border-block-end: 1px dashed var(--jf-border-strong);
+}
+
+/* Inline media editing: replace/poster actions, non-image library list, caption line. */
+.jf-inline-media-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-block-start: 0.4rem;
+}
+.jf-inline-media-list {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  max-height: 12rem;
+  overflow: auto;
+}
+.jf-inline-media-list button {
+  width: 100%;
+  text-align: start;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  font-size: 0.8rem;
+  color: var(--jf-text);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.jf-inline-media-list button:hover,
+.jf-inline-media-list button:focus-visible {
+  background: var(--jf-surface-2);
+}
+.jf-media-caption {
+  margin: 0.3rem 0 0;
+  font-size: 0.8rem;
+  color: var(--jf-text-2);
+}

@@ -872,7 +872,48 @@
       "strikethroughTooltip": "Закреслення",
       "underlineTooltip": "Підкреслення (⌘U)",
       "uploadImage": "Завантажити зображення",
-      "uploading": "Завантаження…"
+      "uploading": "Завантаження…",
+      "linkRejected": "Таке посилання не дозволено. Використайте вебадресу (https://…), шлях (/storinka) або mailto:.",
+      "linkPlaceholder": "https://example.ua або /storinka",
+      "attribution": "Автор цитати",
+      "buttonLabel": "Текст кнопки",
+      "buttonLink": "Посилання кнопки",
+      "supportingText": "Пояснювальний текст",
+      "caption": "Підпис",
+      "altText": "Альтернативний текст",
+      "altPlaceholder": "Опишіть зображення для тих, хто його не бачить",
+      "replaceImage": "Замінити зображення",
+      "replaceImageHint": "Двічі клацніть, щоб замінити зображення",
+      "chooseImage": "Двічі клацніть, щоб вибрати зображення",
+      "listItem": "Пункт списку",
+      "pluginField": "Редагувати {field}",
+      "mediaUrlRejected": "Цю адресу не можна використати. Вкажіть посилання https:// або файл із медіатеки.",
+      "mediaUrl": "Адреса медіафайлу",
+      "mediaUrlPlaceholder": "https://… або /uploads/…",
+      "libraryEmpty": "У медіатеці ще немає файлів цього типу.",
+      "pick": {
+        "image": "Вибрати зображення",
+        "video": "Вибрати відео",
+        "audio": "Вибрати аудіо",
+        "file": "Вибрати файл"
+      },
+      "upload": {
+        "image": "Завантажити зображення",
+        "video": "Завантажити відео",
+        "audio": "Завантажити аудіо",
+        "file": "Завантажити файл"
+      },
+      "replace": {
+        "video": "Замінити відео",
+        "audio": "Замінити аудіо",
+        "file": "Замінити файл"
+      },
+      "replaceMediaHint": "Двічі клацніть, щоб замінити",
+      "choosePoster": "Вибрати обкладинку",
+      "changePoster": "Змінити обкладинку",
+      "removePoster": "Прибрати обкладинку",
+      "linkText": "Текст посилання",
+      "linkTextPlaceholder": "Типово — назва файлу"
     },
     "inspector": {
       "addContentBlocksHint": "Додайте блоки вмісту всередині цього контейнера.",

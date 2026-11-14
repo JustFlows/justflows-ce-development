@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { withBlockChrome } from "../block-chrome.js";
 import type { BlockInspectorSupports } from "../inspector.js";
+import type { BlockInlineFields } from "../inline.js";
 
 export type FieldType =
   | "text"
@@ -45,6 +46,8 @@ export interface BlockDefinition<P extends Record<string, unknown> = Record<stri
   allowedChildTypes?: string[];
   /** Which generic builder settings sections this block offers; see `INSPECTOR_SECTIONS`. */
   inspector?: BlockInspectorSupports;
+  /** Props an author may edit directly on the canvas; see `inline.ts`. */
+  inline?: BlockInlineFields;
   /** Render block props to HTML string (server render) */
   render(props: P, children?: string): string;
   /** Validate and coerce props against the schema */

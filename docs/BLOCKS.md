@@ -440,6 +440,42 @@ its own keys through the `content.mergeTags` filter (editor preview) and
 `content.blocks` / `content.render` (public render). The editor loads preview
 values from `GET /api/content/{id}/merge-tags`.
 
+## Editing text on the canvas
+
+A selected block's declared text fields are edited where they appear. The core
+blocks declare: paragraph and quote text (rich), headings, quote attribution,
+button labels, call-to-action and hero headings, text and button labels, image
+captions and alt text, list items, video and audio captions, and file link
+text and captions. A selected image is replaced from the media library with a
+double-click or Enter. Video, audio and file blocks have a Replace button, also
+reachable by double-click, and the picker only lists media of that kind. Videos
+can also get, change or lose a poster image. A button's link is edited next to
+it. Links must be `http(s)://`, a path or `mailto:`, and other links are
+refused with a message. Paste is always plain text. Enter commits a single-line
+field, Escape cancels the edit, and while an input method is composing, Enter
+and Escape go to the input method.
+
+A block opts in with `inline`, which maps prop names to
+`{ mode, multiline?, maxLength?, formats? }` (`InlineFieldSpec` in
+`@justflows/blocks`). Rich fields are reserved for core blocks, whose rich
+props the document sanitizer handles. A plugin block declares plain fields
+only, and marks where each one appears:
+
+```ts
+ctx.blocks.register({
+  type: "acme.card",
+  inline: { title: { mode: "plain", maxLength: 80 } },
+  render: (p) => `<div class="acme-card"><h3 data-jf-inline="title">${escapeHtml(String(p.title ?? ""))}</h3></div>`,
+  // ...
+});
+```
+
+Only marked elements whose prop is declared become editable. The editor never
+makes other plugin markup editable. It normalizes the edited text with
+`normalizeInlineValue`, but that is a convenience, not a security boundary.
+`validateProps` and `render` must still validate and escape the prop like any
+other.
+
 ## Plugin blocks and patterns
 
 Plugins register blocks and patterns on activate. A pattern whose id matches a

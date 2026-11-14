@@ -1317,6 +1317,13 @@ export interface PluginBlockDefinition {
       | "background" | "textColor" | "accent" | "opacity"
     >;
   };
+  /**
+   * Props an author may edit directly on the builder canvas. Mark the element
+   * that shows each one with `data-jf-inline="<prop>"` in `render`. Plugin
+   * fields are plain text: a declared `rich` mode is treated as `plain`, and
+   * `render` must escape the value as it does any prop.
+   */
+  inline?: Record<string, { mode: "plain" | "rich"; multiline?: boolean; maxLength?: number }>;
   render(props: Record<string, unknown>, children?: string): string;
   validateProps(raw: unknown): Record<string, unknown>;
 }

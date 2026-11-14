@@ -872,7 +872,48 @@
       "strikethroughTooltip": "Przekreślenie",
       "underlineTooltip": "Podkreśl (⌘U)",
       "uploadImage": "Prześlij obraz",
-      "uploading": "Przesyłanie…"
+      "uploading": "Przesyłanie…",
+      "linkRejected": "Ten link jest niedozwolony. Użyj adresu (https://…), ścieżki (/strona) lub mailto:.",
+      "linkPlaceholder": "https://przyklad.pl lub /strona",
+      "attribution": "Autor cytatu",
+      "buttonLabel": "Tekst przycisku",
+      "buttonLink": "Link przycisku",
+      "supportingText": "Tekst pomocniczy",
+      "caption": "Podpis",
+      "altText": "Tekst alternatywny",
+      "altPlaceholder": "Opisz obraz dla osób, które go nie widzą",
+      "replaceImage": "Zamień obraz",
+      "replaceImageHint": "Kliknij dwukrotnie, aby zamienić obraz",
+      "chooseImage": "Kliknij dwukrotnie, aby wybrać obraz",
+      "listItem": "Element listy",
+      "pluginField": "Edytuj {field}",
+      "mediaUrlRejected": "Tego adresu nie można użyć. Użyj linku https:// lub pliku z biblioteki mediów.",
+      "mediaUrl": "Adres pliku multimedialnego",
+      "mediaUrlPlaceholder": "https://… lub /uploads/…",
+      "libraryEmpty": "W bibliotece mediów nie ma jeszcze plików tego rodzaju.",
+      "pick": {
+        "image": "Wybierz obraz",
+        "video": "Wybierz wideo",
+        "audio": "Wybierz dźwięk",
+        "file": "Wybierz plik"
+      },
+      "upload": {
+        "image": "Prześlij obraz",
+        "video": "Prześlij wideo",
+        "audio": "Prześlij dźwięk",
+        "file": "Prześlij plik"
+      },
+      "replace": {
+        "video": "Zamień wideo",
+        "audio": "Zamień dźwięk",
+        "file": "Zamień plik"
+      },
+      "replaceMediaHint": "Kliknij dwukrotnie, aby zamienić",
+      "choosePoster": "Wybierz obraz podglądu",
+      "changePoster": "Zmień obraz podglądu",
+      "removePoster": "Usuń obraz podglądu",
+      "linkText": "Tekst linku",
+      "linkTextPlaceholder": "Domyślnie nazwa pliku"
     },
     "inspector": {
       "addContentBlocksHint": "Dodaj bloki treści do tego kontenera.",

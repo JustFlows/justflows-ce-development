@@ -1118,7 +1118,48 @@
         "mathLatex": "Matemáticas (LaTeX)",
         "subscript": "Subíndice",
         "superscript": "Superíndice"
-      }
+      },
+      "linkRejected": "Ese enlace no está permitido. Usa una dirección web (https://…), una ruta (/pagina) o mailto:.",
+      "linkPlaceholder": "https://ejemplo.com o /pagina",
+      "attribution": "Autoría",
+      "buttonLabel": "Texto del botón",
+      "buttonLink": "Enlace del botón",
+      "supportingText": "Texto de apoyo",
+      "caption": "Pie de foto",
+      "altText": "Texto alternativo",
+      "altPlaceholder": "Describe la imagen para quien no pueda verla",
+      "replaceImage": "Reemplazar imagen",
+      "replaceImageHint": "Doble clic para reemplazar la imagen",
+      "chooseImage": "Doble clic para elegir una imagen",
+      "listItem": "Elemento de lista",
+      "pluginField": "Editar {field}",
+      "mediaUrlRejected": "Esa dirección no se puede usar. Usa un enlace https:// o un archivo de la biblioteca de medios.",
+      "mediaUrl": "Dirección del medio",
+      "mediaUrlPlaceholder": "https://… o /uploads/…",
+      "libraryEmpty": "Todavía no hay nada de este tipo en la biblioteca de medios.",
+      "pick": {
+        "image": "Elegir una imagen",
+        "video": "Elegir un vídeo",
+        "audio": "Elegir audio",
+        "file": "Elegir un archivo"
+      },
+      "upload": {
+        "image": "Subir imagen",
+        "video": "Subir vídeo",
+        "audio": "Subir audio",
+        "file": "Subir archivo"
+      },
+      "replace": {
+        "video": "Reemplazar vídeo",
+        "audio": "Reemplazar audio",
+        "file": "Reemplazar archivo"
+      },
+      "replaceMediaHint": "Doble clic para reemplazar",
+      "choosePoster": "Elegir imagen de portada",
+      "changePoster": "Cambiar imagen de portada",
+      "removePoster": "Quitar portada",
+      "linkText": "Texto del enlace",
+      "linkTextPlaceholder": "Por defecto, el nombre del archivo"
     },
     "blockCountOne": "{count} bloque",
     "blockCountMany": "{count} bloques",

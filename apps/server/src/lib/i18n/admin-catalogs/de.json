@@ -1118,7 +1118,48 @@
         "mathLatex": "Mathematik (LaTeX)",
         "subscript": "Tiefgestellt",
         "superscript": "Hochgestellt"
-      }
+      },
+      "linkRejected": "Dieser Link ist nicht erlaubt. Verwende eine Webadresse (https://…), einen Pfad (/seite) oder mailto:.",
+      "linkPlaceholder": "https://beispiel.de oder /seite",
+      "attribution": "Quelle",
+      "buttonLabel": "Button-Text",
+      "buttonLink": "Button-Link",
+      "supportingText": "Begleittext",
+      "caption": "Bildunterschrift",
+      "altText": "Alternativtext",
+      "altPlaceholder": "Beschreibe das Bild für Menschen, die es nicht sehen können",
+      "replaceImage": "Bild ersetzen",
+      "replaceImageHint": "Doppelklicken, um das Bild zu ersetzen",
+      "chooseImage": "Doppelklicken, um ein Bild zu wählen",
+      "listItem": "Listeneintrag",
+      "pluginField": "{field} bearbeiten",
+      "mediaUrlRejected": "Diese Adresse kann nicht verwendet werden. Nutze einen https://-Link oder eine Datei aus der Mediathek.",
+      "mediaUrl": "Medienadresse",
+      "mediaUrlPlaceholder": "https://… oder /uploads/…",
+      "libraryEmpty": "Noch nichts dieser Art in der Mediathek.",
+      "pick": {
+        "image": "Bild wählen",
+        "video": "Video wählen",
+        "audio": "Audio wählen",
+        "file": "Datei wählen"
+      },
+      "upload": {
+        "image": "Bild hochladen",
+        "video": "Video hochladen",
+        "audio": "Audio hochladen",
+        "file": "Datei hochladen"
+      },
+      "replace": {
+        "video": "Video ersetzen",
+        "audio": "Audio ersetzen",
+        "file": "Datei ersetzen"
+      },
+      "replaceMediaHint": "Doppelklicken zum Ersetzen",
+      "choosePoster": "Vorschaubild wählen",
+      "changePoster": "Vorschaubild ändern",
+      "removePoster": "Vorschaubild entfernen",
+      "linkText": "Linktext",
+      "linkTextPlaceholder": "Standardmäßig der Dateiname"
     },
     "blockCountOne": "{count} Block",
     "blockCountMany": "{count} Blöcke",

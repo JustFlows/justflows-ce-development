@@ -1115,7 +1115,48 @@
         "mathLatex": "Wiskunde (LaTeX)",
         "subscript": "Subscript",
         "superscript": "Superscript"
-      }
+      },
+      "linkRejected": "Die link is niet toegestaan. Gebruik een webadres (https://…), een pad (/pagina) of mailto:.",
+      "linkPlaceholder": "https://voorbeeld.nl of /pagina",
+      "attribution": "Bron",
+      "buttonLabel": "Knoptekst",
+      "buttonLink": "Knoplink",
+      "supportingText": "Ondersteunende tekst",
+      "caption": "Bijschrift",
+      "altText": "Alt-tekst",
+      "altPlaceholder": "Beschrijf de afbeelding voor wie hem niet kan zien",
+      "replaceImage": "Afbeelding vervangen",
+      "replaceImageHint": "Dubbelklik om de afbeelding te vervangen",
+      "chooseImage": "Dubbelklik om een afbeelding te kiezen",
+      "listItem": "Lijstitem",
+      "pluginField": "{field} bewerken",
+      "mediaUrlRejected": "Dat adres kan niet worden gebruikt. Gebruik een https://-link of een bestand uit de mediabibliotheek.",
+      "mediaUrl": "Media-adres",
+      "mediaUrlPlaceholder": "https://… of /uploads/…",
+      "libraryEmpty": "Nog niets van dit soort in de mediabibliotheek.",
+      "pick": {
+        "image": "Kies een afbeelding",
+        "video": "Kies een video",
+        "audio": "Kies audio",
+        "file": "Kies een bestand"
+      },
+      "upload": {
+        "image": "Afbeelding uploaden",
+        "video": "Video uploaden",
+        "audio": "Audio uploaden",
+        "file": "Bestand uploaden"
+      },
+      "replace": {
+        "video": "Video vervangen",
+        "audio": "Audio vervangen",
+        "file": "Bestand vervangen"
+      },
+      "replaceMediaHint": "Dubbelklik om te vervangen",
+      "choosePoster": "Posterafbeelding kiezen",
+      "changePoster": "Posterafbeelding wijzigen",
+      "removePoster": "Poster verwijderen",
+      "linkText": "Linktekst",
+      "linkTextPlaceholder": "Standaard de bestandsnaam"
     },
     "blockCountOne": "{count} blok",
     "blockCountMany": "{count} blokken",

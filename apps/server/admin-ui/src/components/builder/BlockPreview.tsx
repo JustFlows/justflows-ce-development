@@ -1,12 +1,13 @@
 import FunctionalBlock, { FUNCTIONAL_TYPES } from "./FunctionalBlock";
 import MediaBlock from "../MediaBlock";
 import { useT } from "../../i18n/I18nProvider";
-import { cloneElement, createContext, isValidElement, useContext, useEffect, useState, type ReactElement } from "react";
+import { cloneElement, createContext, isValidElement, useContext, useEffect, useRef, useState, type ReactElement } from "react";
 import type { BlockNode } from "./types";
-import { esc, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizeRichText } from "@justflows/blocks";
+import { esc, normalizeInlineValue, parseBlockStyle, renderMath, sanitizeHtmlBlock, sanitizePluginPreviewHtml, sanitizeRichText, INLINE_FIELD_ATTRIBUTE } from "@justflows/blocks";
 import MotionPreview from "./MotionPreview";
 import { applyMergeTags, useMergeTags } from "../../lib/merge-tags";
-import { InlineEditable } from "./InlineEditable";
+import { ImagePickerPopover, MediaPickerPopover, readEditableText } from "./InlineEditable";
+import { InlineField, InlineFieldsContext, InlineLinkField } from "./inline-field";
 
 /** Class the active theme's stylesheet is scoped to (see `serveThemeCss`). */
 export const THEME_PREVIEW_SCOPE = "jf-theme-surface";
@@ -74,6 +75,15 @@ export function BlockPreview({
   const tags = useMergeTags();
   const text = (value: unknown) => applyMergeTags(String(value ?? ""), tags);
   const isSelected = selectedId === block.id;
+  /** Declared inline fields are editable while their block is selected. */
+  const active = Boolean(isSelected && onUpdateProps);
+  const commitProps = (next: Record<string, unknown>) => onUpdateProps?.(block.id, next);
+  const [mediaPicker, setMediaPicker] = useState<{
+    top: number;
+    left: number;
+    kind?: "image" | "video" | "audio" | "file";
+    prop?: string;
+  } | null>(null);
   const blockStyle = parseBlockStyle(p.style);
 
   // Per-instance colours (Layout panel) and theme-token overrides (Theme
@@ -134,6 +144,18 @@ export function BlockPreview({
     );
   };
 
+  if (block.type === "core.list-item" && active) {
+    return wrap(
+      <li className="jf-list-item">
+        <div className="jf-list-item-content">
+          <InlineField block={block} field="text" active={active} as="div" placeholder={t("builder.inline.listItem")} onCommit={commitProps}>
+            {null}
+          </InlineField>
+          {renderChildren?.(block.children ?? [], depth + 1)}
+        </div>
+      </li>,
+    );
+  }
   if (FUNCTIONAL_TYPES.has(block.type)) return wrap(<FunctionalBlock type={block.type} props={p}>{renderChildren?.(block.children ?? [], depth + 1)}</FunctionalBlock>);
 
   switch (block.type) {
@@ -211,16 +233,25 @@ export function BlockPreview({
           style={bgImage ? { backgroundImage: `url(${bgImage})` } : undefined}
         >
           <div className="jf-hero__inner">
-            <h1 className="jf-hero__heading">{(p.heading as string) || t("builder.preview.heroHeading")}</h1>
-            {(p.subheading as string) && <p className="jf-hero__sub">{p.subheading as string}</p>}
-            {(p.buttonLabel as string) && (
-              <span className="btn btn--primary jf-hero__btn">{p.buttonLabel as string}</span>
+            <InlineField block={block} field="heading" active={active} as="h1" className="jf-hero__heading" placeholder={t("builder.preview.heroHeading")} onCommit={commitProps}>
+              <h1 className="jf-hero__heading">{(p.heading as string) || t("builder.preview.heroHeading")}</h1>
+            </InlineField>
+            {(active || (p.subheading as string)) && (
+              <InlineField block={block} field="subheading" active={active} as="p" className="jf-hero__sub" placeholder={t("builder.inline.supportingText")} onCommit={commitProps}>
+                <p className="jf-hero__sub">{p.subheading as string}</p>
+              </InlineField>
+            )}
+            {(active || (p.buttonLabel as string)) && (
+              <span className="btn btn--primary jf-hero__btn">
+                <InlineField block={block} field="buttonLabel" active={active} as="span" placeholder={t("builder.preview.button")} label={t("builder.inline.buttonLabel")} onCommit={commitProps}>
+                  {p.buttonLabel as string}
+                </InlineField>
+              </span>
             )}
           </div>
         </section>,
       );
     }
-
     case "core.features": {
       const items = (p.items as Array<{ icon: string; title: string; description: string }>) ?? [];
       const cols = (p.columns as number) ?? 3;
@@ -252,139 +283,246 @@ export function BlockPreview({
       return wrap(
         <section className={`jf-cta jf-cta--${variant}`}>
           <div className="jf-container jf-container--default">
-            <h2 className="jf-cta__heading">{(p.heading as string) || t("builder.preview.callToAction")}</h2>
-            {(p.text as string) && <p className="jf-cta__text">{p.text as string}</p>}
-            {(p.buttonLabel as string) && (
-              <span className="btn btn--primary jf-cta__btn">{p.buttonLabel as string}</span>
+            <InlineField block={block} field="heading" active={active} as="h2" className="jf-cta__heading" placeholder={t("builder.preview.callToAction")} onCommit={commitProps}>
+              <h2 className="jf-cta__heading">{(p.heading as string) || t("builder.preview.callToAction")}</h2>
+            </InlineField>
+            {(active || (p.text as string)) && (
+              <InlineField block={block} field="text" active={active} as="p" className="jf-cta__text" placeholder={t("builder.inline.supportingText")} onCommit={commitProps}>
+                <p className="jf-cta__text">{p.text as string}</p>
+              </InlineField>
+            )}
+            {(active || (p.buttonLabel as string)) && (
+              <span className="btn btn--primary jf-cta__btn">
+                <InlineField block={block} field="buttonLabel" active={active} as="span" placeholder={t("builder.preview.button")} label={t("builder.inline.buttonLabel")} onCommit={commitProps}>
+                  {p.buttonLabel as string}
+                </InlineField>
+              </span>
             )}
           </div>
         </section>,
       );
     }
-
     case "core.paragraph":
-      if (isSelected && onUpdateProps) {
-        return wrap(
-          <InlineEditable
-            as="div"
-            className="jf-paragraph"
-            value={typeof p.text === "string" ? p.text : ""}
-            placeholder={t("builder.preview.typeAParagraph")}
-            onCommit={(html) => onUpdateProps(block.id, { ...p, text: html })}
-          />,
-        );
-      }
       return wrap(
-        <div
-          className="jf-paragraph"
-          dangerouslySetInnerHTML={{
-            __html:
-              renderMath(sanitizeRichText(text(p.text))) ||
-              `<em style='color:var(--color-muted, var(--jf-text-3))'>${esc(t("builder.preview.emptyParagraph"))}</em>`,
-          }}
-        />,
+        <InlineField block={block} field="text" active={active} as="div" className="jf-paragraph" placeholder={t("builder.preview.typeAParagraph")} onCommit={commitProps}>
+          <div
+            className="jf-paragraph"
+            dangerouslySetInnerHTML={{
+              __html:
+                renderMath(sanitizeRichText(text(p.text))) ||
+                `<em style='color:var(--color-muted, var(--jf-text-3))'>${esc(t("builder.preview.emptyParagraph"))}</em>`,
+            }}
+          />
+        </InlineField>,
       );
 
     case "core.heading": {
       const Tag = `h${Math.min(6, Math.max(1, (p.level as number) ?? 2))}` as
         "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
-      if (isSelected && onUpdateProps) {
-        return wrap(
-          <InlineEditable
-            as={Tag}
-            mode="plain"
-            value={typeof p.text === "string" ? p.text : ""}
-            placeholder={t("builder.preview.heading")}
-            onCommit={(value) => onUpdateProps(block.id, { ...p, text: value })}
-          />,
-        );
-      }
-      const heading = text(p.text);
-      return wrap(<Tag>{heading || <em style={{ color: "var(--color-muted, var(--jf-text-3))" }}>{t("builder.preview.heading")}</em>}</Tag>);
+      return wrap(
+        <InlineField block={block} field="text" active={active} as={Tag} placeholder={t("builder.preview.heading")} onCommit={commitProps}>
+          <Tag>{text(p.text) || t("builder.preview.heading")}</Tag>
+        </InlineField>,
+      );
     }
-
     case "core.video":
     case "core.audio":
-    case "core.file":
-      return wrap(<MediaBlock type={block.type} props={p} preview />);
-
-    case "core.image":
+    case "core.file": {
+      if (!active) return wrap(<MediaBlock type={block.type} props={p} preview />);
+      const kind = block.type === "core.video" ? "video" : block.type === "core.audio" ? "audio" : "file";
+      /** Replace the media (or choose a video poster) from the library, a URL, or an upload. */
+      const open = (el: HTMLElement, prop: "src" | "poster") => {
+        const rect = el.getBoundingClientRect();
+        setMediaPicker({ top: rect.bottom + 4, left: rect.left, kind: prop === "poster" ? "image" : kind, prop });
+      };
       return wrap(
-        (p.src as string) ? (
-          <figure style={{ margin: 0 }}>
-            <img
-              src={p.src as string}
-              alt={(p.alt as string) ?? ""}
-              style={{
-                display: "block",
-                width: Number(p.width) > 0 ? Number(p.width) : undefined,
-                height: Number(p.height) > 0 ? Number(p.height) : undefined,
-                maxWidth: "100%",
-                objectFit:
-                  Number(p.height) > 0
-                    ? (p.objectFit as "contain" | "cover" | "fill") || "contain"
-                    : undefined,
-                borderRadius: 6,
+        <>
+          {mediaPicker?.prop && (
+            <MediaPickerPopover
+              kind={mediaPicker.kind ?? kind}
+              top={mediaPicker.top}
+              left={mediaPicker.left}
+              onInsert={(url) => {
+                const prop = mediaPicker.prop!;
+                setMediaPicker(null);
+                commitProps({ ...p, [prop]: url });
               }}
+              onClose={() => setMediaPicker(null)}
             />
-            {(p.caption as string) ? (
-              <figcaption
-                style={{ fontSize: "0.8rem", color: "var(--color-muted, var(--jf-text-3))", marginTop: "0.25rem" }}
-              >
-                {p.caption as string}
-              </figcaption>
-            ) : null}
-          </figure>
-        ) : (
-          <div
-            style={{
-              background: "var(--color-surface, var(--jf-surface-3))",
-              padding: "1.5rem",
-              borderRadius: 6,
-              textAlign: "center",
-              color: "var(--color-muted, var(--jf-text-3))",
-            }}
-          >
-            {t("builder.preview.noImage")}</div>
-        ),
+          )}
+          {/** Double-click is a mouse shortcut; the Replace button below is the accessible control. */}
+          <div title={t("builder.inline.replaceMediaHint")} onDoubleClick={(e) => open(e.currentTarget, "src")}>
+            {/** The caption (and file link text) are edited below, so the preview leaves them out. */}
+            <MediaBlock type={block.type} props={{ ...p, caption: "" }} preview />
+          </div>
+          <div className="jf-inline-media-bar" data-builder-chrome="true">
+            <button type="button" className="jf-btn jf-btn--sm" onClick={(e) => open(e.currentTarget, "src")}>
+              {t(`builder.inline.replace.${kind}`)}
+            </button>
+            {kind === "video" && (
+              <button type="button" className="jf-btn jf-btn--sm" onClick={(e) => open(e.currentTarget, "poster")}>
+                {(p.poster as string) ? t("builder.inline.changePoster") : t("builder.inline.choosePoster")}
+              </button>
+            )}
+            {kind === "video" && (p.poster as string) && (
+              <button type="button" className="jf-btn jf-btn--sm" onClick={() => commitProps({ ...p, poster: "" })}>
+                {t("builder.inline.removePoster")}
+              </button>
+            )}
+          </div>
+          {kind === "file" && (
+            <div className="jf-inline-alt" data-builder-chrome="true">
+              <span aria-hidden="true">{t("builder.inline.linkText")}:</span>
+              <InlineField block={block} field="label" active={active} as="span" placeholder={t("builder.inline.linkTextPlaceholder")} label={t("builder.inline.linkText")} onCommit={commitProps}>
+                {null}
+              </InlineField>
+            </div>
+          )}
+          <InlineField block={block} field="caption" active={active} as="p" className="jf-media-caption" placeholder={t("builder.inline.caption")} onCommit={commitProps}>
+            {null}
+          </InlineField>
+        </>,
       );
+    }
 
+    case "core.image": {
+      /** Double-click (or Enter on the selected image) opens the media library to replace it. */
+      const openPicker = (el: HTMLElement) => {
+        const rect = el.getBoundingClientRect();
+        setMediaPicker({ top: rect.top + 8, left: rect.left + 8 });
+      };
+      const picker =
+        active && mediaPicker && !mediaPicker.prop ? (
+          <ImagePickerPopover
+            top={mediaPicker.top}
+            left={mediaPicker.left}
+            onInsert={(url) => {
+              setMediaPicker(null);
+              commitProps({ ...p, src: url });
+            }}
+            onClose={() => setMediaPicker(null)}
+          />
+        ) : null;
+      return wrap(
+        <>
+          {picker}
+          {(p.src as string) ? (
+            <figure style={{ margin: 0 }}>
+              <img
+                src={p.src as string}
+                alt={(p.alt as string) ?? ""}
+                title={active ? t("builder.inline.replaceImageHint") : undefined}
+                tabIndex={active ? 0 : undefined}
+                role={active ? "button" : undefined}
+                aria-label={active ? t("builder.inline.replaceImage") : undefined}
+                onDoubleClick={active ? (e) => openPicker(e.currentTarget) : undefined}
+                onKeyDown={
+                  active
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openPicker(e.currentTarget);
+                        }
+                      }
+                    : undefined
+                }
+                style={{
+                  display: "block",
+                  width: Number(p.width) > 0 ? Number(p.width) : undefined,
+                  height: Number(p.height) > 0 ? Number(p.height) : undefined,
+                  maxWidth: "100%",
+                  objectFit:
+                    Number(p.height) > 0
+                      ? (p.objectFit as "contain" | "cover" | "fill") || "contain"
+                      : undefined,
+                  borderRadius: 6,
+                  cursor: active ? "zoom-in" : undefined,
+                }}
+              />
+              {(active || (p.caption as string)) && (
+                <InlineField block={block} field="caption" active={active} as="figcaption" placeholder={t("builder.inline.caption")} onCommit={commitProps}>
+                  <figcaption
+                    style={{ fontSize: "0.8rem", color: "var(--color-muted, var(--jf-text-3))", marginTop: "0.25rem" }}
+                  >
+                    {p.caption as string}
+                  </figcaption>
+                </InlineField>
+              )}
+              {active && (
+                <div className="jf-inline-alt" data-builder-chrome="true">
+                  <span aria-hidden="true">{t("builder.inline.altText")}:</span>
+                  <InlineField block={block} field="alt" active={active} as="span" placeholder={t("builder.inline.altPlaceholder")} label={t("builder.inline.altText")} onCommit={commitProps}>
+                    {null}
+                  </InlineField>
+                </div>
+              )}
+            </figure>
+          ) : (
+            <div
+              role={active ? "button" : undefined}
+              tabIndex={active ? 0 : undefined}
+              onDoubleClick={active ? (e) => openPicker(e.currentTarget) : undefined}
+              onKeyDown={
+                active
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openPicker(e.currentTarget);
+                      }
+                    }
+                  : undefined
+              }
+              style={{
+                background: "var(--color-surface, var(--jf-surface-3))",
+                padding: "1.5rem",
+                borderRadius: 6,
+                textAlign: "center",
+                color: "var(--color-muted, var(--jf-text-3))",
+              }}
+            >
+              {active ? t("builder.inline.chooseImage") : t("builder.preview.noImage")}
+            </div>
+          )}
+        </>,
+      );
+    }
     case "core.quote":
-      if (isSelected && onUpdateProps) {
-        return wrap(
-          <blockquote>
-            <InlineEditable
-              as="div"
-              className="jf-quote__text"
-              value={typeof p.text === "string" ? p.text : ""}
-              placeholder={t("builder.preview.quote")}
-              onCommit={(html) => onUpdateProps(block.id, { ...p, text: html })}
-            />
-            {(p.attribution as string) ? <cite>— {p.attribution as string}</cite> : null}
-          </blockquote>,
-        );
-      }
       return wrap(
         <blockquote>
-          <div
-            className="jf-quote__text"
-            dangerouslySetInnerHTML={{
-              __html:
-                renderMath(sanitizeRichText((p.text as string) || "")) ||
-                `<em style='color:var(--color-muted, var(--jf-text-3))'>${esc(t("builder.preview.quote"))}</em>`,
-            }}
-          />
-          {(p.attribution as string) ? <cite>— {p.attribution as string}</cite> : null}
+          <InlineField block={block} field="text" active={active} as="div" className="jf-quote__text" placeholder={t("builder.preview.quote")} onCommit={commitProps}>
+            <div
+              className="jf-quote__text"
+              dangerouslySetInnerHTML={{
+                __html:
+                  renderMath(sanitizeRichText((p.text as string) || "")) ||
+                  `<em style='color:var(--color-muted, var(--jf-text-3))'>${esc(t("builder.preview.quote"))}</em>`,
+              }}
+            />
+          </InlineField>
+          {(active || (p.attribution as string)) && (
+            <InlineField block={block} field="attribution" active={active} as="cite" placeholder={t("builder.inline.attribution")} onCommit={commitProps}>
+              <cite>— {p.attribution as string}</cite>
+            </InlineField>
+          )}
         </blockquote>,
       );
-
     case "core.button":
       return wrap(
-        <span className={`btn btn--${(p.variant as string) || "primary"}`}>
-          {(p.label as string) || t("builder.preview.button")}
-        </span>,
+        <>
+          <span className={`btn btn--${(p.variant as string) || "primary"}`}>
+            <InlineField block={block} field="label" active={active} as="span" placeholder={t("builder.preview.button")} label={t("builder.inline.buttonLabel")} onCommit={commitProps}>
+              {(p.label as string) || t("builder.preview.button")}
+            </InlineField>
+          </span>
+          {active && (
+            <InlineLinkField
+              value={typeof p.url === "string" ? p.url : ""}
+              label={t("builder.inline.buttonLink")}
+              onCommit={(url) => commitProps({ ...p, url })}
+            />
+          )}
+        </>,
       );
-
     case "core.link-list": {
       const items = (p.items as Array<{ label: string; url: string }>) ?? [];
       return wrap(
@@ -771,7 +909,9 @@ export function BlockPreview({
       );
 
     default:
-      if (!block.type.startsWith("core.")) return wrap(<PluginBlockPreview type={block.type} props={p} />);
+      if (!block.type.startsWith("core.")) {
+        return wrap(<PluginBlockPreview type={block.type} props={p} active={active} onCommit={commitProps} />);
+      }
       return wrap(
         <div style={{ color: "var(--color-muted, var(--jf-text-3))", fontSize: "0.8rem" }}>{block.type}</div>,
       );
@@ -783,8 +923,21 @@ export function BlockPreview({
  * render, sanitized like an HTML block. Re-asked after edits settle; falls back
  * to the block type while loading or when the render fails.
  */
-function PluginBlockPreview({ type, props }: { type: string; props: Record<string, unknown> }) {
+function PluginBlockPreview({
+  type,
+  props,
+  active = false,
+  onCommit,
+}: {
+  type: string;
+  props: Record<string, unknown>;
+  active?: boolean;
+  onCommit?: (props: Record<string, unknown>) => void;
+}) {
+  const { t } = useT();
   const [html, setHtml] = useState<string | null>(null);
+  const container = useRef<HTMLDivElement | null>(null);
+  const fields = useContext(InlineFieldsContext).get(type);
   const key = JSON.stringify(props);
   useEffect(() => {
     let cancelled = false;
@@ -796,7 +949,7 @@ function PluginBlockPreview({ type, props }: { type: string; props: Record<strin
       })
         .then((res) => (res.ok ? (res.json() as Promise<{ html?: string }>) : null))
         .then((body) => {
-          if (!cancelled) setHtml(body && typeof body.html === "string" ? sanitizeHtmlBlock(body.html) : "");
+          if (!cancelled) setHtml(body && typeof body.html === "string" ? sanitizePluginPreviewHtml(body.html) : "");
         })
         .catch(() => {
           if (!cancelled) setHtml("");
@@ -807,10 +960,71 @@ function PluginBlockPreview({ type, props }: { type: string; props: Record<strin
       clearTimeout(timer);
     };
   }, [type, key]);
+
+  /**
+   * Plugin inline editing (justflows-ce#297): only elements the plugin marked
+   * with `data-jf-inline="<prop>"` AND whose prop it declared become editable,
+   * as plain text. Nothing else in the plugin's markup is touched.
+   */
+  useEffect(() => {
+    const root = container.current;
+    if (!root || !active || !fields || !onCommit) return;
+    const cleanups: Array<() => void> = [];
+    root.querySelectorAll<HTMLElement>(`[${INLINE_FIELD_ATTRIBUTE}]`).forEach((el) => {
+      const field = el.getAttribute(INLINE_FIELD_ATTRIBUTE) ?? "";
+      const spec = fields[field];
+      if (!spec) return;
+      const original = typeof props[field] === "string" ? (props[field] as string) : (el.textContent ?? "");
+      let cancelled = false;
+      el.setAttribute("contenteditable", "true");
+      el.setAttribute("role", "textbox");
+      el.setAttribute("dir", "auto");
+      el.setAttribute("aria-label", t("builder.inline.pluginField", { field }));
+      el.setAttribute("aria-multiline", spec.multiline ? "true" : "false");
+      el.dataset.builderChrome = "true";
+      el.classList.add("jf-inline-editable");
+      const read = () => readEditableText(el, Boolean(spec.multiline));
+      const onKey = (e: KeyboardEvent) => {
+        if (e.isComposing || e.keyCode === 229) return;
+        if (e.key === "Escape") {
+          cancelled = true;
+          el.blur();
+        } else if (e.key === "Enter" && !spec.multiline) {
+          e.preventDefault();
+          el.blur();
+        }
+      };
+      const onPaste = (e: ClipboardEvent) => {
+        e.preventDefault();
+        const text = e.clipboardData?.getData("text/plain") ?? "";
+        document.execCommand("insertText", false, spec.multiline ? text : text.replace(/\s*\n\s*/g, " "));
+      };
+      const onBlur = () => {
+        if (cancelled) {
+          cancelled = false;
+          el.textContent = original;
+          return;
+        }
+        const next = normalizeInlineValue({ ...spec, mode: "plain" }, read());
+        if (next !== original) onCommit({ ...props, [field]: next });
+      };
+      el.addEventListener("keydown", onKey);
+      el.addEventListener("paste", onPaste);
+      el.addEventListener("blur", onBlur);
+      cleanups.push(() => {
+        el.removeEventListener("keydown", onKey);
+        el.removeEventListener("paste", onPaste);
+        el.removeEventListener("blur", onBlur);
+        el.removeAttribute("contenteditable");
+      });
+    });
+    return () => cleanups.forEach((fn) => fn());
+  }, [html, active, fields, onCommit, key]);
+
   if (!html) {
     return <div style={{ color: "var(--color-muted, var(--jf-text-3))", fontSize: "0.8rem" }}>{type}</div>;
   }
-  return <div data-jf-plugin-block={type} dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div ref={container} data-jf-plugin-block={type} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 const widgetChip: React.CSSProperties = {

@@ -45,6 +45,16 @@ Plugins additionally receive executable runtime context and can inspect
 `SDK_API_VERSION` from `@justflows/sdk`. `ctx.version` continues to mean the
 plugin's own version.
 
+### In development — inline-editable block fields
+
+`PluginBlockDefinition.inline` is optional and additive. It lists the props an
+author may edit directly on the builder canvas, such as
+`{ title: { mode: "plain", maxLength: 80 } }`. Mark the element that shows the
+prop with `data-jf-inline="title"` in `render`. Plugin fields are plain text: a
+declared `rich` mode is treated as `plain`, and `render` must keep escaping the
+value. Blocks without `inline` behave as before. See
+[Blocks](BLOCKS.md#editing-text-on-the-canvas).
+
 ### In development — reserved `document-history` API namespace
 
 Core now serves `/api/document-history` (version history of the header, footer,

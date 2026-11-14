@@ -2,10 +2,13 @@ import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { requireRole } from "../../middleware/auth.js";
 import { CONTENT_READ_ROLES } from "../../lib/auth/rbac.js";
-import { resolveInspectorSupports } from "@justflows/blocks";
+import { coreBlocks, resolveInlineFields, resolveInspectorSupports } from "@justflows/blocks";
 import { getRuntimeBlockRegistry } from "../../lib/rendering/runtime-blocks.js";
 
 const router = Router();
+
+/** Only core blocks may declare rich inline fields; see `resolveInlineFields`. */
+const CORE_TYPES = new Set(coreBlocks.map((def) => def.type));
 
 /**
  * List registered block types for the page builder.
@@ -27,6 +30,7 @@ router.get("/", requireRole(...CONTENT_READ_ROLES), async (_req, res) => {
     supportsChildren: def.supportsChildren ?? false,
     allowedChildTypes: def.allowedChildTypes,
     inspector: resolveInspectorSupports(def),
+    inline: resolveInlineFields(def.inline, CORE_TYPES.has(def.type) && coreBlocks.includes(def)),
   }));
   res.json({ blocks });
 });

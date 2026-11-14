@@ -872,7 +872,48 @@
       "strikethroughTooltip": "Strikethrough",
       "underlineTooltip": "Underline (⌘U)",
       "uploadImage": "Upload image",
-      "uploading": "Uploading…"
+      "uploading": "Uploading…",
+      "linkRejected": "That link isn't allowed. Use a web address (https://…), a path (/page), or mailto:.",
+      "linkPlaceholder": "https://example.com or /page",
+      "attribution": "Attribution",
+      "buttonLabel": "Button text",
+      "buttonLink": "Button link",
+      "supportingText": "Supporting text",
+      "caption": "Caption",
+      "altText": "Alt text",
+      "altPlaceholder": "Describe the image for people who can't see it",
+      "replaceImage": "Replace image",
+      "replaceImageHint": "Double-click to replace the image",
+      "chooseImage": "Double-click to choose an image",
+      "listItem": "List item",
+      "pluginField": "Edit {field}",
+      "mediaUrlRejected": "That address can't be used. Use an https:// link or a file from the media library.",
+      "mediaUrl": "Media address",
+      "mediaUrlPlaceholder": "https://… or /uploads/…",
+      "libraryEmpty": "Nothing of this kind in the media library yet.",
+      "pick": {
+        "image": "Choose an image",
+        "video": "Choose a video",
+        "audio": "Choose audio",
+        "file": "Choose a file"
+      },
+      "upload": {
+        "image": "Upload image",
+        "video": "Upload video",
+        "audio": "Upload audio",
+        "file": "Upload file"
+      },
+      "replace": {
+        "video": "Replace video",
+        "audio": "Replace audio",
+        "file": "Replace file"
+      },
+      "replaceMediaHint": "Double-click to replace",
+      "choosePoster": "Choose poster image",
+      "changePoster": "Change poster image",
+      "removePoster": "Remove poster",
+      "linkText": "Link text",
+      "linkTextPlaceholder": "Defaults to the file name"
     },
     "inspector": {
       "addContentBlocksHint": "Add content blocks inside this container.",

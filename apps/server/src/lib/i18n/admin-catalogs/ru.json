@@ -872,7 +872,48 @@
       "strikethroughTooltip": "Зачеркивание",
       "underlineTooltip": "Подчёркнутый (⌘U)",
       "uploadImage": "Загрузить изображение",
-      "uploading": "Загрузка..."
+      "uploading": "Загрузка...",
+      "linkRejected": "Такая ссылка недопустима. Используйте веб-адрес (https://…), путь (/stranica) или mailto:.",
+      "linkPlaceholder": "https://example.ru или /stranica",
+      "attribution": "Автор цитаты",
+      "buttonLabel": "Текст кнопки",
+      "buttonLink": "Ссылка кнопки",
+      "supportingText": "Поясняющий текст",
+      "caption": "Подпись",
+      "altText": "Альтернативный текст",
+      "altPlaceholder": "Опишите изображение для тех, кто его не видит",
+      "replaceImage": "Заменить изображение",
+      "replaceImageHint": "Дважды щёлкните, чтобы заменить изображение",
+      "chooseImage": "Дважды щёлкните, чтобы выбрать изображение",
+      "listItem": "Пункт списка",
+      "pluginField": "Изменить {field}",
+      "mediaUrlRejected": "Этот адрес нельзя использовать. Укажите ссылку https:// или файл из медиатеки.",
+      "mediaUrl": "Адрес медиафайла",
+      "mediaUrlPlaceholder": "https://… или /uploads/…",
+      "libraryEmpty": "В медиатеке пока нет файлов этого типа.",
+      "pick": {
+        "image": "Выбрать изображение",
+        "video": "Выбрать видео",
+        "audio": "Выбрать аудио",
+        "file": "Выбрать файл"
+      },
+      "upload": {
+        "image": "Загрузить изображение",
+        "video": "Загрузить видео",
+        "audio": "Загрузить аудио",
+        "file": "Загрузить файл"
+      },
+      "replace": {
+        "video": "Заменить видео",
+        "audio": "Заменить аудио",
+        "file": "Заменить файл"
+      },
+      "replaceMediaHint": "Дважды щёлкните, чтобы заменить",
+      "choosePoster": "Выбрать обложку",
+      "changePoster": "Сменить обложку",
+      "removePoster": "Убрать обложку",
+      "linkText": "Текст ссылки",
+      "linkTextPlaceholder": "По умолчанию — имя файла"
     },
     "inspector": {
       "addContentBlocksHint": "Добавьте в этот контейнер блоки содержания.",
