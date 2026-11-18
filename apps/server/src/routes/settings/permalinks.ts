@@ -273,6 +273,7 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
                 visibility: visibility?.sql("c") ?? null,
                 limit: pageSize,
                 offset: (pageNumber - 1) * pageSize,
+                shared: !preview && !visibility?.restricted,
               })
             : { items: [], total: 0 };
           const totalPages = Math.max(1, Math.ceil(archivePage.total / pageSize));

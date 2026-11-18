@@ -7,6 +7,7 @@ let state: unknown;
 let rows: Record<string, unknown>[];
 let termRows: Record<string, unknown>[];
 const invalidate = vi.fn();
+const remember = vi.fn(async (_key: string, _ttl: number, load: () => Promise<unknown>) => load());
 const set = vi.fn(async (_site: string, _key: string, value: unknown) => {
   state = structuredClone(value);
 });
@@ -43,7 +44,7 @@ vi.mock("../../../src/lib/themes/layout-scopes.js", () => ({
 vi.mock("../../../src/lib/cache/jf-cache.js", () => ({
   getJfCache: () => ({
     invalidate,
-    remember: async (_key: string, _ttl: number, load: () => Promise<unknown>) => load(),
+    remember: (key: string, ttl: number, load: () => Promise<unknown>) => remember(key, ttl, load),
   }),
 }));
 const { savePermalinks, getPermalinkState, uniquePermalinkSlug, contentPermalink, contentPermalinks, createContentPermalinkResolver, withTermPermalinkHistory, permalinkCandidates, permalinkTermPage, permalinkArchivePageSize } =
@@ -290,6 +291,14 @@ describe("per-request permalink candidates", () => {
     const [countSql, countParams] = query.mock.calls[1]!;
     expect(countSql).toContain("SELECT COUNT(*) AS total");
     expect(countParams).toEqual(["term-1", "s1", "en-US", "page"]);
+  });
+  it("caches an archive page only when every visitor gets the same answer", async () => {
+    rows = [];
+    const page = { locale: "en-US", limit: 10, offset: 10 };
+    await permalinkTermPage("s1", "term-1", defaults, page);
+    expect(remember).not.toHaveBeenCalled();
+    await permalinkTermPage("s1", "term-1", defaults, { ...page, shared: true });
+    expect(remember).toHaveBeenCalledWith("content:permalink:archive:s1:term-1:en-US:10:10", 300, expect.any(Function));
   });
 });
 

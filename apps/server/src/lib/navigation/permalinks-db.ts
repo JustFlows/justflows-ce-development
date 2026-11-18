@@ -220,6 +220,32 @@ export async function permalinkTermPage(
   siteId: string,
   termId: string,
   settings: PermalinkSettings,
+  page: {
+    locale: string;
+    visibility?: { sql: string; params: string[] } | null;
+    limit: number;
+    offset: number;
+    /**
+     * Whether every visitor gets this answer, so it may be cached. Only for
+     * anonymous views of a site without visibility rules. Content saves and
+     * term changes clear it, as they do the other `content:permalink:` keys.
+     */
+    shared?: boolean;
+  },
+): Promise<PermalinkTermPage> {
+  if (page.shared)
+    return getJfCache().remember(
+      `content:permalink:archive:${siteId}:${termId}:${page.locale}:${page.limit}:${page.offset}`,
+      300,
+      () => loadTermPage(siteId, termId, settings, page),
+    );
+  return loadTermPage(siteId, termId, settings, page);
+}
+
+async function loadTermPage(
+  siteId: string,
+  termId: string,
+  settings: PermalinkSettings,
   page: { locale: string; visibility?: { sql: string; params: string[] } | null; limit: number; offset: number },
 ): Promise<PermalinkTermPage> {
   const db = await getDb();

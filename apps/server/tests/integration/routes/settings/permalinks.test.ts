@@ -13,6 +13,8 @@ let terms: PermalinkTerm[];
 let publicSite = true;
 let hiddenIds = new Set<string>();
 let pageSize = 10;
+let restricted = false;
+let sharedPages: boolean[] = [];
 vi.mock("../../../../src/lib/navigation/permalinks-db.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../../src/lib/navigation/permalinks-db.js")>()),
   getPermalinkState: async () => state,
@@ -26,8 +28,9 @@ vi.mock("../../../../src/lib/navigation/permalinks-db.js", async (importOriginal
     _siteId: string,
     termId: string,
     _settings: unknown,
-    page: { locale: string; visibility: unknown; limit: number; offset: number },
+    page: { locale: string; visibility: unknown; limit: number; offset: number; shared?: boolean },
   ) => {
+    sharedPages.push(page.shared === true);
     const matching = items.filter(
       (item) =>
         terms.find((term) => term.id === termId)?.contentIds.includes(item.id) &&
@@ -41,6 +44,7 @@ vi.mock("../../../../src/lib/navigation/permalinks-db.js", async (importOriginal
 vi.mock("../../../../src/lib/settings/site-settings.js", () => ({ getSiteId: async () => "s1" }));
 vi.mock("../../../../src/lib/content/visibility-scope.js", () => ({
   getVisibilityScope: async () => ({
+    restricted,
     allows: (item: { id: string }) => !hiddenIds.has(item.id),
     sql: () => ({ sql: "1 = 1", params: [] }),
   }),
@@ -102,6 +106,8 @@ beforeEach(() => {
   ];
   terms = [];
   pageSize = 10;
+  restricted = false;
+  sharedPages = [];
   publicSite = true;
 });
 const get = (path: string) => fetch(`${origin}${path}`, { redirect: "manual" });
@@ -240,5 +246,12 @@ describe("public permalink routing", () => {
     expect(data.items.map((item: { title: string }) => item.title)).toEqual(["Hello"]);
     expect(data.totalPages).toBe(1);
     expect((await get("/category/news/page/2/")).status).toBe(404);
+  });
+  it("shares archive pages between visitors only on sites without visibility rules", async () => {
+    terms = [{ id: "t1", slug: "news", name: "News", taxonomy: "category", contentIds: ["p1"] }];
+    expect((await get("/category/news/")).status).toBe(200);
+    restricted = true;
+    expect((await get("/category/news/")).status).toBe(200);
+    expect(sharedPages).toEqual([true, false]);
   });
 });
