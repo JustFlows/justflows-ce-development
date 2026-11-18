@@ -199,22 +199,45 @@ export async function permalinkCandidates(
   return permalinkItems(siteId, state.settings, ordered);
 }
 
-/** A term archive's entries, in `permalinkContent` order, without loading the site. */
-export async function permalinkTermContent(
+/** Entries per term archive page: the site's `posts_per_page` setting, as blog lists use. */
+export async function permalinkArchivePageSize(siteId: string): Promise<number> {
+  const stored = Number(await getSiteSetting<number>(siteId, "posts_per_page"));
+  return Number.isInteger(stored) && stored > 0 ? Math.min(stored, 100) : 10;
+}
+
+export interface PermalinkTermPage {
+  items: PermalinkItem[];
+  /** Every published entry of this term in this locale that the viewer may see. */
+  total: number;
+}
+
+/**
+ * One page of a term archive, newest first. Filtering and paging happen in
+ * the database: rendering every entry of a large category on each view was
+ * the slowest public request on large sites.
+ */
+export async function permalinkTermPage(
   siteId: string,
   termId: string,
   settings: PermalinkSettings,
-  publishedOnly = true,
-): Promise<PermalinkItem[]> {
+  page: { locale: string; visibility?: { sql: string; params: string[] } | null; limit: number; offset: number },
+): Promise<PermalinkTermPage> {
   const db = await getDb();
-  const rows = await db.query<Record<string, unknown>>(
-    `SELECT ${PERMALINK_COLUMNS.split(", ").map(column => `c.${column}`).join(", ")} FROM content c
+  const visible = page.visibility ?? { sql: "1 = 1", params: [] };
+  const from = `FROM content c
      JOIN content_terms ct ON ct.content_id = c.id AND ct.term_id = ?
-     WHERE c.site_id = ? AND c.trashed_at IS NULL AND ${publicContentTypeSql("c.type")}${publishedOnly ? " AND c.status = 'published'" : ""}
-     ORDER BY c.id`,
-    [termId, siteId],
-  );
-  return permalinkItems(siteId, settings, rows);
+     WHERE c.site_id = ? AND c.locale = ? AND c.trashed_at IS NULL AND c.status = 'published'
+       AND ${publicContentTypeSql("c.type")} AND ${visible.sql}`;
+  const params = [termId, siteId, page.locale, ...visible.params];
+  const [rows, counts] = await Promise.all([
+    db.query<Record<string, unknown>>(
+      `SELECT ${PERMALINK_COLUMNS.split(", ").map(column => `c.${column}`).join(", ")} ${from}
+       ORDER BY COALESCE(c.published_at, c.created_at) DESC, c.id DESC LIMIT ? OFFSET ?`,
+      [...params, page.limit, page.offset],
+    ),
+    db.query<{ total: number | string }>(`SELECT COUNT(*) AS total ${from}`, params),
+  ]);
+  return { items: await permalinkItems(siteId, settings, rows), total: Number(counts[0]?.total ?? 0) };
 }
 
 /** Terms for matching archive URLs: identity only, not which entries each holds. */

@@ -46,7 +46,7 @@ vi.mock("../../../src/lib/cache/jf-cache.js", () => ({
     remember: async (_key: string, _ttl: number, load: () => Promise<unknown>) => load(),
   }),
 }));
-const { savePermalinks, getPermalinkState, uniquePermalinkSlug, contentPermalink, contentPermalinks, createContentPermalinkResolver, withTermPermalinkHistory, permalinkCandidates, permalinkTermContent } =
+const { savePermalinks, getPermalinkState, uniquePermalinkSlug, contentPermalink, contentPermalinks, createContentPermalinkResolver, withTermPermalinkHistory, permalinkCandidates, permalinkTermPage, permalinkArchivePageSize } =
   await import("../../../src/lib/navigation/permalinks-db.js");
 const row = {
   id: "p1",
@@ -270,14 +270,34 @@ describe("per-request permalink candidates", () => {
     expect(query).not.toHaveBeenCalled();
   });
 
-  it("loads a term archive's entries by term", async () => {
+  it("loads one page of a term archive, filtered and counted in the database", async () => {
     rows = [];
-    query.mockImplementationOnce(async () => [{ ...row, id: A }]);
-    const items = await permalinkTermContent("s1", "term-1", defaults);
-    expect(items.map(item => item.id)).toEqual([A]);
+    query.mockImplementationOnce(async () => [{ ...row, id: A }]).mockImplementationOnce(async () => [{ total: "41" }]);
+    const page = await permalinkTermPage("s1", "term-1", defaults, {
+      locale: "en-US",
+      visibility: { sql: "c.type NOT IN (?)", params: ["page"] },
+      limit: 20,
+      offset: 40,
+    });
+    expect(page.items.map(item => item.id)).toEqual([A]);
+    expect(page.total).toBe(41);
+    expect(query).toHaveBeenCalledTimes(2);
     const [sql, params] = query.mock.calls[0]!;
     expect(sql).toContain("JOIN content_terms ct ON ct.content_id = c.id AND ct.term_id = ?");
-    expect(params).toEqual(["term-1", "s1"]);
+    expect(sql).toContain("c.type NOT IN (?)");
+    expect(sql).toContain("LIMIT ? OFFSET ?");
+    expect(params).toEqual(["term-1", "s1", "en-US", "page", 20, 40]);
+    const [countSql, countParams] = query.mock.calls[1]!;
+    expect(countSql).toContain("SELECT COUNT(*) AS total");
+    expect(countParams).toEqual(["term-1", "s1", "en-US", "page"]);
   });
 });
 
+describe("term archive page size", () => {
+  it("uses posts_per_page for archive pages, within 1 to 100", async () => {
+    for (const [stored, expected] of [[null, 10], [25, 25], [500, 100], [0, 10], ["x", 10]] as const) {
+      state = stored;
+      expect(await permalinkArchivePageSize("s1")).toBe(expected);
+    }
+  });
+});

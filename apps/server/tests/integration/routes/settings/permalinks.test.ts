@@ -12,6 +12,7 @@ let items: ReturnType<typeof serializeContentRow>[];
 let terms: PermalinkTerm[];
 let publicSite = true;
 let hiddenIds = new Set<string>();
+let pageSize = 10;
 vi.mock("../../../../src/lib/navigation/permalinks-db.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../../src/lib/navigation/permalinks-db.js")>()),
   getPermalinkState: async () => state,
@@ -19,12 +20,30 @@ vi.mock("../../../../src/lib/navigation/permalinks-db.js", async (importOriginal
   permalinkCandidates: async (_siteId: string, request: { publishedOnly: boolean }) =>
     items.filter((item) => !request.publishedOnly || item.status === "published"),
   listPermalinkTermRefs: async () => terms,
-  permalinkTermContent: async (_siteId: string, termId: string) =>
-    items.filter((item) => terms.find((term) => term.id === termId)?.contentIds.includes(item.id)),
+  permalinkArchivePageSize: async () => pageSize,
+  /** The database applies these filters in SQL; the mock applies the same ones in memory. */
+  permalinkTermPage: async (
+    _siteId: string,
+    termId: string,
+    _settings: unknown,
+    page: { locale: string; visibility: unknown; limit: number; offset: number },
+  ) => {
+    const matching = items.filter(
+      (item) =>
+        terms.find((term) => term.id === termId)?.contentIds.includes(item.id) &&
+        item.status === "published" &&
+        item.locale === page.locale &&
+        (!page.visibility || !hiddenIds.has(item.id)),
+    );
+    return { items: matching.slice(page.offset, page.offset + page.limit), total: matching.length };
+  },
 }));
 vi.mock("../../../../src/lib/settings/site-settings.js", () => ({ getSiteId: async () => "s1" }));
 vi.mock("../../../../src/lib/content/visibility-scope.js", () => ({
-  getVisibilityScope: async () => ({ allows: (item: { id: string }) => !hiddenIds.has(item.id) }),
+  getVisibilityScope: async () => ({
+    allows: (item: { id: string }) => !hiddenIds.has(item.id),
+    sql: () => ({ sql: "1 = 1", params: [] }),
+  }),
 }));
 vi.mock("../../../../src/lib/i18n/languages-db.js", () => ({
   getDefaultLocale: async () => "en-US",
@@ -49,7 +68,7 @@ beforeAll(async () => {
         res.json(data);
       },
       async renderArchive(_req, res, data) {
-        res.json(data);
+        res.json({ ...data, pageLinks: Array.from({ length: data.totalPages }, (_, i) => data.pagePath(i + 1)) });
       },
     }),
   );
@@ -82,6 +101,7 @@ beforeEach(() => {
     }),
   ];
   terms = [];
+  pageSize = 10;
   publicSite = true;
 });
 const get = (path: string) => fetch(`${origin}${path}`, { redirect: "manual" });
@@ -192,5 +212,33 @@ describe("public permalink routing", () => {
     expect(response.status).toBe(200);
     expect((await response.json()).items).toEqual([{ title: "Hello", path: "/2026/09/07/hello/" }]);
     expect((await get("/category/news")).headers.get("location")).toBe("/topics/news/");
+  });
+  it("pages a term archive and keeps page URLs canonical", async () => {
+    const post = items[0]!;
+    items = Array.from({ length: 5 }, (_, i) => ({ ...post, id: `p${i + 1}`, slug: `post-${i + 1}`, title: `Post ${i + 1}` }));
+    terms = [{ id: "t1", slug: "news", name: "News", taxonomy: "category", contentIds: items.map((item) => item.id) }];
+    pageSize = 2;
+    const first = await (await get("/category/news/")).json();
+    expect(first.items.map((item: { title: string }) => item.title)).toEqual(["Post 1", "Post 2"]);
+    expect([first.pageNumber, first.totalPages]).toEqual([1, 3]);
+    expect(first.pageLinks).toEqual(["/category/news/", "/category/news/page/2/", "/category/news/page/3/"]);
+    const third = await get("/category/news/page/3/");
+    expect(third.status).toBe(200);
+    const data = await third.json();
+    expect(data.path).toBe("/category/news/page/3/");
+    expect(data.items.map((item: { title: string }) => item.title)).toEqual(["Post 5"]);
+    expect((await get("/category/news/page/4/")).status).toBe(404);
+    expect((await get("/category/news/page/1/")).headers.get("location")).toBe("/category/news/");
+    expect((await get("/category/news/page/2")).headers.get("location")).toBe("/category/news/page/2/");
+  });
+  it("leaves hidden entries out of archive pages and counts", async () => {
+    items.push({ ...items[0]!, id: "p2", slug: "secret", title: "Secret" });
+    terms = [{ id: "t1", slug: "news", name: "News", taxonomy: "category", contentIds: ["p1", "p2"] }];
+    hiddenIds = new Set(["p2"]);
+    pageSize = 1;
+    const data = await (await get("/category/news/")).json();
+    expect(data.items.map((item: { title: string }) => item.title)).toEqual(["Hello"]);
+    expect(data.totalPages).toBe(1);
+    expect((await get("/category/news/page/2/")).status).toBe(404);
   });
 });

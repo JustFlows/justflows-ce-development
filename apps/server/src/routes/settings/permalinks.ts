@@ -5,7 +5,8 @@ import { publicPageRateLimit } from "../../middleware/public-page-rate-limit.js"
 import {
   getPermalinkState,
   permalinkCandidates,
-  permalinkTermContent,
+  permalinkArchivePageSize,
+  permalinkTermPage,
   reservedPermalinkPath,
   listPermalinkTermRefs,
   taxonomyPermalink,
@@ -41,6 +42,11 @@ interface PermalinkHandlers {
       path: string;
       name: string;
       items: Array<{ title: string; path: string }>;
+      /** 1-based page shown, out of `totalPages` (at least 1, even when empty). */
+      pageNumber: number;
+      totalPages: number;
+      /** Canonical URL of one of the archive's pages. */
+      pagePath(page: number): string;
     },
   ): Promise<void>;
 }
@@ -253,31 +259,46 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
             state.archiveRedirects?.[slashPath(incoming, "always")];
           if (!archive && historical)
             archive = terms.find((term) => `${locale}:${term.id}` === historical);
-          if (!archive || pagination) {
+          if (!archive) {
             next();
             return;
           }
           if (!(await handlers.canView(req, res))) return;
           const archivePath = taxonomyPermalink(archive, locale, state.settings, defaultLocale);
-          if (incoming !== archivePath) {
-            res.redirect(301, archivePath);
+          const pageSize = await permalinkArchivePageSize(siteId);
+          /** Same filters as `items`: active locale, published, and visible to this viewer. */
+          const archivePage = activeLocales.includes(locale)
+            ? await permalinkTermPage(siteId, archive.id, state.settings, {
+                locale,
+                visibility: visibility?.sql("c") ?? null,
+                limit: pageSize,
+                offset: (pageNumber - 1) * pageSize,
+              })
+            : { items: [], total: 0 };
+          const totalPages = Math.max(1, Math.ceil(archivePage.total / pageSize));
+          if (pageNumber > totalPages) {
+            next();
             return;
           }
-          /** The same filters as `items`, applied to this term's entries only. */
-          const archiveItems = (await permalinkTermContent(siteId, archive.id, state.settings, !preview)).filter(
-            (item) =>
-              activeLocales.includes(item.locale) &&
-              item.status === "published" &&
-              item.locale === locale &&
-              (!visibility || visibility.allows(item)),
-          );
+          const pagePath = (page: number) =>
+            page <= 1
+              ? archivePath
+              : slashPath(`${archivePath.replace(/\/$/, "")}/page/${page}`, state.settings.trailingSlash);
+          const canonical = pagePath(pageNumber);
+          if (req.path !== canonical) {
+            res.redirect(301, canonical);
+            return;
+          }
           await handlers.renderArchive(req, res, {
-            path: archivePath,
+            path: canonical,
             name: archive.name,
-            items: archiveItems.map((item) => ({
+            items: archivePage.items.map((item) => ({
               title: item.title,
               path: permalinkPath(item, state.settings, defaultLocale, state.layoutScopes),
             })),
+            pageNumber,
+            totalPages,
+            pagePath,
           });
           return;
         }
