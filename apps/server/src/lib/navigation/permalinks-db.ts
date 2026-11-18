@@ -44,18 +44,41 @@ export async function getPermalinkState(siteId: string): Promise<PermalinkState>
     layoutScopes,
   };
 }
-/** An operation-scoped resolver; never shares mutable settings across requests or sites. */
+/** Only post URLs built from `%category%` need a category; every other structure skips the lookup. */
+export function permalinkUsesCategory(settings: PermalinkSettings): boolean {
+  return settings.structure.includes("%category%");
+}
+
+/**
+ * An operation-scoped resolver; never shares mutable settings across requests or sites.
+ *
+ * Categories are read only when the post structure uses `%category%`: from
+ * `terms` when the caller already has them, for `preloadIds` in one batch, and
+ * otherwise for the whole site once, on the first entry that needs one. Never
+ * per entry, and never the site's full term table just to build one link.
+ */
 export async function createContentPermalinkResolver(
   siteId: string,
   options: { state?: PermalinkState; defaultLocale?: string; terms?: PermalinkTerm[];
+    preloadIds?: readonly string[];
     homes?: ReadonlyMap<string, ContentResponse | null> } = {},
 ): Promise<(content: ContentResponse) => Promise<string>> {
-  const [state, defaultLocale, terms] = await Promise.all([
+  const [state, defaultLocale] = await Promise.all([
     options.state ?? getPermalinkState(siteId),
     options.defaultLocale ?? getDefaultLocale(siteId),
-    options.terms ?? listPermalinkTerms(siteId),
   ]);
-  const categories = categorySlugsByContent(terms);
+  const needsCategory = permalinkUsesCategory(state.settings);
+  let siteCategories: Promise<Map<string, string>> | null =
+    needsCategory && options.terms ? Promise.resolve(categorySlugsByContent(options.terms)) : null;
+  const preloaded = needsCategory && !siteCategories && options.preloadIds?.length
+    ? { ids: new Set(options.preloadIds), categories: listPermalinkCategories(siteId, options.preloadIds) }
+    : null;
+  const categoryFor = async (id: string): Promise<string | undefined> => {
+    if (!needsCategory) return undefined;
+    if (preloaded?.ids.has(id)) return (await preloaded.categories).get(id);
+    siteCategories ??= listPermalinkCategories(siteId);
+    return (await siteCategories).get(id);
+  };
   const homes = new Map<string, Promise<ContentResponse | null>>();
   for (const [locale, home] of options.homes ?? []) homes.set(locale, Promise.resolve(home));
   return async (content) => {
@@ -68,22 +91,24 @@ export async function createContentPermalinkResolver(
     }
     if ((await home)?.id === content.id)
       return slashPath(localePath(content.locale, "/", defaultLocale), state.settings.trailingSlash);
-    return permalinkPath({ ...content, permalinkCategory: categories.get(content.id) },
+    return permalinkPath({ ...content, permalinkCategory: await categoryFor(content.id) },
       state.settings, defaultLocale, state.layoutScopes);
   };
 }
 
 /** Batch links by site while preserving input order and locale-specific home URLs. */
 export async function contentPermalinks(items: ContentResponse[]): Promise<string[]> {
+  const idsBySite = new Map<string, string[]>();
+  for (const item of items) {
+    const ids = idsBySite.get(item.siteId);
+    if (ids) ids.push(item.id);
+    else idsBySite.set(item.siteId, [item.id]);
+  }
   const resolvers = new Map<string, ReturnType<typeof createContentPermalinkResolver>>();
-  return Promise.all(items.map(async (item) => {
-    let resolver = resolvers.get(item.siteId);
-    if (!resolver) {
-      resolver = createContentPermalinkResolver(item.siteId);
-      resolvers.set(item.siteId, resolver);
-    }
-    return (await resolver)(item);
-  }));
+  for (const [siteId, preloadIds] of idsBySite) {
+    resolvers.set(siteId, createContentPermalinkResolver(siteId, { preloadIds }));
+  }
+  return Promise.all(items.map(async (item) => (await resolvers.get(item.siteId)!)(item)));
 }
 
 export async function contentPermalink(content: ContentResponse): Promise<string> {
@@ -257,6 +282,43 @@ export async function listPermalinkTerms(siteId: string): Promise<PermalinkTerm[
   }
   return [...terms.values()];
 }
+/** Bound on `IN (...)` parameters per statement. */
+const CATEGORY_LOOKUP_CHUNK = 500;
+
+/**
+ * Each entry's permalink category: its first category by slug, then id, the
+ * same choice `categorySlugsByContent` makes from a full term list. Reads only
+ * content ids and slugs, and only for `contentIds` when given.
+ */
+export async function listPermalinkCategories(
+  siteId: string,
+  contentIds?: readonly string[],
+): Promise<Map<string, string>> {
+  const categories = new Map<string, string>();
+  if (contentIds && contentIds.length === 0) return categories;
+  const db = await getDb();
+  const base = `SELECT ct.content_id, t.slug FROM content_terms ct
+     JOIN terms t ON t.id = ct.term_id AND t.site_id = ?
+     JOIN taxonomies x ON x.id = t.taxonomy_id AND x.site_id = t.site_id AND x.slug = 'category'`;
+  const chunks = contentIds
+    ? Array.from({ length: Math.ceil(contentIds.length / CATEGORY_LOOKUP_CHUNK) },
+      (_, i) => [...new Set(contentIds.slice(i * CATEGORY_LOOKUP_CHUNK, (i + 1) * CATEGORY_LOOKUP_CHUNK))])
+    : [null];
+  for (const chunk of chunks) {
+    const rows = await db.query<{ content_id: string; slug: string }>(
+      chunk
+        ? `${base} WHERE ct.content_id IN (${chunk.map(() => "?").join(", ")}) ORDER BY t.slug, t.id`
+        : `${base} ORDER BY t.slug, t.id`,
+      chunk ? [siteId, ...chunk] : [siteId],
+    );
+    for (const row of rows) {
+      const id = String(row.content_id);
+      if (!categories.has(id)) categories.set(id, String(row.slug));
+    }
+  }
+  return categories;
+}
+
 function categorySlugsByContent(terms: PermalinkTerm[]): Map<string, string> {
   const categories = new Map<string, string>();
   for (const term of terms) {

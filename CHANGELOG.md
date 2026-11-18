@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **One anonymous request no longer runs a large site out of memory.** On a site with about 100,000 posts, `GET /api/v1/content?limit=100` and `/sitemap.xml` each stopped the server process. The content API built a separate link resolver for every item, and every resolver loaded the site's whole category table. Links now load categories only when the permalink structure uses `%category%`, and only for the entries being linked; a listing shares one resolver. The sitemap and static export read only each entry's identity, not its blocks and fields. On a 100,000-post test site, the content API now answers in under 0.1 s and the sitemap in about 6 s, without restarting the server.
+
 ## [0.4.4]
 
 ### Added

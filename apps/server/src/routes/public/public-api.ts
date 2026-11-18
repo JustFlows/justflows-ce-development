@@ -2,7 +2,7 @@ import { contentTypePolicy, publicContentTypeSql } from "@justflows/content";
 import { rateLimit } from "express-rate-limit";
 import { SearchQuerySchema } from "@justflows/content";
 import { searchContent } from "../../lib/search/search-db.js";
-import { contentPermalink } from "../../lib/navigation/permalinks-db.js";
+import { contentPermalink, createContentPermalinkResolver } from "../../lib/navigation/permalinks-db.js";
 import { Router } from "express";
 import { getDb } from "../../lib/database/db.js";
 import { runHealthChecks } from "../../lib/runtime/health-checks.js";
@@ -96,14 +96,19 @@ async function previewAccess(req: Request, res: Response): Promise<{ unpublished
   return { unpublished: true, working: await userCan(session, "content:revisions:read") };
 }
 
+/**
+ * `resolve` lets a listing share one permalink resolver across its items; a
+ * resolver per item reloads permalink settings and home pages every time.
+ */
 async function serializePublicContent(
   row: Record<string, unknown>,
   siteId: string,
   preview = false,
+  resolve: (content: ReturnType<typeof serializeContentRow>) => Promise<string> = contentPermalink,
 ): Promise<ReturnType<typeof serializeContentRow>> {
   const overlaid = preview ? await overlayWorkingOnRow(row, true) : row;
   const content = serializeContentRow(overlaid);
-  const payload = { ...content, links: { self: await contentPermalink(content) } };
+  const payload = { ...content, links: { self: await resolve(content) } };
   const hooks = getRuntimeHooks();
   if (!hooks.has("content.output")) return payload;
   return hooks.applyFilter("content.output", payload, { siteId });
@@ -306,9 +311,10 @@ router.get("/content", async (req, res) => {
     const rows = await db.query<Record<string, unknown>>(sql, params);
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
+    const resolve = await createContentPermalinkResolver(siteId, { preloadIds: items.map((row) => String(row.id)) });
 
     res.json({
-      items: await Promise.all(items.map((row) => serializePublicContent(row, siteId, preview.working))),
+      items: await Promise.all(items.map((row) => serializePublicContent(row, siteId, preview.working, resolve))),
       nextCursor: hasMore ? items[items.length - 1]?.id : null,
       total: items.length,
       locale,

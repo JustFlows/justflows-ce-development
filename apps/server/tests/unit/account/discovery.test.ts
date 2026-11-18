@@ -5,7 +5,7 @@ vi.mock("../../../src/lib/account/pages.js", () => ({ accountPageExclusions: asy
 ] }));
 vi.mock("../../../src/lib/themes/themes-db.js", () => ({ getSiteId: async () => "site-a" }));
 vi.mock("../../../src/lib/navigation/permalinks-db.js", () => ({ getPermalinkState: async () => ({ settings: { structure: "/%postname%/" } }), createContentPermalinkResolver: async () => async () => "/about" }));
-vi.mock("../../../src/lib/content/content-public.js", () => ({ listPublishedContent: async () => [] }));
+vi.mock("../../../src/lib/content/content-public.js", () => ({ listPublishedContentRefs: async () => [] }));
 vi.mock("../../../src/lib/content/home-page.js", () => ({ getHomeContent: async () => null }));
 vi.mock("../../../src/lib/i18n/languages-db.js", () => ({ getDefaultLocale: async () => "en", getActiveLocaleCodes: async () => ["en"] }));
 vi.mock("../../../src/lib/pwa/pwa-settings.js", () => ({ getPwaSettings: async () => ({ enabled: false }) }));

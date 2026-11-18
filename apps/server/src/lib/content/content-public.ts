@@ -172,12 +172,19 @@ export async function getTranslationAlternates(
   );
 }
 
-export async function listPublishedContent(siteId: string): Promise<ContentResponse[]> {
-  const cacheKey = `${CONTENT_CACHE_PREFIX}published-list:${siteId}`;
+/**
+ * Every published entry's identity for building URLs: sitemaps and static
+ * export discovery. Blocks, fields and excerpts are not loaded (they come back
+ * empty), because parsing and caching every body is what ran large sites out
+ * of memory. Load an entry by id when its content is needed.
+ */
+export async function listPublishedContentRefs(siteId: string): Promise<ContentResponse[]> {
+  const cacheKey = `${CONTENT_CACHE_PREFIX}published-refs:${siteId}`;
   const items = await getJfCache().remember(cacheKey, await contentCacheTtl(), async () => {
     const db = await getDb();
     const rows = await db.query<Record<string, unknown>>(
-      `SELECT * FROM content WHERE site_id = ? AND status = 'published' AND ${publicContentTypeSql()} ORDER BY updated_at DESC`,
+      `SELECT id, site_id, type, title, slug, locale, translation_group_id, status, author_id, published_at, created_at, updated_at
+       FROM content WHERE site_id = ? AND status = 'published' AND ${publicContentTypeSql()} ORDER BY updated_at DESC`,
       [siteId],
     );
     return rows.map((row) => serializeContentRow(row));

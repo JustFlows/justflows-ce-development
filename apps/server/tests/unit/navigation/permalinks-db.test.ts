@@ -14,8 +14,17 @@ vi.mock("../../../src/lib/settings/site-settings.js", () => ({
   getSiteSetting: async () => state,
   setSiteSetting: (...args: [string, string, unknown]) => set(...args),
 }));
-const query = vi.fn(async (sql: string) =>
-  sql.includes("FROM content WHERE") ? rows : sql.includes("FROM terms t") ? termRows : [],
+/** The category lookup, answered from `termRows` the way the SQL orders it: slug, then id. */
+function categoryRows(params: unknown[]): Record<string, unknown>[] {
+  const ids = params.slice(1);
+  return termRows
+    .filter((r) => r.taxonomy === "category" && r.content_id && (ids.length === 0 || ids.includes(r.content_id)))
+    .sort((a, b) => String(a.slug).localeCompare(String(b.slug)) || String(a.id).localeCompare(String(b.id)))
+    .map((r) => ({ content_id: r.content_id, slug: r.slug }));
+}
+const query = vi.fn(async (sql: string, params: unknown[] = []) =>
+  sql.includes("FROM content_terms ct") ? categoryRows(params)
+    : sql.includes("FROM content WHERE") ? rows : sql.includes("FROM terms t") ? termRows : [],
 );
 const home = vi.fn(async (_siteId: string, _locale: string): Promise<ReturnType<typeof serializeContentRow> | null> => null);
 vi.mock("../../../src/lib/database/db.js", () => ({ getDb: async () => ({ query }) }));
@@ -144,10 +153,45 @@ describe("batch permalink resolution", () => {
   it("keeps sites separate and preserves input ordering", async () => {
     const items = [serializeContentRow(row), serializeContentRow({ ...row, site_id: "s2", slug: "other" }), serializeContentRow({ ...row, slug: "last" })];
     expect(await contentPermalinks(items)).toEqual(["/hello", "/other", "/last"]);
-    expect(query).toHaveBeenCalledTimes(2);
+    /** The default structure has no `%category%`, so no term reads at all. */
+    expect(query).not.toHaveBeenCalled();
     expect(home.mock.calls).toEqual([["s1", "en-US", false], ["s2", "en-US", false]]);
     const resolver = await createContentPermalinkResolver("s1");
     await expect(resolver(items[1]!)).rejects.toThrow("another site");
+  });
+
+  it("reads categories only for the listed entries, in one query, however many terms the site has", async () => {
+    state = { settings: { ...defaults, structure: "/%category%/%postname%/" } };
+    termRows = Array.from({ length: 5000 }, (_, i) => ({
+      id: `t${i % 50}`, slug: `cat-${String(i % 50).padStart(2, "0")}`, name: "Cat", taxonomy: "category", content_id: `c${i}`,
+    }));
+    const items = Array.from({ length: 20 }, (_, i) => serializeContentRow({ ...row, id: `c${i}`, slug: `post-${i}` }));
+    const urls = await contentPermalinks(items);
+    expect(urls[0]).toBe("/cat-00/post-0");
+    expect(urls[19]).toBe("/cat-19/post-19");
+    expect(query).toHaveBeenCalledOnce();
+    const [sql, params] = query.mock.calls[0]!;
+    expect(sql).toContain("IN (");
+    expect(params).toEqual(["s1", ...items.map((item) => item.id)]);
+  });
+
+  it("builds a single link without reading terms when the structure has no category", async () => {
+    termRows = [{ id: "a", slug: "first", name: "First", taxonomy: "category", content_id: "p1" }];
+    expect(await contentPermalink(serializeContentRow(row))).toBe("/hello");
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  it("loads site categories once for a resolver used without a preload", async () => {
+    state = { settings: { ...defaults, structure: "/%category%/%postname%/" } };
+    termRows = [
+      { id: "b", slug: "beta", name: "Beta", taxonomy: "category", content_id: "p1" },
+      { id: "a", slug: "alpha", name: "Alpha", taxonomy: "category", content_id: "p1" },
+      { id: "x", slug: "news", name: "News", taxonomy: "tag", content_id: "p2" },
+    ];
+    const resolve = await createContentPermalinkResolver("s1");
+    expect(await resolve(serializeContentRow(row))).toBe("/alpha/hello");
+    expect(await resolve(serializeContentRow({ ...row, id: "p2", slug: "two" }))).toBe("/uncategorized/two");
+    expect(query).toHaveBeenCalledOnce();
   });
 
   it("does not perform reads for an empty content list", async () => {
