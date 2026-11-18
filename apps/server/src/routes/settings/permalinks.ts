@@ -4,9 +4,11 @@ import { Router, type Request, type Response } from "express";
 import { publicPageRateLimit } from "../../middleware/public-page-rate-limit.js";
 import {
   getPermalinkState,
-  permalinkContent,
+  permalinkCandidates,
+  permalinkArchivePageSize,
+  permalinkTermPage,
   reservedPermalinkPath,
-  listPermalinkTerms,
+  listPermalinkTermRefs,
   taxonomyPermalink,
 } from "../../lib/navigation/permalinks-db.js";
 import { permalinkPath, slashPath } from "../../lib/navigation/permalinks.js";
@@ -40,6 +42,11 @@ interface PermalinkHandlers {
       path: string;
       name: string;
       items: Array<{ title: string; path: string }>;
+      /** 1-based page shown, out of `totalPages` (at least 1, even when empty). */
+      pageNumber: number;
+      totalPages: number;
+      /** Canonical URL of one of the archive's pages. */
+      pagePath(page: number): string;
     },
   ): Promise<void>;
 }
@@ -65,12 +72,22 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
           return;
         }
         const preview = (await handlers.previewAllowed?.(req, res)) ?? false;
-        const [state, candidates, defaultLocale, activeLocales] = await Promise.all([
+        const [state, defaultLocale, activeLocales] = await Promise.all([
           getPermalinkState(siteId),
-          permalinkContent(siteId, !preview),
           getDefaultLocale(siteId),
           getActiveLocaleCodes(),
         ]);
+        /**
+         * Only entries this path can resolve to: matching every request
+         * against every entry on the site made page views scale with the
+         * site's size and blocked the event loop on large sites.
+         */
+        const candidates = await permalinkCandidates(siteId, {
+          path: req.path,
+          identity: typeof req.query.p === "string" ? req.query.p : null,
+          state,
+          publishedOnly: !preview,
+        });
         /** A hidden item leaves this list, so its URL, id, redirects, and archive entries all act as if it never existed. */
         const visibility = preview ? null : await getVisibilityScope(siteId);
         const items = candidates.filter(
@@ -228,7 +245,7 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
             res.sendStatus(404);
             return;
           }
-          const terms = await listPermalinkTerms(siteId);
+          const terms = await listPermalinkTermRefs(siteId);
           const parsed = parseLocalePrefix(req.path, activeLocales);
           const locale = parsed.locale ?? defaultLocale;
           let archive = terms.find(
@@ -242,29 +259,47 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
             state.archiveRedirects?.[slashPath(incoming, "always")];
           if (!archive && historical)
             archive = terms.find((term) => `${locale}:${term.id}` === historical);
-          if (!archive || pagination) {
+          if (!archive) {
             next();
             return;
           }
           if (!(await handlers.canView(req, res))) return;
           const archivePath = taxonomyPermalink(archive, locale, state.settings, defaultLocale);
-          if (incoming !== archivePath) {
-            res.redirect(301, archivePath);
+          const pageSize = await permalinkArchivePageSize(siteId);
+          /** Same filters as `items`: active locale, published, and visible to this viewer. */
+          const archivePage = activeLocales.includes(locale)
+            ? await permalinkTermPage(siteId, archive.id, state.settings, {
+                locale,
+                visibility: visibility?.sql("c") ?? null,
+                limit: pageSize,
+                offset: (pageNumber - 1) * pageSize,
+                shared: !preview && !visibility?.restricted,
+              })
+            : { items: [], total: 0 };
+          const totalPages = Math.max(1, Math.ceil(archivePage.total / pageSize));
+          if (pageNumber > totalPages) {
+            next();
             return;
           }
-          const archiveItems = items.filter(
-            (item) =>
-              item.status === "published" &&
-              item.locale === locale &&
-              archive!.contentIds.includes(item.id),
-          );
+          const pagePath = (page: number) =>
+            page <= 1
+              ? archivePath
+              : slashPath(`${archivePath.replace(/\/$/, "")}/page/${page}`, state.settings.trailingSlash);
+          const canonical = pagePath(pageNumber);
+          if (req.path !== canonical) {
+            res.redirect(301, canonical);
+            return;
+          }
           await handlers.renderArchive(req, res, {
-            path: archivePath,
+            path: canonical,
             name: archive.name,
-            items: archiveItems.map((item) => ({
+            items: archivePage.items.map((item) => ({
               title: item.title,
               path: permalinkPath(item, state.settings, defaultLocale, state.layoutScopes),
             })),
+            pageNumber,
+            totalPages,
+            pagePath,
           });
           return;
         }

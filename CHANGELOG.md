@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **One anonymous request no longer runs a large site out of memory.** On a site with about 100,000 posts, `GET /api/v1/content?limit=100` and `/sitemap.xml` each stopped the server process. The content API built a separate link resolver for every item, and every resolver loaded the site's whole category table. Links now load categories only when the permalink structure uses `%category%`, and only for the entries being linked; a listing shares one resolver. The sitemap and static export read only each entry's identity, not its blocks and fields. On a 100,000-post test site, the content API now answers in under 0.1 s and the sitemap in about 6 s, without restarting the server.
+- **Page views no longer slow down as a site grows.** Every public page request read every entry on the site twice: once to find which entry the URL belongs to, and once to look for per-entry cache headers, which also scanned every entry's fields. On a 100,000-post site a single post took about a second, and the site handled fewer than 2 requests a second. A request now reads only the entries its URL can belong to (by slug or id in the path, `?p=`, old URLs kept as redirects, and their translations), and a category page reads only that category's entries. On the same site a post now takes about 20 ms, and the site handles 38 requests a second with category pages in the mix and over 160 without. Migration `0063_content_lookup_indexes` adds an index on `(site_id, slug)` and an index for per-entry cache headers. On MySQL and MariaDB that index uses a virtual column, `content.has_cache_control`. Backups now skip generated columns, which the database computes itself.
+- **Category and tag pages are paginated.** An archive page listed every entry in its category, so a large category was one huge page. Archives now show the site's **Posts per page** setting (10 by default), newest first, with a pager, at `/category/news/page/2` and so on. Paging and visibility filtering happen in the database. `/page/1` redirects to the archive's own URL, and a page past the last one is a 404.
+- **Category and tag pages are cached.** Each archive page counted every entry in its category on every view, about 0.1 s for a 2,000-post category, so a 100,000-post site served only about 20 category pages a second. Archive pages are now cached for every visitor on sites without visibility rules, and saving content or changing terms clears them. On the same site category pages now handle 160 requests a second, and the whole site about 150 with category pages in the mix (it was 38).
+- **The search index check no longer reads every entry each minute.** The `search.reconcile` job compares every entry with its search document once a minute, and read every full content and search row to do it: 2 to 11 seconds of database time each minute on a 100,000-post site. Migration `0064_search_reconcile_indexes` adds indexes that answer the check on their own (about 0.1 s on the same site) and refreshes the database's statistics so they are used immediately.
+
+### Changed
+
+- **The installation database pool follows `DATABASE_POOL_MAX`.** The server ignored the setting and always opened at most 5 connections, so one slow query held a fifth of the pool. It now uses `DATABASE_POOL_MAX` (1–100, default 10). Separate tenant databases keep a pool of 5 each, since a server can hold many of them. On a 100,000-post test site the app's CPU, not the pool, limits throughput (about 240 requests a second on one process).
+
 ## [0.4.4]
 
 ### Added

@@ -6,7 +6,7 @@ import { accountPageExclusions } from "../account/pages.js";
 import { slashPath } from "../navigation/permalinks.js";
 import { createContentPermalinkResolver, getPermalinkState, listPermalinkTerms, taxonomyPermalink } from "../navigation/permalinks-db.js";
 import { getHomeContent } from "../content/home-page.js";
-import { listPublishedContent } from "../content/content-public.js";
+import { listPublishedContentRefs } from "../content/content-public.js";
 import { getAnonymousVisibilityScope } from "../content/visibility-scope.js";
 import { getDefaultLocale } from "../i18n/languages-db.js";
 import { localePath } from "../i18n/locales.js";
@@ -29,7 +29,7 @@ export async function buildSitemapXml(siteId: string): Promise<string> {
   const origin = siteOrigin();
   const defaultLocale = await getDefaultLocale(siteId);
   const typeSettings = await getContentTypeSettingsMap(siteId);
-  const published = (await listPublishedContent(siteId)).filter(item => typeSettings.get(item.type)?.seo !== false);
+  const published = (await listPublishedContentRefs(siteId)).filter(item => typeSettings.get(item.type)?.seo !== false);
   const home = await getHomeContent(siteId, defaultLocale, false);
   const state = await getPermalinkState(siteId);
   const permalinks = state.settings;

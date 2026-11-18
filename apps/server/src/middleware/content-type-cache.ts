@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 import type { Request, Response, NextFunction } from "express";
-import { contentCacheRules, matchContentCacheRule } from "../lib/cache/content-type-cache.js";
+import { contentCacheRuleForRequest } from "../lib/cache/content-type-cache.js";
 import { getSiteId } from "../lib/settings/site-settings.js";
 import { withoutSharedCache } from "../lib/cache/jf-cache.js";
 import { getSession } from "../lib/auth/session.js";
@@ -19,7 +19,8 @@ export async function contentTypeCacheMiddleware(req: Request, res: Response, ne
     const admin = (await getAdminPathConfig()).path;
     if (req.path === admin || req.path.startsWith(`${admin}/`)) { next(); return; }
     const siteId = await getSiteId();
-    const rule = siteId ? matchContentCacheRule(await contentCacheRules(siteId), req.path,
+    /** Only this request's candidates: building every page's rule here made each request scan the whole site. */
+    const rule = siteId ? await contentCacheRuleForRequest(siteId, req.path,
       typeof req.query.p === "string" ? req.query.p : undefined) : undefined;
     const privateRequest = Boolean(getSession(req)) || req.query.preview !== undefined;
     if (!rule && !privateRequest) { next(); return; }

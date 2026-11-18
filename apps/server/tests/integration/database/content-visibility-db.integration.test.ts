@@ -22,7 +22,7 @@ vi.mock("../../../src/lib/content/visibility-viewer.js", () => ({
 
 import { getDb } from "../../../src/lib/database/db.js";
 import { runAllMigrations, type DbDriver } from "../../../src/lib/database/run-migrations.js";
-import { listPublishedContent, listPublishedPostsPage } from "../../../src/lib/content/content-public.js";
+import { listPublishedContentRefs, listPublishedPostsPage } from "../../../src/lib/content/content-public.js";
 import { queryPublishedContent } from "../../../src/lib/content/content-query.js";
 import { getVisibilityScope } from "../../../src/lib/content/visibility-scope.js";
 import { saveVisibilityOverride } from "../../../src/lib/content/visibility-policies.js";
@@ -159,7 +159,7 @@ describe.skipIf(!enabled)("content visibility on a real database", () => {
   });
 
   it("keeps shared output anonymous even during a signed-in request", async () => {
-    const published = await asViewer(member, () => listPublishedContent(siteId));
+    const published = await asViewer(member, () => listPublishedContentRefs(siteId));
     expect(titles(published)).toEqual(["Open"]);
     const api = createPluginContentApi("justflows.seo", siteId);
     const listed = await asViewer(member, () => api.listPublished({ types: ["post"], limit: 50 }));

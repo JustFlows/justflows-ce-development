@@ -121,12 +121,19 @@ function postListItemHtml(
   </li>`;
 }
 
-/** WordPress-style numbered pager: first, a window around the current page, last, with ellipses. */
 function paginationHtml(ctx: BlogPostListRenderContext, totalPages: number): string {
-  if (totalPages <= 1) return "";
   const base = ctx.basePath === "/" ? "" : ctx.basePath.replace(/\/$/, "");
-  const linkFor = (n: number) => (n <= 1 ? base || "/" : `${base}/page/${n}`);
-  const current = ctx.page;
+  return pagerHtml(ctx.page, totalPages, (n) => (n <= 1 ? base || "/" : `${base}/page/${n}`), "Blog pagination");
+}
+
+/** WordPress-style numbered pager: first, a window around the current page, last, with ellipses. */
+export function pagerHtml(
+  current: number,
+  totalPages: number,
+  linkFor: (page: number) => string,
+  label: string,
+): string {
+  if (totalPages <= 1) return "";
 
   const pageNumbers = new Set<number>([1, totalPages, current]);
   for (let n = current - 1; n <= current + 1; n++) {
@@ -150,7 +157,7 @@ function paginationHtml(ctx: BlogPostListRenderContext, totalPages: number): str
   if (current < totalPages)
     items.push(`<a href="${esc(linkFor(current + 1))}" aria-label="Next page">»</a>`);
 
-  return `<nav class="pagination" aria-label="Blog pagination">${items.join("\n")}</nav>`;
+  return `<nav class="pagination" aria-label="${esc(label)}">${items.join("\n")}</nav>`;
 }
 
 export async function renderBlogPostListBlockHtml(

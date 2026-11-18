@@ -126,6 +126,7 @@ import type { BlockNode } from "../../lib/runtime/types.js";
 import { applyTemplateDefaults, BLOCK_DOCUMENT_MAX_DEPTH, textDirection, withBlockChrome } from "@justflows/blocks";
 import {
   BLOG_POST_LIST_BLOCK_TYPE,
+  pagerHtml,
   registerBlogPostListBlock,
   renderBlogPostListBlockHtml,
   type BlogPostListRenderContext,
@@ -2085,10 +2086,10 @@ router.use(
         ),
       );
     },
-    async renderArchive(req, res, { path, name, items }) {
+    async renderArchive(req, res, { path, name, items, pageNumber, totalPages, pagePath }) {
       await sendPublicHtml(req, res, path, false, async () => {
         const ctx = await buildPageContext(req, res, path);
-        const bodyHtml = `<h1>${esc(name)}</h1><ul>${items.map((item) => `<li><a href="${esc(item.path)}">${esc(item.title)}</a></li>`).join("")}</ul>`;
+        const bodyHtml = `<h1>${esc(name)}</h1><ul>${items.map((item) => `<li><a href="${esc(item.path)}">${esc(item.title)}</a></li>`).join("")}</ul>${pagerHtml(pageNumber, totalPages, pagePath, "Archive pagination")}`;
         return renderPage("template", { ...ctx, publicPath: path, title: name, bodyHtml });
       });
     },

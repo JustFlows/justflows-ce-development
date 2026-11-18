@@ -4,7 +4,7 @@ import { accountPageExclusions } from "../account/pages.js";
 
 import { createContentPermalinkResolver, getPermalinkState } from "../navigation/permalinks-db.js";
 import { getSiteId } from "../themes/themes-db.js";
-import { listPublishedContent } from "../content/content-public.js";
+import { listPublishedContentRefs } from "../content/content-public.js";
 import { getHomeContent } from "../content/home-page.js";
 import { getDefaultLocale, getActiveLocaleCodes } from "../i18n/languages-db.js";
 import { localePath } from "../i18n/locales.js";
@@ -79,7 +79,7 @@ export async function discoverRoutes(
     const defaultLocale = await getDefaultLocale(siteId);
     const [activeLocales, published, home] = await Promise.all([
       getActiveLocaleCodes(siteId),
-      listPublishedContent(siteId),
+      listPublishedContentRefs(siteId),
       getHomeContent(siteId, defaultLocale, false).catch(() => null),
     ]);
 

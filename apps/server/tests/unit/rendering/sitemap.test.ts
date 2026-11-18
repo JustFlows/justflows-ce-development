@@ -15,7 +15,7 @@ const state = vi.fn();
 const terms = vi.fn();
 const typeSettings = vi.fn();
 vi.mock("../../../src/lib/content/content-types-db.js", () => ({ getContentTypeSettingsMap: (...args: unknown[]) => typeSettings(...args) }));
-vi.mock("../../../src/lib/content/content-public.js", () => ({ listPublishedContent: () => published() }));
+vi.mock("../../../src/lib/content/content-public.js", () => ({ listPublishedContentRefs: () => published() }));
 vi.mock("../../../src/lib/content/home-page.js", () => ({ getHomeContent: (...args: unknown[]) => home(...args) }));
 vi.mock("../../../src/lib/i18n/languages-db.js", () => ({ getDefaultLocale: async () => "en-US" }));
 /** An SEO plugin adds its extra paths through `seo.sitemapPaths`; private ones are still dropped. */
