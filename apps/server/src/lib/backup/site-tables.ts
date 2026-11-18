@@ -144,12 +144,17 @@ export interface ColumnInfo {
   json: boolean;
 }
 
-/** Columns of a table in the connected database, or null when the table does not exist. */
+/**
+ * Columns of a table in the connected database, or null when the table does
+ * not exist. Generated columns (`content.has_cache_control`, PostgreSQL's
+ * `search_documents.search_vector`) are left out: the database computes them,
+ * and inserting a value into one fails.
+ */
 export async function tableColumns(db: Queryable, table: string, driver: BackupDriver): Promise<ColumnInfo[] | null> {
   const rows = await db.query<Record<string, unknown>>(
     driver === "postgres"
-      ? "SELECT column_name AS name, data_type AS type, udt_name AS column_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? ORDER BY ordinal_position"
-      : "SELECT COLUMN_NAME AS name, DATA_TYPE AS type, COLUMN_TYPE AS column_type FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION",
+      ? "SELECT column_name AS name, data_type AS type, udt_name AS column_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND is_generated = 'NEVER' ORDER BY ordinal_position"
+      : "SELECT COLUMN_NAME AS name, DATA_TYPE AS type, COLUMN_TYPE AS column_type FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND EXTRA NOT LIKE '%GENERATED%' ORDER BY ORDINAL_POSITION",
     [table],
   );
   if (rows.length === 0) return null;

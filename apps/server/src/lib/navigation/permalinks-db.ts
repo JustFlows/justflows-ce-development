@@ -129,6 +129,106 @@ export async function permalinkContent(
   const items = await (publishedOnly ? getJfCache().remember(`content:permalink:${siteId}`, 300, load) : load());
   return items.filter(item => contentTypePolicy(item.type).publiclyDiscoverable);
 }
+const PERMALINK_COLUMNS =
+  "id, site_id, type, title, slug, locale, translation_group_id, status, author_id, published_at, created_at, updated_at";
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Bound on the path segments one request may turn into lookup parameters. */
+const MAX_PATH_SEGMENTS = 32;
+type PermalinkItem = ContentResponse & { permalinkCategory?: string };
+
+/** Rows in `permalinkContent`'s shape and order, with categories only where URLs use them. */
+async function permalinkItems(
+  siteId: string,
+  settings: PermalinkSettings,
+  rows: Record<string, unknown>[],
+): Promise<PermalinkItem[]> {
+  const items = rows.map(serializeContentRow).filter(item => contentTypePolicy(item.type).publiclyDiscoverable);
+  if (!permalinkUsesCategory(settings) || !items.length) return items;
+  const categories = await listPermalinkCategories(siteId, items.map(item => item.id));
+  return items.map(item => ({ ...item, permalinkCategory: categories.get(item.id) }));
+}
+
+/**
+ * The entries one public request can resolve to, instead of every entry on
+ * the site. Every post structure contains `%postname%` or `%id%`, and the
+ * legacy `/{slug}` form is the slug, so an entry living at a path has its
+ * slug or id among the path's segments. Also included: `?p=` identities, old
+ * URLs kept as redirects, layout index pages, and every translation of a
+ * candidate. Callers still compare full paths, so extra candidates are
+ * harmless; ordering matches `permalinkContent` (by id).
+ */
+export async function permalinkCandidates(
+  siteId: string,
+  request: { path: string; identity?: string | null; state: PermalinkState; publishedOnly: boolean },
+): Promise<PermalinkItem[]> {
+  const { path, identity, state, publishedOnly } = request;
+  const pathname = path.split("?")[0]!;
+  const segments = [...new Set(pathname.split("/").filter(Boolean).map((segment) => {
+    try { return decodeURIComponent(segment); } catch { return segment; }
+  }))].slice(0, MAX_PATH_SEGMENTS);
+  const slugs = new Set(segments);
+  for (const scope of state.layoutScopes) if (scope.index) slugs.add(scope.index.slug);
+  const ids = new Set(segments.filter(segment => UUID.test(segment)));
+  if (identity && UUID.test(identity)) ids.add(identity);
+  const trimmed = (value: string) => slashPath(value.split("?")[0]!, "never");
+  const paths = new Set([trimmed(pathname), trimmed(pathname.replace(/\/page\/[1-9][0-9]*\/?$/, ""))]);
+  for (const [url, id] of Object.entries(state.redirects)) if (paths.has(trimmed(url)) && UUID.test(id)) ids.add(id);
+  if (!slugs.size && !ids.size) return [];
+
+  const db = await getDb();
+  const filters = `site_id = ? AND trashed_at IS NULL AND ${publicContentTypeSql()}${publishedOnly ? " AND status = 'published'" : ""}`;
+  const match = [
+    ...(slugs.size ? [`slug IN (${[...slugs].map(() => "?").join(", ")})`] : []),
+    ...(ids.size ? [`id IN (${[...ids].map(() => "?").join(", ")})`] : []),
+  ].join(" OR ");
+  const rows = await db.query<Record<string, unknown>>(
+    `SELECT ${PERMALINK_COLUMNS} FROM content WHERE ${filters} AND (${match})`,
+    [siteId, ...slugs, ...ids],
+  );
+  const groups = [...new Set(rows.map(row => row.translation_group_id).filter((g): g is string => typeof g === "string" && g !== ""))]
+    .slice(0, MAX_PATH_SEGMENTS * 4);
+  const siblings = groups.length
+    ? await db.query<Record<string, unknown>>(
+      `SELECT ${PERMALINK_COLUMNS} FROM content WHERE ${filters} AND translation_group_id IN (${groups.map(() => "?").join(", ")})`,
+      [siteId, ...groups],
+    )
+    : [];
+  const byId = new Map<string, Record<string, unknown>>();
+  for (const row of [...rows, ...siblings]) byId.set(String(row.id), row);
+  const ordered = [...byId.values()].sort((a, b) => (String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0));
+  return permalinkItems(siteId, state.settings, ordered);
+}
+
+/** A term archive's entries, in `permalinkContent` order, without loading the site. */
+export async function permalinkTermContent(
+  siteId: string,
+  termId: string,
+  settings: PermalinkSettings,
+  publishedOnly = true,
+): Promise<PermalinkItem[]> {
+  const db = await getDb();
+  const rows = await db.query<Record<string, unknown>>(
+    `SELECT ${PERMALINK_COLUMNS.split(", ").map(column => `c.${column}`).join(", ")} FROM content c
+     JOIN content_terms ct ON ct.content_id = c.id AND ct.term_id = ?
+     WHERE c.site_id = ? AND c.trashed_at IS NULL AND ${publicContentTypeSql("c.type")}${publishedOnly ? " AND c.status = 'published'" : ""}
+     ORDER BY c.id`,
+    [termId, siteId],
+  );
+  return permalinkItems(siteId, settings, rows);
+}
+
+/** Terms for matching archive URLs: identity only, not which entries each holds. */
+export async function listPermalinkTermRefs(siteId: string): Promise<Array<Omit<PermalinkTerm, "contentIds">>> {
+  const db = await getDb();
+  const rows = await db.query<{ id: string; slug: string; name: string; taxonomy: string }>(
+    `SELECT t.id, t.slug, t.name, x.slug AS taxonomy FROM terms t
+     JOIN taxonomies x ON x.id = t.taxonomy_id AND x.site_id = t.site_id
+     WHERE t.site_id = ? ORDER BY t.slug, t.id`,
+    [siteId],
+  );
+  return rows.map(row => ({ id: String(row.id), slug: String(row.slug), name: String(row.name), taxonomy: String(row.taxonomy) }));
+}
+
 export async function reservedPermalinkPath(path: string): Promise<boolean> {
   const pathname = path.split("?")[0]!;
   const locales = await getActiveLocaleCodes();
@@ -335,7 +435,7 @@ async function enrichPermalinkContent<T extends PermalinkContent>(
   return items.map((item) => ({ ...item, permalinkCategory: categories.get(item.id) }));
 }
 export function taxonomyPermalink(
-  term: PermalinkTerm,
+  term: Pick<PermalinkTerm, "slug" | "taxonomy">,
   locale: string,
   settings: PermalinkSettings,
   defaultLocale: string,

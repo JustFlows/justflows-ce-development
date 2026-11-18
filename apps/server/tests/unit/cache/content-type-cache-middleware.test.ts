@@ -2,7 +2,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
 const mocks = vi.hoisted(() => ({ rules: vi.fn(), session: vi.fn(), bypass: vi.fn(fn => fn()) }));
-vi.mock("../../../src/lib/cache/content-type-cache.js", async importOriginal => ({ ...await importOriginal<typeof import("../../../src/lib/cache/content-type-cache.js")>(), contentCacheRules: mocks.rules }));
+/** The per-request lookup answers from `mocks.rules` through the real matcher. */
+vi.mock("../../../src/lib/cache/content-type-cache.js", async importOriginal => {
+  const original = await importOriginal<typeof import("../../../src/lib/cache/content-type-cache.js")>();
+  return {
+    ...original,
+    contentCacheRuleForRequest: async (_siteId: string, path: string, id?: string) => original.matchContentCacheRule(await mocks.rules(), path, id),
+  };
+});
 vi.mock("../../../src/lib/settings/site-settings.js", () => ({ getSiteId: async () => "site-a" }));
 vi.mock("../../../src/lib/admin/admin-path.js", () => ({ getAdminPathConfig: async () => ({ path: "/manage" }) }));
 vi.mock("../../../src/lib/auth/session.js", () => ({ getSession: mocks.session }));

@@ -4,9 +4,10 @@ import { Router, type Request, type Response } from "express";
 import { publicPageRateLimit } from "../../middleware/public-page-rate-limit.js";
 import {
   getPermalinkState,
-  permalinkContent,
+  permalinkCandidates,
+  permalinkTermContent,
   reservedPermalinkPath,
-  listPermalinkTerms,
+  listPermalinkTermRefs,
   taxonomyPermalink,
 } from "../../lib/navigation/permalinks-db.js";
 import { permalinkPath, slashPath } from "../../lib/navigation/permalinks.js";
@@ -65,12 +66,22 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
           return;
         }
         const preview = (await handlers.previewAllowed?.(req, res)) ?? false;
-        const [state, candidates, defaultLocale, activeLocales] = await Promise.all([
+        const [state, defaultLocale, activeLocales] = await Promise.all([
           getPermalinkState(siteId),
-          permalinkContent(siteId, !preview),
           getDefaultLocale(siteId),
           getActiveLocaleCodes(),
         ]);
+        /**
+         * Only entries this path can resolve to: matching every request
+         * against every entry on the site made page views scale with the
+         * site's size and blocked the event loop on large sites.
+         */
+        const candidates = await permalinkCandidates(siteId, {
+          path: req.path,
+          identity: typeof req.query.p === "string" ? req.query.p : null,
+          state,
+          publishedOnly: !preview,
+        });
         /** A hidden item leaves this list, so its URL, id, redirects, and archive entries all act as if it never existed. */
         const visibility = preview ? null : await getVisibilityScope(siteId);
         const items = candidates.filter(
@@ -228,7 +239,7 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
             res.sendStatus(404);
             return;
           }
-          const terms = await listPermalinkTerms(siteId);
+          const terms = await listPermalinkTermRefs(siteId);
           const parsed = parseLocalePrefix(req.path, activeLocales);
           const locale = parsed.locale ?? defaultLocale;
           let archive = terms.find(
@@ -252,11 +263,13 @@ export function createPermalinkRouter(handlers: PermalinkHandlers): Router {
             res.redirect(301, archivePath);
             return;
           }
-          const archiveItems = items.filter(
+          /** The same filters as `items`, applied to this term's entries only. */
+          const archiveItems = (await permalinkTermContent(siteId, archive.id, state.settings, !preview)).filter(
             (item) =>
+              activeLocales.includes(item.locale) &&
               item.status === "published" &&
               item.locale === locale &&
-              archive!.contentIds.includes(item.id),
+              (!visibility || visibility.allows(item)),
           );
           await handlers.renderArchive(req, res, {
             path: archivePath,

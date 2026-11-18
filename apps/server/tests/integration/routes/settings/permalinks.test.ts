@@ -15,8 +15,12 @@ let hiddenIds = new Set<string>();
 vi.mock("../../../../src/lib/navigation/permalinks-db.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../../src/lib/navigation/permalinks-db.js")>()),
   getPermalinkState: async () => state,
-  permalinkContent: async () => items,
-  listPermalinkTerms: async () => terms,
+  /** Candidates are a subset of the site; handing the router every item checks the same routing logic. */
+  permalinkCandidates: async (_siteId: string, request: { publishedOnly: boolean }) =>
+    items.filter((item) => !request.publishedOnly || item.status === "published"),
+  listPermalinkTermRefs: async () => terms,
+  permalinkTermContent: async (_siteId: string, termId: string) =>
+    items.filter((item) => terms.find((term) => term.id === termId)?.contentIds.includes(item.id)),
 }));
 vi.mock("../../../../src/lib/settings/site-settings.js", () => ({ getSiteId: async () => "s1" }));
 vi.mock("../../../../src/lib/content/visibility-scope.js", () => ({
