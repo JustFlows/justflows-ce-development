@@ -77,6 +77,25 @@ export interface DbConnectionConfig {
   database: string;
   username: string;
   password: string;
+  /** Most open connections in this pool. Defaults to {@link SECONDARY_POOL_MAX}. */
+  poolMax?: number;
+}
+
+/**
+ * Pool size for databases other than the installation database (one pool per
+ * separate tenant database, plus short-lived provisioning clients). Kept small
+ * because a server can hold many of these at once.
+ */
+export const SECONDARY_POOL_MAX = 5;
+
+/**
+ * Pool size for the installation database, which serves every request on a
+ * shared install: `DATABASE_POOL_MAX`, default 10. Five connections queued
+ * requests behind slow queries under load.
+ */
+export function controlPoolMax(env: NodeJS.ProcessEnv = process.env): number {
+  const value = Number((env.DATABASE_POOL_MAX ?? "").trim() || 10);
+  return Number.isInteger(value) && value >= 1 ? Math.min(value, 100) : 10;
 }
 
 const ZONELESS_TIMESTAMP = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/;
@@ -148,6 +167,7 @@ export async function getControlDb(): Promise<DbClient> {
     database: process.env.DB_NAME ?? "justflows",
     username: process.env.DB_USER ?? "",
     password: process.env.DB_PASSWORD ?? "",
+    poolMax: controlPoolMax(),
   });
   return _client;
 }
@@ -178,7 +198,7 @@ export async function createDbClient(config: DbConnectionConfig): Promise<DbClie
     const { default: postgres } = await import("postgres");
     const url = `postgres://${encodeURIComponent(username)}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
     const sql = postgres(url, {
-      max: 5,
+      max: config.poolMax ?? SECONDARY_POOL_MAX,
       ssl: useSsl ? { rejectUnauthorized } : false,
       types: { utcTimestamp: PG_UTC_TIMESTAMP },
     });
@@ -255,7 +275,7 @@ export async function createDbClient(config: DbConnectionConfig): Promise<DbClie
       password,
       database,
       waitForConnections: true,
-      connectionLimit: 5,
+      connectionLimit: config.poolMax ?? SECONDARY_POOL_MAX,
       // The application writes UTC DATETIME values, including content deadlines.
       timezone: "Z",
       ...(useSsl ? { ssl: { minVersion: "TLSv1.2", rejectUnauthorized } } : {}),

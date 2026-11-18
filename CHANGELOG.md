@@ -15,6 +15,10 @@ and this project uses [Semantic Versioning](https://semver.org/).
 - **Category and tag pages are cached.** Each archive page counted every entry in its category on every view, about 0.1 s for a 2,000-post category, so a 100,000-post site served only about 20 category pages a second. Archive pages are now cached for every visitor on sites without visibility rules, and saving content or changing terms clears them. On the same site category pages now handle 160 requests a second, and the whole site about 150 with category pages in the mix (it was 38).
 - **The search index check no longer reads every entry each minute.** The `search.reconcile` job compares every entry with its search document once a minute, and read every full content and search row to do it: 2 to 11 seconds of database time each minute on a 100,000-post site. Migration `0064_search_reconcile_indexes` adds indexes that answer the check on their own (about 0.1 s on the same site) and refreshes the database's statistics so they are used immediately.
 
+### Changed
+
+- **The installation database pool follows `DATABASE_POOL_MAX`.** The server ignored the setting and always opened at most 5 connections, so one slow query held a fifth of the pool. It now uses `DATABASE_POOL_MAX` (1–100, default 10). Separate tenant databases keep a pool of 5 each, since a server can hold many of them. On a 100,000-post test site the app's CPU, not the pool, limits throughput (about 240 requests a second on one process).
+
 ## [0.4.4]
 
 ### Added
