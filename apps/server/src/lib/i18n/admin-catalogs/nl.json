@@ -3026,7 +3026,10 @@
     "betaDisabledHint": "Bèta-installaties staan uit voor deze site.",
     "betaSettingsLink": "Wijzigen in Instellingen",
     "betaDisabledButton": "Bèta — niet ingeschakeld",
-    "betaInstallConfirm": "{name} is een bètaversie. Deze kan instabiel zijn, gegevens verliezen of nog veranderen vóór de stabiele release. Toch installeren?"
+    "betaInstallConfirm": "{name} is een bètaversie. Deze kan instabiel zijn, gegevens verliezen of nog veranderen vóór de stabiele release. Toch installeren?",
+    "official": "Officieel",
+    "thirdParty": "Externe partij",
+    "thirdPartyHint": "Gepubliceerd door een externe uitgever, niet door Justflows. Plugins draaien met toegang tot je server, dus installeer alleen plugins van uitgevers die je vertrouwt."
   },
   "extensionUpdates": {
     "checking": "Controleren op updates…",

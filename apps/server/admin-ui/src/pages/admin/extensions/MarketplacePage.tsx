@@ -30,6 +30,11 @@ interface MarketplaceItem {
   version: string;
   author?: string;
   publisher?: string;
+  /**
+   * Set by the registry from the owning publisher account (justflows-ce#272).
+   * Older registries omit it; only the official namespace counts then.
+   */
+  official?: boolean;
   downloads: number;
   category: string;
   type: "plugin" | "theme";
@@ -285,6 +290,11 @@ export default function MarketplacePage() {
                     {comingSoon && <span className="jf-badge jf-badge--warn">{t("marketplace.comingSoon")}</span>}
                     {beta && <span className="jf-badge jf-badge--warn">{t("marketplace.beta")}</span>}
                     {paid && <span className="jf-badge">{priceLabel ?? t("common.paid")}</span>}
+                    {(item.official ?? item.id.startsWith("justflows.")) ? (
+                      <span className="jf-badge jf-badge--info">{t("marketplace.official")}</span>
+                    ) : (
+                      <span className="jf-badge jf-badge--warn" title={t("marketplace.thirdPartyHint")}>{t("marketplace.thirdParty")}</span>
+                    )}
                     {isInstalled && <ExtensionUpdateBadge state={updates} type={item.type} id={item.id} />}
                     <span className="jf-meta" style={{ marginInlineStart: "auto" }}>
                       ↓ {item.downloads.toLocaleString()}

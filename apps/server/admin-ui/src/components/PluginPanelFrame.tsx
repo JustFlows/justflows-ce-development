@@ -5,7 +5,8 @@ import { useT } from "../i18n/I18nProvider";
 
 const PLUGIN_MSG = "justflows-admin-plugin";
 const HOST_MSG = "justflows-admin-host";
-const PLUGIN_ID = /^justflows(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$/;
+/** Mirrors `PLUGIN_ID_RE` in @justflows/sdk: `<namespace>.<name>`, such as `acme.forms`. */
+const PLUGIN_ID = /^(?=.{4,128}$)[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$/;
 const APP_PATH = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** The record a panel frame is embedded for. */

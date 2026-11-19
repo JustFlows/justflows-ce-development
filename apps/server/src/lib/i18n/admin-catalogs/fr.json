@@ -3029,7 +3029,10 @@
     "betaDisabledHint": "Les installations bêta sont désactivées pour ce site.",
     "betaSettingsLink": "Modifier dans les réglages",
     "betaDisabledButton": "Bêta — non activée",
-    "betaInstallConfirm": "{name} est une version bêta. Elle peut être instable, perdre des données ou changer avant sa version stable. L’installer quand même ?"
+    "betaInstallConfirm": "{name} est une version bêta. Elle peut être instable, perdre des données ou changer avant sa version stable. L’installer quand même ?",
+    "official": "Officiel",
+    "thirdParty": "Tiers",
+    "thirdPartyHint": "Publié par un éditeur externe, pas par Justflows. Les plugins s’exécutent avec un accès à votre serveur : n’installez que ceux d’éditeurs de confiance."
   },
   "extensionUpdates": {
     "checking": "Recherche de mises à jour…",

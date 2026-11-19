@@ -3198,7 +3198,10 @@
     "betaDisabledHint": "Instalacje wersji beta są wyłączone dla tej strony.",
     "betaSettingsLink": "Zmień w Ustawieniach",
     "betaDisabledButton": "Beta — niewłączona",
-    "betaInstallConfirm": "{name} to wersja beta. Może być niestabilna, utracić dane lub zmienić się przed wydaniem stabilnym. Zainstalować mimo to?"
+    "betaInstallConfirm": "{name} to wersja beta. Może być niestabilna, utracić dane lub zmienić się przed wydaniem stabilnym. Zainstalować mimo to?",
+    "official": "Oficjalny",
+    "thirdParty": "Zewnętrzny",
+    "thirdPartyHint": "Opublikowany przez zewnętrznego wydawcę, nie przez Justflows. Wtyczki działają z dostępem do serwera, więc instaluj tylko te od zaufanych wydawców."
   },
   "extensionUpdates": {
     "checking": "Sprawdzanie aktualizacji…",
