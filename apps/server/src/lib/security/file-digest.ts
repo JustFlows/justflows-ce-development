@@ -61,16 +61,55 @@ interface WalkState extends WalkResult {
   deadline: number;
 }
 
-function requireNoFollow(): number {
-  const { O_RDONLY, O_NOFOLLOW, O_NONBLOCK, O_DIRECTORY } = fs.constants;
-  if (
-    typeof O_NOFOLLOW !== "number" ||
-    typeof O_NONBLOCK !== "number" ||
-    typeof O_DIRECTORY !== "number"
-  ) {
-    throw new IntegrityBoundsError("This platform cannot verify files without following links");
+/** O_NOFOLLOW, or 0 where Node does not define it (Windows). */
+const NATIVE_NOFOLLOW = typeof fs.constants.O_NOFOLLOW === "number" ? fs.constants.O_NOFOLLOW : 0;
+
+/** O_DIRECTORY, or 0 where Node does not define it (Windows). */
+const NATIVE_DIRECTORY = typeof fs.constants.O_DIRECTORY === "number" ? fs.constants.O_DIRECTORY : 0;
+
+/** O_NONBLOCK keeps a FIFO from blocking the open; Windows has no such files here. */
+const NATIVE_NONBLOCK = typeof fs.constants.O_NONBLOCK === "number" ? fs.constants.O_NONBLOCK : 0;
+
+function fsError(code: string, target: string): NodeJS.ErrnoException {
+  const err: NodeJS.ErrnoException = new Error(`${code}: ${target}`);
+  err.code = code;
+  return err;
+}
+
+/**
+ * Open a path without following a final link.
+ *
+ * With O_NOFOLLOW the kernel refuses the link. Without it (Windows) the path is
+ * checked with lstat, and the opened handle must be that same file, so a link
+ * or junction swapped in between is refused. A link fails with ELOOP, and a
+ * non-directory fails with ENOTDIR when `directory` is set.
+ */
+export async function openNoFollow(
+  target: string,
+  flags: number,
+  options: { directory?: boolean; native?: boolean } = {},
+): Promise<fs.promises.FileHandle> {
+  const native = (options.native ?? true) && NATIVE_NOFOLLOW !== 0;
+  const wantDirectory = options.directory === true;
+  let before: fs.BigIntStats | null = null;
+  let handle: fs.promises.FileHandle;
+  if (native) {
+    handle = await fsp.open(target, flags | NATIVE_NOFOLLOW | (wantDirectory ? NATIVE_DIRECTORY : 0));
+  } else {
+    before = await fsp.lstat(target, { bigint: true });
+    if (before.isSymbolicLink()) throw fsError("ELOOP", target);
+    if (wantDirectory && !before.isDirectory()) throw fsError("ENOTDIR", target);
+    handle = await fsp.open(target, flags);
   }
-  return O_RDONLY | O_NOFOLLOW | O_NONBLOCK;
+  try {
+    const after = await handle.stat({ bigint: true });
+    if (before && (after.dev !== before.dev || after.ino !== before.ino)) throw fsError("ELOOP", target);
+    if (wantDirectory && !after.isDirectory()) throw fsError("ENOTDIR", target);
+  } catch (err) {
+    await handle.close();
+    throw err;
+  }
+  return handle;
 }
 
 /** True when candidate is root or a path inside it. */
@@ -101,10 +140,9 @@ function errno(err: unknown): string | undefined {
 }
 
 async function listDirectory(dir: string, rootReal: string): Promise<{ real: string; names: string[] } | null> {
-  const flags = fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW;
   let handle: fs.promises.FileHandle;
   try {
-    handle = await fsp.open(dir, flags);
+    handle = await openNoFollow(dir, fs.constants.O_RDONLY, { directory: true });
   } catch (err) {
     const code = errno(err);
     if (code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP" || code === "ENOTSUP") return null;
@@ -136,7 +174,7 @@ async function hashOne(
   if (Date.now() > state.deadline) throw new IntegrityBoundsError("Integrity scan timed out");
   let handle: fs.promises.FileHandle;
   try {
-    handle = await fsp.open(full, requireNoFollow());
+    handle = await openNoFollow(full, fs.constants.O_RDONLY | NATIVE_NONBLOCK);
   } catch (err) {
     const code = errno(err);
     if (code === "ENOENT") return { kind: "missing" };
@@ -230,11 +268,9 @@ export async function walkTree(
   limits: DigestLimits,
   skipDirectory?: (relativeDir: string) => boolean,
 ): Promise<WalkResult> {
-  requireNoFollow();
-  const flags = fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW;
   let handle: fs.promises.FileHandle;
   try {
-    handle = await fsp.open(root, flags);
+    handle = await openNoFollow(root, fs.constants.O_RDONLY, { directory: true });
   } catch (err) {
     const code = errno(err);
     if (code === "ELOOP") throw new IntegrityBoundsError("Package root is a link");
@@ -285,10 +321,9 @@ export async function hashRelativeFile(
   if (relativePath.split("/").some((part) => part === "" || part === "." || part === "..")) {
     return { kind: "unexpected" };
   }
-  requireNoFollow();
   let rootReal: string;
   try {
-    const handle = await fsp.open(root, fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW);
+    const handle = await openNoFollow(root, fs.constants.O_RDONLY, { directory: true });
     try {
       rootReal = await fsp.realpath(root);
     } finally {

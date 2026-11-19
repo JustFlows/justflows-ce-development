@@ -173,20 +173,65 @@ function occupied(err) {
   return code === "EEXIST" || code === "ELOOP" || code === "ENOTDIR" || code === "EISDIR";
 }
 
+/** O_NOFOLLOW, or 0 where Node does not define it (Windows). */
+const NATIVE_NOFOLLOW = typeof fs.constants.O_NOFOLLOW === "number" ? fs.constants.O_NOFOLLOW : 0;
+
+/** O_DIRECTORY, or 0 where Node does not define it (Windows). */
+const NATIVE_DIRECTORY = typeof fs.constants.O_DIRECTORY === "number" ? fs.constants.O_DIRECTORY : 0;
+
+function fsError(code, target) {
+  const err = new Error(`${code}: ${target}`);
+  err.code = code;
+  return err;
+}
+
+/**
+ * Open a path without following a final link.
+ *
+ * With O_NOFOLLOW the kernel refuses the link. Without it (Windows) the path is
+ * checked with lstat, and the opened handle must be that same file, so a link
+ * or junction swapped in between is refused. A link fails with ELOOP, and a
+ * non-directory fails with ENOTDIR when `directory` is set.
+ *
+ * @param {string} target
+ * @param {number} flags
+ * @param {{ directory?: boolean, native?: boolean }} [options]
+ */
+export async function openNoFollow(target, flags, options = {}) {
+  const native = options.native ?? NATIVE_NOFOLLOW !== 0;
+  const wantDirectory = options.directory === true;
+  let before = null;
+  let handle;
+  if (native && NATIVE_NOFOLLOW !== 0) {
+    handle = await fsp.open(target, flags | NATIVE_NOFOLLOW | (wantDirectory ? NATIVE_DIRECTORY : 0));
+  } else {
+    before = await fsp.lstat(target, { bigint: true });
+    if (before.isSymbolicLink()) throw fsError("ELOOP", target);
+    if (wantDirectory && !before.isDirectory()) throw fsError("ENOTDIR", target);
+    handle = await fsp.open(target, flags);
+  }
+  try {
+    const after = await handle.stat({ bigint: true });
+    if (before && (after.dev !== before.dev || after.ino !== before.ino)) throw fsError("ELOOP", target);
+    if (wantDirectory && !after.isDirectory()) throw fsError("ENOTDIR", target);
+  } catch (err) {
+    await handle.close();
+    throw err;
+  }
+  return handle;
+}
+
 /**
  * Create each file with an exclusive open. A stat before the open would let
- * the path change in between, which is the race CodeQL reports.
+ * the path change in between, which is the race CodeQL reports. O_EXCL refuses
+ * any existing name, a link included, on every platform. Where the platform
+ * has no O_NOFOLLOW, the created file is also checked to be the one opened.
  */
 async function writeEntries(dest, entries) {
-  const noFollow = fs.constants.O_NOFOLLOW;
-  const directory = fs.constants.O_DIRECTORY;
-  if (typeof noFollow !== "number" || typeof directory !== "number") {
-    throw new UstarError("This platform cannot contain archive writes");
-  }
   await fsp.mkdir(dest, { recursive: true });
   const root = await fsp.realpath(dest);
-  const fileFlags = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | noFollow;
-  const dirFlags = fs.constants.O_RDONLY | directory | noFollow;
+  const fileFlags = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | NATIVE_NOFOLLOW;
+  const dirFlags = fs.constants.O_RDONLY;
   for (const entry of entries) {
     const parts = entry.path.split("/");
     let parent = root;
@@ -206,6 +251,13 @@ async function writeEntries(dest, entries) {
           throw err;
         }
         try {
+          if (NATIVE_NOFOLLOW === 0) {
+            const created = await fsp.lstat(next, { bigint: true });
+            const opened = await handle.stat({ bigint: true });
+            if (created.isSymbolicLink() || created.dev !== opened.dev || created.ino !== opened.ino) {
+              throw new UstarError("Conflicting archive entry");
+            }
+          }
           await handle.writeFile(entry.data);
         } finally {
           await handle.close();
@@ -221,7 +273,7 @@ async function writeEntries(dest, entries) {
         if (!created) {
           let handle;
           try {
-            handle = await fsp.open(next, dirFlags);
+            handle = await openNoFollow(next, dirFlags, { directory: true });
           } catch (err) {
             if (occupied(err) || (err && err.code === "ENOENT")) {
               throw new UstarError("Conflicting archive entry");
