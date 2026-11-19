@@ -87,6 +87,8 @@ interface StaticExportStatus {
     assets: number;
     publicUrl: string;
   } | null;
+  /** On-demand mode only: pages built on visits so far. Absent on older servers. */
+  onDemand?: { pages: number; stale: number; bytes: number; rendering: number } | null;
 }
 
 interface StaticExportSettings {
@@ -101,6 +103,10 @@ interface StaticExportSettings {
   concurrency: number;
   auto: boolean;
   debounceMs: number;
+  mode: "full" | "on-demand";
+  ttlSeconds: number;
+  renderCap: number;
+  siteRenderCap: number;
 }
 
 interface StaticExportSettingsResponse {
@@ -1136,14 +1142,23 @@ export default function ToolsPage() {
           </p>
 
           <div className="jf-row" style={{ flexWrap: "wrap", gap: "0.5rem" }}>
-            <span className={`jf-badge jf-badge--${sxRuntimeInfo?.autoArmed ? "ok" : "warn"}`}>
-              {sxRuntimeInfo?.autoArmed
-                ? t("tools.staticExport.autoRebuildArmed")
-                : sxSettings?.auto
-                  ? t("tools.staticExport.autoRebuildOnIdle")
-                  : t("tools.staticExport.autoRebuildOff")}
-            </span>
-            {sxSettings?.auto && sxRuntimeInfo && !sxRuntimeInfo.revalidateEnabled && (
+            {sxSettings?.mode === "on-demand" ? (
+              <span className="jf-badge jf-badge--ok">
+                {t("tools.staticExport.onDemandBadge", {
+                  pages: sxStatus?.onDemand?.pages ?? 0,
+                  stale: sxStatus?.onDemand?.stale ?? 0,
+                })}
+              </span>
+            ) : (
+              <span className={`jf-badge jf-badge--${sxRuntimeInfo?.autoArmed ? "ok" : "warn"}`}>
+                {sxRuntimeInfo?.autoArmed
+                  ? t("tools.staticExport.autoRebuildArmed")
+                  : sxSettings?.auto
+                    ? t("tools.staticExport.autoRebuildOnIdle")
+                    : t("tools.staticExport.autoRebuildOff")}
+              </span>
+            )}
+            {sxSettings?.mode !== "on-demand" && sxSettings?.auto && sxRuntimeInfo && !sxRuntimeInfo.revalidateEnabled && (
               <span className="jf-badge jf-badge--warn">
                 {t("tools.staticExport.needsRevalidateEnv")}
               </span>
@@ -1211,6 +1226,28 @@ export default function ToolsPage() {
                   <option value="s3">{t("tools.staticExport.storageS3")}</option>
                 </select>
                 <p className="jf-field__hint">{t("tools.staticExport.storageHint")}</p>
+              </div>
+
+              <div className="jf-field">
+                <label className="jf-field__label" htmlFor="jf-sx-mode">
+                  {t("tools.staticExport.modeLabel")}
+                </label>
+                <select
+                  id="jf-sx-mode"
+                  className="jf-input"
+                  value={sxSettings.mode ?? "full"}
+                  onChange={(e) =>
+                    setSxSettings({
+                      ...sxSettings,
+                      mode: e.target.value === "on-demand" ? "on-demand" : "full",
+                    })
+                  }
+                  disabled={sxSaving || sxRunning}
+                >
+                  <option value="full">{t("tools.staticExport.modeFull")}</option>
+                  <option value="on-demand">{t("tools.staticExport.modeOnDemand")}</option>
+                </select>
+                <p className="jf-field__hint">{t("tools.staticExport.modeHint")}</p>
               </div>
 
               <div className="jf-field">
@@ -1416,14 +1453,77 @@ export default function ToolsPage() {
                 </div>
               </div>
 
+              {sxSettings.mode === "on-demand" && (
+                <>
+                  <div className="jf-grid jf-grid--3">
+                    <div className="jf-field">
+                      <label className="jf-field__label" htmlFor="jf-sx-ttl">
+                        {t("tools.staticExport.ttlLabel")}
+                      </label>
+                      <input
+                        id="jf-sx-ttl"
+                        className="jf-input"
+                        type="number"
+                        min={60}
+                        max={2592000}
+                        value={sxSettings.ttlSeconds}
+                        onChange={(e) =>
+                          setSxSettings({ ...sxSettings, ttlSeconds: Number(e.target.value) || 60 })
+                        }
+                        disabled={sxSaving || sxRunning}
+                      />
+                    </div>
+                    <div className="jf-field">
+                      <label className="jf-field__label" htmlFor="jf-sx-render-cap">
+                        {t("tools.staticExport.renderCapLabel")}
+                      </label>
+                      <input
+                        id="jf-sx-render-cap"
+                        className="jf-input"
+                        type="number"
+                        min={1}
+                        max={16}
+                        value={sxSettings.renderCap}
+                        onChange={(e) =>
+                          setSxSettings({ ...sxSettings, renderCap: Number(e.target.value) || 1 })
+                        }
+                        disabled={sxSaving || sxRunning}
+                      />
+                    </div>
+                    <div className="jf-field">
+                      <label className="jf-field__label" htmlFor="jf-sx-site-render-cap">
+                        {t("tools.staticExport.siteRenderCapLabel")}
+                      </label>
+                      <input
+                        id="jf-sx-site-render-cap"
+                        className="jf-input"
+                        type="number"
+                        min={1}
+                        max={16}
+                        value={sxSettings.siteRenderCap}
+                        onChange={(e) =>
+                          setSxSettings({ ...sxSettings, siteRenderCap: Number(e.target.value) || 1 })
+                        }
+                        disabled={sxSaving || sxRunning}
+                      />
+                    </div>
+                  </div>
+                  <p className="jf-field__hint">{t("tools.staticExport.capsHint")}</p>
+                </>
+              )}
+
               <label className="jf-checkrow">
                 <input
                   type="checkbox"
-                  checked={sxSettings.auto}
+                  checked={sxSettings.auto && sxSettings.mode !== "on-demand"}
                   onChange={(e) => setSxSettings({ ...sxSettings, auto: e.target.checked })}
-                  disabled={sxSaving || sxRunning}
+                  disabled={sxSaving || sxRunning || sxSettings.mode === "on-demand"}
                 />
-                <span>{t("tools.staticExport.autoRebuildCheckbox")}</span>
+                <span>
+                  {sxSettings.mode === "on-demand"
+                    ? t("tools.staticExport.autoRebuildOnDemand")
+                    : t("tools.staticExport.autoRebuildCheckbox")}
+                </span>
               </label>
 
               <div className="jf-row">

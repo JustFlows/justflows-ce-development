@@ -5272,7 +5272,17 @@
       "storageHint": "Uses the installation’s existing S3 connection and a separate folder per site. The local folder stages exports before uploading. Clear removes both local and deployed files.",
       "responseUnavailable": "The export API returned an unexpected response (HTTP {status}). Check export status before retrying; the export may still be running.",
       "pollingUnavailable": "Export status is no longer available. Refresh Tools to check the result before starting another export.",
-      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log."
+      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log.",
+      "modeLabel": "Tryb eksportu",
+      "modeFull": "Pełny: generuj wszystkie strony z wyprzedzeniem",
+      "modeOnDemand": "Na żądanie: generuj każdą stronę przy pierwszej wizycie",
+      "modeHint": "W trybie na żądanie aplikacja serwuje każdą stronę z jej pliku, dopóki jest aktualny. Zmiany oznaczają pliki jako nieaktualne zamiast generować je od nowa, a kolejny odwiedzający dostaje stary plik, podczas gdy nowa wersja powstaje w tle. Kieruj odwiedzających do aplikacji, a nie bezpośrednio do folderu eksportu.",
+      "ttlLabel": "Odśwież po (sekundach)",
+      "renderCapLabel": "Renderowania w tle na proces",
+      "siteRenderCapLabel": "Renderowania w tle na witrynę",
+      "capsHint": "Powyżej tych limitów serwowany jest zapisany plik, a odświeżenie czeka, więc robot indeksujący nie spowolni witryny.",
+      "onDemandBadge": "Na żądanie: {pages} stron wygenerowanych · {stale} nieaktualnych",
+      "autoRebuildOnDemand": "Automatyczne odbudowywanie jest wyłączone w trybie na żądanie: strony odświeżają się przy odwiedzinach"
     },
     "status": {
       "disabled": "Wyłączone",

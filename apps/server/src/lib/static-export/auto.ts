@@ -125,7 +125,12 @@ function teardown(): void {
 export function refreshStaticExportAutoRebuild(): void {
   teardown();
   const cfg = getStaticExportConfig();
-  if (!cfg.enabled || !cfg.auto) return;
+  if (!cfg.enabled) return;
+  if (cfg.mode === "on-demand") {
+    armOnDemand();
+    return;
+  }
+  if (!cfg.auto) return;
 
   const hooks = getRuntimeHooks();
   const remember = (apply: (queue: SiteQueue) => void) => {
@@ -161,6 +166,38 @@ export function refreshStaticExportAutoRebuild(): void {
     `[justflows] static-export auto-rebuild armed (debounce ${cfg.debounceMs}ms, ` +
       `dir ${stripNewlines(cfg.outDir)})`,
   );
+}
+
+/**
+ * On-demand mode: publishing, unpublishing and deleting an entry only mark
+ * files stale (or remove the entry's own files). Nothing renders until a
+ * visit, so the auto-rebuild stays off.
+ */
+function armOnDemand(): void {
+  const hooks = getRuntimeHooks();
+  const kinds = {
+    "content.published": "published",
+    "content.unpublished": "unpublished",
+    "content.deleted": "deleted",
+  } as const;
+  for (const [hook, kind] of Object.entries(kinds) as Array<[keyof typeof kinds, (typeof kinds)[keyof typeof kinds]]>) {
+    disposers.push(
+      hooks.action(hook, (event: ContentRef) => {
+        void import("./serve-on-demand.js")
+          .then(({ noteOnDemandContentChange }) =>
+            noteOnDemandContentChange(kind, {
+              contentId: event.contentId,
+              translationGroupId: event.translationGroupId,
+              siteId: event.siteId,
+            }),
+          )
+          .catch((err: unknown) =>
+            logLine(`could not mark pages stale: ${err instanceof Error ? err.message : String(err)}`),
+          );
+      }),
+    );
+  }
+  console.log("[justflows] static-export on-demand: stale marking armed");
 }
 
 /** Boot-time entry point (called once from register-routes). */

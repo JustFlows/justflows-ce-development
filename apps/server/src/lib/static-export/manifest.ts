@@ -62,6 +62,11 @@ export interface StaticExportManifest {
   config: {
     maxPages: number;
     concurrency: number;
+    /** Export mode and the on-demand settings in force when this manifest was written. */
+    mode?: "full" | "on-demand";
+    ttlSeconds?: number;
+    renderCap?: number;
+    siteRenderCap?: number;
   };
 }
 
@@ -497,6 +502,14 @@ export function sanitizeManifest(manifest: StaticExportManifest): StaticExportMa
     config: {
       maxPages: cleanInt(manifest.config?.maxPages, 1, 100_000),
       concurrency: cleanInt(manifest.config?.concurrency, 1, 32),
+      ...(manifest.config?.mode
+        ? {
+            mode: manifest.config.mode === "on-demand" ? ("on-demand" as const) : ("full" as const),
+            ttlSeconds: cleanInt(manifest.config.ttlSeconds, 60, 2_592_000),
+            renderCap: cleanInt(manifest.config.renderCap, 1, 16),
+            siteRenderCap: cleanInt(manifest.config.siteRenderCap, 1, 16),
+          }
+        : {}),
     },
   };
 }

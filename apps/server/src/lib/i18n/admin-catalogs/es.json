@@ -4924,7 +4924,17 @@
       "storageHint": "Uses the installation’s existing S3 connection and a separate folder per site. The local folder stages exports before uploading. Clear removes both local and deployed files.",
       "responseUnavailable": "The export API returned an unexpected response (HTTP {status}). Check export status before retrying; the export may still be running.",
       "pollingUnavailable": "Export status is no longer available. Refresh Tools to check the result before starting another export.",
-      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log."
+      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log.",
+      "modeLabel": "Modo de exportación",
+      "modeFull": "Completo: generar todas las páginas por adelantado",
+      "modeOnDemand": "Bajo demanda: generar cada página en su primera visita",
+      "modeHint": "Bajo demanda, la app sirve cada página desde su archivo mientras está actualizado. Los cambios marcan los archivos como obsoletos en lugar de regenerarlos, y el siguiente visitante recibe el archivo anterior mientras se genera una copia nueva en segundo plano. Envía a los visitantes a la app, no directamente a la carpeta de exportación.",
+      "ttlLabel": "Actualizar tras (segundos)",
+      "renderCapLabel": "Renderizados en segundo plano por proceso",
+      "siteRenderCapLabel": "Renderizados en segundo plano por sitio",
+      "capsHint": "Por encima de estos límites se sirve el archivo guardado y la actualización espera, para que un rastreador no ralentice el sitio.",
+      "onDemandBadge": "Bajo demanda: {pages} páginas generadas · {stale} obsoletas",
+      "autoRebuildOnDemand": "La regeneración automática está desactivada en el modo bajo demanda: las páginas se actualizan al visitarlas"
     },
     "title": "Herramientas",
     "subtitle": "Importación, exportación y utilidades del sitio",

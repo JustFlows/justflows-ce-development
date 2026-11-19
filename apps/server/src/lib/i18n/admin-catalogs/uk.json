@@ -5272,7 +5272,17 @@
       "storageHint": "Uses the installation’s existing S3 connection and a separate folder per site. The local folder stages exports before uploading. Clear removes both local and deployed files.",
       "responseUnavailable": "The export API returned an unexpected response (HTTP {status}). Check export status before retrying; the export may still be running.",
       "pollingUnavailable": "Export status is no longer available. Refresh Tools to check the result before starting another export.",
-      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log."
+      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log.",
+      "modeLabel": "Режим експорту",
+      "modeFull": "Повний: створювати всі сторінки заздалегідь",
+      "modeOnDemand": "На вимогу: створювати кожну сторінку під час першого відвідування",
+      "modeHint": "У режимі на вимогу застосунок віддає кожну сторінку з її файлу, поки він актуальний. Зміни позначають файли як застарілі замість того, щоб створювати їх заново; наступний відвідувач отримує старий файл, поки нова копія створюється у фоні. Спрямовуйте відвідувачів до застосунку, а не безпосередньо до папки експорту.",
+      "ttlLabel": "Оновлювати через (секунд)",
+      "renderCapLabel": "Фонових рендерів на процес",
+      "siteRenderCapLabel": "Фонових рендерів на сайт",
+      "capsHint": "Понад ці ліміти віддається збережений файл, а оновлення чекає, щоб пошуковий робот не сповільнював сайт.",
+      "onDemandBadge": "На вимогу: створено сторінок {pages} · застарілих {stale}",
+      "autoRebuildOnDemand": "Автоматичне перебудовування вимкнено в режимі на вимогу: сторінки оновлюються під час відвідування"
     },
     "status": {
       "disabled": "Вимкнено",

@@ -4924,7 +4924,17 @@
       "storageHint": "Uses the installation’s existing S3 connection and a separate folder per site. The local folder stages exports before uploading. Clear removes both local and deployed files.",
       "responseUnavailable": "The export API returned an unexpected response (HTTP {status}). Check export status before retrying; the export may still be running.",
       "pollingUnavailable": "Export status is no longer available. Refresh Tools to check the result before starting another export.",
-      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log."
+      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log.",
+      "modeLabel": "Exportmodus",
+      "modeFull": "Vollständig: alle Seiten vorab erstellen",
+      "modeOnDemand": "Bei Bedarf: jede Seite beim ersten Aufruf erstellen",
+      "modeHint": "Bei Bedarf liefert die App jede Seite aus ihrer Datei aus, solange sie aktuell ist. Änderungen markieren Dateien als veraltet, statt sie neu zu erstellen. Der nächste Besucher erhält die alte Datei, während im Hintergrund eine neue Fassung erstellt wird. Leite Besucher zur App, nicht direkt zum Exportordner.",
+      "ttlLabel": "Aktualisieren nach (Sekunden)",
+      "renderCapLabel": "Hintergrund-Renderings pro Prozess",
+      "siteRenderCapLabel": "Hintergrund-Renderings pro Website",
+      "capsHint": "Über diesen Grenzen wird die gespeicherte Datei ausgeliefert und die Aktualisierung wartet, damit ein Crawler die Website nicht verlangsamt.",
+      "onDemandBadge": "Bei Bedarf: {pages} Seiten erstellt · {stale} veraltet",
+      "autoRebuildOnDemand": "Automatische Neuerstellung ist im Bedarfsmodus aus: Seiten werden beim Aufruf aktualisiert"
     },
     "title": "Tools",
     "subtitle": "Import, Export und Werkzeuge für die Website",

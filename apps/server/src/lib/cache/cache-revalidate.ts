@@ -104,6 +104,19 @@ export async function revalidateOnUpdate(
   trigger: CacheRevalidateTrigger,
   opts?: { siteId?: string; forceObjects?: CacheObjectType[] },
 ): Promise<{ revalidated: CacheObjectType[]; skipped: boolean }> {
+  /**
+   * The on-demand static export marks every file stale on a site-wide change,
+   * whether or not cache revalidation is on. Entry changes arrive through the
+   * content hooks instead, with the ids they need.
+   */
+  if (trigger !== "content" && process.env.STATIC_EXPORT_MODE?.trim().toLowerCase() === "on-demand") {
+    try {
+      const { noteOnDemandSiteChange } = await import("../static-export/serve-on-demand.js");
+      await noteOnDemandSiteChange(opts?.siteId);
+    } catch (err) {
+      console.error("[justflows] static-export on-demand: could not mark pages stale", err);
+    }
+  }
   const settings = getRevalidateSettings();
   if (!settings.enabled) {
     return { revalidated: [], skipped: true };

@@ -94,6 +94,10 @@ analytics beacon still reach `http://localhost:3000` from the previewed pages
 | `STATIC_EXPORT_CONCURRENCY`     | `4`                  | parallel fetches                                                                                                                                                                                                                  |
 | `STATIC_EXPORT_AUTO`            | `0`                  | rebuild after content/menu/theme/settings changes                                                                                                                                                                                 |
 | `STATIC_EXPORT_DEBOUNCE_MS`     | `5000`               | quiet period that coalesces a burst of changes                                                                                                                                                                                    |
+| `STATIC_EXPORT_MODE`            | `full`               | `full` builds files ahead of time; `on-demand` builds each page on its first visit (see [On-demand mode](#on-demand-mode))                                                                                                         |
+| `STATIC_EXPORT_TTL_SECONDS`     | `3600`               | on demand: a file is refreshed this long after it was built, even without an edit (60 to 2,592,000)                                                                                                                              |
+| `STATIC_EXPORT_RENDER_CAP`      | `2`                  | on demand: background renders one app process runs at once, across all sites (1 to 16)                                                                                                                                           |
+| `STATIC_EXPORT_SITE_RENDER_CAP` | `1`                  | on demand: background renders one app process runs at once for one site (1 to 16)                                                                                                                                                 |
 
 All of these can be edited from **Admin → System → Tools → “Static site export” →
 Configuration** — the admin writes them to `.env` and applies them in place, no
@@ -668,11 +672,82 @@ return `cors: true` on those routes.
 | `staticExport.completed`  | action                           | observe a finished run (`{ ok, mode, pages, assets, bytes, pruned, errors, warnings, … }`)                                   |
 | `staticExport.deploy`     | action                           | push the directory to object storage / a CDN                                                                       |
 
+## On-demand mode
+
+A full export renders every page, and an incremental one still rebuilds every
+list page, so the work grows with the size of the site, not with its traffic.
+On a site with 100,000 posts that is minutes of the app's CPU, and on a
+multi-site install it slows every other site down. With
+`STATIC_EXPORT_MODE=on-demand` (**Tools → Static site export → Export mode**)
+nothing is built ahead of time:
+
+- **Built on first visit.** The first request for a page renders it and writes
+  its file. Concurrent requests for that page share the one render. Pages
+  nobody visits are never rendered.
+- **Changes mark files stale.** Publishing or updating an entry marks its own
+  pages, its translations and every list page (home, archives, paginated pages,
+  `sitemap.xml`, feeds) as stale. A menu, theme, Customizer, CSS provider,
+  settings or plugin change bumps the site's export version, which makes every
+  file stale in one write. Nothing renders until the next visit, and this works
+  whether or not `CACHE_REVALIDATE_ENABLED` is on.
+- **Expiry.** A file is also refreshed `STATIC_EXPORT_TTL_SECONDS` after it was
+  built, so lists and dates stay current without an edit.
+- **Stale-while-revalidate.** A stale or expired file is served once more while
+  a fresh copy renders in the background. Visitors never wait for a refresh.
+- **Render caps.** Each process runs at most `STATIC_EXPORT_RENDER_CAP`
+  background renders at once, and at most `STATIC_EXPORT_SITE_RENDER_CAP` for one
+  site. Above the caps, a stale file is served and its refresh waits for the next
+  visit, and a page that has no file yet is answered by the live app. A crawler
+  sweeping the site cannot recreate full-export load.
+- **Unpublished pages are removed at once.** Unpublishing or deleting an entry
+  deletes its files and purges the CDN straight away, so its URL answers 404 from
+  the live app.
+
+The app decides whether a file is fresh, so in this mode files are always served
+**through the app**, with both storage drivers: from
+`STATIC_EXPORT_DIR/_on-demand/` with the local driver, and from the private
+`static-export/sites/<site>/on-demand/` prefix with S3. Point visitors at the
+app, not straight at the export folder. Responses carry
+`X-Justflows-Render: static-export` and `X-Justflows-Export: new`, `fresh` or
+`stale`.
+
+Only anonymous `GET`/`HEAD` requests without a query string are served from
+files. Signed-in visitors, the admin, the API, account pages, paths a plugin
+leaves to the live app, and a closed site (maintenance or not yet public) always
+go to the live app. A page the app answers with `private` or `no-store`, or with
+a redirect, is not stored.
+
+**Where freshness lives.** In the database, so it survives restarts and is
+shared by every app process: one `static_export_pages` row per file (migration
+`0065_static_export_pages`), with the entries it shows in
+`static_export_page_deps`, and the export version in the site setting
+`static_export_version`. A refresh claims its row first, so two processes do not
+refresh the same page; a crashed process's claim expires after a minute. The
+render caps and the sharing of one render by concurrent requests are per process.
+
+**Full exports still work.** **Run export** still writes a full or incremental
+export to `STATIC_EXPORT_DIR`, for example to prepare a site before moving it to
+static hosting. It leaves `_on-demand/` alone. Automatic rebuilds
+(`STATIC_EXPORT_AUTO`) are off in on-demand mode. **Clear export** removes both.
+
+**CDN.** Stored pages keep the `Cache-Control` of a full export (HTML:
+`max-age=60, s-maxage=300` by default, or the performance settings), so a CDN in
+front of the app refreshes on its own within minutes. With
+`CACHE_REVALIDATE_ENABLED=1`, changes also purge the CDN as before, and
+unpublishing always purges it.
+
+**What counts as a list.** A page that is not a single entry (home, archives,
+the sitemap, feeds, plugin pages) and a single page that links to `/page/N` are
+marked stale by any publish. A single page that shows a short posts list without
+pagination is refreshed by the expiry instead.
+
 ## Limitations
 
 - Query-string URLs are not crawled (pagination is path-based).
 - Assets on other hosts (an external CDN) are left as-is in the markup.
 - One export runs at a time per process.
+- On demand, the render caps and the sharing of one render are per process:
+  with several processes, multiply the caps by the number of processes.
 - The crawl needs the site installed and reachable — over loopback, or at
   `STATIC_EXPORT_CRAWL_URL` / `APP_URL` on a proxied host.
 
