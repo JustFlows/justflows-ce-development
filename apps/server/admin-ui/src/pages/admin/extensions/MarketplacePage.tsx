@@ -51,11 +51,6 @@ interface MarketplaceItem {
   };
 }
 
-export function listingIsVisible(item: MarketplaceItem): boolean {
-  if (typeof item.registry?.listed === "boolean") return item.registry.listed;
-  return true;
-}
-
 export function listingIsPaid(item: MarketplaceItem): boolean {
   if (typeof item.registry?.free === "boolean") return !item.registry.free;
   return item.pricing?.type === "paid" || item.channel === "commercial";
@@ -149,7 +144,11 @@ export default function MarketplacePage() {
         };
         if (cancelled) return;
         setAllowBeta(settings.marketplace_allow_beta === true);
-        setItems(Array.isArray(market.items) ? market.items.filter(listingIsVisible) : []);
+        /**
+         * The server already dropped hidden listings. It alone knows whether
+         * this install is the platform, which also sees platform-only ones.
+         */
+        setItems(Array.isArray(market.items) ? market.items : []);
         setInstalled(installedPackageIds(plugins.plugins ?? [], themes.themes ?? []));
       } catch (err: unknown) {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
