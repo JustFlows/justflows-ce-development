@@ -5282,7 +5282,11 @@
       "siteRenderCapLabel": "Renderowania w tle na witrynę",
       "capsHint": "Powyżej tych limitów serwowany jest zapisany plik, a odświeżenie czeka, więc robot indeksujący nie spowolni witryny.",
       "onDemandBadge": "Na żądanie: {pages} stron wygenerowanych · {stale} nieaktualnych",
-      "autoRebuildOnDemand": "Automatyczne odbudowywanie jest wyłączone w trybie na żądanie: strony odświeżają się przy odwiedzinach"
+      "autoRebuildOnDemand": "Automatyczne odbudowywanie jest wyłączone w trybie na żądanie: strony odświeżają się przy odwiedzinach",
+      "refreshPages": "Odśwież wszystkie strony",
+      "refreshPagesHint": "oznacza wszystkie strony tej witryny jako nieaktualne. Nic nie jest teraz generowane: każda strona zostanie wygenerowana przy następnej wizycie, a CDN zostanie wyczyszczony.",
+      "refreshPagesDone": "Wszystkie strony oznaczono jako nieaktualne. Odświeżą się przy następnej wizycie.",
+      "refreshPagesFailed": "Nie udało się odświeżyć stron."
     },
     "status": {
       "disabled": "Wyłączone",

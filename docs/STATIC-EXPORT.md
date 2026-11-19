@@ -702,6 +702,8 @@ nothing is built ahead of time:
 - **Unpublished pages are removed at once.** Unpublishing or deleting an entry
   deletes its files and purges the CDN straight away, so its URL answers 404 from
   the live app.
+- **Deleting a website** removes its on-demand files, local and on S3, and its
+  rows.
 
 The app decides whether a file is fresh, so in this mode files are always served
 **through the app**, with both storage drivers: from
@@ -716,6 +718,43 @@ files. Signed-in visitors, the admin, the API, account pages, paths a plugin
 leaves to the live app, and a closed site (maintenance or not yet public) always
 go to the live app. A page the app answers with `private` or `no-store`, or with
 a redirect, is not stored.
+
+**What marks pages stale.** Nothing renders when something changes. The
+change only marks files, and the next visit refreshes them:
+
+| Change | Marked stale |
+| --- | --- |
+| publish, scheduled publish, or a direct edit of a live entry (API, MCP) | the entry's pages, its translations, and every list page |
+| unpublish, delete, scheduled unpublish, or an edit that takes the entry offline | the entry's own files are **deleted** (404 at once); its translations and every list page |
+| draft saves | nothing |
+| restoring an entry from the trash | the entry's pages and every list page; its URL builds again on the next visit |
+| a comment approved, posted by an admin, edited, removed or restored | that entry's pages only |
+| plugin-owned pages and other content changes without ids | every list page |
+| menu, theme, Customizer, CSS provider, settings or plugin change | every page (the export version is bumped) |
+| **Refresh all pages** in Tools | every page of that website, and its CDN is purged |
+| anything else (term renames, a time-based block) | refreshed by the expiry |
+
+The render that refreshes a page skips the page cache, so it always shows the
+current content, even when cache revalidation is off.
+
+**Multi-site.** The mode, expiry, render caps and page limit are installation
+settings: only the main site can change them, and they apply to every website.
+Each website keeps its own files, freshness rows, export version, render slot and
+page limit, and a change on one website never marks another. On a customer
+website, the administrator can:
+
+- switch static export off for that website (_Static export for this website_).
+  Its pages are then served live, and its on-demand files are deleted so they
+  stop counting against its storage;
+- **Refresh all pages**, which marks every page of that website stale and
+  purges its CDN, without rendering anything;
+- **Clear export**, which deletes that website's files.
+
+**Page limit.** `STATIC_EXPORT_MAX_PAGES` (default 2,000) is per website, never a
+total across websites. In on-demand mode it caps how many files one website
+builds: above it, new pages are answered by the live app, while pages that
+already have a file keep refreshing. Raise it for large sites. Files count
+against each website's storage quota.
 
 **Where freshness lives.** In the database, so it survives restarts and is
 shared by every app process: one `static_export_pages` row per file (migration

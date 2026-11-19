@@ -325,6 +325,23 @@ export default function ToolsPage() {
     }
   }
 
+  /** On-demand mode: mark every page of this website stale. Nothing renders until a visit. */
+  async function refreshOnDemandPages() {
+    setSxError(null);
+    try {
+      const res = await fetch("/api/static-export/refresh", { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        setSxError(data.error ?? t("tools.staticExport.refreshPagesFailed"));
+        return;
+      }
+      setSxLog([`✓ ${t("tools.staticExport.refreshPagesDone")}`]);
+      await loadSxStatus();
+    } catch (e) {
+      setSxError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   async function saveSiteExport() {
     setSxError(null);
     setSxSaved(false);
@@ -1615,6 +1632,20 @@ export default function ToolsPage() {
             >
               {t("tools.staticExport.runIncremental")}
             </button>
+            {sxSettings?.mode === "on-demand" && (
+              <button
+                className="jf-btn jf-btn--ghost"
+                onClick={() => void refreshOnDemandPages()}
+                disabled={
+                  sxRunning ||
+                  sxSaving ||
+                  sxSettings?.enabled === false ||
+                  (!installationRoot && !sxSiteEnabled)
+                }
+              >
+                {t("tools.staticExport.refreshPages")}
+              </button>
+            )}
             <button
               className="jf-btn jf-btn--ghost"
               onClick={() => void clearStaticExport()}
@@ -1624,6 +1655,12 @@ export default function ToolsPage() {
             </button>
             {sxError && <span className="jf-status jf-status--error">{sxError}</span>}
           </div>
+          {sxSettings?.mode === "on-demand" && (
+            <p className="jf-field__hint">
+              <strong>{t("tools.staticExport.refreshPages")}</strong>{" "}
+              {t("tools.staticExport.refreshPagesHint")}
+            </p>
+          )}
           {installationRoot ? (
             <p className="jf-field__hint">
               <strong>{t("tools.staticExport.clearExport")}</strong>{" "}

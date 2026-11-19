@@ -4934,7 +4934,11 @@
       "siteRenderCapLabel": "Renderizados en segundo plano por sitio",
       "capsHint": "Por encima de estos límites se sirve el archivo guardado y la actualización espera, para que un rastreador no ralentice el sitio.",
       "onDemandBadge": "Bajo demanda: {pages} páginas generadas · {stale} obsoletas",
-      "autoRebuildOnDemand": "La regeneración automática está desactivada en el modo bajo demanda: las páginas se actualizan al visitarlas"
+      "autoRebuildOnDemand": "La regeneración automática está desactivada en el modo bajo demanda: las páginas se actualizan al visitarlas",
+      "refreshPages": "Actualizar todas las páginas",
+      "refreshPagesHint": "marca todas las páginas de este sitio como obsoletas. No se genera nada ahora: cada página se regenera en su próxima visita y se purga la CDN.",
+      "refreshPagesDone": "Todas las páginas están marcadas como obsoletas. Se actualizarán en su próxima visita.",
+      "refreshPagesFailed": "No se pudieron actualizar las páginas."
     },
     "title": "Herramientas",
     "subtitle": "Importación, exportación y utilidades del sitio",

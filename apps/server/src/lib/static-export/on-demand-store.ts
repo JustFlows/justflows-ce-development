@@ -36,8 +36,10 @@ export interface OnDemandStore {
   /** Claim the refresh of a stale page for `ms`. False when another process holds it. */
   claim(siteId: string, path: string, now: number, ms: number): Promise<boolean>;
   release(siteId: string, path: string): Promise<void>;
-  /** Mark every list page, and every page showing one of `deps`, as stale at `at`. */
-  markStale(siteId: string, deps: string[], at: number): Promise<void>;
+  /** Mark every page showing one of `deps` as stale at `at`, and with `lists`, every list page too. */
+  markStale(siteId: string, deps: string[], at: number, lists?: boolean): Promise<void>;
+  /** Pages the site has built. */
+  count(siteId: string): Promise<number>;
   /** Single pages (not lists) that show one of `deps`. */
   pagesShowing(siteId: string, deps: string[]): Promise<OnDemandPage[]>;
   getVersion(siteId: string): Promise<number>;
@@ -178,9 +180,11 @@ export const dbOnDemandStore: OnDemandStore = {
     ]);
   },
 
-  async markStale(siteId, deps, at) {
+  async markStale(siteId, deps, at, lists = true) {
     const db = await getDb();
-    await db.run("UPDATE static_export_pages SET marked_at = ? WHERE site_id = ? AND dynamic_list = 1", [at, siteId]);
+    if (lists) {
+      await db.run("UPDATE static_export_pages SET marked_at = ? WHERE site_id = ? AND dynamic_list = 1", [at, siteId]);
+    }
     const unique = [...new Set(deps)];
     for (let i = 0; i < unique.length; i += 100) {
       const batch = unique.slice(i, i + 100);
@@ -204,6 +208,12 @@ export const dbOnDemandStore: OnDemandStore = {
     );
     const seen = new Set<string>();
     return rows.map(toPage).filter((page) => !seen.has(page.path) && seen.add(page.path));
+  },
+
+  async count(siteId) {
+    const db = await getDb();
+    const rows = await db.query<{ n: unknown }>("SELECT COUNT(*) AS n FROM static_export_pages WHERE site_id = ?", [siteId]);
+    return Number(rows[0]?.n ?? 0);
   },
 
   async getVersion(siteId) {

@@ -6,6 +6,7 @@ import { commentPlainText, notifyOnApproval, publishCommentCreated, sanitizeComm
 import { invalidatePublicPages } from "../cache/public-cache.js";
 import { auditLog } from "../security/audit-log.js";
 import { trainFromMark } from "./comments-rules.js";
+import { notifyOnDemand } from "../static-export/on-demand-notify.js";
 
 /**
  * Shared comment-moderation logic behind both `routes/comments.ts` (cookie
@@ -144,6 +145,7 @@ export async function setCommentStatuses(
   }
   if (newStatus === "approved") void notifyOnApproval(actor.siteId, ids).catch(() => undefined);
   await bustCommentCache();
+  await notifyOnDemand((onDemand) => onDemand.noteOnDemandCommentChange({ commentIds: ids, siteId: actor.siteId }));
   return { status: 200, body: { ok: true, updated: ids.length } };
 }
 
@@ -186,6 +188,7 @@ export async function editComment(
 
   if (patch.status === "approved") void notifyOnApproval(actor.siteId, [id]).catch(() => undefined);
   await bustCommentCache();
+  await notifyOnDemand((onDemand) => onDemand.noteOnDemandCommentChange({ commentIds: [id], siteId: actor.siteId }));
   if (patch.status === "trash") auditTrash(actor, "trash.trashed", id);
   if (patch.status !== undefined && priorStatus) {
     trainFromTransition(actor.siteId, id, priorStatus, patch.status);

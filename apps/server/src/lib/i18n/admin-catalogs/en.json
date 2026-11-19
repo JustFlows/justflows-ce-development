@@ -5128,7 +5128,11 @@
       "siteRenderCapLabel": "Background renders per site",
       "capsHint": "Above these limits the stored file is served and the refresh waits, so a crawler cannot slow the site down.",
       "onDemandBadge": "On demand: {pages} pages built · {stale} stale",
-      "autoRebuildOnDemand": "Automatic rebuilds are off in on-demand mode: pages refresh when they are visited"
+      "autoRebuildOnDemand": "Automatic rebuilds are off in on-demand mode: pages refresh when they are visited",
+      "refreshPages": "Refresh all pages",
+      "refreshPagesHint": "marks every page of this website as stale. Nothing renders now: each page is rebuilt on its next visit, and the CDN is purged.",
+      "refreshPagesDone": "All pages are marked stale. They refresh on their next visit.",
+      "refreshPagesFailed": "Could not refresh the pages."
     },
     "status": {
       "disabled": "Disabled",

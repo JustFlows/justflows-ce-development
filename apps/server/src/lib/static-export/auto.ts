@@ -177,6 +177,7 @@ function armOnDemand(): void {
   const hooks = getRuntimeHooks();
   const kinds = {
     "content.published": "published",
+    "content.updated": "updated",
     "content.unpublished": "unpublished",
     "content.deleted": "deleted",
   } as const;
@@ -197,6 +198,19 @@ function armOnDemand(): void {
       }),
     );
   }
+  /** A comment that is approved on arrival changes its entry's page. */
+  disposers.push(
+    hooks.action("comments.created", (event: { siteId: string; contentId: string; status: string }) => {
+      if (event.status !== "approved") return;
+      void import("./serve-on-demand.js")
+        .then(({ noteOnDemandCommentChange }) =>
+          noteOnDemandCommentChange({ contentIds: [event.contentId], siteId: event.siteId }),
+        )
+        .catch((err: unknown) =>
+          logLine(`could not mark pages stale: ${err instanceof Error ? err.message : String(err)}`),
+        );
+    }),
+  );
   console.log("[justflows] static-export on-demand: stale marking armed");
 }
 

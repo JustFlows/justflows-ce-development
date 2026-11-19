@@ -4931,7 +4931,11 @@
       "siteRenderCapLabel": "Achtergrondrenders per site",
       "capsHint": "Boven deze limieten wordt het opgeslagen bestand geserveerd en wacht de vernieuwing, zodat een crawler de site niet vertraagt.",
       "onDemandBadge": "Op aanvraag: {pages} pagina’s gebouwd · {stale} verouderd",
-      "autoRebuildOnDemand": "Automatisch opnieuw bouwen staat uit in de modus op aanvraag: pagina’s worden vernieuwd wanneer ze bezocht worden"
+      "autoRebuildOnDemand": "Automatisch opnieuw bouwen staat uit in de modus op aanvraag: pagina’s worden vernieuwd wanneer ze bezocht worden",
+      "refreshPages": "Alle pagina’s vernieuwen",
+      "refreshPagesHint": "markeert alle pagina’s van deze website als verouderd. Er wordt nu niets gebouwd: elke pagina wordt bij het volgende bezoek opnieuw gebouwd, en de CDN wordt geleegd.",
+      "refreshPagesDone": "Alle pagina’s zijn als verouderd gemarkeerd. Ze worden bij het volgende bezoek vernieuwd.",
+      "refreshPagesFailed": "De pagina’s konden niet worden vernieuwd."
     },
     "title": "Gereedschap",
     "subtitle": "Importeren, exporteren en hulpmiddelen voor de site",

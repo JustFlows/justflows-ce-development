@@ -136,6 +136,7 @@ function liveEnv(): OnDemandEnv {
       ttlMs: cfg.ttlSeconds * 1000,
       renderCap: cfg.renderCap,
       siteRenderCap: cfg.siteRenderCap,
+      maxPages: cfg.maxPages,
     },
     render: async (path) => {
       const siteId = await getSiteId();
@@ -278,23 +279,21 @@ export async function serveOnDemandStaticExport(
   }
 }
 
-/** Translation group of an entry, for marking its siblings. */
-async function translationGroupOf(siteId: string, contentId: string): Promise<string | null> {
+/** An entry's translation group and whether it is live now. */
+async function entryState(
+  siteId: string,
+  contentId: string,
+): Promise<{ group: string | null; published: boolean }> {
   const { getDb } = await import("../database/db.js");
-  const rows = await (await getDb()).query<{ translation_group_id: unknown }>(
-    "SELECT translation_group_id FROM content WHERE id = ? AND site_id = ? LIMIT 1",
+  const rows = await (await getDb()).query<{ translation_group_id: unknown; status: unknown }>(
+    "SELECT translation_group_id, status FROM content WHERE id = ? AND site_id = ? LIMIT 1",
     [contentId, siteId],
   );
   const group = rows[0]?.translation_group_id;
-  return typeof group === "string" && group ? group : null;
-}
-
-async function depsFor(siteId: string, ref: { contentId?: string; translationGroupId?: string }): Promise<string[]> {
-  const deps: string[] = [];
-  if (ref.contentId) deps.push(`c:${ref.contentId}`);
-  const group = ref.translationGroupId ?? (ref.contentId ? await translationGroupOf(siteId, ref.contentId) : null);
-  if (group) deps.push(`g:${group}`);
-  return deps;
+  return {
+    group: typeof group === "string" && group ? group : null,
+    published: rows[0]?.status === "published",
+  };
 }
 
 /**
@@ -303,22 +302,70 @@ async function depsFor(siteId: string, ref: { contentId?: string; translationGro
  * now so its URL answers 404 straight away.
  */
 export async function noteOnDemandContentChange(
-  kind: "published" | "unpublished" | "deleted",
+  kind: "published" | "updated" | "unpublished" | "deleted",
   ref: { contentId?: string; translationGroupId?: string; siteId?: string },
 ): Promise<void> {
-  if (!isOnDemandMode()) return;
+  if (!isOnDemandMode() || !ref.contentId) return;
   const siteId = ref.siteId ?? (await getSiteId());
   if (!siteId) return;
-  const deps = await depsFor(siteId, ref);
-  if (kind === "published") {
+  const state = await entryState(siteId, ref.contentId);
+  const deps = [`c:${ref.contentId}`];
+  const group = ref.translationGroupId ?? state.group;
+  if (group) deps.push(`g:${group}`);
+  /**
+   * `content.updated` covers direct edits of a live entry (API, MCP, a status
+   * change) and draft saves. A live entry is treated as published. A draft
+   * that never had a file is a no-op, so saving drafts does not touch lists.
+   */
+  const live = kind === "published" || (kind === "updated" && state.published);
+  if (live) {
     await onDemandEngine.contentChanged(siteId, deps);
     return;
   }
-  const removed = await onDemandEngine.contentRemoved(siteId, deps);
+  const removed = await onDemandEngine.contentRemoved(siteId, deps, {
+    lists: kind === "updated" ? "if-removed" : "always",
+  });
   if (removed > 0) {
     const { purgeCdnCache } = await import("../cdn/cdn-purge.js");
     await purgeCdnCache({ siteId }).catch(() => undefined);
   }
+}
+
+/**
+ * Content changed without ids (plugin-owned pages, imports, restores): mark
+ * every list page stale. Entry pages follow their own hooks or the expiry.
+ */
+export async function noteOnDemandListsChange(siteId?: string): Promise<void> {
+  if (!isOnDemandMode()) return;
+  const id = siteId ?? (await getSiteId());
+  if (id) await onDemandEngine.listsChanged(id);
+}
+
+/**
+ * Comments were added, approved, edited or removed: mark only the pages of
+ * the entries they belong to as stale. Lists do not show comments.
+ */
+export async function noteOnDemandCommentChange(
+  ref: { commentIds?: string[]; contentIds?: string[]; siteId?: string },
+): Promise<void> {
+  if (!isOnDemandMode()) return;
+  const siteId = ref.siteId ?? (await getSiteId());
+  if (!siteId) return;
+  const contentIds = new Set(ref.contentIds ?? []);
+  const commentIds = [...new Set(ref.commentIds ?? [])];
+  if (commentIds.length > 0) {
+    const { getDb } = await import("../database/db.js");
+    const db = await getDb();
+    for (let i = 0; i < commentIds.length; i += 200) {
+      const batch = commentIds.slice(i, i + 200);
+      const rows = await db.query<{ content_id: unknown }>(
+        `SELECT DISTINCT content_id FROM comments WHERE site_id = ? AND id IN (${batch.map(() => "?").join(", ")})`,
+        [siteId, ...batch],
+      );
+      for (const row of rows) if (typeof row.content_id === "string") contentIds.add(row.content_id);
+    }
+  }
+  await onDemandEngine.pagesChanged(siteId, [...contentIds].map((id) => `c:${id}`));
 }
 
 /**
@@ -342,6 +389,21 @@ export async function onDemandStatus(): Promise<(OnDemandStats & { rendering: nu
   const version = await dbOnDemandStore.getVersion(siteId);
   const stats = await dbOnDemandStore.stats(siteId, version, Date.now() - cfg.ttlSeconds * 1000);
   return { ...stats, rendering: onDemandEngine.running(siteId) };
+}
+
+/**
+ * Refresh every page of the current site: bump its export version and purge
+ * its CDN. Nothing renders now; each page is rebuilt on its next visit. Any
+ * site's administrator may ask for this; it never touches another site.
+ */
+export async function refreshOnDemandExport(): Promise<boolean> {
+  if (!isOnDemandMode()) return false;
+  const siteId = await getSiteId();
+  if (!siteId) return false;
+  await noteOnDemandSiteChange(siteId);
+  const { purgeCdnCache } = await import("../cdn/cdn-purge.js");
+  await purgeCdnCache({ siteId }).catch(() => undefined);
+  return true;
 }
 
 /** Remove every on-demand file and row of the current site. */

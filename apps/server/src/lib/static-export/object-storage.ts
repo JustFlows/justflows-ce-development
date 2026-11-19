@@ -153,16 +153,17 @@ export async function purgeStaticExportCdn(publicUrl?: string): Promise<void> {
 /** Remove only this site's reserved export namespace, never uploads/private files. */
 export async function clearDeployedStaticExport(siteId?: string): Promise<boolean> {
   const { adapter, prefix } = staticExportObjectStore(siteId);
-  const keys = await adapter.list(`${prefix}objects/`);
-  if (keys.some((key) => !key.startsWith(`${prefix}objects/`) || !isSafeUploadKey(key)))
-    throw new Error("Unsafe static export object key");
+  /** Deployed objects of a full export, and the files built on demand. */
+  const owned = (key: string) =>
+    (key.startsWith(`${prefix}objects/`) || key.startsWith(`${prefix}on-demand/`)) && isSafeUploadKey(key);
+  const keys = [...(await adapter.list(`${prefix}objects/`)), ...(await adapter.list(`${prefix}on-demand/`))];
+  if (keys.some((key) => !owned(key))) throw new Error("Unsafe static export object key");
   const hadPointer = await adapter.exists(`${prefix}${POINTER}`);
   await adapter.delete(`${prefix}${POINTER}`);
   if (siteId) await purgeCdnCache({ siteId });
   else await purgeStaticExportCdn();
   for (const key of keys) {
-    if (!key.startsWith(`${prefix}objects/`) || !isSafeUploadKey(key))
-      throw new Error("Unsafe static export object key");
+    if (!owned(key)) throw new Error("Unsafe static export object key");
     await adapter.delete(key);
   }
   return hadPointer || keys.length > 0;

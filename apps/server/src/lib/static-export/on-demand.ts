@@ -35,6 +35,8 @@ export interface OnDemandLimits {
   renderCap: number;
   /** Renders this process runs at once for one site. */
   siteRenderCap: number;
+  /** Files one site may build (`STATIC_EXPORT_MAX_PAGES`). Above it, new pages stay live. */
+  maxPages: number;
 }
 
 export interface OnDemandEnv {
@@ -62,7 +64,9 @@ export type RenderOutcome =
   /** A server error or a refused write: the old file, if any, stays. */
   | { kind: "failed"; reason: string }
   /** Another process is already refreshing this page. */
-  | { kind: "skipped" };
+  | { kind: "skipped" }
+  /** The site has built its maximum number of pages: this new one stays live. */
+  | { kind: "limit" };
 
 /** How long a cross-process refresh claim holds. A crashed process frees it after this. */
 const CLAIM_MS = 60_000;
@@ -111,7 +115,11 @@ export interface OnDemandEngine {
   /** Publish or update: mark the pages that show these deps, and every list page, stale. */
   contentChanged(siteId: string, deps: string[]): Promise<void>;
   /** Unpublish or delete: remove the entry's own files now, then mark the rest stale. */
-  contentRemoved(siteId: string, deps: string[]): Promise<number>;
+  contentRemoved(siteId: string, deps: string[], opts?: { lists?: "always" | "if-removed" }): Promise<number>;
+  /** Something on an entry's own page changed (a comment): mark only that page stale. */
+  pagesChanged(siteId: string, deps: string[]): Promise<void>;
+  /** A change that may show up in any list: mark every list page stale. */
+  listsChanged(siteId: string): Promise<void>;
   /** Menu, theme, Customizer, CSS provider or settings change: every file is stale. */
   siteChanged(siteId: string): Promise<void>;
   /** Remove one page's file and row. */
@@ -154,6 +162,8 @@ export function createOnDemandEngine(env: () => OnDemandEnv): OnDemandEngine {
       /** Read the version before rendering, so a change during the render leaves the file stale. */
       const version = await e.store.getVersion(siteId);
       const previous = await e.store.get(siteId, path);
+      /** The page limit is per site, so many sites never share one budget. */
+      if (!previous && (await e.store.count(siteId)) >= e.limits.maxPages) return { kind: "limit" };
       const rendered = await e.render(path);
 
       const dropPrevious = async () => {
@@ -230,15 +240,26 @@ export function createOnDemandEngine(env: () => OnDemandEnv): OnDemandEngine {
       await e.store.markStale(siteId, deps, e.now());
     },
 
-    async contentRemoved(siteId, deps) {
+    async contentRemoved(siteId, deps, opts = {}) {
       const e = env();
       const own = await e.store.pagesShowing(
         siteId,
         deps.filter((dep) => dep.startsWith("c:")),
       );
       for (const page of own) await forget(siteId, page);
-      await e.store.markStale(siteId, deps, e.now());
+      const lists = opts.lists !== "if-removed" || own.length > 0;
+      await e.store.markStale(siteId, deps, e.now(), lists);
       return own.length;
+    },
+
+    async pagesChanged(siteId, deps) {
+      const e = env();
+      if (deps.length > 0) await e.store.markStale(siteId, deps, e.now(), false);
+    },
+
+    async listsChanged(siteId) {
+      const e = env();
+      await e.store.markStale(siteId, [], e.now(), true);
     },
 
     async siteChanged(siteId) {

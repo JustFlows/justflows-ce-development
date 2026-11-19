@@ -37,10 +37,10 @@ export function memoryStore() {
     async release(siteId, path) {
       claims.delete(key(siteId, path));
     },
-    async markStale(siteId, changed, at) {
+    async markStale(siteId, changed, at, lists = true) {
       for (const [k, page] of pages) {
         if (page.siteId !== siteId) continue;
-        if (page.dynamicList || (deps.get(k) ?? []).some((dep) => changed.includes(dep))) {
+        if ((lists && page.dynamicList) || (deps.get(k) ?? []).some((dep) => changed.includes(dep))) {
           page.markedAt = at;
         }
       }
@@ -49,6 +49,9 @@ export function memoryStore() {
       return [...pages.entries()]
         .filter(([k, page]) => page.siteId === siteId && !page.dynamicList && (deps.get(k) ?? []).some((d) => wanted.includes(d)))
         .map(([, page]) => ({ ...page }));
+    },
+    async count(siteId) {
+      return [...pages.values()].filter((page) => page.siteId === siteId).length;
     },
     async getVersion(siteId) {
       return versions.get(siteId) ?? 0;

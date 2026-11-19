@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   fetch: vi.fn(),
   closed: vi.fn(),
   purge: vi.fn(),
+  siteId: "site-a",
+  entry: { translation_group_id: "group-1", status: "published" } as Record<string, unknown>,
   memory: null as unknown as ReturnType<typeof import("./on-demand-memory.js").memoryStore>,
   files: null as unknown as ReturnType<typeof import("./on-demand-memory.js").memoryFiles>,
 }));
@@ -21,7 +23,7 @@ vi.mock("../../../src/lib/auth/session.js", () => ({ getSession: mocks.session }
 vi.mock("../../../src/lib/admin/admin-path.js", () => ({
   getAdminPathConfig: async () => ({ path: "/secret-admin" }),
 }));
-vi.mock("../../../src/lib/settings/site-settings.js", () => ({ getSiteId: async () => SITE }));
+vi.mock("../../../src/lib/settings/site-settings.js", () => ({ getSiteId: async () => mocks.siteId }));
 vi.mock("../../../src/lib/settings/site-visibility.js", () => ({ isSiteClosed: mocks.closed }));
 vi.mock("../../../src/lib/tenancy/context.js", () => ({ getTenantContext: () => null }));
 vi.mock("../../../src/lib/static-export/config.js", () => ({
@@ -62,11 +64,20 @@ vi.mock("../../../src/lib/static-export/on-demand-files.js", async (importOrigin
 vi.mock("../../../src/lib/storage/storage-quota.js", () => ({ enforceStorageGrowth: async () => undefined }));
 vi.mock("../../../src/lib/cdn/cdn-purge.js", () => ({ purgeCdnCache: mocks.purge }));
 vi.mock("../../../src/lib/database/db.js", () => ({
-  getDb: async () => ({ query: async () => [{ translation_group_id: "group-1" }] }),
+  getDb: async () => ({
+    query: async (sql: string) => (sql.includes("FROM comments") ? [{ content_id: "post-1" }] : [mocks.entry]),
+  }),
 }));
 
-const { serveOnDemandStaticExport, noteOnDemandContentChange, noteOnDemandSiteChange, onDemandEngine } =
-  await import("../../../src/lib/static-export/serve-on-demand.js");
+const {
+  serveOnDemandStaticExport,
+  noteOnDemandContentChange,
+  noteOnDemandSiteChange,
+  noteOnDemandCommentChange,
+  noteOnDemandListsChange,
+  refreshOnDemandExport,
+  onDemandEngine,
+} = await import("../../../src/lib/static-export/serve-on-demand.js");
 
 /** A page the app renders, as `fetch` would return it. */
 function appPage(body: string, init: { status?: number; deps?: string; cacheControl?: string; location?: string } = {}) {
@@ -134,6 +145,8 @@ async function visit(path: string, init?: Parameters<typeof request>[1]) {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.siteId = SITE;
+  mocks.entry = { translation_group_id: "group-1", status: "published" };
   mocks.memory = memoryStore();
   mocks.files = memoryFiles();
   mocks.cfg = {
@@ -142,6 +155,7 @@ beforeEach(async () => {
     ttlSeconds: 3600,
     renderCap: 2,
     siteRenderCap: 1,
+    maxPages: 100,
     outDir: "/unused",
   };
   mocks.session.mockReturnValue(null);
@@ -274,4 +288,58 @@ describe("serveOnDemandStaticExport", () => {
     expect(after.next).toBe(true);
     expect(await mocks.memory.store.get(SITE, "/about")).toBeNull();
   });
+
+  it("revalidates a live entry edited directly (API, MCP, status change)", async () => {
+    await visit("/about");
+    await tick();
+    await noteOnDemandContentChange("updated", { contentId: "post-1", siteId: SITE });
+    expect((await visit("/about")).res.headers["x-justflows-export"]).toBe("stale");
+  });
+
+  it("removes the page when an edit takes the entry offline, and ignores draft saves", async () => {
+    await visit("/about");
+    mocks.fetch.mockImplementationOnce(async () => appPage("<p>list</p>", { deps: "" }));
+    await visit("/category/news");
+    await tick();
+    mocks.entry = { translation_group_id: null, status: "draft" };
+    /** A draft that never had a file: lists stay fresh. */
+    await noteOnDemandContentChange("updated", { contentId: "draft-9", siteId: SITE });
+    expect((await visit("/category/news")).res.headers["x-justflows-export"]).toBe("fresh");
+    /** The live entry became a draft: its file goes, and lists are stale. */
+    await noteOnDemandContentChange("updated", { contentId: "post-1", siteId: SITE });
+    expect(await mocks.memory.store.get(SITE, "/about")).toBeNull();
+    expect((await visit("/category/news")).res.headers["x-justflows-export"]).toBe("stale");
+  });
+
+  it("marks an entry's page stale when its comments change, and lists on an id-less change", async () => {
+    await visit("/about");
+    await tick();
+    await noteOnDemandCommentChange({ commentIds: ["comment-1"], siteId: SITE });
+    expect((await visit("/about")).res.headers["x-justflows-export"]).toBe("stale");
+    await vi.waitFor(() => expect(onDemandEngine.running()).toBe(0));
+    mocks.fetch.mockImplementationOnce(async () => appPage("<p>list</p>", { deps: "" }));
+    await visit("/category/news");
+    await tick();
+    await noteOnDemandListsChange(SITE);
+    expect((await visit("/category/news")).res.headers["x-justflows-export"]).toBe("stale");
+  });
+
+  it("lets a website refresh only its own pages", async () => {
+    await visit("/about");
+    mocks.siteId = "site-b";
+    await visit("/about");
+    await tick();
+    expect(await refreshOnDemandExport()).toBe(true);
+    expect(mocks.purge).toHaveBeenCalledWith({ siteId: "site-b" });
+    expect((await visit("/about")).res.headers["x-justflows-export"]).toBe("stale");
+    await vi.waitFor(() => expect(onDemandEngine.running()).toBe(0));
+    mocks.siteId = SITE;
+    expect((await visit("/about")).res.headers["x-justflows-export"]).toBe("fresh");
+  });
+
+  it("refuses a refresh outside on-demand mode", async () => {
+    mocks.cfg = { ...mocks.cfg, mode: "full" };
+    expect(await refreshOnDemandExport()).toBe(false);
+  });
 });
+

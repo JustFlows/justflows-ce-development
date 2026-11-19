@@ -4934,7 +4934,11 @@
       "siteRenderCapLabel": "Hintergrund-Renderings pro Website",
       "capsHint": "Über diesen Grenzen wird die gespeicherte Datei ausgeliefert und die Aktualisierung wartet, damit ein Crawler die Website nicht verlangsamt.",
       "onDemandBadge": "Bei Bedarf: {pages} Seiten erstellt · {stale} veraltet",
-      "autoRebuildOnDemand": "Automatische Neuerstellung ist im Bedarfsmodus aus: Seiten werden beim Aufruf aktualisiert"
+      "autoRebuildOnDemand": "Automatische Neuerstellung ist im Bedarfsmodus aus: Seiten werden beim Aufruf aktualisiert",
+      "refreshPages": "Alle Seiten aktualisieren",
+      "refreshPagesHint": "markiert alle Seiten dieser Website als veraltet. Jetzt wird nichts erstellt: Jede Seite wird beim nächsten Aufruf neu erstellt, und der CDN-Cache wird geleert.",
+      "refreshPagesDone": "Alle Seiten sind als veraltet markiert. Sie werden beim nächsten Aufruf aktualisiert.",
+      "refreshPagesFailed": "Die Seiten konnten nicht aktualisiert werden."
     },
     "title": "Tools",
     "subtitle": "Import, Export und Werkzeuge für die Website",

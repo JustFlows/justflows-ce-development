@@ -53,7 +53,7 @@ beforeEach(() => {
   clock = 1_000_000;
   memory = memoryStore();
   files = memoryFiles();
-  limits = { ttlMs: 60_000, renderCap: 2, siteRenderCap: 1 };
+  limits = { ttlMs: 60_000, renderCap: 2, siteRenderCap: 1, maxPages: 100 };
   render = vi.fn(async () => html("<p>v1</p>"));
 });
 
@@ -298,5 +298,58 @@ describe("on-demand engine", () => {
     }));
     expect(await e.render(SITE, "/about")).toEqual({ kind: "failed", reason: "Storage limit reached" });
     expect(files.files.size).toBe(0);
+  });
+
+  it("stops building new pages at the site's page limit, per site", async () => {
+    limits = { ...limits, maxPages: 1 };
+    const e = engine();
+    expect((await e.render(SITE, "/a"))?.kind).toBe("stored");
+    expect(await e.render(SITE, "/b")).toEqual({ kind: "limit" });
+    /** Another site has its own budget. */
+    expect((await e.render("site-b", "/b"))?.kind).toBe("stored");
+    /** A page that already has a file still refreshes. */
+    clock += 10;
+    render.mockResolvedValueOnce(html("<p>v2</p>"));
+    expect((await e.render(SITE, "/a"))?.kind).toBe("stored");
+  });
+
+  it("marks only an entry's own page for a comment, and only lists for an id-less change", async () => {
+    const e = engine();
+    await e.render(SITE, "/about");
+    render.mockResolvedValueOnce(html("<p>list</p>", []));
+    await e.render(SITE, "/category/news");
+    const state = async (path: string) => freshness(await memory.store.get(SITE, path), 0, clock, limits.ttlMs);
+
+    clock += 10;
+    await e.pagesChanged(SITE, ["c:post-1"]);
+    expect(await state("/about")).toBe("stale");
+    expect(await state("/category/news")).toBe("fresh");
+
+    clock += 10;
+    render.mockResolvedValueOnce(html("<p>v2</p>"));
+    await e.render(SITE, "/about");
+    clock += 10;
+    await e.listsChanged(SITE);
+    expect(await state("/about")).toBe("fresh");
+    expect(await state("/category/news")).toBe("stale");
+  });
+
+  it("leaves lists alone when a draft without a file is saved", async () => {
+    const e = engine();
+    render.mockResolvedValueOnce(html("<p>list</p>", []));
+    await e.render(SITE, "/category/news");
+    clock += 10;
+    expect(await e.contentRemoved(SITE, ["c:draft-1"], { lists: "if-removed" })).toBe(0);
+    expect(freshness(await memory.store.get(SITE, "/category/news"), 0, clock, limits.ttlMs)).toBe("fresh");
+  });
+
+  it("keeps sites apart: a change on one site never marks another", async () => {
+    const e = engine();
+    await e.render(SITE, "/about");
+    await e.render("site-b", "/about");
+    clock += 10;
+    await e.contentChanged(SITE, ["c:post-1"]);
+    await e.siteChanged(SITE);
+    expect(freshness(await memory.store.get("site-b", "/about"), await memory.store.getVersion("site-b"), clock, limits.ttlMs)).toBe("fresh");
   });
 });
