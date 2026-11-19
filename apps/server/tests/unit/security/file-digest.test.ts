@@ -44,6 +44,15 @@ describe("openNoFollow", () => {
     await expect(
       openNoFollow(path.join(dir, "a.txt"), read, { native: false, directory: true }),
     ).rejects.toMatchObject({ code: "ENOTDIR" });
+    /** The fallback opens before it checks, so it refuses opens that would change the file. */
+    const write = fs.constants.O_WRONLY | fs.constants.O_TRUNC;
+    await expect(openNoFollow(path.join(dir, "link.txt"), write, { native: false })).rejects.toMatchObject({
+      code: "EINVAL",
+    });
+    expect(() => openNoFollowSync(path.join(dir, "link.txt"), write, { native: false })).toThrow(
+      expect.objectContaining({ code: "EINVAL" }),
+    );
+    expect(fs.readFileSync(path.join(outside, "secret.txt"), "utf8")).toBe("no");
   });
 
   it("the sync form behaves the same without O_NOFOLLOW", () => {

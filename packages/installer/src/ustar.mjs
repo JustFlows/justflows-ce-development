@@ -189,9 +189,11 @@ function fsError(code, target) {
  * Open a path without following a final link.
  *
  * With O_NOFOLLOW the kernel refuses the link. Without it (Windows) the path is
- * checked with lstat, and the opened handle must be that same file, so a link
- * or junction swapped in between is refused. A link fails with ELOOP, and a
- * non-directory fails with ENOTDIR when `directory` is set.
+ * opened read-only first and then checked with lstat: it must not be a link,
+ * and it must still be the file the handle has open. A link or junction, at
+ * open time or swapped in afterwards, is refused. Checking before opening would
+ * leave a window between check and use (CodeQL js/file-system-race). A link
+ * fails with ELOOP, and a non-directory fails with ENOTDIR when `directory` is set.
  *
  * @param {string} target
  * @param {number} flags
@@ -200,20 +202,24 @@ function fsError(code, target) {
 export async function openNoFollow(target, flags, options = {}) {
   const native = options.native ?? NATIVE_NOFOLLOW !== 0;
   const wantDirectory = options.directory === true;
-  let before = null;
-  let handle;
-  if (native && NATIVE_NOFOLLOW !== 0) {
-    handle = await fsp.open(target, flags | NATIVE_NOFOLLOW | (wantDirectory ? NATIVE_DIRECTORY : 0));
-  } else {
-    before = await fsp.lstat(target, { bigint: true });
-    if (before.isSymbolicLink()) throw fsError("ELOOP", target);
-    if (wantDirectory && !before.isDirectory()) throw fsError("ENOTDIR", target);
-    handle = await fsp.open(target, flags);
-  }
+  const kernel = native && NATIVE_NOFOLLOW !== 0;
+  const mutating =
+    fs.constants.O_WRONLY | fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_TRUNC | fs.constants.O_APPEND;
+  /** The fallback opens before it checks, so it only allows read-only opens. */
+  if (!kernel && (flags & mutating) !== 0) throw fsError("EINVAL", target);
+  const handle = await fsp.open(
+    target,
+    kernel ? flags | NATIVE_NOFOLLOW | (wantDirectory ? NATIVE_DIRECTORY : 0) : flags,
+  );
   try {
-    const after = await handle.stat({ bigint: true });
-    if (before && (after.dev !== before.dev || after.ino !== before.ino)) throw fsError("ELOOP", target);
-    if (wantDirectory && !after.isDirectory()) throw fsError("ENOTDIR", target);
+    const opened = await handle.stat({ bigint: true });
+    if (!kernel) {
+      const named = await fsp.lstat(target, { bigint: true });
+      if (named.isSymbolicLink() || named.dev !== opened.dev || named.ino !== opened.ino) {
+        throw fsError("ELOOP", target);
+      }
+    }
+    if (wantDirectory && !opened.isDirectory()) throw fsError("ENOTDIR", target);
   } catch (err) {
     await handle.close();
     throw err;

@@ -7,10 +7,13 @@ import fsp from "node:fs/promises";
  * Open a path without following a final link, on every platform.
  *
  * With O_NOFOLLOW the kernel refuses the link. Node.js has no O_NOFOLLOW or
- * O_DIRECTORY on Windows, so there the path is checked with lstat, then opened,
- * and the opened handle must be that same file (dev and ino), so a link or
- * junction swapped in between is refused. A link fails with ELOOP, and a
- * non-directory fails with ENOTDIR when `directory` is set.
+ * O_DIRECTORY on Windows, so there the path is opened read-only first and then
+ * checked with lstat: the path must not be a link, and it must still be the
+ * file the handle has open (dev and ino). A link or junction, at open time or
+ * swapped in afterwards, is refused, and nothing is read before the check.
+ * Checking before opening would leave a window between check and use
+ * (CodeQL js/file-system-race). A link fails with ELOOP, and a non-directory
+ * fails with ENOTDIR when `directory` is set.
  */
 
 /** O_NOFOLLOW, or 0 where Node does not define it (Windows). */
@@ -40,14 +43,25 @@ function nativeFlags(flags: number, directory: boolean): number {
   return flags | NATIVE_NOFOLLOW | (directory ? NATIVE_DIRECTORY : 0);
 }
 
-function checkBefore(before: fs.BigIntStats, target: string, directory: boolean): void {
-  if (before.isSymbolicLink()) throw fsError("ELOOP", target);
-  if (directory && !before.isDirectory()) throw fsError("ENOTDIR", target);
+/** Flags that change the file on open. The fallback opens before it checks, so it allows none. */
+const MUTATING_FLAGS =
+  fs.constants.O_WRONLY | fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_TRUNC | fs.constants.O_APPEND;
+
+function assertReadOnly(flags: number, target: string): void {
+  if ((flags & MUTATING_FLAGS) !== 0) throw fsError("EINVAL", target);
 }
 
-function checkAfter(before: fs.BigIntStats | null, after: fs.BigIntStats, target: string, directory: boolean): void {
-  if (before && (after.dev !== before.dev || after.ino !== before.ino)) throw fsError("ELOOP", target);
-  if (directory && !after.isDirectory()) throw fsError("ENOTDIR", target);
+/** `opened` is the handle's own stat; `named` is an lstat of the path taken after the open. */
+function checkOpened(
+  opened: fs.BigIntStats,
+  named: fs.BigIntStats | null,
+  target: string,
+  directory: boolean,
+): void {
+  if (named && (named.isSymbolicLink() || named.dev !== opened.dev || named.ino !== opened.ino)) {
+    throw fsError("ELOOP", target);
+  }
+  if (directory && !opened.isDirectory()) throw fsError("ENOTDIR", target);
 }
 
 /** Async open that does not follow a final link. */
@@ -57,17 +71,13 @@ export async function openNoFollow(
   options: OpenNoFollowOptions = {},
 ): Promise<fs.promises.FileHandle> {
   const directory = options.directory === true;
-  let before: fs.BigIntStats | null = null;
-  let handle: fs.promises.FileHandle;
-  if (useNative(options)) {
-    handle = await fsp.open(target, nativeFlags(flags, directory));
-  } else {
-    before = await fsp.lstat(target, { bigint: true });
-    checkBefore(before, target, directory);
-    handle = await fsp.open(target, flags);
-  }
+  const native = useNative(options);
+  if (!native) assertReadOnly(flags, target);
+  const handle = await fsp.open(target, native ? nativeFlags(flags, directory) : flags);
   try {
-    checkAfter(before, await handle.stat({ bigint: true }), target, directory);
+    const opened = await handle.stat({ bigint: true });
+    const named = native ? null : await fsp.lstat(target, { bigint: true });
+    checkOpened(opened, named, target, directory);
   } catch (err) {
     await handle.close();
     throw err;
@@ -78,17 +88,13 @@ export async function openNoFollow(
 /** Sync open that does not follow a final link. Returns a file descriptor. */
 export function openNoFollowSync(target: string, flags: number, options: OpenNoFollowOptions = {}): number {
   const directory = options.directory === true;
-  let before: fs.BigIntStats | null = null;
-  let fd: number;
-  if (useNative(options)) {
-    fd = fs.openSync(target, nativeFlags(flags, directory));
-  } else {
-    before = fs.lstatSync(target, { bigint: true });
-    checkBefore(before, target, directory);
-    fd = fs.openSync(target, flags);
-  }
+  const native = useNative(options);
+  if (!native) assertReadOnly(flags, target);
+  const fd = fs.openSync(target, native ? nativeFlags(flags, directory) : flags);
   try {
-    checkAfter(before, fs.fstatSync(fd, { bigint: true }), target, directory);
+    const opened = fs.fstatSync(fd, { bigint: true });
+    const named = native ? null : fs.lstatSync(target, { bigint: true });
+    checkOpened(opened, named, target, directory);
   } catch (err) {
     fs.closeSync(fd);
     throw err;
