@@ -7,6 +7,7 @@ import path from "node:path";
 import { CORE_RELEASE_PUBLIC_KEYS } from "../extensions/package-trust.js";
 import { getJfRoot } from "../runtime/jf-root.js";
 import { resolvePathUnderBase } from "./safe-path.js";
+import { openNoFollow } from "./open-no-follow.js";
 import {
   CORE_DIGEST_LIMITS,
   IntegrityBoundsError,
@@ -133,7 +134,7 @@ async function readManifest(root: string): Promise<CoreManifest | null> {
   if (!filePath) return null;
   let handle: fs.promises.FileHandle;
   try {
-    handle = await fsp.open(filePath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    handle = await openNoFollow(filePath, fs.constants.O_RDONLY);
   } catch (err) {
     const code = err && typeof err === "object" && "code" in err ? String((err as { code?: string }).code) : "";
     if (code === "ENOENT") return null;

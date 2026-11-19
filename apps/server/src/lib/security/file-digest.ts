@@ -4,6 +4,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
+import { openNoFollow } from "./open-no-follow.js";
 
 /**
  * Hash regular files without following links.
@@ -61,56 +62,8 @@ interface WalkState extends WalkResult {
   deadline: number;
 }
 
-/** O_NOFOLLOW, or 0 where Node does not define it (Windows). */
-const NATIVE_NOFOLLOW = typeof fs.constants.O_NOFOLLOW === "number" ? fs.constants.O_NOFOLLOW : 0;
-
-/** O_DIRECTORY, or 0 where Node does not define it (Windows). */
-const NATIVE_DIRECTORY = typeof fs.constants.O_DIRECTORY === "number" ? fs.constants.O_DIRECTORY : 0;
-
 /** O_NONBLOCK keeps a FIFO from blocking the open; Windows has no such files here. */
 const NATIVE_NONBLOCK = typeof fs.constants.O_NONBLOCK === "number" ? fs.constants.O_NONBLOCK : 0;
-
-function fsError(code: string, target: string): NodeJS.ErrnoException {
-  const err: NodeJS.ErrnoException = new Error(`${code}: ${target}`);
-  err.code = code;
-  return err;
-}
-
-/**
- * Open a path without following a final link.
- *
- * With O_NOFOLLOW the kernel refuses the link. Without it (Windows) the path is
- * checked with lstat, and the opened handle must be that same file, so a link
- * or junction swapped in between is refused. A link fails with ELOOP, and a
- * non-directory fails with ENOTDIR when `directory` is set.
- */
-export async function openNoFollow(
-  target: string,
-  flags: number,
-  options: { directory?: boolean; native?: boolean } = {},
-): Promise<fs.promises.FileHandle> {
-  const native = (options.native ?? true) && NATIVE_NOFOLLOW !== 0;
-  const wantDirectory = options.directory === true;
-  let before: fs.BigIntStats | null = null;
-  let handle: fs.promises.FileHandle;
-  if (native) {
-    handle = await fsp.open(target, flags | NATIVE_NOFOLLOW | (wantDirectory ? NATIVE_DIRECTORY : 0));
-  } else {
-    before = await fsp.lstat(target, { bigint: true });
-    if (before.isSymbolicLink()) throw fsError("ELOOP", target);
-    if (wantDirectory && !before.isDirectory()) throw fsError("ENOTDIR", target);
-    handle = await fsp.open(target, flags);
-  }
-  try {
-    const after = await handle.stat({ bigint: true });
-    if (before && (after.dev !== before.dev || after.ino !== before.ino)) throw fsError("ELOOP", target);
-    if (wantDirectory && !after.isDirectory()) throw fsError("ENOTDIR", target);
-  } catch (err) {
-    await handle.close();
-    throw err;
-  }
-  return handle;
-}
 
 /** True when candidate is root or a path inside it. */
 export function isPathInside(root: string, candidate: string): boolean {

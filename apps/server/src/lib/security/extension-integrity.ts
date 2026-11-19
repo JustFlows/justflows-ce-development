@@ -8,6 +8,7 @@ import { PackageRejectedError } from "@justflows/installer";
 import { packagesInstalledDir } from "../extensions/packages-dir.js";
 import { getJfRoot } from "../runtime/jf-root.js";
 import { resolvePathUnderBase } from "./safe-path.js";
+import { openNoFollow } from "./open-no-follow.js";
 import {
   IntegrityBoundsError,
   PACKAGE_DIGEST_LIMITS,
@@ -182,7 +183,7 @@ function isSafeRelative(value: string): boolean {
 async function readInventoryFile(filePath: string): Promise<ExtensionInventory | null> {
   let handle: fs.promises.FileHandle;
   try {
-    handle = await fsp.open(filePath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    handle = await openNoFollow(filePath, fs.constants.O_RDONLY);
   } catch {
     return null;
   }
@@ -223,7 +224,7 @@ function resolveInventoryRoot(relativeRoot: string): string | null {
 
 async function directoryExists(packageDir: string): Promise<boolean> {
   try {
-    const handle = await fsp.open(packageDir, fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW);
+    const handle = await openNoFollow(packageDir, fs.constants.O_RDONLY, { directory: true });
     await handle.close();
     return true;
   } catch (err) {
@@ -294,7 +295,7 @@ async function readPackageIdentity(packageDir: string): Promise<Pick<ExtensionIn
   if (!manifestPath) return empty;
   let handle: fs.promises.FileHandle;
   try {
-    handle = await fsp.open(manifestPath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    handle = await openNoFollow(manifestPath, fs.constants.O_RDONLY);
   } catch {
     return empty;
   }

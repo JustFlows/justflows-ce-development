@@ -4,7 +4,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { openNoFollow, PACKAGE_DIGEST_LIMITS, walkTree } from "../../../src/lib/security/file-digest.js";
+import { PACKAGE_DIGEST_LIMITS, walkTree } from "../../../src/lib/security/file-digest.js";
+import { openNoFollow, openNoFollowSync } from "../../../src/lib/security/open-no-follow.js";
 
 const dirs: string[] = [];
 
@@ -43,6 +44,28 @@ describe("openNoFollow", () => {
     await expect(
       openNoFollow(path.join(dir, "a.txt"), read, { native: false, directory: true }),
     ).rejects.toMatchObject({ code: "ENOTDIR" });
+  });
+
+  it("the sync form behaves the same without O_NOFOLLOW", () => {
+    const dir = tmp();
+    const outside = tmp();
+    fs.writeFileSync(path.join(dir, "a.txt"), "ok");
+    fs.writeFileSync(path.join(outside, "secret.txt"), "no");
+    fs.symlinkSync(path.join(outside, "secret.txt"), path.join(dir, "link.txt"));
+    const read = fs.constants.O_RDONLY;
+
+    const fd = openNoFollowSync(path.join(dir, "a.txt"), read, { native: false });
+    try {
+      expect(fs.readFileSync(fd, "utf8")).toBe("ok");
+    } finally {
+      fs.closeSync(fd);
+    }
+    expect(() => openNoFollowSync(path.join(dir, "link.txt"), read, { native: false })).toThrow(
+      expect.objectContaining({ code: "ELOOP" }),
+    );
+    expect(() => openNoFollowSync(path.join(dir, "link.txt"), read)).toThrow(
+      expect.objectContaining({ code: "ELOOP" }),
+    );
   });
 
   it("walkTree hashes files and reports links without reading them", async () => {

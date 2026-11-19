@@ -3,6 +3,7 @@ import { sanitizeTemplateDefaults, type TemplateDefaults } from "@justflows/bloc
 import path from "node:path";
 import { getJfRoot } from "../runtime/jf-root.js";
 import { resolvePathUnderBase } from "../security/safe-path.js";
+import { openNoFollowSync } from "../security/open-no-follow.js";
 import type { BlockNode } from "../runtime/types.js";
 import type { TemplatePartSlot } from "../rendering/template-hierarchy.js";
 import {
@@ -621,7 +622,7 @@ export function loadThemeScripts(themeId: string, installedPath?: string): strin
     if (!file) continue;
     try {
       // Read from the same descriptor we inspect; do not follow a swapped symlink.
-      const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+      const fd = openNoFollowSync(file, fs.constants.O_RDONLY);
       try {
         const stat = fs.fstatSync(fd);
         if (!stat.isFile() || stat.size > 512 * 1024 || total + stat.size > 1024 * 1024) continue;

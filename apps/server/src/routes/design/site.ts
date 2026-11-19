@@ -13,8 +13,8 @@ import { getGeneralSettings } from "../../lib/settings/general-settings.js";
 import { isSafeScopeSelector, scopeThemeCss } from "../../lib/rendering/scope-css.js";
 import { activeThemeScripts, contentVersion, IMMUTABLE_CACHE_CONTROL } from "../../lib/themes/theme-asset-versions.js";
 import { resolveThemeAssetFile, themePerPageStylesText } from "../../lib/themes/theme-block-assets.js";
+import { openNoFollow } from "../../lib/security/open-no-follow.js";
 import fs from "node:fs";
-import fsp from "node:fs/promises";
 
 const router = Router();
 
@@ -123,7 +123,7 @@ export async function serveThemeBlockAsset(
     const params = req.params as unknown as string[];
     const file = await resolveThemeAssetFile(params[0] ?? "");
     if (!file) { next(); return; }
-    const fd = await fsp.open(file.absPath, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    const fd = await openNoFollow(file.absPath, fs.constants.O_RDONLY);
     let body: Buffer;
     try {
       body = await fd.readFile();
