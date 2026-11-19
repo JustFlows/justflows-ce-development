@@ -12,6 +12,7 @@ import {
 } from "./public-cache.js";
 import { getRuntimeHooks } from "../plugins/plugin-runtime.js";
 import { purgeCdnCache } from "../cdn/cdn-purge.js";
+import { notifyOnDemand } from "../static-export/on-demand-notify.js";
 
 export const CACHE_OBJECT_TYPES: readonly CacheObjectType[] = [
   "pages",
@@ -104,6 +105,17 @@ export async function revalidateOnUpdate(
   trigger: CacheRevalidateTrigger,
   opts?: { siteId?: string; forceObjects?: CacheObjectType[] },
 ): Promise<{ revalidated: CacheObjectType[]; skipped: boolean }> {
+  /**
+   * The on-demand static export marks every file stale on a site-wide change,
+   * whether or not cache revalidation is on. A content change without ids
+   * (plugin pages, imports) marks the list pages stale; entry changes with ids
+   * arrive through the content hooks.
+   */
+  await notifyOnDemand((onDemand) =>
+    trigger === "content"
+      ? onDemand.noteOnDemandListsChange(opts?.siteId)
+      : onDemand.noteOnDemandSiteChange(opts?.siteId),
+  );
   const settings = getRevalidateSettings();
   if (!settings.enabled) {
     return { revalidated: [], skipped: true };

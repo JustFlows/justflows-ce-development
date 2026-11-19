@@ -12,6 +12,7 @@ import { pageAssetTags, readMarkupAssets, readPerPageStyles } from "../rendering
 import { getSiteId } from "../themes/themes-db.js";
 import { pluginsDir } from "./plugins-db.js";
 import { resolvePathUnderBase } from "../security/safe-path.js";
+import { openNoFollowSync } from "../security/open-no-follow.js";
 
 /**
  * Client-side assets a plugin ships in its own package (`manifest.assets`). The
@@ -389,7 +390,7 @@ function readAssetText(baseDir: string, rel: string): string | null {
   const abs = resolvePathUnderBase(baseDir, rel);
   if (!abs) return null;
   try {
-    const fd = fs.openSync(abs, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    const fd = openNoFollowSync(abs, fs.constants.O_RDONLY);
     try {
       const stat = fs.fstatSync(fd);
       return stat.isFile() && stat.size <= 512 * 1024 ? fs.readFileSync(fd, "utf8") : null;

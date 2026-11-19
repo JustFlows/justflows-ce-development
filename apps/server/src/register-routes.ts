@@ -650,6 +650,11 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
     (await import("./lib/static-export/serve-object-storage.js"))
       .serveStaticExportFromObjectStorage,
   );
+  app.use(
+    requireInstalled,
+    publicPageRateLimit,
+    (await import("./lib/static-export/serve-on-demand.js")).serveOnDemandStaticExport,
+  );
   app.use(requireInstalled, publicSiteRoutes);
 
   // Backstop. Express's default handler prints the stack into the response body

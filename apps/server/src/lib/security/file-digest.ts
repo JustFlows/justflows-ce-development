@@ -4,6 +4,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
+import { openNoFollow } from "./open-no-follow.js";
 
 /**
  * Hash regular files without following links.
@@ -61,17 +62,8 @@ interface WalkState extends WalkResult {
   deadline: number;
 }
 
-function requireNoFollow(): number {
-  const { O_RDONLY, O_NOFOLLOW, O_NONBLOCK, O_DIRECTORY } = fs.constants;
-  if (
-    typeof O_NOFOLLOW !== "number" ||
-    typeof O_NONBLOCK !== "number" ||
-    typeof O_DIRECTORY !== "number"
-  ) {
-    throw new IntegrityBoundsError("This platform cannot verify files without following links");
-  }
-  return O_RDONLY | O_NOFOLLOW | O_NONBLOCK;
-}
+/** O_NONBLOCK keeps a FIFO from blocking the open; Windows has no such files here. */
+const NATIVE_NONBLOCK = typeof fs.constants.O_NONBLOCK === "number" ? fs.constants.O_NONBLOCK : 0;
 
 /** True when candidate is root or a path inside it. */
 export function isPathInside(root: string, candidate: string): boolean {
@@ -101,10 +93,9 @@ function errno(err: unknown): string | undefined {
 }
 
 async function listDirectory(dir: string, rootReal: string): Promise<{ real: string; names: string[] } | null> {
-  const flags = fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW;
   let handle: fs.promises.FileHandle;
   try {
-    handle = await fsp.open(dir, flags);
+    handle = await openNoFollow(dir, fs.constants.O_RDONLY, { directory: true });
   } catch (err) {
     const code = errno(err);
     if (code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP" || code === "ENOTSUP") return null;
@@ -136,7 +127,7 @@ async function hashOne(
   if (Date.now() > state.deadline) throw new IntegrityBoundsError("Integrity scan timed out");
   let handle: fs.promises.FileHandle;
   try {
-    handle = await fsp.open(full, requireNoFollow());
+    handle = await openNoFollow(full, fs.constants.O_RDONLY | NATIVE_NONBLOCK);
   } catch (err) {
     const code = errno(err);
     if (code === "ENOENT") return { kind: "missing" };
@@ -230,11 +221,9 @@ export async function walkTree(
   limits: DigestLimits,
   skipDirectory?: (relativeDir: string) => boolean,
 ): Promise<WalkResult> {
-  requireNoFollow();
-  const flags = fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW;
   let handle: fs.promises.FileHandle;
   try {
-    handle = await fsp.open(root, flags);
+    handle = await openNoFollow(root, fs.constants.O_RDONLY, { directory: true });
   } catch (err) {
     const code = errno(err);
     if (code === "ELOOP") throw new IntegrityBoundsError("Package root is a link");
@@ -285,10 +274,9 @@ export async function hashRelativeFile(
   if (relativePath.split("/").some((part) => part === "" || part === "." || part === "..")) {
     return { kind: "unexpected" };
   }
-  requireNoFollow();
   let rootReal: string;
   try {
-    const handle = await fsp.open(root, fs.constants.O_RDONLY | fs.constants.O_DIRECTORY | fs.constants.O_NOFOLLOW);
+    const handle = await openNoFollow(root, fs.constants.O_RDONLY, { directory: true });
     try {
       rootReal = await fsp.realpath(root);
     } finally {

@@ -31,7 +31,9 @@ export async function serveStaticExportFromObjectStorage(
     req.originalUrl.includes("?") ||
     getSession(req) ||
     staticExportDriver() !== "s3" ||
-    !getStaticExportConfig().enabled
+    !getStaticExportConfig().enabled ||
+    /** In on-demand mode, serve-on-demand.ts decides what is fresh. */
+    getStaticExportConfig().mode === "on-demand"
   ) {
     next();
     return;

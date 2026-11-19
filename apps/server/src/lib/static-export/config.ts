@@ -42,6 +42,25 @@ export interface StaticExportConfig {
   auto: boolean;
   /** Quiet period (ms) that coalesces a burst of revalidations into one run. */
   debounceMs: number;
+  /**
+   * `full`: files are built ahead of time by a full or incremental export.
+   * `on-demand`: a page's file is built the first time someone visits it, and
+   * the app serves it while it is fresh (justflows-ce#344).
+   */
+  mode: StaticExportMode;
+  /** On demand: seconds after which a built file is refreshed even without an edit. */
+  ttlSeconds: number;
+  /** On demand: background renders this process runs at once, across all sites. */
+  renderCap: number;
+  /** On demand: background renders this process runs at once for one site. */
+  siteRenderCap: number;
+}
+
+export type StaticExportMode = "full" | "on-demand";
+
+/** Read `STATIC_EXPORT_MODE`. Anything other than `on-demand` is `full`. */
+export function parseStaticExportMode(raw: string | undefined): StaticExportMode {
+  return raw?.trim().toLowerCase() === "on-demand" ? "on-demand" : "full";
 }
 
 /**
@@ -320,6 +339,13 @@ export function getStaticExportConfig(
     auto: overrides.auto ?? parseEnvBool(process.env.STATIC_EXPORT_AUTO, false),
     debounceMs:
       overrides.debounceMs ?? intFromEnv(process.env.STATIC_EXPORT_DEBOUNCE_MS, 5000, 250, 600_000),
+    mode: overrides.mode ?? parseStaticExportMode(process.env.STATIC_EXPORT_MODE),
+    ttlSeconds:
+      overrides.ttlSeconds ??
+      intFromEnv(process.env.STATIC_EXPORT_TTL_SECONDS, 3600, 60, 2_592_000),
+    renderCap: overrides.renderCap ?? intFromEnv(process.env.STATIC_EXPORT_RENDER_CAP, 2, 1, 16),
+    siteRenderCap:
+      overrides.siteRenderCap ?? intFromEnv(process.env.STATIC_EXPORT_SITE_RENDER_CAP, 1, 1, 16),
   };
 }
 

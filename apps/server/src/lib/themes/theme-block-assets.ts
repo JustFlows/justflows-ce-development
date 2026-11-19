@@ -6,6 +6,7 @@ import { isMarkableBlockType, markBlockTypes } from "@justflows/blocks";
 import { safeAssetRel } from "../plugins/plugin-assets.js";
 import { pageAssetTags, readMarkupAssets, readPerPageStyles } from "../rendering/block-assets.js";
 import { resolvePathUnderBase } from "../security/safe-path.js";
+import { openNoFollowSync } from "../security/open-no-follow.js";
 import { readThemeBlockAssetsSpec, resolveThemeDir } from "./theme-files.js";
 import { getActiveTheme, getSiteId, themeInstalledPath } from "./themes-db.js";
 
@@ -42,7 +43,7 @@ function fileVersion(dir: string, rel: string): string | null {
   const file = resolvePathUnderBase(dir, rel);
   if (!file) return null;
   try {
-    const fd = fs.openSync(file, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW);
+    const fd = openNoFollowSync(file, fs.constants.O_RDONLY);
     try {
       const stat = fs.fstatSync(fd);
       if (!stat.isFile() || stat.size > MAX_FILE_BYTES) return null;

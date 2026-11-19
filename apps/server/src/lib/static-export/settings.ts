@@ -6,7 +6,7 @@ import { z } from "zod";
 import { parseEnvBool } from "@justflows/core";
 import { getJfRoot } from "../runtime/jf-root.js";
 import { applyEnvToProcess, readEnvMap, updateEnvKeys } from "../settings/env-file.js";
-import { getStaticExportConfig, intFromEnv } from "./config.js";
+import { getStaticExportConfig, intFromEnv, parseStaticExportMode } from "./config.js";
 import { isStaticExportAutoArmed, refreshStaticExportAutoRebuild } from "./auto.js";
 import { isCurrentSiteStaticExportEnabled } from "./site-enabled.js";
 
@@ -68,6 +68,14 @@ export const StaticExportSettingsSchema = z.object({
   concurrency: z.coerce.number().int().min(1).max(32),
   auto: z.boolean(),
   debounceMs: z.coerce.number().int().min(250).max(600_000),
+  /** `full` builds files ahead of time; `on-demand` builds each page on its first visit. */
+  mode: z.enum(["full", "on-demand"]).default("full"),
+  /** On demand: seconds before a file is refreshed even without an edit. */
+  ttlSeconds: z.coerce.number().int().min(60).max(2_592_000).default(3600),
+  /** On demand: background renders per app process, across all sites. */
+  renderCap: z.coerce.number().int().min(1).max(16).default(2),
+  /** On demand: background renders per app process for one site. */
+  siteRenderCap: z.coerce.number().int().min(1).max(16).default(1),
 });
 
 export type StaticExportSettings = z.infer<typeof StaticExportSettingsSchema>;
@@ -104,6 +112,10 @@ export async function readStaticExportSettings(): Promise<{
     concurrency: intFromEnv(envGet(map, "STATIC_EXPORT_CONCURRENCY"), 4, 1, 32),
     auto: parseEnvBool(envGet(map, "STATIC_EXPORT_AUTO"), false),
     debounceMs: intFromEnv(envGet(map, "STATIC_EXPORT_DEBOUNCE_MS"), 5000, 250, 600_000),
+    mode: parseStaticExportMode(envGet(map, "STATIC_EXPORT_MODE")),
+    ttlSeconds: intFromEnv(envGet(map, "STATIC_EXPORT_TTL_SECONDS"), 3600, 60, 2_592_000),
+    renderCap: intFromEnv(envGet(map, "STATIC_EXPORT_RENDER_CAP"), 2, 1, 16),
+    siteRenderCap: intFromEnv(envGet(map, "STATIC_EXPORT_SITE_RENDER_CAP"), 1, 1, 16),
   };
 
   const resolved = getStaticExportConfig();
@@ -134,6 +146,10 @@ function toEnvUpdates(body: StaticExportSettings): Record<string, string | null>
     STATIC_EXPORT_CONCURRENCY: String(body.concurrency),
     STATIC_EXPORT_AUTO: body.auto ? "1" : "0",
     STATIC_EXPORT_DEBOUNCE_MS: String(body.debounceMs),
+    STATIC_EXPORT_MODE: body.mode,
+    STATIC_EXPORT_TTL_SECONDS: String(body.ttlSeconds),
+    STATIC_EXPORT_RENDER_CAP: String(body.renderCap),
+    STATIC_EXPORT_SITE_RENDER_CAP: String(body.siteRenderCap),
   };
 }
 

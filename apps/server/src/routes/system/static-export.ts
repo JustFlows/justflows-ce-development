@@ -219,6 +219,24 @@ router.post("/clear", runLimit, async (req, res) => {
   }
 });
 
+/**
+ * On-demand mode: mark every page of this website stale and purge its CDN.
+ * Open to each website's administrators; the mode, expiry and caps stay with
+ * the main site.
+ */
+router.post("/refresh", runLimit, async (_req, res) => {
+  try {
+    const { refreshOnDemandExport } = await import("../../lib/static-export/serve-on-demand.js");
+    if (!(await refreshOnDemandExport())) {
+      res.status(409).json({ ok: false, error: "Refreshing pages needs the on-demand export mode." });
+      return;
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    sendServerError(res, "static-export", err);
+  }
+});
+
 /** Read the editable STATIC_EXPORT_* settings (from .env, with live fallbacks). */
 router.get("/settings", async (_req, res) => {
   try {
@@ -241,6 +259,11 @@ router.post("/site", async (req, res) => {
   }
   try {
     await setCurrentSiteStaticExportEnabled(enabled);
+    /** Switched off: on-demand files are no longer served, so stop counting them against storage. */
+    if (!enabled) {
+      const { clearOnDemandExport } = await import("../../lib/static-export/serve-on-demand.js");
+      await clearOnDemandExport().catch(() => false);
+    }
     res.json(hideInstallPaths({ ok: true, ...(await readStaticExportSettings()) }));
   } catch (err) {
     sendServerError(res, "static-export", err);

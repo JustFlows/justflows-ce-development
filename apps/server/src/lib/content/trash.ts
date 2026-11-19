@@ -11,6 +11,7 @@ import { getUploadStore, isS3UploadStore, localUploadStore } from "../media/uplo
 import { getSiteSetting } from "../settings/site-settings.js";
 import { auditLog } from "../security/audit-log.js";
 import { moveVariantDir, removeVariantDir } from "../media/media-responsive.js";
+import { notifyOnDemand } from "../static-export/on-demand-notify.js";
 
 export const TRASH_RETENTION_SETTING = "trash_retention_days";
 export const DEFAULT_TRASH_RETENTION_DAYS = 30;
@@ -181,6 +182,8 @@ export async function restoreTrashItem(siteId: string, type: TrashType, id: stri
         [slug, nowSql(), id, siteId],
       );
       await (await import("../search/search-db.js")).indexSearchContent(siteId, id).catch(() => console.error("[justflows] Search index update after trash operation failed"));
+      /** A restored live entry is back in lists, and its URL builds again on the next visit. */
+      await notifyOnDemand((onDemand) => onDemand.noteOnDemandContentChange("updated", { contentId: id, siteId }));
     } else {
       await db.run(
         "UPDATE menus SET slug = ?, original_slug = NULL, trashed_at = NULL, trashed_by = NULL WHERE id = ? AND site_id = ?",
@@ -195,6 +198,7 @@ export async function restoreTrashItem(siteId: string, type: TrashType, id: stri
       "UPDATE comments SET status = COALESCE(original_status, 'pending'), original_status = NULL, trashed_at = NULL, trashed_by = NULL, updated_at = ? WHERE id = ? AND site_id = ?",
       [nowSql(), id, siteId],
     );
+    await notifyOnDemand((onDemand) => onDemand.noteOnDemandCommentChange({ commentIds: [id], siteId }));
   } else {
     const rows = await db.query<{ storage_key: string }>(
       "SELECT storage_key FROM media WHERE id = ? AND site_id = ? AND trashed_at IS NOT NULL LIMIT 1",

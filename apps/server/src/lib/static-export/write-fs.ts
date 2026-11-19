@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { resolvePathUnderBase } from "../security/safe-path.js";
 import { isSafeRelativeFile } from "./paths.js";
+import { ON_DEMAND_DIR } from "./on-demand-files.js";
 
 export interface OutputFile {
   /** POSIX-style path relative to the output directory. */
@@ -70,7 +71,8 @@ export async function writeExport(
     await walkFiles(base, base, existing);
     const dirsTouched = new Set<string>();
     for (const rel of existing) {
-      if (keep.has(rel)) continue;
+      /** Files built on demand are tracked in the database, not in the manifest. */
+      if (keep.has(rel) || rel.startsWith(`${ON_DEMAND_DIR}/`)) continue;
       const abs = resolvePathUnderBase(base, rel);
       if (!abs) continue;
       await fs.rm(abs, { force: true });

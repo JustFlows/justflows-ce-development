@@ -8,7 +8,7 @@ import { gzipSync } from "node:zlib";
 import { afterEach, describe, expect, it } from "vitest";
 import { ArchiveSafetyError } from "../../src/archive-safety.js";
 import { extractJfpkg } from "../../src/extract-jfpkg.js";
-import { extractTarGz, parseUstar, UstarError, type UstarLimits } from "../../src/ustar.mjs";
+import { extractTarGz, openNoFollow, parseUstar, UstarError, type UstarLimits } from "../../src/ustar.mjs";
 
 const limits: UstarLimits = {
   maxExpandedBytes: 1024 * 1024,
@@ -144,5 +144,37 @@ describe("extractTarGz", () => {
       extractTarGz(gzipSync(archive([{ name: "justflows.json", data: payload }])), dest, limits),
     ).rejects.toThrow(UstarError);
     expect(fs.existsSync(path.join(outside, "pwned.txt"))).toBe(false);
+  });
+});
+
+describe("openNoFollow without O_NOFOLLOW", () => {
+  it("opens a file and a directory, and refuses a link or a file opened as a directory", async () => {
+    const dir = tmp();
+    const outside = tmp();
+    fs.writeFileSync(path.join(dir, "a.txt"), "ok");
+    fs.writeFileSync(path.join(outside, "secret.txt"), "no");
+    fs.symlinkSync(path.join(outside, "secret.txt"), path.join(dir, "link.txt"));
+    fs.symlinkSync(outside, path.join(dir, "linkdir"));
+
+    const file = await openNoFollow(path.join(dir, "a.txt"), fs.constants.O_RDONLY, { native: false });
+    expect((await file.readFile()).toString()).toBe("ok");
+    await file.close();
+    const folder = await openNoFollow(dir, fs.constants.O_RDONLY, { native: false, directory: true });
+    await folder.close();
+
+    await expect(
+      openNoFollow(path.join(dir, "link.txt"), fs.constants.O_RDONLY, { native: false }),
+    ).rejects.toMatchObject({ code: "ELOOP" });
+    await expect(
+      openNoFollow(path.join(dir, "linkdir"), fs.constants.O_RDONLY, { native: false, directory: true }),
+    ).rejects.toMatchObject({ code: "ELOOP" });
+    await expect(
+      openNoFollow(path.join(dir, "a.txt"), fs.constants.O_RDONLY, { native: false, directory: true }),
+    ).rejects.toMatchObject({ code: "ENOTDIR" });
+    /** The fallback opens before it checks, so it refuses opens that would change the file. */
+    await expect(
+      openNoFollow(path.join(dir, "link.txt"), fs.constants.O_WRONLY | fs.constants.O_TRUNC, { native: false }),
+    ).rejects.toMatchObject({ code: "EINVAL" });
+    expect(fs.readFileSync(path.join(outside, "secret.txt"), "utf8")).toBe("no");
   });
 });

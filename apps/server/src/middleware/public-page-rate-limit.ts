@@ -2,6 +2,7 @@
 
 import type { NextFunction, Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
+import { isOnDemandRenderRequest } from "../lib/static-export/render-request.js";
 
 const REQUEST_PROPERTY = "publicPageRateLimit";
 
@@ -22,7 +23,11 @@ export const publicPageRateLimit = rateLimit({
   requestPropertyName: REQUEST_PROPERTY,
   skip(req: Request) {
     const info = (req as Request & Record<string, unknown>)[REQUEST_PROPERTY];
-    return info != null;
+    /**
+     * An on-demand export render comes from the app itself over loopback. It is
+     * already limited by the render caps and must not use up loopback's budget.
+     */
+    return info != null || isOnDemandRenderRequest(req);
   },
   handler(req: Request, res: Response, next: NextFunction) {
     void import("../routes/public/public-site.js")

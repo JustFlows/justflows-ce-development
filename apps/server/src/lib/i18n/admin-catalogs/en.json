@@ -5118,7 +5118,21 @@
       "storageHint": "Uses the installation’s existing S3 connection and a separate folder per site. The local folder stages exports before uploading. Clear removes both local and deployed files.",
       "responseUnavailable": "The export API returned an unexpected response (HTTP {status}). Check export status before retrying; the export may still be running.",
       "pollingUnavailable": "Export status is no longer available. Refresh Tools to check the result before starting another export.",
-      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log."
+      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log.",
+      "modeLabel": "Export mode",
+      "modeFull": "Full: build every page ahead of time",
+      "modeOnDemand": "On demand: build each page on its first visit",
+      "modeHint": "On demand, the app serves each page from its file while it is fresh. Changes mark files stale instead of rebuilding them, and the next visitor gets the old file while a fresh copy renders in the background. Send visitors to the app, not straight to the export folder.",
+      "ttlLabel": "Refresh after (seconds)",
+      "renderCapLabel": "Background renders per process",
+      "siteRenderCapLabel": "Background renders per site",
+      "capsHint": "Above these limits the stored file is served and the refresh waits, so a crawler cannot slow the site down.",
+      "onDemandBadge": "On demand: {pages} pages built · {stale} stale",
+      "autoRebuildOnDemand": "Automatic rebuilds are off in on-demand mode: pages refresh when they are visited",
+      "refreshPages": "Refresh all pages",
+      "refreshPagesHint": "marks every page of this website as stale. Nothing renders now: each page is rebuilt on its next visit, and the CDN is purged.",
+      "refreshPagesDone": "All pages are marked stale. They refresh on their next visit.",
+      "refreshPagesFailed": "Could not refresh the pages."
     },
     "status": {
       "disabled": "Disabled",

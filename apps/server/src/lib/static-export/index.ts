@@ -94,6 +94,8 @@ export interface StaticExportSummary {
 export interface StaticExportStatus {
   configured: StaticExportConfig;
   hasExport: boolean;
+  /** On-demand mode: files built on visits so far, how many are stale, and renders running here. */
+  onDemand: { pages: number; stale: number; bytes: number; rendering: number } | null;
   lastRun: {
     generatedAt: string;
     mode: string;
@@ -225,7 +227,7 @@ async function verifyOrigin(origin: string): Promise<OriginVerdict> {
  * to `APP_URL`, so a mis-set loopback port on a proxied host still exports.
  * Throws with a pointed message when nothing usable answers.
  */
-async function resolveCrawlOrigin(baseUrl: string, log: (line: string) => void): Promise<string> {
+export async function resolveCrawlOrigin(baseUrl: string, log: (line: string) => void): Promise<string> {
   // APP_URL is the root site's origin; a secondary site only crawls itself.
   const appUrl = secondaryExportSite()
     ? ""
@@ -401,6 +403,50 @@ function decoratePage(html: string, originUrl: string): string {
   return `${head}${html}`;
 }
 
+/** What an export run needs to turn a rendered page into the file it writes. */
+export interface ExportPageTools {
+  adminPath: string;
+  cacheRules: ContentCacheRule[];
+  exclusions: ExportExclusion[];
+  /** Paths left to the live app. */
+  excluded: (path: string) => boolean;
+  actionRewrites: Map<string, string>;
+  /** Bytes to write for a page: HTML gets form actions rewritten and the origin stamp. */
+  pageBody: (page: { body: Buffer; contentType: string }) => Buffer;
+  /** `Cache-Control` for a written page: the content type's rule, else the suggested value. */
+  cacheControlFor: (path: string, contentType: string) => string;
+}
+
+/** Build the page tools for one site. Shared by full, incremental and on-demand exports. */
+export async function exportPageTools(siteId: string, cfg: StaticExportConfig): Promise<ExportPageTools> {
+  const adminPath = await getAdminPathConfig()
+    .then((config) => config.path)
+    .catch(() => "/admin");
+  const cacheRules = await contentCacheRules(siteId);
+  const exclusions = await resolveExclusions(siteId, adminPath, cacheRules);
+  const actionRewrites = await resolveActionRewrites(cfg.originUrl, siteId);
+  const browserCache = getPerformanceConfig().browserCache;
+  return {
+    adminPath,
+    cacheRules,
+    exclusions,
+    excluded: (path) => isExcludedPath(path, exclusions),
+    actionRewrites,
+    pageBody: (page) => {
+      if (!page.contentType.includes("text/html")) return page.body;
+      let html = page.body.toString("utf8");
+      if (actionRewrites.size > 0) html = rewriteActions(html, actionRewrites);
+      // Split origin: the static host cannot serve an excluded page, so send links there to the app.
+      html = rewriteExcludedLinks(html, exclusions, cfg.originUrl);
+      html = decoratePage(html, cfg.originUrl);
+      return Buffer.from(html, "utf8");
+    },
+    cacheControlFor: (path, contentType) =>
+      matchContentCacheRule(cacheRules, path)?.header ??
+      suggestCacheControl(path, contentType || "text/html", browserCache),
+  };
+}
+
 function routeDeps(
   path: string,
   html: string,
@@ -456,12 +502,8 @@ async function runStaticExportLocked(
 
   const { getSiteId } = await import("../themes/themes-db.js");
   const siteId = (await getSiteId()) ?? "";
-  const adminPath = await getAdminPathConfig()
-    .then((config) => config.path)
-    .catch(() => "/admin");
-  const cacheRules = await contentCacheRules(siteId);
-  const exclusions = await resolveExclusions(siteId, adminPath, cacheRules);
-  const excluded = (path: string) => isExcludedPath(path, exclusions);
+  const tools = await exportPageTools(siteId, cfg);
+  const { adminPath, cacheRules, exclusions, excluded, actionRewrites, pageBody } = tools;
   if (exclusions.length > 0) {
     log(
       `• Leaving ${exclusions.length} path(s) to the live app: ` +
@@ -541,23 +583,11 @@ async function runStaticExportLocked(
     log(`⚠ Stopped at STATIC_EXPORT_MAX_PAGES=${cfg.maxPages}; raise it to export the rest.`);
   }
 
-  const actionRewrites = await resolveActionRewrites(cfg.originUrl, siteId);
   if (actionRewrites.size > 0) {
     log(
       `• Rewriting ${actionRewrites.size} dynamic form action(s) → ${cfg.originUrl || "(filter)"}`,
     );
   }
-
-  /** Bytes to write for a page — HTML gets form actions rewritten + the origin stamp. */
-  const pageBody = (page: { body: Buffer; contentType: string }): Buffer => {
-    if (!page.contentType.includes("text/html")) return page.body;
-    let html = page.body.toString("utf8");
-    if (actionRewrites.size > 0) html = rewriteActions(html, actionRewrites);
-    // Split origin: the static host cannot serve an excluded page, so send links there to the app.
-    html = rewriteExcludedLinks(html, exclusions, cfg.originUrl);
-    html = decoratePage(html, cfg.originUrl);
-    return Buffer.from(html, "utf8");
-  };
 
   // ── Routes ────────────────────────────────────────────────────────────────
   const routes: ManifestRoute[] = [];
@@ -794,7 +824,14 @@ async function runStaticExportLocked(
     publicUrl: cfg.publicUrl,
     routes: finalRoutes.sort((a, b) => a.path.localeCompare(b.path)),
     assets: finalAssets.sort((a, b) => a.file.localeCompare(b.file)),
-    config: { maxPages: cfg.maxPages, concurrency: cfg.concurrency },
+    config: {
+      maxPages: cfg.maxPages,
+      concurrency: cfg.concurrency,
+      mode: cfg.mode,
+      ttlSeconds: cfg.ttlSeconds,
+      renderCap: cfg.renderCap,
+      siteRenderCap: cfg.siteRenderCap,
+    },
   };
 
   const keep = manifestFiles(manifest);
@@ -927,14 +964,19 @@ export async function clearStaticExport(
   }
 
   const remoteRemoved = staticExportDriver() === "s3" ? await clearDeployedStaticExport() : false;
+  /** Files built on demand are tracked in the database; drop them with their rows. */
+  const onDemandRemoved = await (await import("./serve-on-demand.js")).clearOnDemandExport().catch(() => false);
   let exists = false;
   try {
     exists = (await fsp.stat(outDir)).isDirectory();
   } catch {
-    return { ok: true, removed: remoteRemoved, outDir, reason: "nothing to clear" };
+    return { ok: true, removed: remoteRemoved || onDemandRemoved, outDir, reason: "nothing to clear" };
   }
 
   const manifest = await readManifest(outDir);
+  if (!manifest && onDemandRemoved) {
+    return { ok: true, removed: true, outDir };
+  }
   if (!manifest && !opts.force) {
     return {
       ok: false,
@@ -950,9 +992,14 @@ export async function clearStaticExport(
 export async function getStaticExportStatus(): Promise<StaticExportStatus> {
   const configured = getStaticExportConfig();
   const manifest = await readManifest(configured.outDir);
+  const onDemand =
+    configured.mode === "on-demand"
+      ? await (await import("./serve-on-demand.js")).onDemandStatus().catch(() => null)
+      : null;
   return {
     configured,
-    hasExport: manifest != null,
+    hasExport: manifest != null || (onDemand?.pages ?? 0) > 0,
+    onDemand,
     lastRun: manifest
       ? {
           generatedAt: manifest.generatedAt,

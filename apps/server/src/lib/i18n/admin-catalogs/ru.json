@@ -5272,7 +5272,21 @@
       "storageHint": "Uses the installation’s existing S3 connection and a separate folder per site. The local folder stages exports before uploading. Clear removes both local and deployed files.",
       "responseUnavailable": "The export API returned an unexpected response (HTTP {status}). Check export status before retrying; the export may still be running.",
       "pollingUnavailable": "Export status is no longer available. Refresh Tools to check the result before starting another export.",
-      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log."
+      "descriptionHtmlOnly": "Export published HTML pages to object storage. Media, styles and scripts keep their existing URLs and are served by the live site or CDN. Exports run in the background with a live progress log.",
+      "modeLabel": "Режим экспорта",
+      "modeFull": "Полный: создавать все страницы заранее",
+      "modeOnDemand": "По запросу: создавать каждую страницу при первом посещении",
+      "modeHint": "В режиме по запросу приложение отдаёт каждую страницу из её файла, пока он актуален. Изменения помечают файлы как устаревшие, а не пересоздают их; следующий посетитель получает старый файл, пока новая копия создаётся в фоне. Направляйте посетителей в приложение, а не напрямую в папку экспорта.",
+      "ttlLabel": "Обновлять через (секунд)",
+      "renderCapLabel": "Фоновых рендеров на процесс",
+      "siteRenderCapLabel": "Фоновых рендеров на сайт",
+      "capsHint": "Сверх этих лимитов отдаётся сохранённый файл, а обновление ждёт, чтобы поисковый робот не замедлял сайт.",
+      "onDemandBadge": "По запросу: создано страниц {pages} · устаревших {stale}",
+      "autoRebuildOnDemand": "Автоматическая пересборка выключена в режиме по запросу: страницы обновляются при посещении",
+      "refreshPages": "Обновить все страницы",
+      "refreshPagesHint": "помечает все страницы этого сайта как устаревшие. Сейчас ничего не создаётся: каждая страница пересоздаётся при следующем посещении, а кеш CDN очищается.",
+      "refreshPagesDone": "Все страницы помечены как устаревшие. Они обновятся при следующем посещении.",
+      "refreshPagesFailed": "Не удалось обновить страницы."
     },
     "status": {
       "disabled": "Отключено",

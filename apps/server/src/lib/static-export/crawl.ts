@@ -53,7 +53,7 @@ const RESERVED_PREFIXES = [
 /** Reserved exact paths (files, not namespaces) — only the literal path is blocked. */
 const RESERVED_EXACT = new Set(["/theme.css"]);
 
-function isCrawlablePath(path: string): boolean {
+export function isCrawlablePath(path: string): boolean {
   if (!path.startsWith("/")) return false;
   if (path.includes("?") || path.includes("#")) return false;
   if (RESERVED_EXACT.has(path)) return false;

@@ -169,6 +169,7 @@ import { getAdminPathConfig, toPublicAdminPath } from "../../lib/admin/admin-pat
 import { applyPageScripts, publicScriptUrl } from "../../lib/rendering/page-scripts.js";
 import { themeCssVersion, themeScriptsVersion } from "../../lib/themes/theme-asset-versions.js";
 import { activeThemeBlockAssets, themeBlockAssetTags } from "../../lib/themes/theme-block-assets.js";
+import { EXPORT_DEPS_HEADER, exportDepsFor, isOnDemandRenderRequest } from "../../lib/static-export/render-request.js";
 
 const templateDir = viewsDir();
 const router = Router();
@@ -564,6 +565,8 @@ async function buildCommentContext(
 /** True when this request must skip the shared page cache for comment state. */
 function pageCacheBypassReason(req: Request, preview: boolean): string | null {
   if (isAccountPath(req.path)) return "private account";
+  /** An on-demand export render must see the current page, not a cached copy. */
+  if (isOnDemandRenderRequest(req)) return "static export render";
   if (Object.keys(req.query).some(key => /^[a-z][a-z0-9-]{0,30}-page$/.test(key))) return "block pagination";
   if (preview) return "preview";
   if (isFormConfirmation(req)) return "form confirmation";
@@ -2173,6 +2176,8 @@ export async function renderSinglePageHtml(
   if (!pageContent) {
     return renderNotFoundHtml(pageCtx, req, res, reqPath);
   }
+  /** Tell the on-demand exporter which entry this page shows, so an edit can mark it stale. */
+  if (isOnDemandRenderRequest(req)) res.setHeader(EXPORT_DEPS_HEADER, exportDepsFor(pageContent));
   // Rows saved without a body (seeds, imports, older installs) render the
   // type's starting pattern — the same canvas the editor seeds on open —
   // instead of an empty page. Translations stay empty, matching the editor.

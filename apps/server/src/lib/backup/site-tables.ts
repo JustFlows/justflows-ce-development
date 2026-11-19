@@ -95,6 +95,8 @@ export const EXCLUDED_SITE_TABLES: Record<string, string> = {
   platform_audit: "installation history travels in the network manifest",
   quota_limits: "site limits travel with the site through quotaLimits",
   mcp_hub_sites: "the MCP hub registry belongs to the running installation",
+  static_export_pages: "on-demand export files are rebuilt on the next visit",
+  static_export_page_deps: "on-demand export files are rebuilt on the next visit",
 };
 
 /** Tables without their own `site_id`, scoped through a parent row instead. */
