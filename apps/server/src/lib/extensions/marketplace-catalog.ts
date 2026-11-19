@@ -7,6 +7,25 @@ import {
   isRegistryListingVisible,
 } from "@justflows/sdk";
 
+/**
+ * An unlisted, free, released listing on the commercial Marketplace that the
+ * registry serves only to the authenticated justflows.com platform (the same
+ * rule the registry applies). Other sites never receive these listings.
+ */
+function isPlatformOnlyListing(listing: unknown): boolean {
+  if (!listing || typeof listing !== "object" || Array.isArray(listing)) return false;
+  const registry = (listing as { registry?: unknown }).registry;
+  if (!registry || typeof registry !== "object" || Array.isArray(registry)) return false;
+  const row = registry as Record<string, unknown>;
+  return (
+    row["commercialMarketplace"] === true &&
+    row["listed"] === false &&
+    row["free"] === true &&
+    row["comingSoon"] !== true &&
+    row["beta"] !== true
+  );
+}
+
 /** Drop publisher-hidden listings from a marketplace catalogue JSON body. */
 export function filterMarketplaceCatalogBody(body: string): string {
   try {
@@ -16,7 +35,7 @@ export function filterMarketplaceCatalogBody(body: string): string {
     if (!Array.isArray(record.items)) return body;
     return JSON.stringify({
       ...record,
-      items: record.items.filter((item) => isRegistryListingVisible(item)),
+      items: record.items.filter((item) => marketplaceListingIsVisible(item)),
     });
   } catch {
     return body;
@@ -27,8 +46,13 @@ export function marketplaceListingIsPaid(listing: unknown): boolean {
   return isRegistryListingPaid(listing);
 }
 
+/**
+ * Listed by its publisher, or a platform-only listing while this install is
+ * the justflows.com platform (`JUSTFLOWS_PLATFORM_INSTALL_TOKEN` set).
+ */
 export function marketplaceListingIsVisible(listing: unknown): boolean {
-  return isRegistryListingVisible(listing);
+  if (isRegistryListingVisible(listing)) return true;
+  return Boolean(process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN?.trim()) && isPlatformOnlyListing(listing);
 }
 
 export function marketplaceListingIsComingSoon(listing: unknown): boolean {

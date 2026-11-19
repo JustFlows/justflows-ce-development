@@ -43,3 +43,23 @@ describe("official platform Marketplace early access", () => {
     });
   });
 });
+
+describe("platform-only Marketplace listings", () => {
+  const platformOnly = {
+    id: "justflows.partners",
+    version: "0.1.0",
+    registry: { listed: false, free: true, commercialMarketplace: true },
+  };
+
+  it("are not installable without the platform token", async () => {
+    delete process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN;
+    await expect(assertListingInstallable(platformOnly, "justflows.partners", "site-1"))
+      .rejects.toMatchObject({ status: 404 });
+  });
+
+  it("are installable on the justflows.com platform", async () => {
+    process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN = "platform-secret";
+    await expect(assertListingInstallable(platformOnly, "justflows.partners", "site-1"))
+      .resolves.toBeUndefined();
+  });
+});
