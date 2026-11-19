@@ -21,6 +21,30 @@ describe("filterMarketplaceCatalogBody", () => {
     expect(next.items.map((item) => item.id)).toEqual(["shown.plugin", "legacy.plugin"]);
   });
 
+  it("shows platform-only listings to the justflows.com platform only", () => {
+    const saved = process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN;
+    const platformOnly = { commercialMarketplace: true, listed: false, free: true };
+    const body = JSON.stringify({
+      items: [
+        { id: "platform.only", registry: platformOnly },
+        { id: "platform.paid", registry: { ...platformOnly, free: false } },
+        { id: "platform.beta", registry: { ...platformOnly, beta: true } },
+        { id: "hidden.plugin", registry: { listed: false, free: true } },
+      ],
+    });
+    const ids = () =>
+      (JSON.parse(filterMarketplaceCatalogBody(body)) as { items: { id: string }[] }).items.map((item) => item.id);
+    try {
+      delete process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN;
+      expect(ids()).toEqual([]);
+      process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN = "platform-secret";
+      expect(ids()).toEqual(["platform.only"]);
+    } finally {
+      if (saved === undefined) delete process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN;
+      else process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN = saved;
+    }
+  });
+
   it("leaves non-JSON bodies alone", () => {
     expect(filterMarketplaceCatalogBody("not-json")).toBe("not-json");
   });

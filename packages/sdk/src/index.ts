@@ -147,6 +147,8 @@ export {
   LocalizedTextSchema,
   ADMIN_MENU_DOMAINS,
   PLUGIN_ID_RE,
+  PLUGIN_ID_MESSAGE,
+  addPublisherNamespaceIssues,
   RELATIVE_ADMIN_PATH_RE,
   pluginAdminBasePath,
   resolvePluginAdminPath,
@@ -182,6 +184,7 @@ export type {
   PluginCreatedUser,
   PluginUserCreateResult,
   PluginRoleUser,
+  PluginUserSecondFactors,
   PluginUserRoleResult,
   PluginUserTarget,
   PluginUsersApi,
@@ -376,6 +379,16 @@ export type { CacheStore, CacheStoreDefinition, CacheStoreStatus } from "./cache
 export type { SpamCheckBackend, SpamCheckInput, SpamCheckResult } from "./spam.js";
 
 export { pluginApiUrl, isValidPluginApiNamespace } from "./api-urls.js";
+export {
+  OFFICIAL_PUBLISHER_NAMESPACE,
+  PUBLISHER_NAMESPACE_RE,
+  RESERVED_PUBLISHER_NAMESPACES,
+  extensionNamespace,
+  extensionIdNamespaceIssue,
+  isAssignablePublisherNamespace,
+  isApiNamespaceAllowedForExtension,
+  isOfficialExtensionId,
+} from "./publisher-namespace.js";
 
 export {
   escapeHtml,

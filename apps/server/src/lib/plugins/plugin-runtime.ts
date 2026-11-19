@@ -476,6 +476,16 @@ export async function ensurePluginRuntime(): Promise<void> {
             const { searchUsers } = await import("../auth/users-admin.js");
             return searchUsers(pluginCallSiteId(siteId), input.query, input.limit);
           },
+          /** Only for an account on the calling site, so a plugin cannot probe other sites' accounts. */
+          secondFactors: async (userId) => {
+            const { pluginCallSiteId } = await import("./request-site.js");
+            const { findUserRoles } = await import("../auth/users-admin.js");
+            const user = await findUserRoles(pluginCallSiteId(siteId), { userId });
+            if (!user) return null;
+            const { secondFactorsOf } = await import("../auth/mfa-policy.js");
+            const factors = await secondFactorsOf(user.id);
+            return { totp: factors.totp, passkeys: factors.passkeys };
+          },
         }),
         contentFactory: (pluginId, siteId) => createPluginContentApi(pluginId, siteId),
         placeholderResolver: (siteId, kind) => resolvePlaceholderSync(siteId, kind),

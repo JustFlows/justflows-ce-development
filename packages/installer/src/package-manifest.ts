@@ -10,6 +10,8 @@ import {
   RegistryListingSchema,
   ExtensionEnginesSchema,
   PLUGIN_ID_RE,
+  PLUGIN_ID_MESSAGE,
+  addPublisherNamespaceIssues,
   RELATIVE_ADMIN_PATH_RE,
   resolvePluginAdminPath,
   ThemePatternRegistrationSchema,
@@ -30,7 +32,7 @@ export const PackageManifestSchema = z
     type: z.enum(["plugin", "theme", "css-provider"]),
     id: z
       .string()
-      .regex(PLUGIN_ID_RE, "ID must be justflows.<name> (lowercase, e.g. justflows.acme)"),
+      .regex(PLUGIN_ID_RE, PLUGIN_ID_MESSAGE),
     apiNamespace: z.string().refine(isValidPluginApiNamespace, "Invalid or reserved plugin API namespace").optional(),
     name: z.string().min(1).max(100),
     /**
@@ -83,7 +85,7 @@ export const PackageManifestSchema = z
      * install while one is missing, and refuses activation until each is active.
      */
     requires: z
-      .array(z.string().regex(PLUGIN_ID_RE, "Required plugin id must be justflows.<name>"))
+      .array(z.string().regex(PLUGIN_ID_RE, `Required plugin ${PLUGIN_ID_MESSAGE}`))
       .max(10)
       .optional(),
     dependencies: z.record(z.string(), z.string()).default({}),
@@ -152,6 +154,7 @@ export const PackageManifestSchema = z
     adminApp: PluginAdminAppSchema.optional(),
   })
   .superRefine((manifest, ctx) => {
+    addPublisherNamespaceIssues(manifest, ctx);
     if (manifest.adminMenu?.length && !manifest.permissions.includes("admin:extend")) {
       ctx.addIssue({
         code: "custom",

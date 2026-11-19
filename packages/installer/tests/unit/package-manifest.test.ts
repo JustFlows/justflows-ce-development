@@ -258,3 +258,16 @@ it("retains neutral API namespaces when installing a plugin", () => {
   expect(PackageManifestSchema.parse({ ...base, apiNamespace: "shop" }).apiNamespace).toBe("shop");
   expect(PackageManifestSchema.safeParse({ ...base, apiNamespace: "users" }).success).toBe(false);
 });
+
+describe("PackageManifestSchema publisher namespaces", () => {
+  it("installs a third-party id and keeps official ids working", () => {
+    expect(PackageManifestSchema.parse({ ...base, id: "acme.forms" }).id).toBe("acme.forms");
+    expect(PackageManifestSchema.parse({ ...base, type: "theme", id: "acme.theme.dark" }).id).toBe("acme.theme.dark");
+    expect(PackageManifestSchema.parse(base).id).toBe("justflows.plugin");
+  });
+
+  it("refuses a reserved namespace and a third-party API namespace outside it", () => {
+    expect(() => PackageManifestSchema.parse({ ...base, id: "marketplace.forms" })).toThrow(/reserved/);
+    expect(() => PackageManifestSchema.parse({ ...base, id: "acme.forms", apiNamespace: "forms" })).toThrow(/API namespace/);
+  });
+});

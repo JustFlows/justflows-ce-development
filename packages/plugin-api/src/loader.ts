@@ -857,6 +857,13 @@ export class PluginLoader {
           const users = this.usersFactory(pluginId, siteId, permissions);
           return users.search ? users.search(input) : [];
         },
+        secondFactors: async (userId) => {
+          if (!permissions.has("users:read") && !permissions.has("users:manage")) {
+            throw new Error(`Plugin "${pluginId}" cannot read users without the "users:read" permission`);
+          }
+          const users = this.usersFactory(pluginId, siteId, permissions);
+          return users.secondFactors ? users.secondFactors(userId) : null;
+        },
       },
       diagnostics: {
         register: (check) => {

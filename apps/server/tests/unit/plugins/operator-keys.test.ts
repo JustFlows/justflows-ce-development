@@ -3,6 +3,7 @@ import {
   canonicalOperatorKey,
   ensureOperatorKey,
   operatorKeyAllowed,
+  operatorKeyPrefix,
   type OperatorKeyStore,
 } from "../../../src/lib/plugins/operator-keys.js";
 
@@ -33,6 +34,16 @@ describe("operator key names", () => {
     expect(operatorKeyAllowed("justflows.example-shop", "JUSTFLOWS_EXAMPLE_SHOP_KEK")).toBe(true);
     expect(operatorKeyAllowed("justflows.desk", "JUSTFLOWS_STORE_KEK")).toBe(false);
     expect(operatorKeyAllowed("justflows.desk", "APP_SECRET")).toBe(false);
+  });
+
+  it("gives third-party plugins a prefix no other publisher can reach", () => {
+    expect(operatorKeyPrefix("acme.forms")).toBe("JUSTFLOWS_EXT_ACME__FORMS_");
+    expect(operatorKeyPrefix("acme-labs.forms-pro")).toBe("JUSTFLOWS_EXT_ACME_LABS__FORMS_PRO_");
+    expect(operatorKeyAllowed("acme.forms", "JUSTFLOWS_EXT_ACME__FORMS_KEK")).toBe(true);
+    expect(operatorKeyAllowed("acme.forms", "JUSTFLOWS_FORMS_KEK")).toBe(false);
+    expect(operatorKeyAllowed("acme-forms.x", "JUSTFLOWS_EXT_ACME__FORMS_KEK")).toBe(false);
+    expect(operatorKeyAllowed("justflows.ext-acme", "JUSTFLOWS_EXT_ACME__FORMS_KEK")).toBe(false);
+    expect(operatorKeyPrefix("acme.forms.extra")).toBeNull();
   });
 });
 

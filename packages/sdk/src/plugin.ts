@@ -1,4 +1,5 @@
 import { isValidPluginApiNamespace } from "./api-urls.js";
+import { extensionIdNamespaceIssue, isApiNamespaceAllowedForExtension } from "./publisher-namespace.js";
 import { z } from "zod";
 import { gplLicenseValidationMessage, isGplCompatibleLicense } from "./license.js";
 import { RegistryListingSchema } from "./registry.js";
@@ -508,18 +509,47 @@ export const PluginAdminAppSchema = z.object({
 });
 
 /**
- * Every extension id is `justflows.<name>` — first-party only (`justflows.acme`,
- * `justflows.theme.dark`). The `justflows.` namespace is what the admin URL
- * (`/admin/plugins/justflows.<name>`) and the asset mount
- * (`/ext/justflows.<name>/…`) are built from.
+ * Every extension id is `<namespace>.<name>`: `justflows.forms` for official
+ * extensions, `acme.forms` for a publisher that owns `acme`, and deeper ids
+ * such as `justflows.theme.dark`. The admin URL (`/admin/plugins/<id>`) and
+ * the asset mount (`/ext/<id>/…`) are built from it, so it stays lowercase
+ * letters, digits, single hyphens, and dots. See `publisher-namespace.ts` for
+ * reserved namespaces and what the namespace does and does not prove.
  */
-export const PLUGIN_ID_RE = /^justflows(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$/;
+export const PLUGIN_ID_RE = /^(?=.{4,128}$)[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)+$/;
+
+/** Shared message for ids that do not match `PLUGIN_ID_RE`. */
+export const PLUGIN_ID_MESSAGE = "ID must be <namespace>.<name> in lowercase, for example acme.forms";
+
+/**
+ * Namespace rules shared by the plugin manifest and the package manifest: the
+ * id may not use a reserved namespace other than `justflows`, and a
+ * third-party API namespace must stay inside the publisher namespace.
+ */
+export function addPublisherNamespaceIssues(
+  manifest: { id: string; apiNamespace?: string | undefined },
+  ctx: z.RefinementCtx,
+): void {
+  const issue = extensionIdNamespaceIssue(manifest.id);
+  if (issue) {
+    ctx.addIssue({ code: "custom", path: ["id"], message: issue });
+    return;
+  }
+  if (manifest.apiNamespace && !isApiNamespaceAllowedForExtension(manifest.id, manifest.apiNamespace)) {
+    const namespace = manifest.id.slice(0, manifest.id.indexOf("."));
+    ctx.addIssue({
+      code: "custom",
+      path: ["apiNamespace"],
+      message: `API namespace must be "${namespace}" or start with "${namespace}-"`,
+    });
+  }
+}
 
 export const PluginManifestSchema = z
   .object({
     id: z
       .string()
-      .regex(PLUGIN_ID_RE, "Plugin ID must be justflows.<name> (lowercase, e.g. justflows.acme)"),
+      .regex(PLUGIN_ID_RE, PLUGIN_ID_MESSAGE),
     apiNamespace: z.string().refine(isValidPluginApiNamespace, "Invalid or reserved plugin API namespace").optional(),
     name: z.string().min(1).max(100),
     // Anchored at both ends: `.regex()` runs RegExp.test(), which honours only
@@ -558,7 +588,7 @@ export const PluginManifestSchema = z
      * one is active.
      */
     requires: z
-      .array(z.string().regex(PLUGIN_ID_RE, "Required plugin id must be justflows.<name>"))
+      .array(z.string().regex(PLUGIN_ID_RE, `Required plugin ${PLUGIN_ID_MESSAGE}`))
       .max(10)
       .optional(),
     settingsSchema: z
@@ -643,6 +673,7 @@ export const PluginManifestSchema = z
     adminApp: PluginAdminAppSchema.optional(),
   })
   .superRefine((manifest, ctx) => {
+    addPublisherNamespaceIssues(manifest, ctx);
     if (manifest.adminMenu?.length && !manifest.permissions.includes("admin:extend")) {
       ctx.addIssue({
         code: "custom",
@@ -818,6 +849,14 @@ export type PluginUserCreateResult =
 /** Which existing user `ctx.users.addRole()` targets: by id or by sign-in email. */
 export type PluginUserTarget = { userId: string } | { email: string };
 
+/** The sign-in factors an account has beyond its password. */
+export interface PluginUserSecondFactors {
+  /** An authenticator app (TOTP) is turned on. */
+  totp: boolean;
+  /** How many passkeys the account has registered. */
+  passkeys: number;
+}
+
 export interface PluginRoleUser extends PluginCreatedUser {
   /** Primary role first, then additional roles. */
   roles: readonly string[];
@@ -866,6 +905,14 @@ export interface PluginUsersApi {
    * Optional: older hosts do not provide it.
    */
   search?(input: { query: string; limit?: number }): Promise<PluginCreatedUser[]>;
+  /**
+   * Which second factors an account on this site has: an authenticator app
+   * and a count of passkeys. Null when the user is not on this site. For
+   * features that should only open to accounts with a second factor; the
+   * host's own sign-in policy still decides how people sign in. Requires the
+   * `users:read` manifest permission. Optional: older hosts do not provide it.
+   */
+  secondFactors?(userId: string): Promise<PluginUserSecondFactors | null>;
   /**
    * Take back an additional role this plugin registered, such as a membership
    * that ended. The user's primary role is never changed. Doing nothing when

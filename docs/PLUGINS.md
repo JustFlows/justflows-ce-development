@@ -14,11 +14,23 @@ cp -R plugins/hello-world plugins/my-seo
 pnpm --filter justflows.my-seo build
 ```
 
-Every plugin id is **`justflows.<name>`** (lowercase, e.g. `justflows.acme`) —
-first-party only. The `justflows.` namespace is what the admin URL
-(`/admin/plugins/justflows.<name>`) and the asset mount
-(`/ext/justflows.<name>/…`) are built from; the manifest validator rejects any
-other id at install.
+Every plugin id is **`<namespace>.<name>`** in lowercase letters, digits,
+single hyphens, and dots, for example `acme.forms`. The namespace is the
+publisher's:
+
+- `justflows` is the official namespace, used only for Justflows plugins.
+- A Marketplace publisher gets one namespace, such as `acme`, and can only
+  submit ids inside it. The registry assigns it to the publisher account; a
+  manifest cannot claim it.
+- A few namespaces are reserved for everyone (`jf`, `official`, `marketplace`,
+  `core`, and others in `RESERVED_PUBLISHER_NAMESPACES` in the SDK). The
+  manifest validator refuses them at install.
+
+The admin URL (`/admin/plugins/<id>`) and the asset mount (`/ext/<id>/…`) are
+built from the id. The admin labels plugins outside the `justflows` namespace
+as third-party. The namespace alone proves nothing about a package installed
+outside the Marketplace, because anyone can build a package with any id. Only a
+marketplace signature ties an id to its publisher.
 
 The loader looks for `dist/index.js` or `index.js`. TypeScript in `src/` is not
 loaded at runtime.
@@ -1118,7 +1130,10 @@ Browser bundles can import `pluginApiUrl("acme", "checkout")` from the SDK.
 A plain browser script may use the same stable `/api/acme` base. Paths passed to
 the helper are relative; query strings are preserved and traversal is refused.
 The namespace is a lowercase slug of at most 40 characters. Core API namespaces
-are reserved, and two plugins cannot claim the same namespace. Keep it stable
+are reserved, and two plugins cannot claim the same namespace. A plugin outside
+the official `justflows` namespace must use its publisher namespace as the API
+namespace or as its prefix: `acme.forms` may use `acme` or `acme-forms`, never
+`forms`. Keep it stable
 across upgrades; it is part of your plugin's public URL contract.
 
 The host maps the neutral URL directly to the registered handler. It does not

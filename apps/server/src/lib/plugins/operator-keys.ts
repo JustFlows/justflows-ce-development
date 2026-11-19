@@ -6,10 +6,14 @@ import { applyEnvToProcess, readEnvMap, updateEnvKeys } from "../settings/env-fi
  * A plugin asks for an operator key through the `operatorKey.ensure` hook.
  * The host writes it to `.env` when it is missing. The value stays out of the
  * database and is never returned. A plugin may only name a key under its own
- * id: `justflows.example` may use `JUSTFLOWS_EXAMPLE_*`.
+ * id: `justflows.example` may use `JUSTFLOWS_EXAMPLE_*`, and a third-party
+ * `acme.example` may use `JUSTFLOWS_EXT_ACME__EXAMPLE_*`. The `EXT_` marker and
+ * the double underscore for the dot keep the two forms from colliding: ids
+ * never contain `--`, so `__` can only come from a dot.
  */
 
-const PLUGIN_ID = /^justflows\.([a-z][a-z0-9-]{0,40})$/;
+const OFFICIAL_PLUGIN_ID = /^justflows\.([a-z][a-z0-9-]{0,40})$/;
+const THIRD_PARTY_PLUGIN_ID = /^([a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.([a-z][a-z0-9]*(?:-[a-z0-9]+)*)$/;
 
 export interface OperatorKeyStore {
   env: NodeJS.ProcessEnv;
@@ -19,10 +23,16 @@ export interface OperatorKeyStore {
 
 /** The env prefix this plugin is allowed to create. */
 export function operatorKeyPrefix(pluginId: string): string | null {
-  const match = PLUGIN_ID.exec(pluginId);
-  const name = match?.[1];
-  if (!name) return null;
-  return `JUSTFLOWS_${name.replace(/-/g, "_").toUpperCase()}_`;
+  const envPart = (value: string) => value.replace(/-/g, "_").toUpperCase();
+  const official = OFFICIAL_PLUGIN_ID.exec(pluginId)?.[1];
+  if (official) {
+    /** `justflows.ext-*` would own the `JUSTFLOWS_EXT_` keys of third-party plugins. */
+    if (official === "ext" || official.startsWith("ext-")) return null;
+    return `JUSTFLOWS_${envPart(official)}_`;
+  }
+  const thirdParty = THIRD_PARTY_PLUGIN_ID.exec(pluginId);
+  if (!thirdParty || thirdParty[1] === "justflows" || pluginId.length > 60) return null;
+  return `JUSTFLOWS_EXT_${envPart(thirdParty[1]!)}__${envPart(thirdParty[2]!)}_`;
 }
 
 /** True when `name` is a key this plugin may create. */

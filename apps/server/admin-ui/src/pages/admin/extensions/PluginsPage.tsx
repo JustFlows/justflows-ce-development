@@ -392,6 +392,9 @@ export default function PluginsPage() {
                     <strong>{p.name}</strong>
                     {p.version && <span className="jf-meta">v{p.version}</span>}
                     <span className={`jf-badge${STATUS_VARIANT[p.status]}`}>{p.status}</span>
+                    {!p.id.startsWith("justflows.") && (
+                      <span className="jf-badge jf-badge--warn" title={t("marketplace.thirdPartyHint")}>{t("marketplace.thirdParty")}</span>
+                    )}
                     {canManage && installationRoot && <ExtensionUpdateBadge state={updates} type="plugin" id={p.id} />}
                   </div>
                   {p.description && <p className="jf-list__desc">{p.description}</p>}
