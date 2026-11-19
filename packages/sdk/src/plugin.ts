@@ -849,6 +849,14 @@ export type PluginUserCreateResult =
 /** Which existing user `ctx.users.addRole()` targets: by id or by sign-in email. */
 export type PluginUserTarget = { userId: string } | { email: string };
 
+/** The sign-in factors an account has beyond its password. */
+export interface PluginUserSecondFactors {
+  /** An authenticator app (TOTP) is turned on. */
+  totp: boolean;
+  /** How many passkeys the account has registered. */
+  passkeys: number;
+}
+
 export interface PluginRoleUser extends PluginCreatedUser {
   /** Primary role first, then additional roles. */
   roles: readonly string[];
@@ -897,6 +905,14 @@ export interface PluginUsersApi {
    * Optional: older hosts do not provide it.
    */
   search?(input: { query: string; limit?: number }): Promise<PluginCreatedUser[]>;
+  /**
+   * Which second factors an account on this site has: an authenticator app
+   * and a count of passkeys. Null when the user is not on this site. For
+   * features that should only open to accounts with a second factor; the
+   * host's own sign-in policy still decides how people sign in. Requires the
+   * `users:read` manifest permission. Optional: older hosts do not provide it.
+   */
+  secondFactors?(userId: string): Promise<PluginUserSecondFactors | null>;
   /**
    * Take back an additional role this plugin registered, such as a membership
    * that ended. The user's primary role is never changed. Doing nothing when

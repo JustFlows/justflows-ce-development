@@ -184,6 +184,7 @@ export type {
   PluginCreatedUser,
   PluginUserCreateResult,
   PluginRoleUser,
+  PluginUserSecondFactors,
   PluginUserRoleResult,
   PluginUserTarget,
   PluginUsersApi,

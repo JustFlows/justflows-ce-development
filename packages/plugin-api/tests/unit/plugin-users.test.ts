@@ -185,6 +185,22 @@ describe("plugin user creation", () => {
     await expect(plain!.users.search!({ query: "ada" })).rejects.toThrow(/users:read/);
   });
 
+  it("reads an account's second factors with users:read, and refuses without it", async () => {
+    const secondFactors = vi.fn(async (userId: string) => (userId === "u1" ? { totp: false, passkeys: 2 } : null));
+    const app = new App(CONFIG);
+    const loader = new PluginLoader(app, { usersFactory: () => ({ create: vi.fn(), secondFactors }) });
+    let reader: PluginContext | undefined;
+    let plain: PluginContext | undefined;
+    loader.register(plugin("justflows.reader", ["users:read"], (ctx) => { reader = ctx; }));
+    loader.register(plugin("justflows.plain", [], (ctx) => { plain = ctx; }));
+    await loader.activate("justflows.reader", "site-1");
+    await loader.activate("justflows.plain", "site-1");
+
+    await expect(reader!.users.secondFactors!("u1")).resolves.toEqual({ totp: false, passkeys: 2 });
+    await expect(reader!.users.secondFactors!("elsewhere")).resolves.toBeNull();
+    await expect(plain!.users.secondFactors!("u1")).rejects.toThrow(/users:read/);
+  });
+
   it("removes only a role the plugin registered, and only with users:manage", async () => {
     const removeRole = vi.fn(async () => ({
       ok: true as const,
