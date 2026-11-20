@@ -620,23 +620,8 @@ export async function registerDeferredRoutes(app: express.Application): Promise<
     }
   }
 
-  // Anything under /api or /ext that reached here matched no route. Without this
-  // it falls through to the public-site handler and comes back as the site's
-  // HTML 404 — callers doing `res.json()` then fail with
-  // "Unexpected token '<', "<!DOCTYPE"". /ext is the plugin HTTP surface, so an
-  // unregistered route (typically a plugin that failed to activate) must read
-  // as a 404 in JSON, not a page.
-  app.use((req, res, next) => {
-    if (res.headersSent) {
-      next();
-      return;
-    }
-    if (req.path === "/api" || req.path.startsWith("/api/") || req.path.startsWith("/ext/")) {
-      res.status(404).json({ error: "Not found" });
-      return;
-    }
-    next();
-  });
+  /** Anything under /api or /ext that reached here matched no route: an uncached JSON 404. */
+  app.use((await import("./middleware/api-not-found.js")).apiNotFound);
 
   // Managed rules override public content, but never platform or plugin routes.
   app.use(
