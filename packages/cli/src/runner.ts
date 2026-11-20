@@ -34,7 +34,7 @@ Commands:
   export static           Write published pages + assets to STATIC_EXPORT_DIR
   health                  Run site health checks
   check <folder|.jfpkg>   Check a plugin, theme, or CSS provider before publishing
-  submit [folder]         Send plugin or theme source to the Marketplace for review
+  submit [folder]         Send plugin or theme source to a registry (off on the Justflows Marketplace)
   update                  Check for and apply updates
 
 Options:
