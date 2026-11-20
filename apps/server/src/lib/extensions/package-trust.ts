@@ -4,6 +4,7 @@ import {
   timingSafeEqual,
   verify as verifySignature,
 } from "node:crypto";
+import { isClosedLicense } from "@justflows/sdk";
 
 function readTrustedDigests(): Map<string, string> {
   const raw = process.env.JUSTFLOWS_TRUSTED_PACKAGE_DIGESTS ?? "";
@@ -98,6 +99,19 @@ export function assertPackageIsTrusted(
     ) {
       return;
     }
+  }
+
+  /**
+   * A closed license (`LicenseRef-<name>`) is accepted only on the Marketplace
+   * signature above: the registry signs one only for Justflows' own packages
+   * and for paid plugins under a contract. A pinned digest or an unsigned
+   * install cannot vouch for it.
+   */
+  if (isClosedLicense(typeof manifest.license === "string" ? manifest.license : undefined)) {
+    throw new Error(
+      `"${packageId || "This package"}" has a closed license (${String(manifest.license)}). ` +
+        "Closed-source extensions install only from the Justflows Marketplace, with a valid Marketplace signature.",
+    );
   }
 
   const trusted = readTrustedDigests();

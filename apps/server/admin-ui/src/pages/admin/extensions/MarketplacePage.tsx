@@ -30,6 +30,8 @@ interface MarketplaceItem {
   version: string;
   author?: string;
   publisher?: string;
+  /** SPDX license. `LicenseRef-<name>` marks closed source. */
+  license?: string;
   /**
    * Set by the registry from the owning publisher account (justflows-ce#272).
    * Older registries omit it; only the official namespace counts then.
@@ -49,6 +51,11 @@ interface MarketplaceItem {
     beta?: boolean;
     price?: RegistryPrice;
   };
+}
+
+/** Same rule as the SDK's `isClosedLicense`: an SPDX `LicenseRef-<name>` license. */
+export function isClosedLicense(license: string | undefined): boolean {
+  return typeof license === "string" && /^LicenseRef-[A-Za-z0-9][A-Za-z0-9.-]{0,63}$/.test(license.trim());
 }
 
 export function listingIsPaid(item: MarketplaceItem): boolean {
@@ -293,6 +300,9 @@ export default function MarketplacePage() {
                       <span className="jf-badge jf-badge--info">{t("marketplace.official")}</span>
                     ) : (
                       <span className="jf-badge jf-badge--warn" title={t("marketplace.thirdPartyHint")}>{t("marketplace.thirdParty")}</span>
+                    )}
+                    {isClosedLicense(item.license) && (
+                      <span className="jf-badge" title={t("marketplace.closedSourceHint")}>{t("marketplace.closedSource")}</span>
                     )}
                     {isInstalled && <ExtensionUpdateBadge state={updates} type={item.type} id={item.id} />}
                     <span className="jf-meta" style={{ marginInlineStart: "auto" }}>

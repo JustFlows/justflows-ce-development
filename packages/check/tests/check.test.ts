@@ -73,6 +73,15 @@ describe("justflows check", () => {
     expect(exitCode(report)).toBe(1);
   });
 
+  it("accepts a closed LicenseRef license with a warning", async () => {
+    const report = await checkPackage(
+      pkg({ ...clean, "justflows.json": manifest({ license: "LicenseRef-Acme-Commercial" }) }),
+      { coreVersion: "0.4.4" },
+    );
+    expect(rules(report)).toEqual(["JF-M011"]);
+    expect(exitCode(report)).toBe(0);
+  });
+
   it("refuses a range that excludes the running Justflows", async () => {
     const report = await checkPackage(pkg({ ...clean, "justflows.json": manifest({ engines: { justflows: ">=0.1.8 <0.2.0" } }) }), { coreVersion: "0.4.4" });
     expect(report.findings.find((item) => item.rule === "JF-C001")?.message).toContain("does not include Justflows 0.4.4");

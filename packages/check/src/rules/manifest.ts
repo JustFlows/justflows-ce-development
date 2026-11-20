@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import semver from "semver";
 import { PackageManifestSchema } from "@justflows/installer";
-import { isGplCompatibleLicense, PluginPermissionSchema } from "@justflows/sdk";
+import { isAcceptedManifestLicense, isClosedLicense, PluginPermissionSchema } from "@justflows/sdk";
 import type { ManifestShape, Rule } from "../types.js";
 import { finding, manifestArray, permissions } from "./util.js";
 
@@ -99,13 +99,15 @@ export const manifestRules: Rule[] = [
   },
   {
     id: "JF-M006",
-    title: "A GPL-compatible license, with its text",
+    title: "A GPL-compatible or closed (LicenseRef-) license, with its text",
     category: "manifest",
     severity: "error",
     check: (target) => {
       const out = [];
       const license = typeof target.manifest?.license === "string" ? target.manifest.license : "";
-      if (target.manifest && !isGplCompatibleLicense(license)) out.push(finding(`License "${license || "(none)"}" is not GPL-compatible`, "justflows.json"));
+      if (target.manifest && !isAcceptedManifestLicense(license)) {
+        out.push(finding(`License "${license || "(none)"}" is not GPL-compatible, and not a closed LicenseRef-<name> license`, "justflows.json"));
+      }
       if (!target.files.some((file) => /^(LICENSE|COPYING)(\.(md|txt))?$/i.test(file.path))) out.push(finding("No LICENSE file in the package root"));
       return out;
     },
@@ -154,6 +156,23 @@ export const manifestRules: Rule[] = [
     severity: "error",
     types: ["css-provider"],
     check: (target) => (manifestArray(target, "scripts").length ? [finding("CSS provider packages may not declare scripts", "justflows.json")] : []),
+  },
+  {
+    id: "JF-M011",
+    title: "A closed license installs only from the Marketplace",
+    category: "manifest",
+    severity: "warning",
+    check: (target) => {
+      const license = typeof target.manifest?.license === "string" ? target.manifest.license : "";
+      return isClosedLicense(license)
+        ? [
+            finding(
+              `License "${license}" is closed: Justflows installs it only with a Marketplace signature, which the registry gives to paid plugins under a contract`,
+              "justflows.json",
+            ),
+          ]
+        : [];
+    },
   },
   {
     id: "JF-C001",

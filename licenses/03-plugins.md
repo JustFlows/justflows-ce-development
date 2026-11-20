@@ -2,7 +2,7 @@
 
 **Applies to:** All software extensions registered as Justflows plugins via `justflows.json`.
 
-**Version:** 3.0
+**Version:** 3.1
 
 ---
 
@@ -14,11 +14,12 @@ Plugins that integrate with Justflows through hooks, APIs, and the plugin runtim
 are separately licensed packages. Each plugin declares its license in the manifest.
 
 > **Plugins declare their own license. Official Marketplace listings and
-> installed packages must use a GPL-compatible SPDX identifier (GPL, MIT, BSD, ISC, and similar).
+> installed packages use a GPL-compatible SPDX identifier (GPL, MIT, BSD, ISC, and similar).
 > They are not MIT just because core is MIT.**
 
-You may **charge money** for plugins. Closed-source plugins cannot be listed on
-the official Marketplace.
+You may **charge money** for plugins. Closed-source plugins are allowed on the
+official Marketplace only as paid plugins under a contract with Justflows (see
+[Closed-source plugins](#closed-source-plugins-under-contract)).
 
 ---
 
@@ -31,7 +32,7 @@ the official Marketplace.
 | **MIT** | Yes |
 | **ISC / BSD-2-Clause / BSD-3-Clause** | Yes |
 | **Apache-2.0** | Check with Marketplace review |
-| **Proprietary / closed source** | **No** (Marketplace) |
+| **Closed source** (`LicenseRef-<name>`) | Only paid, under a contract with Justflows |
 
 ---
 
@@ -46,8 +47,8 @@ Every plugin **must**:
 
 Marketplace listings **must** also:
 
-5. Use a **GPL-compatible** license
-6. Provide source code to recipients as that license requires
+5. Use a **GPL-compatible** license, or a closed `LicenseRef-` license under contract
+6. Provide source code to recipients as that license requires, and always to Justflows reviewers
 
 Every plugin **must not**:
 
@@ -61,7 +62,7 @@ Every plugin **must not**:
 
 | You can charge for | You cannot do on Marketplace |
 |---|---|
-| Download / license key | List a proprietary plugin |
+| Download / license key | List a closed-source plugin without a contract |
 | Updates and maintenance | Withhold source required by a GPL listing |
 | Priority support | Misrepresent license obligations |
 | Marketplace listing convenience | |
@@ -77,7 +78,7 @@ is GPL-compatible and source is available to buyers.
 
 | Requirement | Details |
 |---|---|
-| **License** | **GPL-compatible only** |
+| **License** | GPL-compatible, or closed (`LicenseRef-`) for paid plugins under contract |
 | **Approval** | Manual security review |
 | **Signing** | Signed after approval |
 | **Payments** | Paid listings use Justflows Payments |
@@ -90,13 +91,32 @@ See [07-marketplace.md](./07-marketplace.md).
 Administrators may install plugins outside the marketplace:
 
 - The plugin keeps the license declared in its manifest
-- The installer still requires a **GPL-compatible** SPDX identifier (not proprietary)
+- The installer still requires a **GPL-compatible** SPDX identifier; a closed
+  `LicenseRef-` license installs only from the Marketplace, never as a sideload
 - Administrator assumes responsibility for unsigned sideloads
 
 ### C. Bundled with the repo / local development
 
 Develop plugins in `plugins/<your-plugin-name>/` (copy `plugins/hello-world/`).
 Example plugins in this repo are **GPL-2.0-or-later**, separately from MIT core.
+
+
+## Closed-source plugins (under contract)
+
+A plugin may declare a closed license with an SPDX custom identifier,
+`LicenseRef-<name>` (for example `LicenseRef-Acme-Commercial`), and ship that
+license text as its `LICENSE` file.
+
+- The registry accepts a closed license only for **paid** plugins whose publisher
+  has a **closed-source contract** with Justflows, and for Justflows' own packages.
+- Justflows reviewers always receive the full source. Closed source is never
+  closed to review.
+- Justflows installs a closed-license package **only** with a valid Marketplace
+  signature. Uploads, pinned digests, and `JUSTFLOWS_ALLOW_UNSIGNED_PACKAGES` cannot
+  install one.
+- The Marketplace marks these listings **Closed source**.
+- Other license words in the manifest ("Proprietary", "All rights reserved", and
+  similar) are still rejected. Use the `LicenseRef-` form.
 
 ---
 
@@ -121,7 +141,7 @@ Example plugins in this repo are **GPL-2.0-or-later**, separately from MIT core.
 
 Justflows may refuse listing or delist plugins that:
 
-- Use non-GPL-compatible licenses on the Marketplace
+- Use non-GPL-compatible licenses on the Marketplace without a closed-source contract
 - Fail security review
 - Violate marketplace terms
 - Mislead users about licensing

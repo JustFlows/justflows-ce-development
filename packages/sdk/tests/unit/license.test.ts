@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { gplLicenseValidationMessage, isGplCompatibleLicense } from "../../src/license.js";
+import {
+  gplLicenseValidationMessage,
+  isAcceptedManifestLicense,
+  isClosedLicense,
+  isGplCompatibleLicense,
+} from "../../src/license.js";
 
 describe("isGplCompatibleLicense", () => {
   it("accepts recommended Justflows license", () => {
@@ -29,3 +34,22 @@ describe("isGplCompatibleLicense", () => {
     expect(gplLicenseValidationMessage("Proprietary")).toContain("Proprietary");
   });
 });
+
+describe("closed licenses", () => {
+  it("accepts only the SPDX LicenseRef-<name> form", () => {
+    expect(isClosedLicense("LicenseRef-Justflows-Proprietary")).toBe(true);
+    expect(isClosedLicense("LicenseRef-Acme.Commercial-2")).toBe(true);
+    expect(isClosedLicense("Proprietary")).toBe(false);
+    expect(isClosedLicense("LicenseRef-")).toBe(false);
+    expect(isClosedLicense("LicenseRef-a b")).toBe(false);
+    expect(isClosedLicense("MIT OR LicenseRef-Acme")).toBe(false);
+  });
+
+  it("is an accepted manifest license, next to the GPL-compatible ones", () => {
+    expect(isAcceptedManifestLicense("LicenseRef-Acme")).toBe(true);
+    expect(isAcceptedManifestLicense("GPL-2.0-or-later")).toBe(true);
+    expect(isAcceptedManifestLicense("All rights reserved")).toBe(false);
+    expect(isGplCompatibleLicense("LicenseRef-Acme")).toBe(false);
+  });
+});
+

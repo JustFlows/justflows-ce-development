@@ -334,8 +334,13 @@ export type {
   AccessResource,
 } from "./capabilities.js";
 
-// Licensing — extension license validation (Marketplace: GPL-compatible)
-export { isGplCompatibleLicense, gplLicenseValidationMessage } from "./license.js";
+// Licensing — extension license validation (GPL-compatible, or closed with a Marketplace signature)
+export {
+  isAcceptedManifestLicense,
+  isClosedLicense,
+  isGplCompatibleLicense,
+  gplLicenseValidationMessage,
+} from "./license.js";
 
 // Templates — the theme template-hierarchy contract
 export {

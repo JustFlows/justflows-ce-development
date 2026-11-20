@@ -3029,7 +3029,9 @@
     "betaInstallConfirm": "{name} is een bètaversie. Deze kan instabiel zijn, gegevens verliezen of nog veranderen vóór de stabiele release. Toch installeren?",
     "official": "Officieel",
     "thirdParty": "Externe partij",
-    "thirdPartyHint": "Gepubliceerd door een externe uitgever, niet door Justflows. Plugins draaien met toegang tot je server, dus installeer alleen plugins van uitgevers die je vertrouwt."
+    "thirdPartyHint": "Gepubliceerd door een externe uitgever, niet door Justflows. Plugins draaien met toegang tot je server, dus installeer alleen plugins van uitgevers die je vertrouwt.",
+    "closedSource": "Gesloten broncode",
+    "closedSourceHint": "De broncode is niet openbaar. De reviewers van Justflows hebben de code, en alleen ondertekende Marketplace-versies kunnen worden geïnstalleerd."
   },
   "extensionUpdates": {
     "checking": "Controleren op updates…",

@@ -3111,7 +3111,9 @@
     "betaInstallConfirm": "{name} is a beta. It may be unstable, lose data, or change before its stable release. Install it anyway?",
     "official": "Official",
     "thirdParty": "Third-party",
-    "thirdPartyHint": "Published by an outside publisher, not by Justflows. Plugins run with access to your server, so install only publishers you trust."
+    "thirdPartyHint": "Published by an outside publisher, not by Justflows. Plugins run with access to your server, so install only publishers you trust.",
+    "closedSource": "Closed source",
+    "closedSourceHint": "The source code is not public. Justflows reviewers have the code, and only signed Marketplace releases can be installed."
   },
   "extensionUpdates": {
     "checking": "Checking for updates…",
