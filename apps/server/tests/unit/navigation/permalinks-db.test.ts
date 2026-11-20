@@ -111,6 +111,14 @@ describe("permalink persistence and collision protection", () => {
       "reserved",
     );
   });
+  it("lets the member auth pages keep their reserved paths, and nothing else", async () => {
+    const auth = serializeContentRow({ ...row, id: "auth-login", type: "auth", slug: "login" });
+    expect(await uniquePermalinkSlug(auth)).toBe("login");
+    expect(await uniquePermalinkSlug({ ...auth, slug: "register" })).toBe("register");
+    await expect(uniquePermalinkSlug({ ...auth, slug: "api" })).rejects.toThrow("reserved");
+    const page = serializeContentRow({ ...row, id: "new", type: "page", slug: "login" });
+    await expect(uniquePermalinkSlug(page)).rejects.toThrow("reserved");
+  });
   it("uses actual category relationships in URLs and redirects taxonomy bases", async () => {
     termRows = [
       { id: "term1", slug: "news", name: "News", taxonomy: "category", content_id: "p1" },
