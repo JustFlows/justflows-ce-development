@@ -34,7 +34,14 @@ function parse(args: string[]): Options {
     else if (arg === "--dry-run") dryRun = true;
     else if (!arg.startsWith("--")) folder = arg;
   }
-  return { folder: path.resolve(folder), registry: registry.replace(/\/+$/, ""), dryRun };
+  return { folder: path.resolve(folder), registry: trimTrailingSlashes(registry), dryRun };
+}
+
+/** Removes trailing slashes without a regular expression, so long input cannot slow it down. */
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) end--;
+  return value.slice(0, end);
 }
 
 function git(folder: string, args: string[], encoding: "utf8" | "buffer" = "utf8"): string | Buffer | null {
