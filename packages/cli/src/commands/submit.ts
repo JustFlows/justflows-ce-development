@@ -70,8 +70,14 @@ export function packSource(folder: string, id: string): { archive: Buffer; commi
     if (!Buffer.isBuffer(archive)) throw new Error("git archive failed.");
     return { archive, commit };
   }
-  const archive = execFileSync("tar", ["-czf", "-", "--exclude=./node_modules", "--exclude=./.git", "-C", folder, "."], {
+  /**
+   * COPYFILE_DISABLE stops macOS tar from adding hidden `._*` metadata files,
+   * which would put a second top-level entry next to the source and make the
+   * Marketplace refuse it.
+   */
+  const archive = execFileSync("tar", ["-czf", "-", "--exclude=./node_modules", "--exclude=./.git", "--exclude=._*", "-C", folder, "."], {
     maxBuffer: 100 * 1024 * 1024,
+    env: { ...process.env, COPYFILE_DISABLE: "1" },
   });
   return { archive };
 }
