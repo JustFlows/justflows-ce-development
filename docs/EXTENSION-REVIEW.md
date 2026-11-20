@@ -16,7 +16,7 @@ review.
 | Valid manifest         | Schema validation of required fields, id, and version |
 | Known permissions      | Declared permissions must exist in the SDK            |
 | Consistent permissions | Features that need a permission must declare it       |
-| GPL-compatible license | License validation                                    |
+| Accepted license       | GPL-compatible, or closed `LicenseRef-` (signed only) |
 | Valid listing          | Free and paid listing rules                           |
 | Installable package    | Package layout and archive checks                     |
 

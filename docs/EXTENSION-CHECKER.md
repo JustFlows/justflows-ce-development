@@ -109,8 +109,8 @@ A deprecated manifest field is set (`justflows`, `minJustflowsVersion`,
 
 ### JF-M006
 
-The license is not GPL-compatible, or the package has no `LICENSE` file. Marketplace
-listings need both.
+The license is neither GPL-compatible nor a closed `LicenseRef-<name>` license, or the
+package has no `LICENSE` file. Marketplace listings need both.
 
 ### JF-M007
 
@@ -130,6 +130,13 @@ The package has no `README.md`.
 ### JF-M010
 
 A CSS provider declares scripts. CSS providers may only ship styles.
+
+### JF-M011
+
+Warning: the license is closed (`LicenseRef-<name>`). Justflows installs a closed
+package only with a valid Marketplace signature, never from an upload, a pinned
+digest, or `JUSTFLOWS_ALLOW_UNSIGNED_PACKAGES`. The registry signs closed packages only
+for paid plugins under a contract with Justflows, and reviewers always see the source.
 
 ### Compatibility
 

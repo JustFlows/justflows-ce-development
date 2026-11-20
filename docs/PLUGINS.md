@@ -1080,7 +1080,9 @@ with names, both for the site of the current request.
 | You, in this checkout | Folder under `plugins/`, build `dist/`, activate in Admin                |
 | Site owners           | A `.jfpkg` dropped on Admin → Plugins — see [PACKAGING.md](PACKAGING.md) |
 
-Marketplace listings must use a GPL-compatible license. See `LICENSING.md`.
+Marketplace listings use a GPL-compatible license. A closed license
+(`LicenseRef-<name>`) is for paid plugins under a contract with Justflows and
+installs only from the Marketplace. See `LICENSING.md`.
 
 Declare `registry` on `justflows.json` so the plugin registry can control the
 listing without mixing it into site settings:

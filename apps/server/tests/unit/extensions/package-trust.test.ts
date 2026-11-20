@@ -57,6 +57,26 @@ describe("assertPackageIsTrusted", () => {
   });
 });
 
+describe("closed licenses", () => {
+  const closed = { ...manifest, license: "LicenseRef-Acme-Commercial" };
+
+  it("are refused on a pinned digest, an unsigned install, or a signature that does not verify", () => {
+    vi.stubEnv("JUSTFLOWS_TRUSTED_PACKAGE_DIGESTS", `acme.theme:${digest}`);
+    expect(() => assertPackageIsTrusted(closed, digest)).toThrow(/closed license/);
+    vi.stubEnv("JUSTFLOWS_TRUSTED_PACKAGE_DIGESTS", "");
+    vi.stubEnv("JUSTFLOWS_ALLOW_UNSIGNED_PACKAGES", "1");
+    expect(() => assertPackageIsTrusted(closed, digest)).toThrow(/closed license/);
+    expect(() => assertPackageIsTrusted(closed, digest, { marketplaceSignature: marketplaceSignature() })).toThrow(
+      /closed license/,
+    );
+  });
+
+  it("leave GPL-compatible packages on the usual pin and unsigned rules", () => {
+    vi.stubEnv("JUSTFLOWS_TRUSTED_PACKAGE_DIGESTS", `acme.theme:${digest}`);
+    expect(() => assertPackageIsTrusted({ ...manifest, license: "GPL-2.0-or-later" }, digest)).not.toThrow();
+  });
+});
+
 describe("verifyMarketplaceSignature", () => {
   it("accepts a retiring key during an overlap with its replacement", () => {
     expect(

@@ -4,7 +4,7 @@ import {
   AdminMenuItemSchema,
   EditorPanelSchema,
   gplLicenseValidationMessage,
-  isGplCompatibleLicense,
+  isAcceptedManifestLicense,
   PluginAssetsSchema,
   PluginAdminAppSchema,
   RegistryListingSchema,
@@ -51,7 +51,7 @@ export const PackageManifestSchema = z
       ),
     publisher: z.string().min(1),
     description: z.string().max(500).optional(),
-    license: z.string().min(1, "Package license is required and must be GPL-compatible"),
+    license: z.string().min(1, "Package license is required"),
     homepage: z.url().optional(),
     /** Runtime compatibility contract for the host installer. */
     engines: ExtensionEnginesSchema.optional(),
@@ -176,7 +176,7 @@ export const PackageManifestSchema = z
         message: 'Shipping an admin app requires the "admin:extend" permission',
       });
     }
-    if (!isGplCompatibleLicense(manifest.license)) {
+    if (!isAcceptedManifestLicense(manifest.license)) {
       ctx.addIssue({
         code: "custom",
         path: ["license"],

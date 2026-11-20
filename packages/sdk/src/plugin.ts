@@ -1,7 +1,7 @@
 import { isValidPluginApiNamespace } from "./api-urls.js";
 import { extensionIdNamespaceIssue, isApiNamespaceAllowedForExtension } from "./publisher-namespace.js";
 import { z } from "zod";
-import { gplLicenseValidationMessage, isGplCompatibleLicense } from "./license.js";
+import { gplLicenseValidationMessage, isAcceptedManifestLicense } from "./license.js";
 import { RegistryListingSchema } from "./registry.js";
 import { ExtensionEnginesSchema } from "./compatibility.js";
 import type { PluginCookiesApi } from "./cookies.js";
@@ -567,7 +567,7 @@ export const PluginManifestSchema = z
     description: z.string().max(500).optional(),
     author: z.string().optional(),
     homepage: z.url().optional(),
-    license: z.string().min(1, "Plugin license is required and must be GPL-compatible"),
+    license: z.string().min(1, "Plugin license is required"),
     engines: ExtensionEnginesSchema.optional(),
     /** @deprecated Use engines.justflows in new manifests. */
     minJustflowsVersion: z.string().optional(),
@@ -709,7 +709,7 @@ export const PluginManifestSchema = z
         message: "A plugin cannot require itself",
       });
     }
-    if (!isGplCompatibleLicense(manifest.license)) {
+    if (!isAcceptedManifestLicense(manifest.license)) {
       ctx.addIssue({
         code: "custom",
         path: ["license"],

@@ -31,7 +31,7 @@ outside the Marketplace (see [03-plugins.md](./03-plugins.md)).
 To list in the Marketplace you must:
 
 1. Have legal authority to distribute the software
-2. Accurately declare a **GPL-compatible license** for Marketplace listings (see [03-plugins.md](./03-plugins.md))
+2. Accurately declare a **GPL-compatible license**, or a closed `LicenseRef-` license covered by a contract, for Marketplace listings (see [03-plugins.md](./03-plugins.md))
 3. Provide valid contact and publisher information
 4. Pass security review before first publication and on material updates
 5. Accept this agreement
@@ -71,14 +71,15 @@ You must not:
 ## 5. Licensing in the Marketplace
 
 Justflows **core is MIT**. Plugins and themes keep **their own license**.
-All official Marketplace listings must still use a **GPL-compatible license**.
+Official Marketplace listings use a **GPL-compatible license**. Paid plugins may
+use a closed license under a separate contract with Justflows.
 
 | Listing type                    | Requirement                                                |
 | ------------------------------- | ---------------------------------------------------------- |
 | **GPL-2.0-or-later**            | Common for extensions — include SPDX identifier and source |
 | **GPL-3.0-or-later**            | Allowed                                                    |
 | **MIT / other GPL-compatible**  | Allowed                                                    |
-| **Proprietary / closed source** | **Not allowed**                                            |
+| **Closed source** (`LicenseRef-<name>`) | Paid plugins under a contract only; source always available to Justflows reviewers |
 
 ### Paid listings (allowed)
 
