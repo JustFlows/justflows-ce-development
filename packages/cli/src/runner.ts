@@ -8,6 +8,7 @@ import { exportCommand } from "./commands/export.js";
 import { healthCommand } from "./commands/health.js";
 import { updateCommand } from "./commands/update.js";
 import { checkCommand } from "./commands/check.js";
+import { submitCommand } from "./commands/submit.js";
 
 const VERSION = "0.1.2";
 
@@ -33,6 +34,7 @@ Commands:
   export static           Write published pages + assets to STATIC_EXPORT_DIR
   health                  Run site health checks
   check <folder|.jfpkg>   Check a plugin, theme, or CSS provider before publishing
+  submit [folder]         Send plugin or theme source to the Marketplace for review
   update                  Check for and apply updates
 
 Options:
@@ -41,6 +43,8 @@ Options:
 
 Environment:
   ADMIN_URL               URL of the admin app (default: http://localhost:3001)
+  JUSTFLOWS_PUBLISHER_TOKEN  Publisher token with the submit scope (justflows submit)
+  JUSTFLOWS_REGISTRY_URL     Marketplace API (default: https://api.justflows.com)
 `.trim();
 
 export async function run(args: string[]): Promise<void> {
@@ -87,6 +91,9 @@ export async function run(args: string[]): Promise<void> {
         break;
       case "check":
         await checkCommand(rest);
+        break;
+      case "submit":
+        await submitCommand(rest);
         break;
       default:
         console.error(`Unknown command: ${command}\nRun "justflows --help" for usage.`);
