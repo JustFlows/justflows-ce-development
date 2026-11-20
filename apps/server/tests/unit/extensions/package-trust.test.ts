@@ -1,7 +1,8 @@
-import { createHmac, generateKeyPairSync, sign } from "node:crypto";
+import { createHmac, createPublicKey, generateKeyPairSync, sign } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   assertPackageIsTrusted,
+  MARKETPLACE_KEYS,
   marketplaceSignPayload,
   verifyMarketplaceSignature,
 } from "../../../src/lib/extensions/package-trust.js";
@@ -91,5 +92,60 @@ describe("verifyMarketplaceSignature", () => {
     expect(
       verifyMarketplaceSignature(digest, marketplaceSignature(), manifest, [replacementPem]),
     ).toBe(false);
+  });
+});
+
+describe("ECDSA P-256 keys and per-type scope (justflows-ce#274)", () => {
+  const ec = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
+  const ecPem = ec.publicKey.export({ type: "spki", format: "pem" }).toString();
+  const payload = marketplaceSignPayload(manifest.id, manifest.version, manifest.publisher, digest);
+  /** What a KMS returns for ES256: the raw 64-byte r||s value (RFC 7518). */
+  const es256 = sign("sha256", payload, { key: ec.privateKey, dsaEncoding: "ieee-p1363" }).toString("base64");
+  const der = sign("sha256", payload, ec.privateKey).toString("base64");
+
+  it("verifies ES256 signatures in raw and DER form", () => {
+    expect(Buffer.from(es256, "base64")).toHaveLength(64);
+    expect(verifyMarketplaceSignature(digest, es256, manifest, [ecPem])).toBe(true);
+    expect(verifyMarketplaceSignature(digest, der, manifest, [ecPem])).toBe(true);
+    expect(verifyMarketplaceSignature(digest, es256, { ...manifest, version: "9.9.9" }, [ecPem])).toBe(false);
+  });
+
+  it("uses a scoped key only for its own package types", () => {
+    const themeKey = { pem: ecPem, types: ["theme"] as const };
+    expect(verifyMarketplaceSignature(digest, es256, manifest, [themeKey], "theme")).toBe(true);
+    expect(verifyMarketplaceSignature(digest, es256, manifest, [themeKey], "plugin")).toBe(false);
+    expect(verifyMarketplaceSignature(digest, es256, manifest, [themeKey])).toBe(false);
+  });
+
+  it("passes the manifest type through when checking a package", () => {
+    vi.stubEnv("JUSTFLOWS_ALLOW_UNSIGNED_PACKAGES", "");
+    const pluginOnly = { pem: publicPem, types: ["plugin"] as const };
+    expect(verifyMarketplaceSignature(digest, marketplaceSignature(), manifest, [pluginOnly], "plugin")).toBe(true);
+    expect(verifyMarketplaceSignature(digest, marketplaceSignature(), manifest, [pluginOnly], "theme")).toBe(false);
+  });
+
+  it("never trusts other key types, such as RSA or other curves", () => {
+    const rsa = generateKeyPairSync("rsa", { modulusLength: 2048 });
+    const rsaPem = rsa.publicKey.export({ type: "spki", format: "pem" }).toString();
+    const rsaSig = sign("sha256", payload, rsa.privateKey).toString("base64");
+    expect(verifyMarketplaceSignature(digest, rsaSig, manifest, [rsaPem])).toBe(false);
+    const p384 = generateKeyPairSync("ec", { namedCurve: "secp384r1" });
+    const p384Pem = p384.publicKey.export({ type: "spki", format: "pem" }).toString();
+    const p384Sig = sign("sha384", payload, p384.privateKey).toString("base64");
+    expect(verifyMarketplaceSignature(digest, p384Sig, manifest, [p384Pem])).toBe(false);
+  });
+});
+
+describe("trusted marketplace keys", () => {
+  it("are all Ed25519 or ECDSA P-256, and every KMS key is scoped to package types", () => {
+    for (const key of MARKETPLACE_KEYS) {
+      const parsed = createPublicKey(key.pem);
+      const supported =
+        parsed.asymmetricKeyType === "ed25519" ||
+        (parsed.asymmetricKeyType === "ec" && parsed.asymmetricKeyDetails?.namedCurve === "prime256v1");
+      expect(supported).toBe(true);
+      if (parsed.asymmetricKeyType === "ec") expect(key.types?.length).toBeGreaterThan(0);
+    }
+    expect(MARKETPLACE_KEYS.filter((key) => key.types?.includes("theme"))).toHaveLength(1);
   });
 });
