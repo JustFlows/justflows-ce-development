@@ -16,6 +16,7 @@
  *   justflows cache clear
  *   justflows health
  *   justflows update
+ *   justflows submit [folder]
  */
 
 import { run } from "./runner.js";
