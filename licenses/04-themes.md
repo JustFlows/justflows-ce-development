@@ -139,6 +139,13 @@ license text as its `LICENSE` file. This is the same rule as for plugins.
   Justflows' own themes.
 - Justflows reviewers always receive the full source. Closed source is never
   closed to review.
+- Every release ships its full source and build instructions as a separate
+  `.tar.gz`. The registry stores it privately; only commercial reviewers can
+  read it, and every read is logged.
+- The manifest's `justflows` range must start at core **0.4.5** or later, the
+  first release that installs closed packages.
+- When the closed-source contract ends, the registry suspends the publisher's
+  closed releases. Sites that installed them keep them.
 - Justflows installs a closed-license theme **only** with a valid Marketplace
   signature. Uploads, pinned digests, and `JUSTFLOWS_ALLOW_UNSIGNED_PACKAGES` cannot
   install one.
