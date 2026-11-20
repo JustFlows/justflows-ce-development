@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-import { describe, expect, it } from "vitest";
-import { findExtensionUpdates } from "../../../src/lib/extensions/extension-updates.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { fetchCompatibleCatalog, findExtensionUpdates } from "../../../src/lib/extensions/extension-updates.js";
 import {
   assertMarketplaceUpgrade,
   MarketplaceRequestError,
@@ -137,5 +137,41 @@ describe("assertMarketplaceUpgrade", () => {
         body: expect.objectContaining({ code: "invalid_update_version" }),
       }),
     );
+  });
+});
+
+describe("updates of platform-only packages", () => {
+  const platformOnly = { commercialMarketplace: true, listed: false, free: true, comingSoon: false };
+  const saved = process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    if (saved === undefined) delete process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN;
+    else process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN = saved;
+  });
+
+  it("asks the catalogue with the platform headers, so unlisted platform packages are included", async () => {
+    process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN = "platform-test-token";
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ items: [{ type: "plugin", id: "justflows.partners", version: "0.2.3", registry: platformOnly }] }), {
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const found = await fetchCompatibleCatalog();
+    const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
+    expect(init.headers).toMatchObject({ "x-justflows-platform-token": "platform-test-token", "x-justflows-site-domain": "justflows.com" });
+    expect(
+      findExtensionUpdates([{ type: "plugin", id: "justflows.partners", name: "Partners", version: "0.2.2" }], found, noAuto),
+    ).toEqual([expect.objectContaining({ id: "justflows.partners", installedVersion: "0.2.2", availableVersion: "0.2.3" })]);
+  });
+
+  it("sends no platform headers on other sites", async () => {
+    delete process.env.JUSTFLOWS_PLATFORM_INSTALL_TOKEN;
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ items: [] })));
+    vi.stubGlobal("fetch", fetchMock);
+    await fetchCompatibleCatalog();
+    const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
+    expect(init.headers).toEqual({});
   });
 });
