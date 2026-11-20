@@ -1,7 +1,8 @@
-import { createHmac, generateKeyPairSync, sign } from "node:crypto";
+import { createHmac, createPublicKey, generateKeyPairSync, sign } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   assertPackageIsTrusted,
+  MARKETPLACE_KEYS,
   marketplaceSignPayload,
   verifyMarketplaceSignature,
 } from "../../../src/lib/extensions/package-trust.js";
@@ -132,5 +133,19 @@ describe("ECDSA P-256 keys and per-type scope (justflows-ce#274)", () => {
     const p384Pem = p384.publicKey.export({ type: "spki", format: "pem" }).toString();
     const p384Sig = sign("sha384", payload, p384.privateKey).toString("base64");
     expect(verifyMarketplaceSignature(digest, p384Sig, manifest, [p384Pem])).toBe(false);
+  });
+});
+
+describe("trusted marketplace keys", () => {
+  it("are all Ed25519 or ECDSA P-256, and every KMS key is scoped to package types", () => {
+    for (const key of MARKETPLACE_KEYS) {
+      const parsed = createPublicKey(key.pem);
+      const supported =
+        parsed.asymmetricKeyType === "ed25519" ||
+        (parsed.asymmetricKeyType === "ec" && parsed.asymmetricKeyDetails?.namedCurve === "prime256v1");
+      expect(supported).toBe(true);
+      if (parsed.asymmetricKeyType === "ec") expect(key.types?.length).toBeGreaterThan(0);
+    }
+    expect(MARKETPLACE_KEYS.filter((key) => key.types?.includes("theme"))).toHaveLength(1);
   });
 });

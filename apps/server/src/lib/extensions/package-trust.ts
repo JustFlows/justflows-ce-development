@@ -57,6 +57,22 @@ export const MARKETPLACE_KEYS: readonly MarketplaceKey[] = [
 MCowBQYDK2VwAyEA2XeYyQg1/VM9A+y2Xh7Yw9+XYHBK6y7gUuOC6NVLZrw=
 -----END PUBLIC KEY-----`,
   },
+  {
+    /** Plugin registry, OVHcloud KMS key 82ce85b1-3c10-4a79-ad78-2c06ea6473c4 (EC P-256, ES256), created 2026-11-20. */
+    pem: `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkmrxT0CAyPn+U4AzVes0B6wt1KG4
+T53H+DcZpyWMUl+6Ai3KorEyIByFtRcdRzjfRJJmRAXn++l+ow4CUfOzwg==
+-----END PUBLIC KEY-----`,
+    types: ["plugin", "css-provider"],
+  },
+  {
+    /** Theme registry, OVHcloud KMS key 3ec30c94-e8fe-49cb-b36c-3229bc800818 (EC P-256, ES256), created 2026-11-20. */
+    pem: `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEu7czkCE/1d2ENO+3pO1JR8swkRHI
+c7weEzVb7ID91gyUCR0ccETcmTyg0OUyBA2340odKx4debRFnyttU1Mb2w==
+-----END PUBLIC KEY-----`,
+    types: ["theme"],
+  },
 ];
 
 /** PEMs of {@link MARKETPLACE_KEYS}, for callers that only need the key material. */
