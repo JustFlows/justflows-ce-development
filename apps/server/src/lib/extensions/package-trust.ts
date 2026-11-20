@@ -31,15 +31,36 @@ export function allowUnsignedPackages(): boolean {
   return process.env.JUSTFLOWS_ALLOW_UNSIGNED_PACKAGES === "1";
 }
 
+/** Package types a marketplace key may sign. */
+export type MarketplacePackageType = "plugin" | "theme" | "css-provider";
+
 /**
- * Justflows marketplace Ed25519 public key (SPKI PEM).
- * Packages from api.justflows.com are signed with the matching private key.
+ * A trusted marketplace public key (SPKI PEM): Ed25519, or ECDSA P-256 for
+ * keys held in a KMS that signs with ES256 (justflows-ce#274). `types` limits
+ * the key to the package types its registry publishes, so the theme key can
+ * never vouch for a plugin. A key without `types` vouches for every type.
  */
-export const MARKETPLACE_PUBLIC_KEYS: readonly string[] = [
-  `-----BEGIN PUBLIC KEY-----
+export interface MarketplaceKey {
+  readonly pem: string;
+  readonly types?: readonly MarketplacePackageType[];
+}
+
+/**
+ * Keys this core trusts for Marketplace signatures. During a key change both
+ * the retiring and the new keys are listed; the retiring key is removed in a
+ * later release. See docs/EXTENSION-TRUST.md, "Marketplace signing keys".
+ */
+export const MARKETPLACE_KEYS: readonly MarketplaceKey[] = [
+  {
+    /** The original Ed25519 key, shared by both registries. Retiring (#274). */
+    pem: `-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEA2XeYyQg1/VM9A+y2Xh7Yw9+XYHBK6y7gUuOC6NVLZrw=
 -----END PUBLIC KEY-----`,
+  },
 ];
+
+/** PEMs of {@link MARKETPLACE_KEYS}, for callers that only need the key material. */
+export const MARKETPLACE_PUBLIC_KEYS: readonly string[] = MARKETPLACE_KEYS.map((key) => key.pem);
 
 export function marketplaceSignPayload(
   id: string,
@@ -50,11 +71,27 @@ export function marketplaceSignPayload(
   return Buffer.from(`${id}\n${version}\n${publisher}\n${digestHex.toLowerCase()}`, "utf8");
 }
 
+/**
+ * Checks one signature against one key. Ed25519 signs the payload directly;
+ * ECDSA P-256 (ES256) signs its SHA-256, as a raw 64-byte r||s value (RFC 7518)
+ * or DER. Other key types are never trusted.
+ */
+function verifyWithKey(payload: Buffer, signature: Buffer, pem: string): boolean {
+  const key = createPublicKey(pem);
+  if (key.asymmetricKeyType === "ed25519") return verifySignature(null, payload, key, signature);
+  if (key.asymmetricKeyType === "ec" && key.asymmetricKeyDetails?.namedCurve === "prime256v1") {
+    const dsaEncoding = signature.length === 64 ? "ieee-p1363" : "der";
+    return verifySignature("sha256", payload, { key, dsaEncoding }, signature);
+  }
+  return false;
+}
+
 export function verifyMarketplaceSignature(
   digestHex: string,
   signatureB64: string,
   bind?: { id: string; version: string; publisher: string },
-  publicKeys: readonly string[] = MARKETPLACE_PUBLIC_KEYS,
+  publicKeys: readonly (string | MarketplaceKey)[] = MARKETPLACE_KEYS,
+  packageType?: string,
 ): boolean {
   if (!digestHex || !signatureB64) return false;
 
@@ -62,9 +99,12 @@ export function verifyMarketplaceSignature(
     ? marketplaceSignPayload(bind.id, bind.version, bind.publisher, digestHex)
     : Buffer.from(digestHex.toLowerCase(), "hex");
   const signature = Buffer.from(signatureB64, "base64");
-  for (const pem of publicKeys) {
+  for (const entry of publicKeys) {
+    const key: MarketplaceKey = typeof entry === "string" ? { pem: entry } : entry;
+    /** A key scoped to other package types, or an unknown type, cannot vouch for this one. */
+    if (key.types && !(key.types as readonly string[]).includes(packageType ?? "")) continue;
     try {
-      if (verifySignature(null, payload, createPublicKey(pem), signature)) return true;
+      if (verifyWithKey(payload, signature, key.pem)) return true;
     } catch {
       /** Ignore an invalid or retired key and try the remaining trusted keys. */
     }
@@ -91,11 +131,13 @@ export function assertPackageIsTrusted(
     const version = typeof manifest.version === "string" ? manifest.version : "";
     const publisher = typeof manifest.publisher === "string" ? manifest.publisher : "";
     if (
-      verifyMarketplaceSignature(digest, options.marketplaceSignature, {
-        id: packageId,
-        version,
-        publisher,
-      })
+      verifyMarketplaceSignature(
+        digest,
+        options.marketplaceSignature,
+        { id: packageId, version, publisher },
+        MARKETPLACE_KEYS,
+        typeof manifest.type === "string" ? manifest.type : "plugin",
+      )
     ) {
       return;
     }

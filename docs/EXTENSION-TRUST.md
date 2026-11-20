@@ -150,6 +150,24 @@ Already installed code remains subject to the signed advisory feed and file
 integrity checks, because removing a key cannot prove that existing files are
 safe.
 
+### Marketplace signing keys
+
+Trusted keys are listed in `MARKETPLACE_KEYS`
+(`apps/server/src/lib/extensions/package-trust.ts`). A key is Ed25519 or ECDSA
+P-256 (ES256, as signed by a KMS), and may be limited to package types with
+`types`: the plugin registry's key vouches for `plugin` and `css-provider`
+packages only, the theme registry's for `theme` only. A key without `types`
+vouches for every type; only the original Ed25519 key does, and it is retiring.
+
+The signed message is `id \n version \n publisher \n digest`, so a signature
+covers the package, its version, its publisher, and the exact archive.
+
+Since #274 the registries hold no signing key. A separate signing service signs
+a release only when an approver recorded an approval for that exact release
+there, so a compromised registry cannot produce a valid signature. The keys
+live in OVHcloud KMS and cannot be exported. Rotation and emergency revocation
+runbooks are in the signing service's README.
+
 The update action accepts only a SemVer version newer than the installed one.
 Reinstalling the same version or downgrading through the update API is refused.
 Recovery from a withdrawn or broken release uses a deliberate trusted reinstall
