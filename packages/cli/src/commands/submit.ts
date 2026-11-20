@@ -84,7 +84,9 @@ export function packSource(folder: string, id: string): { archive: Buffer; commi
 
 export async function submitCommand(args: string[]): Promise<void> {
   if (args.includes("--help")) {
-    console.log("Usage: justflows submit [folder] [--registry <url>] [--dry-run]\nNeeds JUSTFLOWS_PUBLISHER_TOKEN (a publisher token with the submit scope).");
+    console.log(
+      "Usage: justflows submit [folder] [--registry <url>] [--dry-run]\nNeeds JUSTFLOWS_PUBLISHER_TOKEN (a publisher token with the submit scope).\n\nThe Justflows Marketplace has publisher tokens and justflows submit turned off for now: it takes source only through the Justflows GitHub App (link your repository on partners.justflows.com).",
+    );
     return;
   }
   const options = parse(args);
@@ -101,7 +103,11 @@ export async function submitCommand(args: string[]): Promise<void> {
   }
 
   const token = process.env["JUSTFLOWS_PUBLISHER_TOKEN"]?.trim();
-  if (!token) throw new Error("Set JUSTFLOWS_PUBLISHER_TOKEN to a publisher token with the submit scope (create one on the partners site).");
+  if (!token) {
+    throw new Error(
+      "Set JUSTFLOWS_PUBLISHER_TOKEN to a publisher token with the submit scope. The Justflows Marketplace has these turned off for now; submit through the Justflows GitHub App on partners.justflows.com.",
+    );
+  }
 
   const form = new FormData();
   if (commit) form.append("commit", commit);
