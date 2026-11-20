@@ -13,6 +13,7 @@ import {
   FETCH_TIMEOUT_MS,
   installMarketplacePackage,
   JUSTFLOWS_API_BASE,
+  marketplaceRequestHeaders,
   MarketplaceRequestError,
   type MarketplacePackageType,
 } from "./marketplace-package.js";
@@ -131,11 +132,17 @@ async function listInstalledExtensions(siteId: string): Promise<InstalledExtensi
   ];
 }
 
-async function fetchCompatibleCatalog(): Promise<
+/**
+ * The catalogue the update check compares against. Sends the same platform
+ * headers as the Marketplace page and installs, so the platform also sees
+ * updates of the unlisted packages only it may install (such as Partners).
+ */
+export async function fetchCompatibleCatalog(): Promise<
   Map<string, CatalogItem & Record<string, unknown>>
 > {
   const params = new URLSearchParams({ compatibleWith: getJustflowsVersion() });
   const res = await fetch(`${JUSTFLOWS_API_BASE}/v1/marketplace?${params}`, {
+    headers: marketplaceRequestHeaders(),
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`Marketplace API returned ${res.status}`);
