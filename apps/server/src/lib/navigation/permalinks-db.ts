@@ -1,4 +1,4 @@
-import { contentTypePolicy, publicContentTypeSql } from "@justflows/content";
+import { AUTH_PAGE_SLUGS, contentTypePolicy, publicContentTypeSql } from "@justflows/content";
 // SPDX-License-Identifier: MIT
 
 import { getDb } from "../database/db.js";
@@ -505,6 +505,12 @@ export function taxonomyPermalink(
 
 /** Resolve public collisions across content types, not just the database's per-type slug constraint. */
 export async function uniquePermalinkSlug(content: ContentResponse): Promise<string> {
+  /**
+   * The member auth pages own their fixed paths (`/login`, `/register`, …),
+   * which are reserved for everything else. Re-saving one keeps its slug; the
+   * database's unique (site, type, slug, locale) key still allows one each.
+   */
+  if (content.type === "auth" && (AUTH_PAGE_SLUGS as readonly string[]).includes(content.slug)) return content.slug;
   const [state, items, defaultLocale, terms, locales] = await Promise.all([
     getPermalinkState(content.siteId),
     permalinkContent(content.siteId, false),
