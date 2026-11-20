@@ -104,7 +104,8 @@ export function assertPackageIsTrusted(
   /**
    * A closed license (`LicenseRef-<name>`) is accepted only on the Marketplace
    * signature above: the registry signs one only for Justflows' own packages
-   * and for paid plugins under a contract. A pinned digest or an unsigned
+   * and for plugins and themes, free or paid, under a closed-source contract.
+   * A pinned digest or an unsigned
    * install cannot vouch for it.
    */
   if (isClosedLicense(typeof manifest.license === "string" ? manifest.license : undefined)) {

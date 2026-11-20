@@ -31,6 +31,19 @@ import { getEffectiveHomeBlocks } from "./theme-home-blocks.js";
 import { getEffectiveBlogBlocks } from "./theme-blog-blocks.js";
 import { getEffectiveTemplatePart } from "../rendering/template-parts.js";
 import { getStoredTemplate, listTemplateSlots } from "./theme-templates-store.js";
+import { isClosedLicense } from "@justflows/sdk";
+
+/**
+ * Thrown when the active theme has a closed license. A copy would be an
+ * unsigned, editable package, which a closed license does not allow and the
+ * Marketplace signature rule exists to prevent (justflows-ce#281).
+ */
+export class ClosedThemeCopyError extends Error {
+  constructor(themeName: string) {
+    super(`"${themeName}" has a closed license, so it cannot be saved as a new theme.`);
+    this.name = "ClosedThemeCopyError";
+  }
+}
 
 function slugify(name: string): string {
   return (
@@ -88,6 +101,8 @@ export async function forkActiveTheme(
 
   const active = await getActiveTheme(siteId);
   if (!active) throw new Error("No active theme to copy");
+  const license = typeof active.manifest?.license === "string" ? active.manifest.license : undefined;
+  if (isClosedLicense(license)) throw new ClosedThemeCopyError(active.name);
   const srcDir = resolveThemeDir(active.theme_id, themeInstalledPath(active));
   if (!srcDir) throw new Error("Active theme files not found");
 

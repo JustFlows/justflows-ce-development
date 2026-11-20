@@ -35,8 +35,9 @@ Justflows treats plugins and themes as **separately licensed packages**:
 - They register blocks, routes, jobs, or content types through Justflows APIs
 
 That integration does **not** make the extension MIT. Authors declare a license
-in the package manifest. The official Marketplace currently accepts
-**GPL-compatible** SPDX identifiers only.
+in the package manifest. The official Marketplace accepts **GPL-compatible**
+SPDX identifiers, and a closed `LicenseRef-<name>` license only under a
+closed-source contract with Justflows.
 
 ---
 
@@ -50,7 +51,7 @@ Acceptable for plugins and themes listed on the official Marketplace (non-exhaus
 | **GPL-3.0-or-later** | Yes |
 | **MIT** | Yes |
 | **ISC / BSD-2-Clause / BSD-3-Clause** | Yes |
-| **Proprietary** | **No** — official Marketplace listings must be GPL-compatible |
+| **Closed** (`LicenseRef-<name>`) | Only under a closed-source contract with Justflows, free or paid |
 
 When in doubt for a Marketplace listing, use **GPL-2.0-or-later** or **MIT**.
 

@@ -167,7 +167,7 @@ export const manifestRules: Rule[] = [
       return isClosedLicense(license)
         ? [
             finding(
-              `License "${license}" is closed: Justflows installs it only with a Marketplace signature, which the registry gives to paid plugins under a contract`,
+              `License "${license}" is closed: Justflows installs it only with a Marketplace signature, which the registry gives only under a closed-source contract with Justflows`,
               "justflows.json",
             ),
           ]
