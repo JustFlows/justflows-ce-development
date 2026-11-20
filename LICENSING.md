@@ -4,11 +4,11 @@ Justflows Community Edition uses a **permissive core with separately licensed ex
 
 - **Core:** MIT License
 - **Plugins & themes** declare their own license (bundled examples use GPL-2.0-or-later). They are not MIT just because they ship next to core
-- **Marketplace:** curated directory with security review (GPL-compatible extensions; closed-source paid plugins only under contract)
+- **Marketplace:** curated directory with security review (GPL-compatible extensions; closed-source plugins and themes, free or paid, only under a contract)
 - **Enterprise modules** (optional, separate): commercial license
 
-**Version:** 4.0  
-**Effective date:** 2026-08-20  
+**Version:** 4.1  
+**Effective date:** 2026-11-20  
 **Copyright holder:** Justflows Contributors
 
 ---
@@ -23,7 +23,7 @@ Justflows Community Edition uses a **permissive core with separately licensed ex
 | **Themes** (templates, patterns, styles) | [Own license](licenses/04-themes.md) | Marketplace: **No** |
 | **Blocks & patterns** | Same as parent component | Same as parent |
 | **Enterprise modules** (optional) | [Commercial](licenses/06-enterprise-license.md) | Yes (separate product) |
-| **Marketplace listings** | GPL-compatible, or closed under contract (paid plugins) | **No** |
+| **Marketplace listings** | GPL-compatible, or closed (`LicenseRef-`) under a closed-source contract | Only under a contract |
 
 ---
 
@@ -44,7 +44,7 @@ Justflows Community Edition uses a **permissive core with separately licensed ex
 | Modify core for your own use | Yes |
 | Distribute modified core | Yes — **preserve the MIT copyright notice** |
 | Sell hosting / support / services | Yes |
-| Sell plugins/themes | Yes — under **their own license**. Official Marketplace listings are **GPL-compatible**, or closed under a contract (paid plugins) |
+| Sell plugins/themes | Yes — under **their own license**. Official Marketplace listings are **GPL-compatible**, or closed under a closed-source contract |
 | Charge for plugins | Yes (charge for access, updates, support) |
 | Keep modifications private (never distribute) | Yes |
 
@@ -65,7 +65,7 @@ Justflows Community Edition uses a **permissive core with separately licensed ex
 You **can** charge money for plugins and themes. Plugins and themes are **not** MIT by default.
 
 - Each extension declares its own license in its manifest
-- Official Marketplace listings use a **GPL-compatible** license (source available to recipients), or a closed `LicenseRef-` license for paid plugins under contract
+- Official Marketplace listings use a **GPL-compatible** license (source available to recipients), or a closed `LicenseRef-` license under a closed-source contract (plugins and themes, free or paid)
 - You charge for **download access**, **updates**, **support**, or **Marketplace convenience**
 - Recipients of a GPL-licensed extension keep the rights of that GPL license
 

@@ -5,8 +5,8 @@
  * a GPL-compatible SPDX identifier. A closed license is the SPDX custom form
  * `LicenseRef-<name>`; core installs such a package only when it carries a
  * valid Justflows Marketplace signature (see `assertPackageIsTrusted`), which
- * the registry gives only to its own packages and to paid plugins under a
- * contract.
+ * the registry gives only to its own packages and to plugins and themes,
+ * free or paid, under a closed-source contract.
  */
 
 /** SPDX identifiers and common aliases accepted for marketplace distribution. */

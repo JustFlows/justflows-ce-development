@@ -3,7 +3,7 @@
 **Applies to:** Developers and publishers who distribute plugins, themes, or
 extensions through the official **Justflows Marketplace**.
 
-**Version:** 1.0
+**Version:** 1.1
 
 **Operator:** Justflows Contributors
 
@@ -71,15 +71,17 @@ You must not:
 ## 5. Licensing in the Marketplace
 
 Justflows **core is MIT**. Plugins and themes keep **their own license**.
-Official Marketplace listings use a **GPL-compatible license**. Paid plugins may
-use a closed license under a separate contract with Justflows.
+Official Marketplace listings use a **GPL-compatible license**. Plugins and themes,
+free or paid, may use a closed license under a separate closed-source contract
+with Justflows. The full terms are in the
+[Publisher Agreement](https://partners.justflows.com/publisher-agreement).
 
 | Listing type                    | Requirement                                                |
 | ------------------------------- | ---------------------------------------------------------- |
 | **GPL-2.0-or-later**            | Common for extensions — include SPDX identifier and source |
 | **GPL-3.0-or-later**            | Allowed                                                    |
 | **MIT / other GPL-compatible**  | Allowed                                                    |
-| **Closed source** (`LicenseRef-<name>`) | Paid plugins under a contract only; source always available to Justflows reviewers |
+| **Closed source** (`LicenseRef-<name>`) | Plugins and themes, free or paid, under a closed-source contract only; source always available to Justflows reviewers |
 
 ### Paid listings (allowed)
 

@@ -136,7 +136,8 @@ A CSS provider declares scripts. CSS providers may only ship styles.
 Warning: the license is closed (`LicenseRef-<name>`). Justflows installs a closed
 package only with a valid Marketplace signature, never from an upload, a pinned
 digest, or `JUSTFLOWS_ALLOW_UNSIGNED_PACKAGES`. The registry signs closed packages only
-for paid plugins under a contract with Justflows, and reviewers always see the source.
+under a closed-source contract with Justflows (plugins and themes, free or paid), and
+reviewers always see the source.
 
 ### Compatibility
 

@@ -2,7 +2,7 @@
 
 **Applies to:** All software extensions registered as Justflows plugins via `justflows.json`.
 
-**Version:** 3.1
+**Version:** 3.2
 
 ---
 
@@ -17,8 +17,8 @@ are separately licensed packages. Each plugin declares its license in the manife
 > installed packages use a GPL-compatible SPDX identifier (GPL, MIT, BSD, ISC, and similar).
 > They are not MIT just because core is MIT.**
 
-You may **charge money** for plugins. Closed-source plugins are allowed on the
-official Marketplace only as paid plugins under a contract with Justflows (see
+You may **charge money** for plugins. Closed-source plugins, free or paid, are
+allowed on the official Marketplace only under a closed-source contract with Justflows (see
 [Closed-source plugins](#closed-source-plugins-under-contract)).
 
 ---
@@ -32,7 +32,7 @@ official Marketplace only as paid plugins under a contract with Justflows (see
 | **MIT** | Yes |
 | **ISC / BSD-2-Clause / BSD-3-Clause** | Yes |
 | **Apache-2.0** | Check with Marketplace review |
-| **Closed source** (`LicenseRef-<name>`) | Only paid, under a contract with Justflows |
+| **Closed source** (`LicenseRef-<name>`) | Only under a closed-source contract with Justflows, free or paid |
 
 ---
 
@@ -78,7 +78,7 @@ is GPL-compatible and source is available to buyers.
 
 | Requirement | Details |
 |---|---|
-| **License** | GPL-compatible, or closed (`LicenseRef-`) for paid plugins under contract |
+| **License** | GPL-compatible, or closed (`LicenseRef-`) under a closed-source contract |
 | **Approval** | Manual security review |
 | **Signing** | Signed after approval |
 | **Payments** | Paid listings use Justflows Payments |
@@ -107,8 +107,9 @@ A plugin may declare a closed license with an SPDX custom identifier,
 `LicenseRef-<name>` (for example `LicenseRef-Acme-Commercial`), and ship that
 license text as its `LICENSE` file.
 
-- The registry accepts a closed license only for **paid** plugins whose publisher
-  has a **closed-source contract** with Justflows, and for Justflows' own packages.
+- The registry accepts a closed license, on a free or paid listing, only when the
+  publisher has a **closed-source contract** with Justflows and a verified identity,
+  and for Justflows' own packages.
 - Justflows reviewers always receive the full source. Closed source is never
   closed to review.
 - Justflows installs a closed-license package **only** with a valid Marketplace

@@ -431,8 +431,17 @@ router.post("/save-as", requireRole("administrator"), async (req, res) => {
       return;
     }
     const body = SaveAsSchema.parse(req.body);
-    const { forkActiveTheme } = await import("../../lib/themes/theme-fork.js");
-    const result = await forkActiveTheme(siteId, body.name);
+    const { ClosedThemeCopyError, forkActiveTheme } = await import("../../lib/themes/theme-fork.js");
+    let result: Awaited<ReturnType<typeof forkActiveTheme>>;
+    try {
+      result = await forkActiveTheme(siteId, body.name);
+    } catch (err) {
+      if (err instanceof ClosedThemeCopyError) {
+        res.status(403).json({ error: err.message });
+        return;
+      }
+      throw err;
+    }
 
     auditFromRequest(req, "theme.installed", {
       target: result.themeId,

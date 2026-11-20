@@ -2,7 +2,7 @@
 
 **Applies to:** All presentation packages registered as Justflows themes via `justflows-theme.json`.
 
-**Version:** 3.0
+**Version:** 3.1
 
 ---
 
@@ -14,11 +14,12 @@ Themes that integrate with Justflows templates, patterns, and theme APIs are
 separately licensed packages. Each theme declares its license in the manifest.
 
 > **Themes declare their own license. Official Marketplace listings and
-> installed packages must use a GPL-compatible SPDX identifier (GPL, MIT, BSD, ISC, and similar).
+> installed packages use a GPL-compatible SPDX identifier (GPL, MIT, BSD, ISC, and similar).
 > They are not MIT just because core is MIT.**
 
-You may **charge money** for themes. Closed-source themes cannot be listed on
-the official Marketplace.
+You may **charge money** for themes. Closed-source themes, free or paid, are
+allowed on the official Marketplace only under a closed-source contract with
+Justflows (see [Closed-source themes](#closed-source-themes-under-contract)).
 
 ---
 
@@ -30,7 +31,7 @@ the official Marketplace.
 | **GPL-3.0-or-later** | Yes |
 | **MIT** | Yes |
 | **ISC / BSD-2-Clause / BSD-3-Clause** | Yes |
-| **Proprietary / closed source** | **No** (Marketplace) |
+| **Closed source** (`LicenseRef-<name>`) | Only under a closed-source contract with Justflows, free or paid |
 
 ---
 
@@ -45,8 +46,8 @@ Every theme **must**:
 
 Marketplace listings **must** also:
 
-5. Use a **GPL-compatible** license
-6. Provide source to recipients as that license requires
+5. Use a **GPL-compatible** license, or a closed `LicenseRef-` license under contract
+6. Provide source to recipients as that license requires, and always to Justflows reviewers
 
 Every theme **must not**:
 
@@ -61,7 +62,7 @@ Every theme **must not**:
 Same commercial model as plugins:
 
 - Charge for theme, updates, support, or premium designs
-- Marketplace-listed theme code must remain **GPL-compatible**
+- Marketplace-listed theme code must remain **GPL-compatible**, unless it is closed under a contract
 - Recipients receive the rights of the declared license
 
 ---
@@ -70,7 +71,7 @@ Same commercial model as plugins:
 
 ### A. Justflows Marketplace
 
-- **GPL-compatible only**
+- GPL-compatible, or closed (`LicenseRef-`) under a closed-source contract
 - Security and quality review
 - Signed packages
 - Paid themes via Justflows Payments
@@ -78,6 +79,7 @@ Same commercial model as plugins:
 ### B. Private sideload
 
 - Theme keeps the license declared in its manifest (must be GPL-compatible)
+- A closed `LicenseRef-` theme installs only from the Marketplace, never as a sideload
 - Administrator responsibility for unsigned installs
 
 ### C. Bundled default theme
@@ -121,7 +123,28 @@ Child themes are derivative of the parent theme:
 
 - Follow the parent theme license plus your own additions
 - Cannot redistribute proprietary parent assets without permission
-- Marketplace listings must still be GPL-compatible
+- Marketplace listings must still be GPL-compatible, or closed under a contract
+- A closed-license theme cannot be copied with **Save as new theme**
+
+---
+
+## Closed-source themes (under contract)
+
+A theme may declare a closed license with an SPDX custom identifier,
+`LicenseRef-<name>` (for example `LicenseRef-Acme-Commercial`), and ship that
+license text as its `LICENSE` file. This is the same rule as for plugins.
+
+- The registry accepts a closed license, on a free or paid listing, only when the
+  upload names the publisher's **closed-source contract** with Justflows, and for
+  Justflows' own themes.
+- Justflows reviewers always receive the full source. Closed source is never
+  closed to review.
+- Justflows installs a closed-license theme **only** with a valid Marketplace
+  signature. Uploads, pinned digests, and `JUSTFLOWS_ALLOW_UNSIGNED_PACKAGES` cannot
+  install one.
+- Sites cannot copy a closed-license theme with **Save as new theme**.
+- The terms are in the
+  [Publisher Agreement](https://partners.justflows.com/publisher-agreement), section 6.
 
 ---
 
