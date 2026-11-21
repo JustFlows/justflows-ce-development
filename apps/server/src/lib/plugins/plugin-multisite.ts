@@ -71,7 +71,30 @@ export async function otherSitesHavePlugin(pluginId: string, siteId: string): Pr
   }
 }
 
-/** Another site in this database still has the plugin turned on. */
+/**
+ * The plugins turned on at every active site other than `exceptSiteId`,
+ * including sites that keep their own database, which a query on this
+ * database cannot see. Each site is read with its own database.
+ */
+export async function activePluginsOnOtherSites(exceptSiteId: string): Promise<Map<string, string[]>> {
+  const found = new Map<string, string[]>();
+  const { eachActiveSite } = await import("../tenancy/connections.js");
+  await eachActiveSite(async (siteId) => {
+    if (siteId === exceptSiteId) return;
+    const db = await getDb();
+    const rows = await db
+      .query<{ plugin_id: string }>("SELECT plugin_id FROM plugins WHERE site_id = ? AND status = 'active'", [siteId])
+      .catch(() => []);
+    if (rows.length) found.set(siteId, rows.map((row) => String(row.plugin_id)));
+  });
+  return found;
+}
+
+/**
+ * Another site still has the plugin turned on, whether it shares this
+ * database or has its own. The module is shared by the whole process, so
+ * the main site must not unload it while such a site uses it.
+ */
 export async function otherSitesHaveActivePlugin(pluginId: string, siteId: string): Promise<boolean> {
   try {
     const db = await getDb();
@@ -79,10 +102,16 @@ export async function otherSitesHaveActivePlugin(pluginId: string, siteId: strin
       "SELECT site_id FROM plugins WHERE plugin_id = ? AND site_id <> ? AND status = 'active' LIMIT 1",
       [pluginId, siteId],
     );
-    return Boolean(rows[0]);
+    if (rows[0]) return true;
+  } catch {
+    /** No plugin table here; the other sites are still checked below. */
+  }
+  try {
+    for (const ids of (await activePluginsOnOtherSites(siteId)).values()) if (ids.includes(pluginId)) return true;
   } catch {
     return false;
   }
+  return false;
 }
 
 /**

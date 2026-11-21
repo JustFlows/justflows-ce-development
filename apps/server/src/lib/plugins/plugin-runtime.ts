@@ -271,6 +271,45 @@ async function activateActivePlugins(): Promise<void> {
   }
 }
 
+/**
+ * Plugins turned on at another site but not at the main site. The module is
+ * shared by the whole process, so without this a plugin a sub-site activated
+ * works until the next restart and then is gone there (its routes answer 404)
+ * while its row still says active. Only plugins the main site has installed
+ * and still offers to other sites are loaded, with the main site's manifest.
+ */
+async function activateOtherSitePlugins(): Promise<void> {
+  if (!loader) return;
+  const { installationRootSiteId } = await import("../tenancy/registry.js");
+  const rootId = await installationRootSiteId().catch(() => null);
+  if (!rootId) return;
+  const { activePluginsOnOtherSites, isPluginOfferedToOtherSites } = await import("./plugin-multisite.js");
+  const { rootPluginManifests } = await import("./plugin-root-manifest.js");
+  const roots = await rootPluginManifests();
+  const sites = await activePluginsOnOtherSites(rootId);
+  for (const [siteId, pluginIds] of sites) {
+    for (const pluginId of pluginIds) {
+      if (loader.getPlugin(pluginId)?.state === "active") continue;
+      const manifest = roots.get(pluginId);
+      if (!manifest || !(await isPluginOfferedToOtherSites(pluginId, rootId))) continue;
+      try {
+        if (await refuseUnverifiedPlugin(manifest)) continue;
+        if (!loader.getPlugin(pluginId)) {
+          const pluginModule = await resolvePluginModule(manifest);
+          if (!pluginModule) {
+            console.error("[plugins] active plugin module could not be loaded:", JSON.stringify(pluginId));
+            continue;
+          }
+          loader.register(pluginModule);
+        }
+        await loader.activate(pluginId, siteId);
+      } catch (err) {
+        console.error("[plugins] activation failed", JSON.stringify(pluginId), err);
+      }
+    }
+  }
+}
+
 /** Bootstrap App + PluginLoader and activate plugins that are marked active in the DB. */
 export async function ensurePluginRuntime(): Promise<void> {
   if (initPromise) return initPromise;
@@ -561,6 +600,7 @@ export async function ensurePluginRuntime(): Promise<void> {
     if (isInstalled()) {
       await registerKnownPlugins();
       await activateActivePlugins();
+      await activateOtherSitePlugins();
     }
   })();
 
