@@ -708,7 +708,11 @@ async function resolvePublicMenuVisibility(
   res: Response,
 ): Promise<MenuVisibilityContext> {
   const session = await resolveSession(req, res);
-  return session ? { authState: "authenticated", role: session.role } : { authState: "guest" };
+  if (!session) return { authState: "guest" };
+  /** Additional roles (for example a plugin's membership roles) open role-gated items too. */
+  const { visibilityViewerFor } = await import("../../lib/content/visibility-viewer.js");
+  const viewer = await visibilityViewerFor(session.userId, session.siteId, session.role);
+  return { authState: "authenticated", role: session.role, roles: viewer.roles };
 }
 
 /** Whether a menu's *published* items are safe to serve from the shared public cache. A menu using

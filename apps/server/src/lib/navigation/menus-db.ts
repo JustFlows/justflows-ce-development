@@ -302,6 +302,12 @@ export interface ResolvedNavItem {
 export interface MenuVisibilityContext {
   authState: "guest" | "authenticated";
   role?: string;
+  /**
+   * Every role the visitor holds: the primary role and any additional roles,
+   * such as a plugin's membership roles. A role gate matches any of them.
+   * Without it, only `role` counts.
+   */
+  roles?: readonly string[];
 }
 
 export const PRIMARY_MENU_SLUG = "primary";
@@ -704,8 +710,9 @@ async function isItemVisible(
   if (visibility.auth === "authenticated" && context.authState !== "authenticated") return false;
 
   if (visibility.roles?.length) {
-    if (context.authState !== "authenticated" || !context.role) return false;
-    if (!visibility.roles.includes(context.role)) return false;
+    const held = context.roles?.length ? context.roles : context.role ? [context.role] : [];
+    if (context.authState !== "authenticated" || held.length === 0) return false;
+    if (!visibility.roles.some((role) => held.includes(role))) return false;
   }
 
   if (visibility.locales?.length && !visibility.locales.includes(locale)) return false;
