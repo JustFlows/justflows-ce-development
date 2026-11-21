@@ -92,6 +92,18 @@ describe("resolveMenuItems visibility", () => {
     expect(asAdmin.map((i) => i.id)).toEqual(["1"]);
   });
 
+  it("opens a role gate for an additional role, such as a plugin's membership role", async () => {
+    const items = [{ id: "1", label: "Publisher docs", type: "custom", url: "/publishers", visibility: { roles: ["publisher"] } }];
+    const member = await resolveMenuItems(items, "en", "en", false, {
+      visibility: { authState: "authenticated", role: "subscriber", roles: ["subscriber"] },
+    });
+    expect(member).toEqual([]);
+    const publisher = await resolveMenuItems(items, "en", "en", false, {
+      visibility: { authState: "authenticated", role: "subscriber", roles: ["subscriber", "publisher"] },
+    });
+    expect(publisher.map((i) => i.id)).toEqual(["1"]);
+  });
+
   it("enforces a locale gate", async () => {
     const items = [
       { id: "1", label: "NL only", type: "custom", url: "/nl-page", visibility: { locales: ["nl"] } },
