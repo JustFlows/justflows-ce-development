@@ -52,6 +52,12 @@ function rootPlugins(): Promise<RootPlugins> {
   return value;
 }
 
+/** The main site's installed plugins: plugin id to the manifest every site loads. */
+export async function rootPluginManifests(): Promise<Map<string, Record<string, unknown>>> {
+  const { plugins } = await rootPlugins();
+  return new Map([...plugins].map(([id, plugin]) => [id, plugin.manifest]));
+}
+
 /** Drop the cached main-site rows after any plugin row is installed, updated, or removed. */
 export function clearRootPluginCache(): void {
   rootPluginsCache = null;
