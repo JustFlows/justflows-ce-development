@@ -32,6 +32,7 @@ const { MANAGE_API_OPENAPI } = await import("../../../src/lib/http/openapi-manag
 const { CORE_TOOLS, EXCLUDED_OPERATIONS } = await import("../../../src/lib/ai/tools/catalog.js");
 const { callTool, checkArguments, toolsForPrincipal } =
   await import("../../../src/lib/ai/tools/registry.js");
+const { removesSomething } = await import("../../../src/lib/ai/tools/manage-tool.js");
 const { syntheticKey } = await import("../../../src/lib/ai/tools/principal.js");
 const { asksForCredential } = await import("../../../src/lib/ai/hub/hub-credentials.js");
 import type { AgentPrincipal } from "../../../src/lib/ai/tools/principal.js";
@@ -102,6 +103,35 @@ describe("tool generation from the management API", () => {
       if (tool.operation?.method === "DELETE")
         expect(tool.annotations.destructiveHint, tool.name).toBe(true);
     }
+  });
+
+  it("calls a write non-destructive only when it adds something", () => {
+    const additive = CORE_TOOLS.filter((tool) => !tool.annotations.readOnlyHint && !tool.annotations.destructiveHint).map((tool) => tool.name);
+    expect(additive.sort()).toEqual([
+      "comment_rules_create", "content_create", "content_types_create", "languages_create", "media_upload", "plugins_activate",
+      "redirects_create", "roles_create", "spam_terms_create", "taxonomies_create", "terms_create", "trash_restore", "widget_areas_create",
+    ]);
+  });
+
+  it("marks every write visitors can see, or that emails someone, as open world, and nothing else", () => {
+    const closed = CORE_TOOLS.filter((tool) => !tool.annotations.readOnlyHint && !tool.annotations.openWorldHint).map((tool) => tool.name);
+    expect(closed.sort()).toEqual([
+      "comment_rules_create", "comment_rules_delete", "content_update", "email_design_restore", "email_design_update",
+      "email_templates_restore", "email_templates_update", "patterns_delete", "patterns_import", "patterns_save",
+      "reusable_blocks_discard", "roles_create", "roles_delete", "roles_update", "spam_terms_create", "spam_terms_delete",
+      "style_presets_delete", "style_presets_discard", "style_presets_save", "templates_discard_draft", "themes_customize_discard_draft",
+      "trash_purge", "users_delete", "users_update", "widget_areas_create", "widget_areas_discard_draft",
+    ]);
+    for (const tool of CORE_TOOLS.filter((entry) => entry.annotations.readOnlyHint))
+      expect(tool.annotations, tool.name).toMatchObject({ destructiveHint: false, openWorldHint: false });
+  });
+
+  it("keeps the assistant's red confirmation for calls that remove something", () => {
+    const tool = (name: string) => CORE_TOOLS.find((entry) => entry.name === name)!;
+    for (const name of ["content_delete", "static_export_clear", "reusable_blocks_discard", "plugins_deactivate", "templates_reset", "trash_purge"])
+      expect(removesSomething(tool(name)), name).toBe(true);
+    for (const name of ["content_update", "headers_update", "comments_reply", "users_create", "content_create"])
+      expect(removesSomething(tool(name)), name).toBe(false);
   });
 
   it("includes the minimum tool set the issue asks for", () => {

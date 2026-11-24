@@ -9,7 +9,7 @@ import {
   type ToolSpec,
 } from "../providers/index.js";
 import { callTool, outcomeText, toolsForPrincipal } from "../tools/registry.js";
-import type { AgentTool } from "../tools/manage-tool.js";
+import { removesSomething, type AgentTool } from "../tools/manage-tool.js";
 import type { AgentPrincipal } from "../tools/principal.js";
 import { buildWritePreview, type WritePreview } from "./preview.js";
 
@@ -147,7 +147,7 @@ export async function* runAssistantTurn(input: AssistantTurnInput): AsyncGenerat
           type: "confirm",
           call,
           title: tool.title,
-          destructive: tool.annotations.destructiveHint,
+          destructive: removesSomething(tool),
           preview: await buildWritePreview(input.principal, tool, call.arguments, input.meta),
         };
       }
