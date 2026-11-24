@@ -134,7 +134,12 @@ a tool nor a documented exclusion.
 
 A tool is listed in `tools/list` only when the session holds its
 capabilities. Calling an unlisted tool is refused. Each tool has MCP
-annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`).
+annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`,
+`openWorldHint`). `destructiveHint` is false only for a write that adds
+something: replacing a value is destructive, also when an older revision can
+be restored, and so is an email. `openWorldHint` is true when the call can
+change what visitors of the public website see, or reaches someone outside
+it.
 
 | Group | Tools |
 | --- | --- |

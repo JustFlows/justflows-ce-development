@@ -65,10 +65,39 @@ export interface JsonSchemaObject {
   [key: string]: unknown;
 }
 
+/**
+ * Annotations as MCP clients and plugin directories read them:
+ *
+ * - `destructiveHint` is false only for a write that adds something and leaves
+ *   everything else as it was. Replacing a value is destructive even when an
+ *   older revision can be restored, and so is an email, which cannot be
+ *   unsent.
+ * - `openWorldHint` is true when the call can change what visitors of the
+ *   public website see, or reaches a person or address outside it (see
+ *   `publicFacing`). Drafts, accounts and settings only staff see are a closed
+ *   workspace.
+ */
 export const READ: ToolAnnotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+/** Adds something. */
 export const WRITE: ToolAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
-export const IDEMPOTENT_WRITE: ToolAnnotations = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+/** Replaces what is stored. */
+export const OVERWRITE: ToolAnnotations = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false };
+/** Removes something. */
 export const DESTRUCTIVE: ToolAnnotations = { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false };
+
+/**
+ * Whether a call takes something away, for the assistant's red confirmation.
+ * Narrower than `destructiveHint`, which an ordinary edit carries as well.
+ */
+export function removesSomething(tool: Pick<AgentTool, "name" | "group" | "annotations" | "operation">): boolean {
+  if (!tool.annotations.destructiveHint || tool.group === "plugin") return tool.annotations.destructiveHint;
+  return tool.operation?.method === "DELETE" || /_(?:delete|purge|clear|reset|discard|discard_draft|deactivate)$/.test(tool.name);
+}
+
+/** The same write, where the public website or someone outside it can see the result. */
+export function publicFacing(annotations: ToolAnnotations): ToolAnnotations {
+  return { ...annotations, openWorldHint: true };
+}
 
 type OpenApiOperation = { "x-required-capability"?: string };
 
