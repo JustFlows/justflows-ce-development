@@ -5,6 +5,7 @@ import { getGeneralSettings } from "../settings/general-settings.js";
 import { getSiteId } from "../settings/site-settings.js";
 import { hashPassword } from "./password.js";
 import { auditLog } from "../security/audit-log.js";
+import { primarySiteOrigin } from "../email/email-asset-url.js";
 import { sendTemplateMail } from "../email/mail.js";
 import { accountSurface, authPagePath, type AuthSurface } from "./auth-surface.js";
 import {
@@ -40,9 +41,9 @@ function appOrigin(): string {
  * so a staff link carries the admin path to its own owner and nobody else. The
  * page strips the token from the URL on load.
  */
-export async function resetLinkFor(token: string, surface: AuthSurface = "site"): Promise<string> {
+export async function resetLinkFor(token: string, surface: AuthSurface = "site", origin = appOrigin()): Promise<string> {
   const query = `token=${encodeURIComponent(token)}`;
-  return `${appOrigin()}${await authPagePath(surface, "reset-password")}?${query}`;
+  return `${origin}${await authPagePath(surface, "reset-password")}?${query}`;
 }
 
 interface ForgotUserRow {
@@ -177,8 +178,9 @@ export type PasswordSetupResult = { ok: true; expiresAt: string } | { ok: false;
  * sign-in surface it belongs to (admin pages for staff, the site's for
  * members). For accounts made for someone by an administrator or a plugin,
  * who never typed a password. It does not depend on self-service reset being
- * enabled, because the site, not the person, asked for it. The link replaces
- * any earlier reset link; nothing changes until the person uses it.
+ * enabled, because the site, not the person, asked for it. The link opens on
+ * the account's own site, and replaces any earlier reset link; nothing changes
+ * until the person uses it.
  */
 export async function sendPasswordSetup(
   siteId: string,
@@ -194,7 +196,7 @@ export async function sendPasswordSetup(
   if (!user) return { ok: false, status: 404, error: "User not found." };
   const surface = await accountSurface(user.role, user.id, siteId);
   const { token, expiresAt } = await createPasswordReset(user.id, siteId, null, PASSWORD_SETUP_TTL_MINUTES);
-  const link = await resetLinkFor(token, surface);
+  const link = await resetLinkFor(token, surface, (await primarySiteOrigin(siteId)) ?? appOrigin());
   if (process.env.NODE_ENV === "development") {
     console.log(`\n[dev] password setup for ${user.email}:\n      ${link}\n`);
   }

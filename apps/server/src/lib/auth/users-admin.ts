@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { validBirthDate } from "../account/personal.js";
 import { getDb, type DbClient } from "../database/db.js";
@@ -250,6 +250,37 @@ export const CreateUserSchema = z.object({
   role: z.string().regex(STORED_ROLE_ID).optional(),
 });
 export type CreateUserInput = z.infer<typeof CreateUserSchema>;
+
+/** Management API: without a password the person chooses their own by email. */
+export const ManageCreateUserSchema = CreateUserSchema.partial({ password: true });
+export type ManageCreateUserInput = z.infer<typeof ManageCreateUserSchema>;
+
+/**
+ * Create a user for the management API. With a password this is `createUser`.
+ * Without one the account gets a random password nobody sees, and the person
+ * is emailed a single-use link to choose theirs, so a caller such as an AI
+ * agent never handles a credential. A mail that could not be sent is reported
+ * on the created user instead of failing the request.
+ */
+export async function createManagedUser(
+  input: ManageCreateUserInput,
+  actor: UserAdminActor,
+): Promise<UserAdminResult> {
+  const { password, ...account } = input;
+  if (password !== undefined) return createUser({ ...account, password }, actor);
+  const result = await createUser({ ...account, password: randomBytes(32).toString("base64url") }, actor);
+  if (result.status !== 201) return result;
+  const created = result.body as { id: string };
+  const { sendPasswordSetup } = await import("./password-reset.js");
+  const mail = await sendPasswordSetup(actor.siteId, created.id, { userId: actor.userId, role: actor.role });
+  return {
+    status: 201,
+    body: {
+      ...created,
+      setupEmail: mail.ok ? { sent: true, expiresAt: mail.expiresAt } : { sent: false, error: mail.error },
+    },
+  };
+}
 
 export async function createUser(
   input: CreateUserInput,

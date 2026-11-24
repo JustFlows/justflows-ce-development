@@ -158,7 +158,7 @@ describe.skipIf(!enabled)("agent tools never reach another site", () => {
     await seed("languages_create", { code: "nl" });
     await seed("widget_areas_create", { key: "b-only-area", label: `${MARKER} area` });
     await seed("template_parts_update", { part: "footer", blocks: paragraph(`${MARKER} footer`).blocks });
-    await seed("users_create", { email: "b-only@site-b.test", username: "bonlyuser", displayName: `${MARKER} user`, password: `${MARKER}-password-123456`, role: "editor" });
+    await seed("users_create", { email: "b-only@site-b.test", username: "bonlyuser", displayName: `${MARKER} user`, role: "editor" });
     await seed("roles_create", { name: `${MARKER} role`, capabilities: ["content:read"] });
 
     /** Rows no agent tool creates. */

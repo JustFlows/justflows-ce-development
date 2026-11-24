@@ -193,7 +193,7 @@ export const MANAGE_API_OPENAPI = {
 
     "/users": {
       get: op("List users", "users:read"),
-      post: op("Create a user", "users:manage", { "201": { description: "Created" } }),
+      post: op("Create a user; without a password the person is emailed a link to choose one", "users:manage", { "201": { description: "Created" } }),
     },
     "/users/{id}": {
       get: op("Get a user with effective access", "users:read"),

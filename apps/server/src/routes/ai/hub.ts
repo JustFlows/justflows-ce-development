@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import { Router, type NextFunction, type Request, type Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import { hubCallbackUrl, hubOrigin, hubResourceUrl, isHubHost } from "../../lib/ai/hub/hub-config.js";
+import { filterToolList, listsTools, refusedCall } from "../../lib/ai/hub/hub-credentials.js";
 import { open, seal } from "../../lib/ai/hub/hub-seal.js";
 import {
   connectSite,
@@ -28,7 +29,8 @@ type FetchResponse = globalThis.Response;
  * own login and consent screen, and wraps the site's tokens in sealed hub
  * tokens. Every MCP request is then forwarded to `https://<site>/api/mcp`
  * with the site's own token, so the site keeps enforcing its own users,
- * capabilities and rate limits.
+ * capabilities and rate limits. Tools that ask for a credential are left out
+ * (see `hub-credentials.ts`).
  *
  * The client's PKCE challenge and verifier are passed straight through to the
  * site, which checks them. The hub stores only its own client registration
@@ -503,17 +505,43 @@ function challenge(res: Response, error?: string): void {
 const FORWARD_REQUEST_HEADERS = ["content-type", "accept", "mcp-protocol-version", "mcp-session-id", "last-event-id"];
 const FORWARD_RESPONSE_HEADERS = ["content-type", "mcp-session-id", "mcp-protocol-version", "cache-control", "retry-after"];
 
+const MAX_TOOL_LIST_BYTES = 8 * 1024 * 1024;
+
+/** A site's answer as text. Throws when it is larger than any real tool list. */
+async function readLimited(response: FetchResponse): Promise<string> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of response.body as unknown as AsyncIterable<Uint8Array>) {
+    size += chunk.byteLength;
+    if (size > MAX_TOOL_LIST_BYTES) throw new Error("Tool list too large");
+    chunks.push(Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 async function forwardMcp(req: Request, res: Response): Promise<void> {
   const authorization = req.get("authorization") ?? "";
   const bearer = authorization.slice(0, 7).toLowerCase() === "bearer " ? authorization.slice(7).trim() : "";
   const access = open<AccessRecord>("access", bearer);
   if (!access) return challenge(res, bearer ? "invalid_token" : undefined);
+  const hasBody = req.method === "POST";
+  const refused = hasBody ? refusedCall(req.body) : null;
+  if (refused) {
+    res.json({
+      jsonrpc: "2.0",
+      id: refused.id,
+      result: {
+        content: [{ type: "text", text: "Passwords, keys and other credentials can't be sent through this connection. Use your site's admin for that." }],
+        isError: true,
+      },
+    });
+    return;
+  }
   const headers: Record<string, string> = { authorization: `Bearer ${access.t}` };
   for (const name of FORWARD_REQUEST_HEADERS) {
     const value = req.get(name);
     if (value) headers[name] = value;
   }
-  const hasBody = req.method === "POST";
   if (hasBody) headers["content-type"] = "application/json";
   let upstream: FetchResponse;
   try {
@@ -542,6 +570,18 @@ async function forwardMcp(req: Request, res: Response): Promise<void> {
   }
   if (!upstream.body) {
     res.end();
+    return;
+  }
+  if (hasBody && upstream.ok && listsTools(req.body)) {
+    const filtered = await readLimited(upstream)
+      .then((text) => filterToolList(text, upstream.headers.get("content-type") ?? ""))
+      .catch(() => null);
+    if (filtered === null) {
+      res.setHeader("content-type", "application/json");
+      res.status(502).json({ jsonrpc: "2.0", error: { code: -32603, message: "Your Justflows site returned an unreadable tool list" }, id: null });
+      return;
+    }
+    res.end(filtered);
     return;
   }
   const stream = Readable.fromWeb(upstream.body as unknown as import("node:stream/web").ReadableStream);

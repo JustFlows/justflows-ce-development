@@ -45,6 +45,8 @@ const site = {
   mcpAuth: [] as string[],
   tokenRequests: [] as URLSearchParams[],
   issuer: SITE,
+  /** What `/api/mcp` answers instead of echoing the request. */
+  answer: null as null | (() => Response),
 };
 
 function json(body: unknown, status = 200): Response {
@@ -90,6 +92,7 @@ async function fakeSite(url: string, init: RequestInit): Promise<Response> {
     const headers = new Headers(init.headers);
     site.mcpAuth.push(headers.get("authorization") ?? "");
     if (headers.get("authorization") === "Bearer expired") return json({ error: "invalid_token" }, 401);
+    if (site.answer) return site.answer();
     return new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: { echoed: JSON.parse(String(init.body)) } }), {
       status: 200,
       headers: { "content-type": "application/json", "mcp-session-id": "sess-1" },
@@ -124,6 +127,7 @@ beforeEach(() => {
   site.mcpAuth = [];
   site.tokenRequests = [];
   site.issuer = SITE;
+  site.answer = null;
 });
 
 async function register(): Promise<string> {
@@ -239,6 +243,55 @@ describe("MCP connection hub", () => {
     await connect(clientId);
     await connect(clientId);
     expect(site.registrations).toBe(1);
+  });
+
+  describe("credentials", () => {
+    const tools = [
+      { name: "users_list", inputSchema: { type: "object", properties: { limit: { type: "integer" } } } },
+      { name: "users_create", inputSchema: { type: "object", properties: { email: { type: "string" }, password: { type: "string" } } } },
+      { name: "nested", inputSchema: { type: "object", properties: { options: { type: "object", properties: { api_key: { type: "string" } } } } } },
+      { name: "themes_customize_update", inputSchema: { type: "object", properties: { designTokens: { type: "object" }, passwordResetEnabled: { type: "boolean" } } } },
+    ];
+    const list = { jsonrpc: "2.0", id: 1, result: { tools } };
+
+    /** Connected once: each connection counts towards the sign-in rate limit. */
+    let token = "";
+    async function post(body: unknown) {
+      token ||= (await connect(await register())).access_token;
+      return fetch(`${base}/api/mcp`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json", accept: "application/json, text/event-stream" },
+        body: JSON.stringify(body),
+      });
+    }
+    const listRequest = { jsonrpc: "2.0", id: 1, method: "tools/list" };
+    const names = (answer: typeof list) => answer.result.tools.map((tool) => tool.name);
+
+    it("leaves tools of an older site that ask for one out of the list", async () => {
+      site.answer = () => json(list);
+      expect(names((await (await post(listRequest)).json()) as typeof list)).toEqual(["users_list", "themes_customize_update"]);
+    });
+
+    it("does the same for a streamed list", async () => {
+      site.answer = () => new Response(`event: message\ndata: ${JSON.stringify(list)}\n\n`, { headers: { "content-type": "text/event-stream" } });
+      const text = await (await post(listRequest)).text();
+      expect(text).toMatch(/^event: message\ndata: /);
+      expect(names(JSON.parse(text.split("data: ")[1]!) as typeof list)).toEqual(["users_list", "themes_customize_update"]);
+    });
+
+    it("fails instead of passing on a list it cannot read", async () => {
+      site.answer = () => new Response("<html>", { headers: { "content-type": "text/html" } });
+      expect((await post(listRequest)).status).toBe(502);
+    });
+
+    it("refuses a call that carries one without reaching the site", async () => {
+      const call = (args: unknown) => post({ jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "users_create", arguments: args } });
+      const refused = (await (await call({ email: "sam@example.com", password: "a-Long-passw0rd!" })).json()) as { id: number; result: { isError: boolean } };
+      expect(refused).toMatchObject({ id: 7, result: { isError: true } });
+      expect(site.mcpAuth).toEqual([]);
+      expect((await call({ email: "sam@example.com", designTokens: { a: "b" }, passwordResetEnabled: true })).status).toBe(200);
+      expect(site.mcpAuth).toHaveLength(1);
+    });
   });
 
   it("challenges MCP calls without a valid hub token", async () => {

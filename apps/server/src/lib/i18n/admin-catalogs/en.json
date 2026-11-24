@@ -5441,7 +5441,7 @@
         "one": "{count} permission",
         "other": "{count} permissions"
       },
-      "userTools": "Users & roles tools",
+      "userTools": "Can change users & roles",
       "revoke": "Revoke",
       "revokeConfirm": "Revoke access for {name}? It stops working immediately."
     },
@@ -5496,7 +5496,7 @@
         "admin": "Everything you can do yourself.",
         "read": "Read content, media and settings without changing anything."
       },
-      "userTools": "Also allow the users & roles tools",
+      "userTools": "Also allow adding, changing and removing users and roles",
       "createKey": "Create a key for {client}",
       "enableFirst": "Turn on MCP and the management API first.",
       "noCapabilities": "You have none of the permissions this preset needs.",

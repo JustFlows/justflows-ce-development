@@ -23,7 +23,9 @@ import { principalCapabilities, type AgentPrincipal } from "./principal.js";
  * `tools/list` / `tools/call` and the assistant.
  *
  * A tool is listed only when the principal currently holds every capability it
- * needs (and, for users & roles tools, only when the key or grant opted in).
+ * needs. Tools that change users & roles also need the key or grant to have
+ * opted in; reading them needs only `users:read`. The assistant is offered
+ * neither.
  * Calling a tool that is not listed is refused the same way, so filtering is
  * not merely cosmetic; the handler it reaches checks the capability again.
  */
@@ -69,7 +71,9 @@ export async function toolsForPrincipal(principal: AgentPrincipal): Promise<Agen
     principalCapabilities(principal),
   ]);
   return tools.filter((tool) => {
-    if (tool.group === "users" && !principal.userTools) return false;
+    if (tool.group === "users" && !principal.userTools) {
+      if (principal.kind === "assistant" || !tool.annotations.readOnlyHint) return false;
+    }
     return tool.capabilities.every((capability) => capabilities.has(capability));
   });
 }

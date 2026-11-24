@@ -33,6 +33,7 @@ const { CORE_TOOLS, EXCLUDED_OPERATIONS } = await import("../../../src/lib/ai/to
 const { callTool, checkArguments, toolsForPrincipal } =
   await import("../../../src/lib/ai/tools/registry.js");
 const { syntheticKey } = await import("../../../src/lib/ai/tools/principal.js");
+const { asksForCredential } = await import("../../../src/lib/ai/hub/hub-credentials.js");
 import type { AgentPrincipal } from "../../../src/lib/ai/tools/principal.js";
 
 function principal(keyCapabilities: string[], userTools = false): AgentPrincipal {
@@ -169,17 +170,57 @@ describe("capability filtering", () => {
     expect(names).not.toContain("content_publish");
   });
 
-  it("hides users & roles tools unless the key opted in", async () => {
+  it("offers reading users with users:read alone, and changing them only when the key opted in", async () => {
     access.capabilities = ["users:read", "users:manage"];
+    const readOnly = (await toolsForPrincipal(principal(["users:read"]))).map((t) => t.name);
+    expect(readOnly.filter((name) => /^(users|roles)_/.test(name)).sort()).toEqual(["roles_list", "users_get", "users_list"]);
     const off = (await toolsForPrincipal(principal(["users:read", "users:manage"]))).map(
       (t) => t.name,
     );
-    expect(off).not.toContain("users_list");
+    expect(off.filter((name) => /^(users|roles)_/.test(name)).sort()).toEqual(["roles_list", "users_get", "users_list"]);
+    expect((await toolsForPrincipal(principal(["content:read"], true))).map((t) => t.name)).not.toContain("users_list");
+    const assistant: AgentPrincipal = { ...principal(["users:read", "users:manage"]), kind: "assistant", via: "assistant" };
+    expect((await toolsForPrincipal(assistant)).filter((t) => t.group === "users")).toEqual([]);
     const on = (await toolsForPrincipal(principal(["users:read", "users:manage"], true))).map(
       (t) => t.name,
     );
     expect(on).toContain("users_list");
     expect(on).toContain("roles_create");
+  });
+
+  it("never takes a credential as a tool argument", () => {
+    for (const tool of CORE_TOOLS) expect(asksForCredential(tool.inputSchema), tool.name).toBe(false);
+  });
+
+  it("creates a user without a password, and refuses one", async () => {
+    access.capabilities = ["users:read", "users:manage"];
+    const caller = principal(["users:read", "users:manage"], true);
+    const account = { email: "sam@example.com", username: "sam", displayName: "Sam" };
+    const refused = await callTool(caller, "users_create", { ...account, password: "a-Long-passw0rd!" });
+    expect(refused.outcome).toMatchObject({ ok: false, status: 400 });
+    expect(dispatch).not.toHaveBeenCalled();
+    const created = await callTool(caller, "users_create", account);
+    expect(created.outcome.ok).toBe(true);
+    expect(dispatch.mock.calls[0]![1]).toMatchObject({ method: "POST", path: "/users", body: account });
+    expect(created.annotations.openWorldHint).toBe(true);
+  });
+
+  it("refuses a date of birth on users_update", async () => {
+    access.capabilities = ["users:read", "users:manage"];
+    const caller = principal(["users:read", "users:manage"], true);
+    const refused = await callTool(caller, "users_update", { id: "u2", birthDate: "1990-01-01" });
+    expect(refused.outcome).toMatchObject({ ok: false, status: 400 });
+    expect((await callTool(caller, "users_update", { id: "u2", role: "author", scopes: {} })).outcome.ok).toBe(true);
+  });
+
+  it("leaves the date of birth and second-factor state out of users_get", async () => {
+    access.capabilities = ["users:read"];
+    dispatch.mockResolvedValueOnce({
+      status: 200,
+      body: { user: { id: "u2", email: "sam@example.com", role: "author", birth_date: "1990-01-01", twoFactorEnabled: true, passkeys: 2, content: { total: 3 }, effectiveCapabilities: ["content:read"] } },
+    });
+    const { outcome } = await callTool(principal(["users:read"]), "users_get", { id: "u2" });
+    expect(outcome).toEqual({ ok: true, data: { user: { id: "u2", email: "sam@example.com", role: "author", effectiveCapabilities: ["content:read"] } } });
   });
 
   it("offers header, footer and user tools to a full admin key", async () => {

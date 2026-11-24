@@ -15,6 +15,8 @@ vi.mock("../../../src/lib/database/db.js", () => ({
     run: async (sql: string, params: unknown[] = []) => void runs.push({ sql, params }),
   }),
 }));
+const domain = vi.hoisted(() => ({ origin: null as string | null }));
+vi.mock("../../../src/lib/email/email-asset-url.js", () => ({ primarySiteOrigin: async () => domain.origin }));
 vi.mock("../../../src/lib/email/mail.js", () => ({ sendTemplateMail }));
 vi.mock("../../../src/lib/security/audit-log.js", () => ({ auditLog }));
 vi.mock("../../../src/lib/auth/auth-surface.js", () => ({
@@ -26,6 +28,7 @@ const { sendPasswordSetup, PASSWORD_SETUP_TTL_MINUTES } = await import("../../..
 
 beforeEach(() => {
   runs.length = 0;
+  domain.origin = null;
   sendTemplateMail.mockClear();
   auditLog.mockClear();
 });
@@ -47,6 +50,12 @@ describe("sendPasswordSetup", () => {
     const token = new URL(mail.values["action_url"]!, "https://x").searchParams.get("token")!;
     expect(JSON.stringify(runs)).not.toContain(token);
     expect(auditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "auth.password_setup_sent", outcome: "success", target: "user-1", actorId: "admin" }));
+  });
+
+  it("opens the link on the site's own domain", async () => {
+    domain.origin = "https://studio.example.com";
+    await sendPasswordSetup("site-1", "user-1", { userId: "admin", role: "administrator" });
+    expect(sendTemplateMail.mock.calls[0]![0].values["action_url"]).toMatch(/^https:\/\/studio\.example\.com\/studio-admin\/reset-password\?token=/);
   });
 
   it("refuses an unknown user and reports a failed send", async () => {
