@@ -5446,7 +5446,7 @@
         "one": "{count} Berechtigung",
         "other": "{count} Berechtigungen"
       },
-      "userTools": "Werkzeuge für Benutzer und Rollen",
+      "userTools": "Kann Benutzer und Rollen ändern",
       "revoke": "Widerrufen",
       "revokeConfirm": "Zugriff für {name} widerrufen? Er endet sofort."
     },
@@ -5501,7 +5501,7 @@
         "admin": "Alles, was Sie selbst dürfen.",
         "read": "Inhalte, Medien und Einstellungen lesen, ohne etwas zu ändern."
       },
-      "userTools": "Auch die Werkzeuge für Benutzer und Rollen erlauben",
+      "userTools": "Auch das Hinzufügen, Ändern und Entfernen von Benutzern und Rollen erlauben",
       "createKey": "Schlüssel für {client} erstellen",
       "enableFirst": "Schalten Sie zuerst MCP und die Verwaltungs-API ein.",
       "noCapabilities": "Sie haben keine der Berechtigungen, die diese Vorgabe braucht.",

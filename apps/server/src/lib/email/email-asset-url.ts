@@ -23,22 +23,32 @@ function originFor(hostname: string): string | null {
 }
 
 /**
- * The origin sent mail should load the site's files from: its primary
- * domain, else the address of the current request for that site, else
- * `APP_URL`. Null when none is known.
+ * The origin of the site's primary domain as stored, never as a request named
+ * it, so a link carrying a one-time token may use it. Null when the site has
+ * no active primary domain.
  */
-export async function emailSiteOrigin(siteId: string): Promise<string | null> {
+export async function primarySiteOrigin(siteId: string): Promise<string | null> {
   try {
     const db = await getControlDb();
     const rows = await db.query<{ hostname: string }>(
       "SELECT hostname FROM site_domains WHERE site_id = ? AND is_primary = ? AND status = 'active' ORDER BY created_at ASC LIMIT 1",
       [siteId, true],
     );
-    const primary = rows[0] ? originFor(String(rows[0].hostname)) : null;
-    if (primary) return primary;
+    return rows[0] ? originFor(String(rows[0].hostname)) : null;
   } catch {
-    /** Single-site installs without the domain tables fall through to the request or APP_URL. */
+    /** Single-site installs may not have the domain tables. */
+    return null;
   }
+}
+
+/**
+ * The origin sent mail should load the site's files from: its primary
+ * domain, else the address of the current request for that site, else
+ * `APP_URL`. Null when none is known.
+ */
+export async function emailSiteOrigin(siteId: string): Promise<string | null> {
+  const primary = await primarySiteOrigin(siteId);
+  if (primary) return primary;
   const context = getTenantContext();
   const fallback = context && context.siteId === siteId ? siteOrigin() : (process.env.APP_URL ?? "").replace(/\/+$/, "");
   return /^https?:\/\/[^/\s]+$/i.test(fallback) ? fallback : null;

@@ -5446,7 +5446,7 @@
         "one": "{count} autorisation",
         "other": "{count} autorisations"
       },
-      "userTools": "Outils utilisateurs et rôles",
+      "userTools": "Peut modifier les utilisateurs et les rôles",
       "revoke": "Révoquer",
       "revokeConfirm": "Révoquer l’accès de {name} ? Il cessera de fonctionner immédiatement."
     },
@@ -5501,7 +5501,7 @@
         "admin": "Tout ce que vous pouvez faire vous-même.",
         "read": "Lire le contenu, les médias et les réglages sans rien modifier."
       },
-      "userTools": "Autoriser aussi les outils utilisateurs et rôles",
+      "userTools": "Autoriser aussi l’ajout, la modification et la suppression d’utilisateurs et de rôles",
       "createKey": "Créer une clé pour {client}",
       "enableFirst": "Activez d’abord MCP et l’API de gestion.",
       "noCapabilities": "Vous n’avez aucune des autorisations requises par ce préréglage.",

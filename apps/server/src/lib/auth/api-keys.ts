@@ -32,7 +32,7 @@ export interface ApiKeyRecord {
   allowedIps: string[];
   allowedOrigins: string[];
   rateLimitPerMin: number | null;
-  /** Whether MCP may list the users & roles tools for this key (off by default). */
+  /** Whether MCP may list the tools that change users & roles for this key (off by default). */
   mcpUserTools: boolean;
   expiresAt: string | null;
   revokedAt: string | null;

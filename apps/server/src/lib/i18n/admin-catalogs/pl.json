@@ -5605,7 +5605,7 @@
         "many": "{count} uprawnień",
         "other": "{count} uprawnienia"
       },
-      "userTools": "Narzędzia użytkowników i ról",
+      "userTools": "Może zmieniać użytkowników i role",
       "revoke": "Cofnij dostęp",
       "revokeConfirm": "Cofnąć dostęp dla {name}? Przestanie działać natychmiast."
     },
@@ -5660,7 +5660,7 @@
         "admin": "Wszystko, co możesz zrobić sam.",
         "read": "Odczyt treści, mediów i ustawień bez wprowadzania zmian."
       },
-      "userTools": "Zezwól też na narzędzia użytkowników i ról",
+      "userTools": "Zezwól też na dodawanie, zmienianie i usuwanie użytkowników i ról",
       "createKey": "Utwórz klucz dla {client}",
       "enableFirst": "Najpierw włącz MCP i API zarządzania.",
       "noCapabilities": "Nie masz żadnego z uprawnień wymaganych przez to ustawienie.",

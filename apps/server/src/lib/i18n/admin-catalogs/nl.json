@@ -5443,7 +5443,7 @@
         "one": "{count} recht",
         "other": "{count} rechten"
       },
-      "userTools": "Gebruikers- en roltools",
+      "userTools": "Kan gebruikers en rollen wijzigen",
       "revoke": "Intrekken",
       "revokeConfirm": "Toegang voor {name} intrekken? Het werkt direct niet meer."
     },
@@ -5498,7 +5498,7 @@
         "admin": "Alles wat je zelf kunt.",
         "read": "Content, media en instellingen lezen zonder iets te wijzigen."
       },
-      "userTools": "Ook de gebruikers- en roltools toestaan",
+      "userTools": "Ook gebruikers en rollen laten toevoegen, wijzigen en verwijderen",
       "createKey": "Sleutel maken voor {client}",
       "enableFirst": "Zet eerst MCP en de beheer-API aan.",
       "noCapabilities": "Je hebt geen van de rechten die deze voorinstelling nodig heeft.",

@@ -5446,7 +5446,7 @@
         "one": "{count} permiso",
         "other": "{count} permisos"
       },
-      "userTools": "Herramientas de usuarios y roles",
+      "userTools": "Puede modificar usuarios y roles",
       "revoke": "Revocar",
       "revokeConfirm": "¿Revocar el acceso de {name}? Dejará de funcionar de inmediato."
     },
@@ -5501,7 +5501,7 @@
         "admin": "Todo lo que puedes hacer tú.",
         "read": "Leer contenido, medios y ajustes sin cambiar nada."
       },
-      "userTools": "Permitir también las herramientas de usuarios y roles",
+      "userTools": "Permitir también añadir, modificar y eliminar usuarios y roles",
       "createKey": "Crear una clave para {client}",
       "enableFirst": "Primero activa MCP y la API de gestión.",
       "noCapabilities": "No tienes ninguno de los permisos que necesita este ajuste.",

@@ -3,11 +3,11 @@
 import { Router, type Request } from "express";
 import { clientIp } from "../../lib/security/rate-limit.js";
 import {
-  createUser,
-  CreateUserSchema,
+  createManagedUser,
   deleteUser,
   getUserWithAccess,
   listUsers,
+  ManageCreateUserSchema,
   PatchUserSchema,
   updateUser,
   type UserAdminActor,
@@ -60,10 +60,10 @@ router.get("/users/:id", async (req, res) => {
 
 router.post("/users", async (req, res) => {
   if (!(await ensureKeyCan(req, res, "users:manage"))) return;
-  const body = CreateUserSchema.safeParse(req.body);
+  const body = ManageCreateUserSchema.safeParse(req.body);
   if (!body.success) return badRequest(res, body.error.issues[0]?.message ?? "Invalid user");
   try {
-    relay(res, await createUser(body.data, actorOf(req)));
+    relay(res, await createManagedUser(body.data, actorOf(req)));
   } catch (err) {
     sendServerError(res, "manage.users", err);
   }

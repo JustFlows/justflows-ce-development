@@ -30,7 +30,7 @@ export interface AgentPrincipal {
   oauthClientId?: string;
   key: ApiKeyRecord;
   owner: ApiKeyOwner;
-  /** Users & roles tools are off unless the key or grant turned them on. */
+  /** Tools that change users & roles are off unless the key or grant turned them on. */
   userTools: boolean;
   via: AgentVia;
 }
